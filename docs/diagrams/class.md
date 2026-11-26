@@ -101,7 +101,7 @@ Quirks of the reference's grammar that are kept on purpose, because a fix would 
 - **Labels are SVG text**, also with `htmlLabels: true` ([0009](../decisions/0009-svg-text-labels.md)). The row texts take the geometry of the reference's `htmlLabels: false` path whatever the setting: a text padding of 3 and a shift of 4.
 - **`layout: dagre`** is laid out with ELK ([0012](../decisions/0012-layout-engines-ported-exactly.md)); `look: handDrawn` takes the classic geometry.
 - **Callbacks** (`click A call f()`) set `haveCallback` and the `clickable` class, and the function is not kept ([0006](../decisions/0006-rust-only-no-browser.md)).
-- **`sanitizeUrl`** follows `@braintree/sanitize-url` 7.1.2 on the `url` crate, which differs in two places: it does not percent-encode a caret in the path of an `http(s)` URL, and it rejects an `xn--` label whose punycode does not decode. A lone surrogate that an entity could produce becomes U+FFFD, since a Rust string cannot hold it.
+- **`sanitizeUrl`** follows `@braintree/sanitize-url` 7.1.2 on the `url` crate, with three differences: it does not percent-encode a caret in the path of an `http(s)` URL, it rejects an `xn--` label whose punycode does not decode, and it bounds obfuscation decoding to 8 passes (failing closed to `about:blank` on deeply nested escapes rather than running unbounded passes, [0014](../decisions/0014-upstream-reference-at-a-pin.md)). A lone surrogate that an entity could produce becomes U+FFFD, since a Rust string cannot hold it.
 - **DOM ids** of classes are `classId-<name>` without the page-wide counter that the reference appends; names are unique in a diagram already.
 
 ## Known gaps

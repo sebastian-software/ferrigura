@@ -65,6 +65,11 @@ const SAFE_DATA_IMAGE_SUBTYPES: &[&str] = &[
     "gif",
     "webp",
     "avif",
+    "jxl",
+    "tiff",
+    "tif",
+    "heic",
+    "heif",
     "bmp",
     "x-icon",
     "vnd.microsoft.icon",
@@ -120,9 +125,9 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
 /// Validates an image URL at an SVG `<image href>` sink without altering accepted URLs.
 ///
 /// Permits everything [`guard_url`] permits, plus embedded raster `data:image/...` URIs (`png`,
-/// `apng`, `jpeg`, `jpg`, `gif`, `webp`, `avif`, `bmp`, `x-icon`, `vnd.microsoft.icon`). Active
-/// `data:` payloads such as `data:image/svg+xml` and `data:text/html` are rejected to
-/// `"about:blank"`.
+/// `apng`, `jpeg`, `jpg`, `gif`, `webp`, `avif`, `jxl`, `tiff`, `tif`, `heic`, `heif`, `bmp`,
+/// `x-icon`, `vnd.microsoft.icon`). Active `data:` payloads such as `data:image/svg+xml` and
+/// `data:text/html` are rejected to `"about:blank"`.
 #[must_use]
 pub fn guard_image_url(url: &str, loose: bool) -> &str {
     if loose || is_safe_raster_data_image_url(url) {
@@ -152,16 +157,34 @@ fn is_safe_raster_data_image_url(url: &str) -> bool {
 }
 
 /// Returns the shortest prefix of `url` that can influence scheme detection: everything up to and
-/// including the first literal `/`, `?`, or `#` delimiter that cannot be part of a numeric HTML
-/// character reference (`&#...;`), or the whole string when no such delimiter occurs.
+/// including the first literal `/`, `?`, or fragment `#` delimiter that cannot be part of a
+/// numeric HTML character reference (`&#...;`), or the whole string when no such delimiter occurs.
+///
+/// A `#` is treated as potentially belonging to an entity only when immediately preceded by `&`
+/// (ignoring control characters) or when an earlier `&#` or `%` could decode to `&`. A plain
+/// ampersand in a relative path (such as `R&D#frag`) therefore does not prevent stopping at `#`.
 fn scheme_prefix(url: &str) -> &str {
-    let mut saw_amp = false;
-    for (idx, byte) in url.bytes().enumerate() {
-        match byte {
-            b'&' => saw_amp = true,
-            b'/' | b'?' => return &url[..=idx],
-            b'#' if !saw_amp => return &url[..=idx],
-            _ => {}
+    let mut after_amp = false;
+    let mut might_produce_amp = false;
+    for (idx, ch) in url.char_indices() {
+        match ch {
+            '/' | '?' => return &url[..=idx],
+            '#' => {
+                if !after_amp && !might_produce_amp {
+                    return &url[..=idx];
+                }
+                if after_amp {
+                    might_produce_amp = true;
+                }
+                after_amp = false;
+            }
+            '&' => after_amp = true,
+            '%' => {
+                might_produce_amp = true;
+                after_amp = false;
+            }
+            c if is_ctrl(c) => {}
+            _ => after_amp = false,
         }
     }
     url
@@ -177,13 +200,76 @@ fn decode_obfuscation_step(text: &str) -> String {
     decode_uri(js_trim(&without_escapes))
 }
 
-/// Runs [`decode_obfuscation_step`] on a sink scheme prefix until it reaches a fixpoint (catching
-/// nested percent escapes such as `notes%25253Adoc` as well as nested HTML entities) or exceeds
-/// `max_passes`, returning `None` (fail-closed) if it does not stabilize in time.
+/// Runs one obfuscation-decoding step for a render-sink scheme prefix, using lossy percent
+/// decoding so a malformed `%XX` sequence later in the segment cannot mask an encoded scheme.
+fn decode_sink_step(text: &str) -> String {
+    let entities = decode_html_characters(text);
+    let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
+    let without_controls = remove_ctrl(&without_newlines);
+    let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
+    decode_uri_lossy(js_trim(&without_escapes))
+}
+
+/// Decodes each valid UTF-8 `%XX` sequence independently, keeping malformed `%` sequences as-is.
+fn decode_uri_lossy(uri: &str) -> String {
+    let bytes = uri.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while let Some(&byte) = bytes.get(index) {
+        if byte != b'%' {
+            out.push(byte);
+            index += 1;
+            continue;
+        }
+        if let Some((decoded_len, width_bytes)) = decode_utf8_percent_at(bytes, index, &mut out) {
+            index += decoded_len;
+            let _ = width_bytes;
+        } else {
+            out.push(byte);
+            index += 1;
+        }
+    }
+    String::from_utf8(out).unwrap_or_else(|_| uri.to_owned())
+}
+
+/// Decodes one valid UTF-8 percent-encoded character starting at `index`, appending its UTF-8
+/// bytes to `out` and returning `(consumed_input_bytes, decoded_utf8_bytes)`.
+fn decode_utf8_percent_at(bytes: &[u8], index: usize, out: &mut Vec<u8>) -> Option<(usize, usize)> {
+    let first = escaped_byte(bytes, index)?;
+    let width = match first {
+        0x00..=0x7F => 1,
+        0xC0..=0xDF => 2,
+        0xE0..=0xEF => 3,
+        0xF0..=0xF7 => 4,
+        _ => return None,
+    };
+    let mut seq = [0u8; 4];
+    seq[0] = first;
+    let mut cursor = index + 3;
+    for slot in seq.iter_mut().take(width).skip(1) {
+        if bytes.get(cursor) != Some(&b'%') {
+            return None;
+        }
+        let cont = escaped_byte(bytes, cursor)?;
+        if (cont & 0xC0) != 0x80 {
+            return None;
+        }
+        *slot = cont;
+        cursor += 3;
+    }
+    let decoded = std::str::from_utf8(&seq[..width]).ok()?;
+    out.extend_from_slice(decoded.as_bytes());
+    Some((cursor - index, width))
+}
+
+/// Runs [`decode_sink_step`] on a sink scheme prefix until it reaches a fixpoint (catching
+/// nested percent escapes such as `notes%25253Adoc`, malformed trailing percent escapes such as
+/// `notes%3Afoo%FF`, and nested HTML entities) or exceeds `max_passes`, returning `None`
+/// (fail-closed) if it does not stabilize in time.
 fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
-    let mut decoded = decode_uri(js_trim(url));
+    let mut decoded = decode_uri_lossy(js_trim(url));
     for _ in 0..max_passes {
-        let next = decode_obfuscation_step(&decoded);
+        let next = decode_sink_step(&decoded);
         let stable = next == decoded && !needs_another_pass(&next);
         decoded = next;
         if stable {
@@ -1323,6 +1409,9 @@ mod tests {
             "a:b",
             "a%3Ab",
             "notes%25253Adoc",
+            "notes%3Afoo%FF",
+            "notes%253Afoo%FF",
+            "&#38;#106;avascript:alert(1)",
             "&#106;avascript:alert(1)",
             "javascript&colon;alert(1)",
             "%6aavascript:alert(1)",
@@ -1350,6 +1439,7 @@ mod tests {
             "javascript/docs.html?t=1:2",
             "dir/a%3Ab.png",
             "#section",
+            "R&D#A%2525252525252525252541",
             "/images/logo.png",
             "./relative:path.png",
         ] {
@@ -1379,6 +1469,8 @@ mod tests {
         for safe_data_url in [
             "data:image/png;base64,iVBORw0KGgo=",
             "data:image/apng;base64,iVBORw0KGgo=",
+            "data:image/tiff;base64,SUkqAAg=",
+            "data:image/jxl;base64,/wo=",
             "DATA:IMAGE/PNG;base64,iVBORw0KGgo=",
             "data:image/jpeg;base64,/9j/4AAQ",
             "data:image/gif;base64,R0lGODlh",

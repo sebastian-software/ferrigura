@@ -497,24 +497,22 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         relative_colon_image.contains("<image href=\"data/chart.svg?time=12:30\""),
         "{relative_colon_image}"
     );
-    let raster_data_image = render(
-        "flowchart TD\nA@{ img: \"data:image/png;base64,iVBORw0KGgo=\", w: 48, h: 48 }\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(
-        raster_data_image.contains("<image href=\"data:image/png;base64,iVBORw0KGgo=\""),
-        "{raster_data_image}"
-    );
-    let apng_data_image = render(
-        "flowchart TD\nA@{ img: \"data:image/apng;base64,iVBORw0KGgo=\", w: 48, h: 48 }\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(
-        apng_data_image.contains("<image href=\"data:image/apng;base64,iVBORw0KGgo=\""),
-        "{apng_data_image}"
-    );
+    for raster_url in [
+        "data:image/png;base64,iVBORw0KGgo=",
+        "data:image/apng;base64,iVBORw0KGgo=",
+        "data:image/tiff;base64,SUkqAAg=",
+        "data:image/jxl;base64,/wo=",
+    ] {
+        let raster_image = render(
+            &format!("flowchart TD\nA@{{ img: \"{raster_url}\", w: 48, h: 48 }}\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            raster_image.contains(&format!("<image href=\"{raster_url}\"")),
+            "url={raster_url:?}: {raster_image}"
+        );
+    }
     let svg_data_image = render(
         "flowchart TD\nA@{ img: \"data:image/svg+xml,<svg onload=alert(1)>\", w: 48, h: 48 }\n",
         &Value::empty_object(),

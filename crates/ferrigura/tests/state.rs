@@ -151,7 +151,11 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         "{relative_colon}"
     );
 
-    for unsupported in ["notes://do-your-thing/id", "notes%25253Adoc"] {
+    for unsupported in [
+        "notes://do-your-thing/id",
+        "notes%25253Adoc",
+        "notes%3Afoo%FF",
+    ] {
         let unsupported_scheme = render(
             &format!("stateDiagram-v2\n  s1\n  click s1 href \"{unsupported}\"\n"),
             &Value::empty_object(),
@@ -162,6 +166,16 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
             "url={unsupported:?}: {unsupported_scheme}"
         );
     }
+
+    let ampersand_fragment = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"R&D#A%2525252525252525252541\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        ampersand_fragment.contains("xlink:href=\"R&amp;D#A%2525252525252525252541\""),
+        "{ampersand_fragment}"
+    );
 
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
     let loose = render(
