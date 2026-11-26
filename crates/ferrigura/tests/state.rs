@@ -237,6 +237,7 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
     // Encoded delimiters revealed during sink decoding stop decoding before the query or fragment.
     for encoded_rel in [
         "item%3Fq=A%2525252525252525252541",
+        "item%3Fq=A%2525252525252525252541#123",
         "item%23section%2525252525252525252541",
         "rate%25x%23123%2525252525252525252541",
         "rate%25%23123%2525252525252525252541",

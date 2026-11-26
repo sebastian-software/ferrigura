@@ -59,4 +59,31 @@ fn class_click_tooltip_respects_html_labels_and_security_level() {
         svg_escaped.contains("title=\"x&amp;equals;y\""),
         "{svg_escaped}"
     );
+
+    // Omitting root htmlLabels falls back to legacy flowchart.htmlLabels (matching Mermaid's
+    // getEffectiveHtmlLabels), while an explicit root htmlLabels takes precedence over it.
+    let flowchart_false = Value::from(serde_json::json!({
+        "flowchart": { "htmlLabels": false },
+        "securityLevel": "custom",
+    }));
+    let svg_fallback_plain = render(source, &flowchart_false).expect("renders");
+    assert!(
+        svg_fallback_plain.contains("title=\"x=y\""),
+        "{svg_fallback_plain}"
+    );
+    assert!(
+        !svg_fallback_plain.contains("&amp;equals;"),
+        "{svg_fallback_plain}"
+    );
+
+    let root_overrides = Value::from(serde_json::json!({
+        "htmlLabels": true,
+        "flowchart": { "htmlLabels": false },
+        "securityLevel": "custom",
+    }));
+    let svg_root_wins = render(source, &root_overrides).expect("renders");
+    assert!(
+        svg_root_wins.contains("title=\"x&amp;equals;y\""),
+        "{svg_root_wins}"
+    );
 }

@@ -19,9 +19,9 @@ Weighed and not chosen:
 ## Consequences
 
 - The programming interface is ferrigura's own and small: a `Renderer` made once for a configuration with `render(text)`, and `render(text, config)` as a shorthand. Mermaid's JavaScript API (`initialize`, `run`, `parse`, callbacks) does not exist.
-- Interactivity goes: links stay SVG `<a>`, tooltips become SVG `<title>`, JavaScript callbacks are dropped, and `securityLevel` comes down to escaping text safely.
+- Interactivity goes: links stay SVG `<a>`, tooltips become SVG `<title>`, JavaScript callbacks are dropped, and `securityLevel` controls text sanitization and render-sink URL validation (disallowed link and image schemes become `about:blank` unless `loose`, see [0014](./0014-upstream-reference-at-a-pin.md)).
 - PNG and other raster formats are out of scope; any SVG rasterizer can produce them from the output.
 
 ## Related
 
-[0009](./0009-svg-text-labels.md), [0010](./0010-text-measurement-and-fonts.md), [0016](./0016-npm-packages-via-napi.md).
+[0009](./0009-svg-text-labels.md), [0010](./0010-text-measurement-and-fonts.md), [0014](./0014-upstream-reference-at-a-pin.md), [0016](./0016-npm-packages-via-napi.md).

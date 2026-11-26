@@ -363,6 +363,30 @@ fn read_class(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_jso
     Ok(())
 }
 
+/// `getEffectiveHtmlLabels(config)` of Mermaid's `config.ts`: root `htmlLabels` wins, falling
+/// back to the legacy `flowchart.htmlLabels`, then `true`, evaluated with Mermaid's `evaluate()`.
+fn effective_html_labels(effective: &Value) -> bool {
+    let raw = effective
+        .get("htmlLabels")
+        .filter(|value| !value.is_null())
+        .or_else(|| {
+            effective
+                .get("flowchart")
+                .and_then(|flowchart| flowchart.get("htmlLabels"))
+                .filter(|value| !value.is_null())
+        });
+    match raw {
+        None => true,
+        Some(Value::Bool(flag)) => *flag,
+        Some(Value::Number(num)) => *num != 0.0,
+        Some(Value::String(text)) => !matches!(
+            text.trim().to_ascii_lowercase().as_str(),
+            "false" | "null" | "0"
+        ),
+        Some(_) => true,
+    }
+}
+
 fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<String, RenderError> {
     let id = prepared.id.as_str();
     let mut section = Section::of(&prepared.view.config);
@@ -373,7 +397,7 @@ fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<Str
         diagram: &class::parse_prepared(
             &prepared.source,
             class::Options {
-                html_labels: prepared.view.globals.html_labels.unwrap_or(true),
+                html_labels: effective_html_labels(&prepared.view.effective),
                 security_level: ferrigura_syntax::url::SecurityLevel::from_config(
                     &prepared.view.globals.security_level,
                 ),

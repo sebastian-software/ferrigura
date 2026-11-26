@@ -361,7 +361,8 @@ fn needs_another_sink_pass(text: &str) -> bool {
 
 /// Whether `before` (the slice immediately preceding `#`) can decode to end with `&` within
 /// `max_passes` modifying steps. Returns `None` (fail-closed) if `before` itself exceeds
-/// `max_passes`.
+/// `max_passes`. Stops early with `Some(false)` if decoding reveals a `/`, `?`, or `:` delimiter,
+/// since nothing after such a delimiter can participate in a URI scheme.
 fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
     if before.ends_with('&') {
         return Some(true);
@@ -374,8 +375,14 @@ fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
     if passes_used > max_passes {
         return None;
     }
+    if decoded.contains(['/', '?', ':']) {
+        return Some(false);
+    }
     while passes_used < max_passes {
         let next = decode_sink_step_untrimmed(&decoded);
+        if next.contains(['/', '?', ':']) {
+            return Some(false);
+        }
         if next == decoded && !needs_another_sink_pass(&next) {
             return Some(decoded.ends_with('&'));
         }
@@ -393,34 +400,34 @@ fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
 /// fragment delimiter that cannot form a numeric character reference with its surroundings, since
 /// nothing after such a delimiter can participate in a URI scheme.
 ///
-/// Returns `None` (fail-closed) if the prefix before a candidate numeric-entity `#` itself
-/// exceeds `max_passes`.
+/// Tracks whether any escape or control character has appeared in the forward scan so candidate
+/// `#` markers after a plain prefix truncate in O(1) without rescanning the prefix. Returns `None`
+/// (fail-closed) if the prefix before a candidate numeric-entity `#` itself exceeds `max_passes`.
 fn truncate_at_scheme_delimiter_bounded(text: &str, max_passes: usize) -> Option<&str> {
     let head = match text.find(['/', '?', ':']) {
         Some(pos) => &text[..=pos],
         None => text,
     };
+    let mut has_escape_or_ctrl = false;
     let mut non_trivial_checks = 0usize;
-    for (idx, byte) in head.bytes().enumerate() {
-        if byte != b'#' {
-            continue;
-        }
-        if !starts_with_sink_entity_body(&head[idx + 1..]) {
-            return Some(&head[..=idx]);
-        }
-        let before = &head[..idx];
-        if before.ends_with('&') {
-            continue;
-        }
-        if !before.contains(['&', '%', '\\']) && !before.chars().any(is_ctrl) {
-            return Some(&head[..=idx]);
-        }
-        if non_trivial_checks >= MAX_DECODE_PASSES {
-            continue;
-        }
-        non_trivial_checks += 1;
-        if !prefix_can_end_with_amp(before, max_passes)? {
-            return Some(&head[..=idx]);
+    for (idx, ch) in head.char_indices() {
+        if ch == '#' {
+            if !starts_with_sink_entity_body(&head[idx + 1..]) || !has_escape_or_ctrl {
+                return Some(&head[..=idx]);
+            }
+            let before = &head[..idx];
+            if before.ends_with('&') {
+                continue;
+            }
+            if non_trivial_checks >= MAX_DECODE_PASSES {
+                continue;
+            }
+            non_trivial_checks += 1;
+            if !prefix_can_end_with_amp(before, max_passes)? {
+                return Some(&head[..=idx]);
+            }
+        } else if matches!(ch, '&' | '%' | '\\') || is_ctrl(ch) {
+            has_escape_or_ctrl = true;
         }
     }
     Some(head)
@@ -1632,6 +1639,8 @@ mod tests {
             "&#x6a;avascript:alert(1)",
             "&#106avascript:alert(1)",
             "javascript&#x3A;alert(1)#frag",
+            "javascript%3Aalert(1)#123",
+            "item%25252525252525253Fq=A#123",
             "%26#106;avascript:alert(1)",
             "%&tab;26#106;avascript:alert(1)",
             "&\n#106;avascript:alert(1)",
@@ -1670,6 +1679,8 @@ mod tests {
             "R&D#A%2525252525252525252541",
             "my%20notes#A%2525252525252525252541",
             "item%3Fq=A%2525252525252525252541",
+            "item%3Fq=A%2525252525252525252541#123",
+            "item%252525252525253Fq=A%2525252525252525252541#123",
             "item%23section%2525252525252525252541",
             "item%23123%2525252525252525252541",
             "rate%25x%23123%2525252525252525252541",
