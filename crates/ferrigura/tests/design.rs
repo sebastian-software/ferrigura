@@ -312,6 +312,28 @@ fn an_even_bundle_moves_so_that_its_straight_edge_leaves_from_the_middle() {
 }
 
 #[test]
+fn a_node_stands_in_the_middle_of_an_even_fan_of_equals() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // `B` has a child of its own and `A` none: the two are still equals under `P`.
+    let text = "flowchart TD\n  P --> A\n  P --> B\n  B --> C\n  Q --> R\n  R --> S\n  R --> T\n  S --> U\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let x = |id: &str| node_middle(&designed, id).0;
+    assert!((x("P") - (x("A") + x("B")) / 2.0).abs() <= 1.0);
+    // A chain with a branch beside it is no fan: the chain runs straight on.
+    for edge in ["L_Q_R_0", "L_R_S_0", "L_S_U_0"] {
+        assert!(runs_straight_down(&designed, edge), "{edge} bends");
+    }
+    assert!(!runs_straight_down(&designed, "L_R_T_0"));
+    // A class diagram: each parent stands in the middle of its two children.
+    let text = "classDiagram\n  class Shape { <<interface>> +area() double }\n  class Polygon { <<abstract>> #List~Point~ vertices }\n  class Triangle { +area() double }\n  class Rectangle { -double width +area() double }\n  class Circle { -double radius }\n  Shape <|.. Circle\n  Shape <|.. Polygon\n  Polygon <|-- Triangle\n  Polygon <|-- Rectangle\n  Rectangle <|-- Square\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let x = |name: &str| class_middle(&designed, name).0;
+    assert!((x("Polygon") - (x("Triangle") + x("Rectangle")) / 2.0).abs() <= 1.0);
+    assert!((x("Shape") - (x("Circle") + x("Polygon")) / 2.0).abs() <= 1.0);
+    assert!((x("Square") - x("Rectangle")).abs() <= 1.0);
+}
+
+#[test]
 fn the_mode_sets_a_diagram_with_more_room() {
     let renderer = Renderer::new(&Value::empty_object());
     let plain = renderer.render_with(FLOW, &default(None)).unwrap();
@@ -937,6 +959,34 @@ fn state_middle(svg: &str, id: &str) -> (f64, f64) {
         .split_once(", ")
         .expect("two numbers");
     (x.parse().unwrap(), y.parse().unwrap())
+}
+
+#[test]
+fn a_fan_out_of_a_composite_state_leaves_it_as_a_bundle_around_its_middle() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "stateDiagram-v2\n  [*] --> NotShooting : Pacifist\n  state NotShooting {\n    [*] --> Idle : Yet another long long label\n    Idle --> Configuring : EvConfig\n    Configuring --> Idle : EvConfig EvConfig EvConfig EvConfig\n  }\n  NotShooting --> A\n  NotShooting --> B\n  NotShooting --> C\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    // The transitions to `A`, `B` and `C`: the middle one runs straight down from the middle of
+    // the composite, the outer two leave 20 beside it and turn alike.
+    let [a, b, c] = ["edge4", "edge5", "edge6"].map(|id| route(&svg, id));
+    assert!(runs_straight_down(&svg, "edge5"));
+    assert!((b[0].0 - (a[0].0 + c[0].0) / 2.0).abs() <= 1.0);
+    assert!(((c[0].0 - a[0].0) - 40.0).abs() <= 1.0);
+    let turn = |route: &[(f64, f64)]| route[route.len() - 1].0 - route[0].0;
+    assert!(
+        (turn(&a) + turn(&c)).abs() <= 1.0,
+        "{} {}",
+        turn(&a),
+        turn(&c)
+    );
+    assert!(turn(&a).abs() > 20.0);
+    // The same out of a flowchart's subgraph.
+    let text = "flowchart TD\n  subgraph S\n    X --> Y\n  end\n  S --> A\n  S --> B\n  S --> C\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let [a, b, c] = ["L_S_A_0", "L_S_B_0", "L_S_C_0"].map(|id| route(&svg, id));
+    assert!(runs_straight_down(&svg, "L_S_B_0"));
+    assert!((b[0].0 - (a[0].0 + c[0].0) / 2.0).abs() <= 1.0);
+    assert!((turn(&a) + turn(&c)).abs() <= 1.0);
 }
 
 #[test]
@@ -1653,4 +1703,24 @@ fn a_word_stays_whole_in_an_edge_label_and_the_default_still_breaks_it() {
     assert!(words(&designed).contains(&word), "{designed}");
     let plain = renderer.render_with(&text, &default(None)).unwrap();
     assert!(!words(&plain).contains(&word));
+}
+
+#[test]
+fn two_labeled_relations_between_two_classes_are_one_unit_beside_another_edge() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // `User` has a third edge on the side of the two relations, and one of them runs against
+    // the flow.
+    let text = "classDiagram\n  class User { +String name }\n  class Team { +String title }\n  User \"*\" --> \"*\" Team : member of\n  Team \"1\" --> \"1\" User : led by\n  User --> Profile\n  Team --> Project\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let x = |name: &str| class_middle(&svg, name).0;
+    // The two relations take the axis from the edge to `Profile`: they leave `User` around its
+    // middle, the one with the flow runs straight down to `Team`, and `Profile` stands beside.
+    let member = route(&svg, "id_User_Team_1");
+    let led = route(&svg, "id_Team_User_2");
+    let at_user = (member[0].0 + led[led.len() - 1].0) / 2.0;
+    assert!((at_user - x("User")).abs() <= 1.0, "{at_user}");
+    assert!(runs_straight_down(&svg, "id_User_Team_1"));
+    assert!((x("Team") - x("User")).abs() <= 20.0);
+    assert!((x("Profile") - x("User")).abs() > 40.0);
+    assert!(!runs_straight_down(&svg, "id_User_Profile_3"));
 }
