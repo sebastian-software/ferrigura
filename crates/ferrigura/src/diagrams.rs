@@ -370,7 +370,15 @@ fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<Str
     section.roles = ferrigura_render::design::Roles::Class;
     class_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &class::parse_prepared(&prepared.source, class::Options::default())?,
+        diagram: &class::parse_prepared(
+            &prepared.source,
+            class::Options {
+                security_level: ferrigura_syntax::url::SecurityLevel::from_config(
+                    &prepared.view.globals.security_level,
+                ),
+                ..class::Options::default()
+            },
+        )?,
         section: &section,
         globals: &prepared.view.globals,
         theme: prepared.theme(),
@@ -920,10 +928,13 @@ fn render_agentflow(
     let section = Section::of(&prepared.view.config);
     agentflow_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &agentflow::parse_prepared(
+        diagram: &agentflow::parse_prepared_with_security(
             &prepared.source,
             prepared.max_edges,
             prepared.max_text,
+            ferrigura_syntax::url::SecurityLevel::from_config(
+                &prepared.view.globals.security_level,
+            ),
         )?,
         section: &AgentflowSection {
             agentflow: &typed_config.agentflow,

@@ -14,7 +14,7 @@ use super::metadata::{js_string, json_text, merge_metadata, parse_metadata, trut
 use super::shapes::{is_valid_shape_name, resolve_shape_alias};
 use crate::sanitize::sanitize_text;
 use crate::text::{is_js_space, js_trim};
-use crate::url::format_url;
+use crate::url::{SecurityLevel, format_url};
 
 /// The longest an edge may be: the length is capped at this (`agentflowDb.ts:758`).
 const MAX_EDGE_LENGTH: u32 = 10;
@@ -84,6 +84,8 @@ pub(crate) struct Db {
     sub_count: usize,
     /// The most edges a diagram may have.
     max_edges: usize,
+    /// `securityLevel` used when formatting click links.
+    security_level: SecurityLevel,
     /// `vertexCounter`: the number of `addVertex` calls that reach a vertex record, and of connector
     /// records created. A vertex's DOM id takes the counter of its first record.
     vertex_counter: usize,
@@ -91,7 +93,7 @@ pub(crate) struct Db {
 
 impl Db {
     /// A DB that has been cleared, as `Diagram.fromText` leaves it before the parse.
-    pub(crate) fn new(max_edges: usize) -> Self {
+    pub(crate) fn new(max_edges: usize, security_level: SecurityLevel) -> Self {
         Self {
             model: AgentflowDiagram::new(),
             index: BTreeMap::new(),
@@ -100,6 +102,7 @@ impl Db {
             global_nodes: HashSet::new(),
             sub_count: 0,
             max_edges,
+            security_level,
             vertex_counter: 0,
         }
     }
@@ -517,13 +520,13 @@ impl Db {
     }
 
     /// `setLink(ids, linkStr, target)`: the URL of each vertex of the ids, then the class
-    /// `clickable` (`agentflowDb.ts:1010-1019`). The security level is the default one, so the URL
-    /// is sanitized.
+    /// `clickable` (`agentflowDb.ts:1010-1019`), formatted according to `securityLevel`.
     pub(crate) fn set_link(&mut self, ids: &str, link: &str, target: Option<&str>) {
+        let loose = self.security_level.is_loose();
         for id in ids.split(',') {
             if let Some(&pos) = self.index.get(id) {
                 let vertex = &mut self.model.vertices[pos];
-                vertex.link = format_url(link, false);
+                vertex.link = format_url(link, loose);
                 vertex.link_target = target.map(str::to_owned);
             }
         }

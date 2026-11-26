@@ -19,6 +19,7 @@ use crate::flowchart::scanner::{Dialect, Keyword, Kind, Links, Trailing};
 use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_directives};
 use crate::sanitize::sanitize_text;
 use crate::text::is_js_space;
+use crate::url::SecurityLevel;
 
 /// The default `maxEdges` (500), which the configuration of the reference gives.
 pub const DEFAULT_MAX_EDGES: usize = 500;
@@ -125,6 +126,16 @@ pub fn parse_prepared(
     max_edges: usize,
     max_text_size: usize,
 ) -> Result<AgentflowDiagram, ParseError> {
+    parse_prepared_with_security(prepared, max_edges, max_text_size, SecurityLevel::Strict)
+}
+
+/// Parses an already prepared source with the given limits and `securityLevel`.
+pub fn parse_prepared_with_security(
+    prepared: &crate::preprocess::Prepared,
+    max_edges: usize,
+    max_text_size: usize,
+    security_level: SecurityLevel,
+) -> Result<AgentflowDiagram, ParseError> {
     // `Diagram.fromText` gives the parser the text with its comments, unless that is longer than
     // `maxTextSize`; the text without them is then the one parsed.
     let with_comments = remove_directives(&prepared.text);
@@ -139,7 +150,13 @@ pub fn parse_prepared(
         .as_deref()
         .map(sanitize_text)
         .unwrap_or_default();
-    grammar::parse_text(&text, prepared.line_offset, title, max_edges)
+    grammar::parse_text(
+        &text,
+        prepared.line_offset,
+        title,
+        max_edges,
+        security_level,
+    )
 }
 
 /// Parses agentflow text with the grammar and the DB alone, and nothing else: no front matter, no
@@ -151,5 +168,11 @@ pub fn parse_prepared(
 ///
 /// As [`parse`].
 pub fn parse_grammar(text: &str) -> Result<AgentflowDiagram, ParseError> {
-    grammar::parse_text(text, 0, String::new(), DEFAULT_MAX_EDGES)
+    grammar::parse_text(
+        text,
+        0,
+        String::new(),
+        DEFAULT_MAX_EDGES,
+        SecurityLevel::Strict,
+    )
 }

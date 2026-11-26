@@ -10,6 +10,7 @@ use super::DIALECT;
 use super::db::{BodyItem, Db, DbError, FlowText, LinkData, Position};
 use crate::error::{ParseError, Source};
 use crate::flowchart::scanner::{Kind, Token, tokenize};
+use crate::url::SecurityLevel;
 
 /// What a statement gives the list it is in: the value of the grammar's statement.
 enum Statement {
@@ -116,6 +117,7 @@ pub(crate) fn parse_text(
     line_offset: usize,
     title: String,
     max_edges: usize,
+    security_level: SecurityLevel,
 ) -> Result<AgentflowDiagram, ParseError> {
     let source = Source::new(text, line_offset);
     let tokens = tokenize(text, &DIALECT)
@@ -124,7 +126,7 @@ pub(crate) fn parse_text(
         source,
         tokens,
         pos: 0,
-        db: Db::new(max_edges),
+        db: Db::new(max_edges, security_level),
     };
     parser.graph_config()?;
     parser.document(false)?;

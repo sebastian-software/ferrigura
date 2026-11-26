@@ -352,29 +352,99 @@ fn needs_another_sink_pass(text: &str) -> bool {
         })
 }
 
-/// Whether `before` (the slice immediately preceding `#`) could still end with `&` after
-/// obfuscation decoding, allowing `#` to become part of a numeric character reference.
-fn before_hash_could_end_with_amp(before: &str) -> bool {
-    let trimmed = before.trim_end_matches(is_ctrl);
-    trimmed.ends_with(['&', ';']) || trimmed.contains("&#") || trimmed.contains(['%', '\\'])
-}
-
 /// Truncates `text` at the first literal `/`, `?`, or `:` delimiter, or at a literal `#`
 /// fragment delimiter that cannot form a numeric character reference with its surroundings, since
 /// nothing after such a delimiter can participate in a URI scheme.
+///
+/// Tracks in a single O(N) forward scan whether the suffix immediately preceding `#` could decode
+/// to `&` (or vanish while an earlier `&` is pending), so unrelated escapes earlier in the path
+/// (such as `rate%25x#123`) never prevent stopping at `#`.
 fn truncate_at_scheme_delimiter(text: &str) -> &str {
-    let text = match text.find(['/', '?', ':']) {
-        Some(pos) => &text[..=pos],
-        None => text,
-    };
-    for (idx, byte) in text.bytes().enumerate() {
-        if byte != b'#' {
-            continue;
-        }
-        let before = &text[..idx];
-        let after = &text[idx + 1..];
-        if !starts_with_sink_entity_body(after) || !before_hash_could_end_with_amp(before) {
-            return &text[..=idx];
+    // Whether the immediately preceding token(s) could end with `&` after decoding.
+    let mut can_end_with_amp = false;
+    // Immediately after `&` (ignoring controls), before seeing `#` or entity name.
+    let mut after_amp = false;
+    // Inside a numeric entity `&#...` (digits/hex/radix chars can end with or without `;`).
+    let mut in_num_entity = false;
+    // Inside a named control entity (`&tab;` / `&newline;`) that could vanish.
+    let mut in_ctrl_entity = false;
+    // Inside a `%XX...` percent-escape run (hex digits may chain across nested `%25...26`).
+    let mut in_percent = false;
+    // Immediately after `\` (so `n`/`r`/`t` could form a stripped whitespace escape).
+    let mut after_backslash = false;
+
+    for (idx, ch) in text.char_indices() {
+        match ch {
+            '/' | '?' | ':' => return &text[..=idx],
+            '#' => {
+                if !can_end_with_amp || !starts_with_sink_entity_body(&text[idx + 1..]) {
+                    return &text[..=idx];
+                }
+                can_end_with_amp = true;
+                after_amp = false;
+                in_num_entity = true;
+                in_ctrl_entity = false;
+                in_percent = false;
+                after_backslash = false;
+            }
+            c if is_ctrl(c) => {}
+            '&' => {
+                can_end_with_amp = true;
+                after_amp = true;
+                in_num_entity = false;
+                in_ctrl_entity = false;
+                in_percent = false;
+                after_backslash = false;
+            }
+            '%' => {
+                can_end_with_amp = true;
+                after_amp = false;
+                in_num_entity = false;
+                in_ctrl_entity = false;
+                in_percent = true;
+                after_backslash = false;
+            }
+            '\\' => {
+                can_end_with_amp = true;
+                after_amp = false;
+                in_num_entity = false;
+                in_ctrl_entity = false;
+                in_percent = false;
+                after_backslash = true;
+            }
+            ';' if in_num_entity || in_ctrl_entity => {
+                can_end_with_amp = true;
+                after_amp = false;
+                in_num_entity = false;
+                in_ctrl_entity = false;
+                in_percent = false;
+                after_backslash = false;
+            }
+            'n' | 'r' | 't' if after_backslash => {
+                after_backslash = false;
+            }
+            c if in_percent && c.is_ascii_hexdigit() => {
+                can_end_with_amp = true;
+            }
+            c if in_num_entity && is_word(c) => {
+                can_end_with_amp = true;
+            }
+            c if after_amp && matches!(c, 't' | 'T' | 'n' | 'N') => {
+                after_amp = false;
+                in_ctrl_entity = true;
+                can_end_with_amp = true;
+            }
+            c if in_ctrl_entity && c.is_ascii_alphabetic() => {
+                can_end_with_amp = true;
+            }
+            _ => {
+                can_end_with_amp = false;
+                after_amp = false;
+                in_num_entity = false;
+                in_ctrl_entity = false;
+                in_percent = false;
+                after_backslash = false;
+            }
         }
     }
     text
@@ -1608,6 +1678,8 @@ mod tests {
             "item%3Fq=A%2525252525252525252541",
             "item%23section%2525252525252525252541",
             "item%23123%2525252525252525252541",
+            "rate%25x%23123%2525252525252525252541",
+            "R&D%23123%2525252525252525252541",
             "/images/logo.png",
             "./relative:path.png",
         ] {

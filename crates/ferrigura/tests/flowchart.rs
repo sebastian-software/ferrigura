@@ -602,6 +602,25 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         loose_img.contains("<image href=\"javascript:alert(1)\""),
         "{loose_img}"
     );
+    let deep_url = "https://example.org/file%25252525252525252541";
+    let loose_class = render(
+        &format!("classDiagram\nclass A\nclick A href \"{deep_url}\"\n"),
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose_class.contains(&format!("xlink:href=\"{deep_url}\"")),
+        "{loose_class}"
+    );
+    let loose_agentflow = render(
+        &format!("agentflow-beta TB\nA[\"Task\"]\nclick A href \"{deep_url}\"\n"),
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose_agentflow.contains(&format!("xlink:href=\"{deep_url}\"")),
+        "{loose_agentflow}"
+    );
 }
 
 #[test]
