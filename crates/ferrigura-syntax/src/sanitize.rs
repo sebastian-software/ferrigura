@@ -778,8 +778,9 @@ fn reference_at(chars: &[char], start: usize, in_attribute: bool) -> Option<(Str
         end += 1;
     }
     let name: String = chars[start + 1..end].iter().collect();
-    if chars.get(end) == Some(&';') {
-        let value = named_character(&name)?;
+    if chars.get(end) == Some(&';')
+        && let Some(value) = named_character(&name)
+    {
         return Some((value.to_owned(), end + 1 - start));
     }
     // Without `;`, only the legacy names are decoded, and a legacy name may be the start of a longer

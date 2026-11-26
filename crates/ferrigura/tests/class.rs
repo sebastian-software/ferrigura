@@ -98,6 +98,39 @@ fn class_click_tooltip_respects_html_labels_and_security_level() {
     }
 }
 
+/// Resolves a same-document `#...` URL fragment the way HTML navigation does: strip leading and
+/// trailing C0 controls and space per WHATWG URL parsing, strip ASCII tab/LF/CR, take the fragment
+/// after `#`, and percent-decode UTF-8 bytes.
+fn resolved_fragment_target(href: &str) -> String {
+    let trimmed = href.trim_matches(|ch: char| ch <= ' ');
+    let cleaned: String = trimmed
+        .chars()
+        .filter(|ch| !matches!(ch, '\t' | '\n' | '\r'))
+        .collect();
+    let fragment = cleaned
+        .strip_prefix('#')
+        .expect("expected same-document fragment URL");
+    let bytes = fragment.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%'
+            && index + 2 < bytes.len()
+            && let (Some(hi), Some(lo)) = (
+                (bytes[index + 1] as char).to_digit(16),
+                (bytes[index + 2] as char).to_digit(16),
+            )
+        {
+            decoded.push(((hi << 4) | lo) as u8);
+            index += 3;
+            continue;
+        }
+        decoded.push(bytes[index]);
+        index += 1;
+    }
+    String::from_utf8(decoded).expect("valid UTF-8 decoded fragment")
+}
+
 #[test]
 fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
     let entity_https = render(
@@ -328,7 +361,15 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .collect();
     assert_eq!(
         hrefs,
-        vec!["#graph-classId-Foo Bar", "#graph-classId-Foo Bar-1"]
+        vec!["#graph-classId-Foo Bar", "#graph-classId-Foo%20Bar-1"]
+    );
+    let resolved_targets: Vec<String> = hrefs
+        .iter()
+        .map(|href| resolved_fragment_target(href))
+        .collect();
+    assert_eq!(
+        resolved_targets,
+        vec!["graph-classId-Foo Bar", "graph-classId-Foo Bar-1"]
     );
 
     // Terminal-only class relation label groups use the same resolved `data-id` as the edge path.
@@ -348,7 +389,7 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
     assert!(!term_only.contains("ﬂ°"), "{term_only}");
 
     // Class DOM IDs resolve Mermaid placeholders only once (no double decode to `©`), matching
-    // their fragment links.
+    // their URL-encoded fragment links.
     let single_decode = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
             "classDiagram\n  class `Foo#64258;°copy;`\n  click `Foo#64258;°copy;` href \"#graph-classId-Foo#64258;°copy;\"\n",
@@ -365,16 +406,17 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
             .any(|node| node.attribute("id") == Some("graph-classId-Fooﬂ°copy;")),
         "{single_decode}"
     );
-    assert!(
-        single_doc.descendants().any(|node| {
-            node.attribute(("http://www.w3.org/1999/xlink", "href"))
-                == Some("#graph-classId-Fooﬂ°copy;")
-        }),
-        "{single_decode}"
+    let single_href = single_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(
+        resolved_fragment_target(single_href),
+        "graph-classId-Fooﬂ°copy;"
     );
 
     // Relation IDs with entity tabs normalize identically across path IDs, label data-ids, and
-    // fragment links in parsed XML.
+    // URL-encoded fragment links.
     let tab_rel = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
             "classDiagram\n  `Invoice#9;Item` --> Account : owns\n  click Account href \"#graph-id_Invoice#9;Item_Account_1\"\n",
@@ -391,12 +433,14 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
             .any(|node| node.attribute("id") == Some("graph-id_Invoice Item_Account_1")),
         "{tab_rel}"
     );
-    assert!(
-        tab_rel_doc.descendants().any(|node| {
-            node.attribute(("http://www.w3.org/1999/xlink", "href"))
-                == Some("#graph-id_Invoice Item_Account_1")
-        }),
-        "{tab_rel}"
+    let tab_rel_href = tab_rel_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(tab_rel_href, "#graph-id_Invoice%20Item_Account_1");
+    assert_eq!(
+        resolved_fragment_target(tab_rel_href),
+        "graph-id_Invoice Item_Account_1"
     );
 
     // Colliding resolved DOM IDs are disambiguated across all unified diagrams (e.g. requirement).
@@ -443,6 +487,50 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .collect();
     assert_eq!(shadow_node_ids, vec!["graph-drop-shadow-1"]);
 
+    // Optional definitions (such as `{svg_id}-gradient`) are only reserved when the current render
+    // actually emits them: default requirement diagrams emit no gradient, so a requirement named
+    // `gradient` keeps `graph-gradient`, while `useGradient: true` disambiguates it.
+    let no_grad = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "requirementDiagram\n  requirement \"gradient\" {\n    id: 1\n  }\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let no_grad_doc = roxmltree::Document::parse(&no_grad).expect("well-formed SVG XML");
+    assert!(
+        no_grad_doc
+            .descendants()
+            .any(|node| node.has_tag_name("g") && node.attribute("id") == Some("graph-gradient")),
+        "{no_grad}"
+    );
+    let with_grad_cfg =
+        Value::from(serde_json::json!({ "themeVariables": { "useGradient": true } }));
+    let with_grad = ferrigura::Renderer::new(&with_grad_cfg)
+        .render_with(
+            "requirementDiagram\n  requirement \"gradient\" {\n    id: 1\n  }\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let with_grad_doc = roxmltree::Document::parse(&with_grad).expect("well-formed SVG XML");
+    assert!(
+        with_grad_doc.descendants().any(|node| {
+            node.has_tag_name("linearGradient") && node.attribute("id") == Some("graph-gradient")
+        }),
+        "{with_grad}"
+    );
+    assert!(
+        with_grad_doc
+            .descendants()
+            .any(|node| node.has_tag_name("g") && node.attribute("id") == Some("graph-gradient-1")),
+        "{with_grad}"
+    );
+
     // Distinct control-character entities (`#1;`, `#2;`) that both serialize as U+FFFD are
     // disambiguated after XML character replacement so IDs and fragment links remain unique.
     let ctrl_collide = ferrigura::Renderer::new(&Value::empty_object())
@@ -467,21 +555,50 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
             "graph-classId-Part\u{fffd}A-1"
         ]
     );
-    let ctrl_hrefs: Vec<&str> = ctrl_doc
+    let ctrl_targets: Vec<String> = ctrl_doc
         .descendants()
         .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .map(resolved_fragment_target)
         .collect();
     assert_eq!(
-        ctrl_hrefs,
+        ctrl_targets,
         vec![
-            "#graph-classId-Part\u{fffd}A",
-            "#graph-classId-Part\u{fffd}A-1"
+            "graph-classId-Part\u{fffd}A",
+            "graph-classId-Part\u{fffd}A-1"
         ]
     );
 
+    // Remapped fragments percent-encode trailing spaces (`#32;`) so WHATWG URL parsing does not
+    // strip the trailing space before resolving the target element ID.
+    let trailing_space = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo#32;`\n  click `Foo#32;` href \"#graph-classId-Foo#32;\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let trailing_doc = roxmltree::Document::parse(&trailing_space).expect("well-formed SVG XML");
+    assert!(
+        trailing_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Foo ")),
+        "{trailing_space}"
+    );
+    let trailing_href = trailing_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(trailing_href, "#graph-classId-Foo%20");
+    assert_eq!(
+        resolved_fragment_target(trailing_href),
+        "graph-classId-Foo "
+    );
+
     // In `loose` mode, a literal tab in a backtick-quoted class name normalizes to a space in
-    // the XML `id` attribute, so a matching click fragment link is remapped to the same canonical
-    // target while unrelated links stay verbatim.
+    // the XML `id` attribute, so a matching click fragment link is remapped and URL-encoded while
+    // unrelated links stay verbatim.
     let loose_config = Value::from(serde_json::json!({ "securityLevel": "loose" }));
     let literal_tab = ferrigura::Renderer::new(&loose_config)
         .render_with(
@@ -505,6 +622,52 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .collect();
     assert_eq!(
         literal_tab_hrefs,
-        vec!["#graph-classId-Tab Class", "https://example.com/\tkeep"]
+        vec!["#graph-classId-Tab%20Class", "https://example.com/\tkeep"]
     );
+    assert_eq!(
+        resolved_fragment_target(literal_tab_hrefs[0]),
+        "graph-classId-Tab Class"
+    );
+
+    // Accessibility text uses HTML text-context entity matching (legacy `&not` prefix inside
+    // `#notebook;` -> `¬ebook;`), while URLs and tooltips keep the stricter attribute rule.
+    let notebook_strict = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  accTitle: #notebook;\n  class A\n  click A href \"https://example.com/?x=#notebook;\" \"#notebook;\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let notebook_doc = roxmltree::Document::parse(&notebook_strict).expect("well-formed SVG XML");
+    let notebook_title = notebook_doc
+        .descendants()
+        .find(|node| node.has_tag_name("title"))
+        .and_then(|node| node.text())
+        .expect("title text");
+    assert_eq!(notebook_title, "¬ebook;");
+    let notebook_tooltip = notebook_doc
+        .descendants()
+        .find(|node| node.has_tag_name("g") && node.attribute("id") == Some("graph-classId-A"))
+        .and_then(|node| node.attribute("title"))
+        .expect("tooltip");
+    assert_eq!(notebook_tooltip, "&notebook;");
+
+    let notebook_loose = ferrigura::Renderer::new(&loose_config)
+        .render_with(
+            "classDiagram\n  class A\n  click A href \"https://example.com/?x=#notebook;\" \"#notebook;\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let notebook_loose_doc =
+        roxmltree::Document::parse(&notebook_loose).expect("well-formed SVG XML");
+    let notebook_href = notebook_loose_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(notebook_href, "https://example.com/?x=&notebook;");
 }
