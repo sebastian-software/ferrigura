@@ -118,8 +118,8 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
     if !is_allowed_sink_candidate(url) {
         return BLANK_URL;
     }
-    let head = match url.find(['/', '?', ':']) {
-        Some(pos) => &url[..=pos],
+    let head = match find_scheme_delimiter_end(url) {
+        Some(end) => &url[..end],
         None => url,
     };
     match decode_sink_prefix_bounded(head, MAX_DECODE_PASSES) {
@@ -370,10 +370,29 @@ fn needs_another_sink_pass(text: &str) -> bool {
         })
 }
 
+/// Byte index immediately after the earliest literal `/`, `?`, `:`, or ASCII-case-insensitive
+/// `&colon;` scheme delimiter in `text`, if any.
+fn find_scheme_delimiter_end(text: &str) -> Option<usize> {
+    let bytes = text.as_bytes();
+    for (idx, &byte) in bytes.iter().enumerate() {
+        match byte {
+            b'/' | b'?' | b':' => return Some(idx + 1),
+            b'&' if bytes
+                .get(idx..idx + "&colon;".len())
+                .is_some_and(|slice| slice.eq_ignore_ascii_case(b"&colon;")) =>
+            {
+                return Some(idx + "&colon;".len());
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 /// Whether `before` (the slice immediately preceding `#`) can decode to end with `&` within
 /// `max_passes` modifying steps. Returns `None` (fail-closed) if `before` itself exceeds
-/// `max_passes`. Stops early with `Some(false)` if decoding reveals a `/`, `?`, or `:` delimiter,
-/// since nothing after such a delimiter can participate in a URI scheme.
+/// `max_passes`. Stops early with `Some(false)` if decoding reveals a `/`, `?`, `:`, or `&colon;`
+/// delimiter, since nothing after such a delimiter can participate in a URI scheme.
 fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
     if before.ends_with('&') {
         return Some(true);
@@ -386,12 +405,12 @@ fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
     if passes_used > max_passes {
         return None;
     }
-    if decoded.contains(['/', '?', ':']) {
+    if find_scheme_delimiter_end(&decoded).is_some() {
         return Some(false);
     }
     while passes_used < max_passes {
         let next = decode_sink_step_untrimmed(&decoded);
-        if next.contains(['/', '?', ':']) {
+        if find_scheme_delimiter_end(&next).is_some() {
             return Some(false);
         }
         if next == decoded && !needs_another_sink_pass(&next) {
@@ -407,16 +426,16 @@ fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
         .then(|| decoded.ends_with('&'))
 }
 
-/// Truncates `text` at the first literal `/`, `?`, or `:` delimiter, or at a literal `#`
-/// fragment delimiter that cannot form a numeric character reference with its surroundings, since
-/// nothing after such a delimiter can participate in a URI scheme.
+/// Truncates `text` at the first literal `/`, `?`, `:`, or `&colon;` delimiter, or at a literal
+/// `#` fragment delimiter that cannot form a numeric character reference with its surroundings,
+/// since nothing after such a delimiter can participate in a URI scheme.
 ///
 /// Tracks whether any escape or control character has appeared in the forward scan so candidate
 /// `#` markers after a plain prefix truncate in O(1) without rescanning the prefix. Returns `None`
 /// (fail-closed) if the prefix before a candidate numeric-entity `#` itself exceeds `max_passes`.
 fn truncate_at_scheme_delimiter_bounded(text: &str, max_passes: usize) -> Option<&str> {
-    let head = match text.find(['/', '?', ':']) {
-        Some(pos) => &text[..=pos],
+    let head = match find_scheme_delimiter_end(text) {
+        Some(end) => &text[..end],
         None => text,
     };
     let mut has_escape_or_ctrl = false;
@@ -1680,6 +1699,8 @@ mod tests {
             "mailto:user@user.user",
             "mailto:user%2525252525252525252541@example.com",
             "cid:asset%2525252525252525252541@example.com",
+            "cid&colon;asset%2525252525252525252541@example.org",
+            "cid%26colon%3Basset%2525252525252525252541@example.org",
             "tel:+1234567",
             "ftp://example.com/file",
             "data/chart.svg?time=12:30",

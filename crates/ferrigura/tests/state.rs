@@ -254,15 +254,26 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         );
     }
 
-    let opaque_cid = render(
-        "stateDiagram-v2\n  s1\n  click s1 href \"cid:asset%2525252525252525252541@example.com\"\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(
-        opaque_cid.contains("xlink:href=\"cid:asset%2525252525252525252541@example.com\""),
-        "{opaque_cid}"
-    );
+    for (raw, escaped) in [
+        (
+            "cid:asset%2525252525252525252541@example.com",
+            "cid:asset%2525252525252525252541@example.com",
+        ),
+        (
+            "cid&colon;asset%2525252525252525252541@example.org",
+            "cid&amp;colon;asset%2525252525252525252541@example.org",
+        ),
+    ] {
+        let opaque_cid = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{raw}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            opaque_cid.contains(&format!("xlink:href=\"{escaped}\"")),
+            "raw={raw:?}: {opaque_cid}"
+        );
+    }
 
     for (raw, escaped) in [
         ("R&#section:1", "R&amp;#section:1"),
