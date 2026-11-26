@@ -1405,3 +1405,181 @@ fn the_class_diagrams_dark_set_and_user_styles_apply() {
         "{square}"
     );
 }
+
+/// The side of a node a self-loop stands on.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum LoopSide {
+    Right,
+    Left,
+    Top,
+}
+
+/// Checks the self-loop with the given edge id against the middle `(x, y)` of its node: it leaves
+/// and enters `side` `apart` around the middle of the side, stands 32 out, and its label stands
+/// beside it, centered on it, clear of the loop. Returns the loop's box and the label's middle.
+fn assert_loop_beside(
+    svg: &str,
+    id: &str,
+    middle: (f64, f64),
+    side: LoopSide,
+    apart: f64,
+) -> ((f64, f64, f64, f64), (f64, f64)) {
+    let points = route(svg, id);
+    assert_eq!(points.len(), 4, "{id}: {points:?}");
+    let (first, last) = (points[0], points[3]);
+    let (xs, ys): (Vec<f64>, Vec<f64>) = points.iter().copied().unzip();
+    let (left, right) = (
+        xs.iter().copied().fold(f64::MAX, f64::min),
+        xs.iter().copied().fold(f64::MIN, f64::max),
+    );
+    let (top, bottom) = (
+        ys.iter().copied().fold(f64::MAX, f64::min),
+        ys.iter().copied().fold(f64::MIN, f64::max),
+    );
+    let label = label_middle(svg, id);
+    match side {
+        LoopSide::Right | LoopSide::Left => {
+            assert!((first.0 - last.0).abs() < 1e-6, "{id}: {points:?}");
+            assert!((last.1 - first.1 - apart).abs() < 1e-6, "{id}: {points:?}");
+            assert!(((first.1 + last.1) / 2.0 - middle.1).abs() < 1e-6, "{id}");
+            assert!((right - left - 32.0).abs() < 1e-6, "{id}: {points:?}");
+            assert!((label.1 - middle.1).abs() < 1e-6, "{id}: {label:?}");
+            if side == LoopSide::Right {
+                assert!(
+                    first.0 > middle.0 && label.0 > right + 8.0,
+                    "{id}: {label:?}"
+                );
+            } else {
+                assert!(
+                    first.0 < middle.0 && label.0 < left - 8.0,
+                    "{id}: {label:?}"
+                );
+            }
+            assert!((label.0 - middle.0).abs() - (right - left) < 200.0, "{id}");
+        }
+        LoopSide::Top => {
+            assert!((first.1 - last.1).abs() < 1e-6, "{id}: {points:?}");
+            assert!((last.0 - first.0 - apart).abs() < 1e-6, "{id}: {points:?}");
+            assert!(((first.0 + last.0) / 2.0 - middle.0).abs() < 1e-6, "{id}");
+            assert!((bottom - top - 32.0).abs() < 1e-6, "{id}: {points:?}");
+            assert!(first.1 < middle.1, "{id}: {points:?}");
+            assert!(
+                (label.1 - (top + bottom) / 2.0).abs() < 1e-6,
+                "{id}: {label:?}"
+            );
+            assert!(label.0 > right + 8.0, "{id}: {label:?}");
+        }
+    }
+    ((left, top, right - left, bottom - top), label)
+}
+
+/// Whether two boxes `(x, y, width, height)` share more than an edge.
+fn boxes_meet(a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)) -> bool {
+    a.0 < b.0 + b.2 && b.0 < a.0 + a.2 && a.1 < b.1 + b.3 && b.1 < a.1 + a.3
+}
+
+/// A flowchart with a loop on its first node.
+const LOOP: &str = "flowchart TD\n  A[Retry] -->|again| A\n  A --> B[Done]\n";
+
+#[test]
+fn a_self_loop_stands_on_the_free_side_of_its_node() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(LOOP, &design(None)).unwrap();
+    let (x, y) = node_middle(&svg, "A");
+    let (width, _) = node_size(&svg, "A");
+    let (loop_box, _) = assert_loop_beside(&svg, "L_A_A_0", (x, y), LoopSide::Right, 20.0);
+    assert!(
+        (loop_box.0 - (x + width / 2.0)).abs() < 1e-6,
+        "{loop_box:?}"
+    );
+    // The edge along the flow stays on the axis, and the loop stays clear of the next node.
+    assert!(runs_straight_down(&svg, "L_A_B_0"));
+    let (bx, by) = node_middle(&svg, "B");
+    let (bw, bh) = node_size(&svg, "B");
+    assert!(!boxes_meet(
+        loop_box,
+        (bx - bw / 2.0, by - bh / 2.0, bw, bh)
+    ));
+    // From left to right, the loop stands on the top with its label at its right.
+    let across = LOOP.replace("flowchart TD", "flowchart LR");
+    let svg = renderer.render_with(&across, &design(None)).unwrap();
+    assert_loop_beside(&svg, "L_A_A_0", node_middle(&svg, "A"), LoopSide::Top, 20.0);
+    // The default keeps ELK's loop.
+    let plain = renderer.render_with(LOOP, &default(None)).unwrap();
+    let points = route(&plain, "L_A_A_0");
+    assert!(points[0].0 < node_middle(&plain, "A").0, "{points:?}");
+}
+
+#[test]
+fn two_self_loops_stand_on_both_free_sides() {
+    let text = "flowchart TD\n  A[Start] --> W[Worker]\n  W -->|retry| W\n  W -->|refresh| W\n  W --> D[Done]\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let middle = node_middle(&svg, "W");
+    assert_loop_beside(&svg, "L_W_W_0", middle, LoopSide::Right, 20.0);
+    assert_loop_beside(&svg, "L_W_W_2", middle, LoopSide::Left, 20.0);
+    assert!(runs_straight_down(&svg, "L_A_W_0") && runs_straight_down(&svg, "L_W_D_0"));
+}
+
+#[test]
+fn a_state_loops_beside_itself_and_beside_its_note() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Pending : retry\n  Pending --> Paid : pay\n  Paid --> [*]\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let pending = state_box(&svg, "Pending");
+    let middle = (pending.0 + pending.2 / 2.0, pending.1 + pending.3 / 2.0);
+    // The state keeps its height, as high as its neighbor, and the ends of the loop are half its
+    // side apart.
+    assert_eq!(pending.3, state_box(&svg, "Paid").3);
+    let (loop_box, _) = assert_loop_beside(&svg, "edge1", middle, LoopSide::Right, pending.3 / 2.0);
+    assert!((loop_box.0 - (pending.0 + pending.2)).abs() < 1e-6);
+    // A note on the right puts the loop on the left; the note keeps its place beside the state.
+    let noted = text.replace(
+        "Paid --> [*]\n",
+        "Paid --> [*]\n  note right of Pending : waits for the payment\n",
+    );
+    let svg = renderer.render_with(&noted, &design(None)).unwrap();
+    let pending = state_box(&svg, "Pending");
+    let middle = (pending.0 + pending.2 / 2.0, pending.1 + pending.3 / 2.0);
+    let (loop_box, _) = assert_loop_beside(&svg, "edge1", middle, LoopSide::Left, pending.3 / 2.0);
+    let note = note_box(&svg, "Pending");
+    assert!(note.0 > pending.0 + pending.2, "{note:?}");
+    assert!(!boxes_meet(loop_box, note));
+}
+
+#[test]
+fn a_class_loops_beside_itself_with_its_cardinalities_at_its_ends() {
+    let text = "classDiagram\n  class Employee {\n    +String name\n    +Employee manager\n  }\n  Department \"1\" o-- \"*\" Employee : staffs\n  Employee \"*\" --> \"0..1\" Employee : reports to\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let middle = class_middle(&svg, "Employee");
+    let id = "id_Employee_Employee_2";
+    let (loop_box, label) = assert_loop_beside(&svg, id, middle, LoopSide::Right, 20.0);
+    let points = route(&svg, id);
+    let marker = "<g class=\"edgeTerminals\" transform=\"translate(";
+    let centres: Vec<(f64, f64)> = svg
+        .match_indices(marker)
+        .map(|(at, _)| {
+            let rest = &svg[at + marker.len()..];
+            let (x, rest) = rest.split_once(", ").unwrap();
+            (
+                x.parse().unwrap(),
+                rest[..rest.find(')').unwrap()].parse().unwrap(),
+            )
+        })
+        .collect();
+    // The start's cardinality above the loop's upper end, the end's below its lower end, both
+    // beside the node and short of the label.
+    for (end, above) in [(points[0], true), (points[3], false)] {
+        let near = centres.iter().copied().find(|centre| {
+            (centre.0 - end.0) > 0.0
+                && (centre.0 - end.0) < loop_box.2
+                && (centre.1 < end.1) == above
+                && (centre.1 - end.1).abs() < 20.0
+        });
+        assert!(near.is_some(), "{end:?} {centres:?}");
+        assert!(near.unwrap().0 < label.0);
+    }
+}

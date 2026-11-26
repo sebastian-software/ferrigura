@@ -252,6 +252,19 @@ pub(crate) fn side_exits(data: &mut LayoutData) {
             decision,
             flow.to_flow(candidate.route[0]).0 > decision_across,
         );
+        // A tip where a self-loop of the decision stands is taken.
+        let looped = data.edges.iter().any(|other| {
+            other.start == edge.start
+                && other.end == edge.start
+                && other.points.first().is_some_and(|&point| {
+                    let across = flow.to_flow(point).0;
+                    (across - decision_across).abs() > EPSILON
+                        && (across > decision_across) == key.1
+                })
+        });
+        if looped {
+            continue;
+        }
         match tips.iter_mut().find(|(tip, _)| *tip == key) {
             Some((_, list)) => list.push(candidate),
             None => tips.push((key, vec![candidate])),
