@@ -38,11 +38,11 @@
       "file": "er.svg"
     },
     {
-      "id": "gitgraph",
-      "label": "Git graph",
-      "description": "A docs branch leaves main, gains two commits and is merged back after a fix on main.",
-      "source": "gitGraph\n  commit id: \"Initial\"\n  branch docs\n  checkout docs\n  commit id: \"Add guide\"\n  commit id: \"Add diagrams\"\n  checkout main\n  commit id: \"Fix build\"\n  merge docs\n  commit id: \"Release\"\n",
-      "file": "gitgraph.svg"
+      "id": "gantt",
+      "label": "Gantt",
+      "description": "A guide is drafted and its diagrams drawn at the same time; review follows both, and the guide is published once review ends.",
+      "source": "gantt\n  dateFormat YYYY-MM-DD\n  axisFormat %b %d\n  section Writing\n    Draft the guide: draft, 2026-03-02, 5d\n    Draw the diagrams: diagrams, 2026-03-02, 4d\n  section Release\n    Review: review, after draft diagrams, 3d\n    Publish: milestone, after review, 0d\n",
+      "file": "gantt.svg"
     }
   ],
   "modes": {

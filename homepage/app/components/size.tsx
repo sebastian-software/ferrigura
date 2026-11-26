@@ -65,7 +65,7 @@ export function SizeChart({ id }: { id: string }) {
 export function SizeTable() {
   const rows = [
     { label: 'Command-line tool, every type', ...size.cli },
-    { label: 'Addon, core only (the info diagram)', ...size.core },
+    { label: 'Addon, core only (the quadrant chart)', ...size.core },
     ...size.sets.map(({ label, bytes, gzip }) => ({
       label: `Addon, ${label.toLowerCase()}`,
       bytes,

@@ -69,14 +69,6 @@
       "mermaid": "mermaid-gantt.svg"
     },
     {
-      "id": "gitgraph",
-      "title": "Git graph",
-      "description": "A feature branch and a hotfix leave main; the hotfix is merged and tagged, main is merged into the feature, and the feature is merged and tagged.",
-      "source": "gitGraph\n  commit id: \"init\"\n  commit id: \"readme\"\n  branch feature\n  checkout feature\n  commit id: \"parser\"\n  commit id: \"tests\"\n  checkout main\n  branch hotfix\n  checkout hotfix\n  commit id: \"fix crash\"\n  checkout main\n  merge hotfix tag: \"v1.0.1\"\n  checkout feature\n  merge main\n  commit id: \"renderer\"\n  checkout main\n  merge feature tag: \"v1.1.0\"\n",
-      "ferrigura": "ferrigura-gitgraph.svg",
-      "mermaid": "mermaid-gitgraph.svg"
-    },
-    {
       "id": "mindmap",
       "title": "Mindmap",
       "description": "A trip plan around one root: travel, stay, the things to see and the things to pack, each with its own branches.",

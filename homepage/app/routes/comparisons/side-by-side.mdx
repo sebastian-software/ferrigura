@@ -1,11 +1,11 @@
 ---
 title: Side by side with Mermaid
-description: Ten everyday diagrams, drawn by Ferrigura and by Mermaid from the same text with the same settings, laid over each other under a divider you can move.
+description: Nine everyday diagrams, drawn by Ferrigura and by Mermaid from the same text with the same settings, laid over each other under a divider you can move.
 ---
 
 import { SharedConfig, SideBySide, Versions } from '../../components/side-by-side';
 
-Ferrigura's checks compare every drawing with Mermaid's to within 0.05 px. This page lets you look instead: ten everyday diagrams of medium size, each drawn from the same text by both. Each figure lays Ferrigura's drawing over Mermaid's: Ferrigura shows left of the divider, Mermaid right of it. Drag the divider by its handle or use the arrow keys to move between them.
+Ferrigura's checks compare every drawing with Mermaid's to within 0.05 px. This page lets you look instead: nine everyday diagrams of medium size, each drawn from the same text by both. Each figure lays Ferrigura's drawing over Mermaid's: Ferrigura shows left of the divider, Mermaid right of it. Drag the divider by its handle or use the arrow keys to move between them.
 
 ## How the drawings were made
 
@@ -17,7 +17,7 @@ These drawings use `{ compat: true }`, which preserves Mermaid-compatible geomet
 
 ## Where they differ
 
-Ferrigura draws shared edge-label backgrounds at full opacity in both render modes, so lines do not show through the text. This applies to flowchart, class, state, entity relationship, requirement, use case, agentflow and block diagrams. Each type keeps its theme's background color, including any explicitly configured transparency. Published Mermaid applies half opacity to some SVG labels, including flowcharts and state diagrams. This affects paint only, not layout.
+Ferrigura draws shared edge-label backgrounds at full opacity in both render modes, so lines do not show through the text. This applies to flowchart, class, state and entity relationship diagrams. Each type keeps its theme's background color, including any explicitly configured transparency. Published Mermaid applies half opacity to some SVG labels, including flowcharts and state diagrams. This affects paint only, not layout.
 
 The full-opacity correction is also applied to the pinned reference used by the geometry checks. This page shows the published Mermaid package unchanged. Sequence participant boxes keep Mermaid's full row height here because compatibility mode is enabled; optimized rendering fits them to their labels without moving lifelines or messages.
 
@@ -44,10 +44,6 @@ The full-opacity correction is also applied to the pinned reference used by the 
 ## Gantt chart
 
 <SideBySide id="gantt" />
-
-## Git graph
-
-<SideBySide id="gitgraph" />
 
 ## Mindmap
 

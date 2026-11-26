@@ -58,7 +58,7 @@ export function Checked() {
         <Link to="/diagrams/overview/">The checks for each type</Link>
       </p>
       <p>
-        To judge with your own eyes, ten everyday diagrams stand{' '}
+        To judge with your own eyes, nine everyday diagrams stand{' '}
         <Link to="/comparisons/side-by-side/">side by side with Mermaid&rsquo;s drawings</Link>.
       </p>
     </MonoSection>
