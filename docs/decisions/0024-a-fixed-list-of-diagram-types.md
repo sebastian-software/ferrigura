@@ -30,7 +30,7 @@ Weighed and not chosen: keeping every type and marking some experimental (the pr
 - Adding a type is a decision of its own: it comes with its parser, its renderer, its corpus, its specs and its runs against the reference, and it extends `DiagramType`, `ALL`, the plugins and the addon features; its header leaves the table of `unsupported.rs`.
 - `DiagramType` is the public list of the facade ([0022](./0022-stable-public-api.md)); the error's wording may improve within a major version, its variant does not change.
 - The corpus under `e2e/` holds fixtures of the ten types only, and the snapshot manifest one line per fixture.
-- A shape of the unified renderer stays as long as a supported type can name it: the flowchart's registry names every shape of Mermaid's registry, so the shapes of other types' nodes stay and draw what a flowchart node gives them.
+- A shape of the unified renderer stays only while a supported type can reach it. A flowchart can name a shape whose name is lowercase and has no `_`, so `composite` stays and draws what a flowchart node gives it; the shapes that only the nodes of other types carried (`requirementBox`, `block_arrow`, the use case shapes, `kanbanItem`) are gone.
 
 ## Related
 

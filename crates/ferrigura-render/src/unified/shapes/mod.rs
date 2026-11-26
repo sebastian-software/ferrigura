@@ -13,7 +13,6 @@
 //! geometry with plain elements.
 
 mod arcs;
-mod block_arrow;
 mod braces;
 mod circle;
 mod class_box;
@@ -32,16 +31,12 @@ mod rect;
 mod rect_with_title;
 mod rects;
 mod registry;
-mod requirement_box;
 mod rough;
 mod stadium;
 mod state;
 mod symbols;
 #[cfg(test)]
 mod test_support;
-mod usecase_actor;
-mod usecase_ellipse;
-mod usecase_json_table;
 mod util;
 mod wave;
 
@@ -310,7 +305,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
         let label_class = if kind == Some(Kind::Note) {
             "label noteLabel"
         } else {
-            kind.and_then(Kind::label_class).unwrap_or("label")
+            "label"
         };
         label_svg = format!(
             "<g class=\"{label_class}\"{style} transform=\"translate({}, {})\"><rect></rect>{}</g>",
@@ -468,26 +463,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::ImageSquare => icon::image_square(input)?,
         // The entity draws its own labels and their group box, so it returns its output whole.
         Kind::ErBox => return er_box::er_box(input),
-        // The requirement's box draws its own labels as well (`requirementBox.ts`).
-        Kind::RequirementBox => return requirement_box::requirement_box(input),
         Kind::Composite => composite::composite(input),
-        Kind::BlockArrow => block_arrow::block_arrow(input),
-        Kind::UsecaseActor
-        | Kind::UsecaseActorHollow
-        | Kind::UsecaseActorAwesome
-        | Kind::UsecaseActorIcon => {
-            let variant = usecase_actor::variant_of_kind(kind);
-            let (part, rows) = usecase_actor::actor(input, variant)?;
-            texts = rows;
-            part
-        }
-        Kind::UsecaseEllipse => usecase_ellipse::ellipse(input),
-        Kind::UsecaseBusiness => usecase_ellipse::business(input),
-        Kind::UsecaseJsonTable => {
-            let (part, rows) = usecase_json_table::json_table(input);
-            texts = rows;
-            part
-        }
         Kind::ClassBox => {
             // `classBox` stamps the class's palette slot as the collapsed group does
             // (`classBox.ts` 29).

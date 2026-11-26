@@ -40,8 +40,8 @@ use crate::flowchart::policy::FlowchartRouting;
 /// facade resolves. The `flowchart` section gives the layout's spacing, the curve and the title
 /// margins; the classes, states, entity relations and mindmaps read it as the flowchart does. The `elk`
 /// section gives the layout options. The `class` and `er` sections are read by the shapes of those two
-/// diagrams. The `state` section is read across types too: the class and requirement diagrams take
-/// their title margin and their `useMaxWidth` from it.
+/// diagrams. The `state` section is read across types too: the class diagram takes its title margin
+/// and its `useMaxWidth` from it.
 #[derive(Debug, Clone, Copy)]
 pub struct Section<'a> {
     /// The flowchart's rendering mode. Other diagram types ignore it.

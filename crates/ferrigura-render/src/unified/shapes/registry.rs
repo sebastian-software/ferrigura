@@ -4,7 +4,6 @@
 
 use crate::unified::data::Node;
 
-use super::usecase_actor;
 use super::util;
 
 /// The shapes, one per handler of `shapes/`.
@@ -81,19 +80,8 @@ pub(super) enum Kind {
     ImageSquare,
     // The ER entity (`erBox.ts`), which draws its own labels.
     ErBox,
-    // The requirement's box (`requirementBox.ts`), which draws its own labels too.
-    RequirementBox,
-    // The block diagram's composite (`composite.ts`) and block arrow (`blockArrow.ts`).
+    // The composite (`composite.ts`).
     Composite,
-    BlockArrow,
-    // The use case's actor glyphs (`usecaseActor.ts` and its variants), its ellipses and its JSON table.
-    UsecaseActor,
-    UsecaseActorHollow,
-    UsecaseActorAwesome,
-    UsecaseActorIcon,
-    UsecaseEllipse,
-    UsecaseBusiness,
-    UsecaseJsonTable,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -181,16 +169,7 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "iconSquare" => Kind::IconSquare,
         "imageSquare" => Kind::ImageSquare,
         "erBox" => Kind::ErBox,
-        "requirementBox" => Kind::RequirementBox,
         "composite" => Kind::Composite,
-        "block_arrow" => Kind::BlockArrow,
-        "usecaseActor" => Kind::UsecaseActor,
-        "usecaseActorHollow" => Kind::UsecaseActorHollow,
-        "usecaseActorAwesome" => Kind::UsecaseActorAwesome,
-        "usecaseActorIcon" => Kind::UsecaseActorIcon,
-        "usecaseEllipse" => Kind::UsecaseEllipse,
-        "usecaseBusiness" => Kind::UsecaseBusiness,
-        "usecaseJsonTable" => Kind::UsecaseJsonTable,
         _ => return None,
     })
 }
@@ -222,22 +201,7 @@ impl Kind {
                 | Self::LightningBolt
                 // An entity's labels are its own cells, drawn by its handler, not one label.
                 | Self::ErBox
-                // A requirement's labels are its own texts, drawn by its handler.
-                | Self::RequirementBox
         )
-    }
-
-    /// The class of the label group of a use case shape, where its handler sets one (`usecaseActor.ts` 190,
-    /// `usecaseBusiness.ts` 49); the other shapes keep `label`.
-    pub(super) fn label_class(self) -> Option<&'static str> {
-        match self {
-            Self::UsecaseActor
-            | Self::UsecaseActorHollow
-            | Self::UsecaseActorAwesome
-            | Self::UsecaseActorIcon => Some("label actor-label usecase-actor-label"),
-            Self::UsecaseBusiness => Some("label usecase-label"),
-            _ => None,
-        }
     }
 
     /// Whether the shape sets the node's label to nothing before it lays it out, so that its label
@@ -262,27 +226,6 @@ impl Kind {
                 "icon-shape default".to_owned()
             }
             Self::ImageSquare => "image-shape default".to_owned(),
-            // `getNodeClasses(node, 'usecase-actor-variant usecase-actor-<variant>')` (`usecaseActor.ts` 180).
-            Self::UsecaseActor => {
-                usecase_actor::group_class(&node.css_classes, usecase_actor::Variant::Normal)
-            }
-            Self::UsecaseActorHollow => {
-                usecase_actor::group_class(&node.css_classes, usecase_actor::Variant::Hollow)
-            }
-            Self::UsecaseActorAwesome => {
-                usecase_actor::group_class(&node.css_classes, usecase_actor::Variant::Awesome)
-            }
-            Self::UsecaseActorIcon => {
-                usecase_actor::group_class(&node.css_classes, usecase_actor::Variant::Icon)
-            }
-            // `getNodeClasses(node, 'usecase-business-shape')` (`usecaseBusiness.ts` 47).
-            Self::UsecaseBusiness => {
-                format!("node {} usecase-business-shape", node.css_classes.trim())
-            }
-            // `getNodeClasses(node, 'usecase-json-table')` (`usecaseJsonTable.ts` 70).
-            Self::UsecaseJsonTable => {
-                format!("node {} usecase-json-table", node.css_classes.trim())
-            }
             // `composite.ts` 14 writes the node's classes twice: its own `cssClasses` and its `class`.
             Self::Composite => format!("node {0} {0}", node.css_classes),
             _ => util::node_classes(node),
