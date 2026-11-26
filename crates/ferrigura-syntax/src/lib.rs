@@ -4,7 +4,10 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs/decisions/0007-hand-written-parsers.md` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate parses all 33 diagram families of Mermaid 12.2.0 (`docs/diagrams/README.md`).
+//! The crate parses the ten diagram types that ferrigura draws ([`DiagramType::ALL`],
+//! `docs/diagrams/README.md`). It also knows the headers of Mermaid 12.2.0's other diagram types,
+//! so that a text of one of them is told apart from a text without a header
+//! ([`detect_unsupported`]).
 
 #![warn(missing_docs)]
 #![cfg_attr(
@@ -28,17 +31,12 @@ pub mod url;
 pub mod class;
 pub mod config;
 pub mod er;
-pub mod info;
 pub mod mindmap;
-pub mod packet;
 pub mod pie;
 pub mod quadrant_chart;
-pub mod radar;
 pub mod sanitize;
-pub mod sankey;
 pub mod sequence;
 pub mod state;
-pub mod treemap;
 pub mod xychart;
 pub mod yaml;
 
@@ -46,28 +44,21 @@ use ferrigura_model::class::ClassDiagram;
 use ferrigura_model::er::ErDiagram;
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::gantt::GanttDiagram;
-use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::mindmap::MindmapDiagram;
-use ferrigura_model::packet::PacketDiagram;
 use ferrigura_model::pie::PieDiagram;
 use ferrigura_model::quadrant_chart::QuadrantChartDiagram;
-use ferrigura_model::radar::RadarDiagram;
-use ferrigura_model::sankey::SankeyDiagram;
 use ferrigura_model::sequence::SequenceDiagram;
 use ferrigura_model::state::StateDiagram;
-use ferrigura_model::treemap::TreemapDiagram;
 use ferrigura_model::xychart::XyChartDiagram;
 
 pub use error::ParseError;
 pub use preprocess::decode_entities;
 
-/// A diagram type this crate can parse.
+/// A diagram type that ferrigura draws, which this crate parses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DiagramType {
     /// The pie diagram.
     Pie,
-    /// The info diagram.
-    Info,
     /// The flowchart, written `flowchart` or `graph`.
     Flowchart,
     /// The ER diagram, written `erDiagram`.
@@ -82,18 +73,10 @@ pub enum DiagramType {
     Gantt,
     /// The mindmap, written `mindmap`.
     Mindmap,
-    /// The packet diagram, written `packet`.
-    Packet,
     /// The xychart, written `xychart`.
     XyChart,
-    /// The sankey diagram, written `sankey`.
-    Sankey,
     /// The quadrant chart, written `quadrantChart`.
     QuadrantChart,
-    /// The treemap, written `treemap` or `treemap-beta`.
-    Treemap,
-    /// The radar, written `radar-beta`.
-    Radar,
 }
 
 impl DiagramType {
@@ -119,7 +102,6 @@ impl DiagramType {
     pub fn name(self) -> &'static str {
         match self {
             Self::Pie => "pie",
-            Self::Info => "info",
             Self::Flowchart => "flowchart",
             Self::Er => "ER",
             Self::Class => "class",
@@ -127,12 +109,8 @@ impl DiagramType {
             Self::State => "state",
             Self::Gantt => "gantt",
             Self::Mindmap => "mindmap",
-            Self::Packet => "packet",
             Self::XyChart => "XY chart",
-            Self::Sankey => "sankey",
             Self::QuadrantChart => "quadrant chart",
-            Self::Treemap => "treemap",
-            Self::Radar => "radar",
         }
     }
 
@@ -141,7 +119,6 @@ impl DiagramType {
     pub fn config_key(self) -> &'static str {
         match self {
             Self::Pie => "pie",
-            Self::Info => "info",
             Self::Flowchart => "flowchart",
             Self::Er => "er",
             Self::Class => "class",
@@ -149,12 +126,8 @@ impl DiagramType {
             Self::State => "state",
             Self::Gantt => "gantt",
             Self::Mindmap => "mindmap",
-            Self::Packet => "packet",
             Self::XyChart => "xyChart",
-            Self::Sankey => "sankey",
             Self::QuadrantChart => "quadrantChart",
-            Self::Treemap => "treemap",
-            Self::Radar => "radar",
         }
     }
 }
@@ -164,8 +137,6 @@ impl DiagramType {
 pub enum Diagram {
     /// A pie diagram.
     Pie(PieDiagram),
-    /// An info diagram.
-    Info(InfoDiagram),
     /// A flowchart.
     Flowchart(FlowchartDiagram),
     /// An ER diagram.
@@ -180,24 +151,16 @@ pub enum Diagram {
     Gantt(GanttDiagram),
     /// A mindmap.
     Mindmap(MindmapDiagram),
-    /// A packet diagram.
-    Packet(PacketDiagram),
     /// An xychart.
     XyChart(XyChartDiagram),
-    /// A sankey diagram.
-    Sankey(SankeyDiagram),
     /// A quadrant chart.
     QuadrantChart(QuadrantChartDiagram),
-    /// A treemap.
-    Treemap(TreemapDiagram),
-    /// A radar.
-    Radar(RadarDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
 ///
 /// Front matter, directives and comment lines before the keyword are skipped, so `^\s*pie` and
-/// `^\s*info` apply to the first line that is not one of them. The detectors are tried in the order
+/// `^\s*mindmap` apply to the first line that is not one of them. The detectors are tried in the order
 /// the reference registers them (`diagram-orchestration.ts`), and the first one that matches decides.
 /// No two types of this crate match the same text, so the order decides nothing between them.
 #[must_use]
@@ -233,8 +196,6 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Er)
     } else if rest.starts_with("gantt") {
         Some(DiagramType::Gantt)
-    } else if rest.starts_with("info") {
-        Some(DiagramType::Info)
     } else if rest.starts_with("pie") {
         Some(DiagramType::Pie)
     } else if rest.starts_with("sequenceDiagram") {
@@ -245,16 +206,8 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::State)
     } else if rest.starts_with("quadrantChart") {
         Some(DiagramType::QuadrantChart)
-    } else if has_keyword_alone(rest, "sankey") {
-        Some(DiagramType::Sankey)
-    } else if has_keyword_alone(rest, "packet") {
-        Some(DiagramType::Packet)
     } else if has_keyword_alone(rest, "xychart") {
         Some(DiagramType::XyChart)
-    } else if rest.starts_with("radar-beta") {
-        Some(DiagramType::Radar)
-    } else if rest.starts_with("treemap") {
-        Some(DiagramType::Treemap)
     } else {
         None
     }
@@ -271,22 +224,16 @@ pub(crate) fn has_keyword_alone(text: &str, keyword: &str) -> bool {
         .is_some_and(|after| alone(after) || after.strip_prefix("-beta").is_some_and(alone))
 }
 
-/// The name of the diagram type whose header starts `text`, when that is a type ferrigura does not
-/// draw: [`prepare_and_detect`] rejects such a text as it rejects one without a header, and the
-/// facade names the type in its error.
+/// The name of the Mermaid diagram type whose header starts `text`, when that is a type ferrigura
+/// does not draw, such as `sankey` or `Git graph`: [`prepare_and_detect`] rejects such a text as it
+/// rejects one without a header, and the facade names the type in its error.
 #[must_use]
 pub fn detect_unsupported(text: &str) -> Option<&'static str> {
     let prepared = preprocess::prepare(text).ok()?;
-    with_header(&prepared, |rest| {
-        unsupported::name(rest).or_else(|| {
-            detect_header(rest)
-                .filter(|kind| !DiagramType::ALL.contains(kind))
-                .map(DiagramType::name)
-        })
-    })
+    with_header(&prepared, unsupported::name)
 }
 
-/// Preprocesses `text` and detects its diagram type, one of [`DiagramType::ALL`], surfacing YAML
+/// Preprocesses `text` and detects its diagram type, surfacing YAML
 /// alias-expansion limit and cyclic-anchor errors from front matter directly instead of folding them
 /// into an unrecognized diagram header.
 pub fn prepare_and_detect(text: &str) -> Result<(preprocess::Prepared, DiagramType), ParseError> {
@@ -301,7 +248,7 @@ pub fn prepare_and_detect(text: &str) -> Result<(preprocess::Prepared, DiagramTy
             });
         }
     };
-    let Some(kind) = detect_prepared(&source).filter(|kind| DiagramType::ALL.contains(kind)) else {
+    let Some(kind) = detect_prepared(&source) else {
         return Err(ParseError {
             line: 1,
             column: 1,
@@ -317,7 +264,6 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
     match kind {
         DiagramType::Er => er::parse(text).map(Diagram::Er),
         DiagramType::Pie => pie::parse(text).map(Diagram::Pie),
-        DiagramType::Info => info::parse(text).map(Diagram::Info),
         DiagramType::Flowchart => flowchart::parse(text)
             .map(Diagram::Flowchart)
             .map_err(|flowchart::FlowchartError::Syntax(error)| error),
@@ -326,12 +272,8 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         DiagramType::State => state::parse(text).map(Diagram::State),
         DiagramType::Gantt => gantt::parse(text).map(Diagram::Gantt),
         DiagramType::Mindmap => mindmap::parse(text).map(Diagram::Mindmap),
-        DiagramType::Packet => packet::parse(text).map(Diagram::Packet),
         DiagramType::XyChart => xychart::parse(text).map(Diagram::XyChart),
-        DiagramType::Sankey => sankey::parse(text).map(Diagram::Sankey),
         DiagramType::QuadrantChart => quadrant_chart::parse(text).map(Diagram::QuadrantChart),
-        DiagramType::Treemap => treemap::parse(text).map(Diagram::Treemap),
-        DiagramType::Radar => radar::parse(text).map(Diagram::Radar),
     }
 }
 

@@ -17,18 +17,13 @@ pub mod er;
 pub mod flowchart;
 pub mod fonts;
 pub mod gantt;
-pub mod info;
 pub mod mindmap;
-pub mod packet;
 pub mod pie;
 pub mod quadrant_chart;
-pub mod radar;
-pub mod sankey;
 mod scheme;
 pub mod sequence;
 pub mod state;
 pub mod svg;
-pub mod treemap;
 pub mod unified;
 #[cfg(test)]
 mod variables;

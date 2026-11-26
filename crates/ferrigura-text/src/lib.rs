@@ -41,7 +41,7 @@ pub use measure::checked_fallback_runs;
 pub use measure::{
     Run, fallback_faces, fallback_runs, layout_width, measure, measure_data, measure_line,
 };
-pub use metrics::{FontMetrics, TextBox, font_metrics, text_box, x_height};
+pub use metrics::{FontMetrics, TextBox, font_metrics, text_box};
 pub use registry::{FontRegistry, MissingGlyph};
 pub use wrap::{
     Word, fit_line, fit_line_keeping_words, measure_words, split_line_keeping_words,

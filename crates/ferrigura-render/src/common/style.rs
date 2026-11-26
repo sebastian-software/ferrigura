@@ -5,8 +5,7 @@
 //! (`docs/decisions/0011-themes-as-css-variables.md`), and the rules refer to it with `var(…)`.
 //!
 //! A diagram's own rules (`styles.ts` of the type, such as `flowchart/style.rs`) come between the
-//! `p` rule and the `neo` rules, as the reference's `getStyles` places them. The info diagram has no
-//! rules of its own, so this sheet is its whole style.
+//! `p` rule and the `neo` rules, as the reference's `getStyles` places them.
 
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;

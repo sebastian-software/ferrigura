@@ -89,24 +89,6 @@ pub fn text_box(face: &Face, size: f64) -> Result<TextBox, TextError> {
     })
 }
 
-/// The x-height of `face` at `size` pixels, unrounded: the `sxHeight` of the OS/2 table scaled to the
-/// size. Browsers take the length `ex` from it, so `font-size: 4ex` is four times this value
-/// (`timeline` titles, `docs/diagrams/timeline.md#learnings`). The bundled faces declare 496 units in 1000.
-///
-/// # Errors
-///
-/// Returns an error if the font does not parse or has no `sxHeight`.
-pub fn x_height(face: &Face, size: f64) -> Result<f64, TextError> {
-    let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
-    let units_per_em = font
-        .head()
-        .map_err(|_| TextError::InvalidFont)?
-        .units_per_em();
-    let os2 = font.os2().map_err(|_| TextError::MissingLineMetrics)?;
-    let sx_height = os2.sx_height().ok_or(TextError::MissingLineMetrics)?;
-    Ok(f64::from(sx_height) * size / f64::from(units_per_em))
-}
-
 /// Builds the text box from unrounded metrics: each of ascent and descent is rounded on its own,
 /// a tie going down.
 #[must_use]

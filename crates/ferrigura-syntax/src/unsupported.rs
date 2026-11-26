@@ -59,6 +59,16 @@ const HEADERS: &[Header] = &[
     ("user journey", |rest| rest.starts_with("journey")),
     // `kanban/detector.ts`: `/^\s*kanban/`.
     ("kanban", |rest| rest.starts_with("kanban")),
+    // `sankey/sankeyDetector.ts`: `/^\s*sankey(-beta)?(?![\w-])/` (patch 08 of tools/reference).
+    ("sankey", |rest| has_keyword_alone(rest, "sankey")),
+    // `radar/detector.ts`: `/^\s*radar-beta/`.
+    ("radar", |rest| rest.starts_with("radar-beta")),
+    // `packet/detector.ts`: `/^\s*packet(-beta)?(?![\w-])/` (patch 08 of tools/reference).
+    ("packet", |rest| has_keyword_alone(rest, "packet")),
+    // `treemap/detector.ts`: `/^\s*treemap/`.
+    ("treemap", |rest| rest.starts_with("treemap")),
+    // `info/infoDetector.ts`: `/^\s*info/`.
+    ("info", |rest| rest.starts_with("info")),
 ];
 
 /// The name of the type that ferrigura does not draw whose header starts `rest`, the text from the

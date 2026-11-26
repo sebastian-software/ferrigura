@@ -14,18 +14,13 @@ pub mod config;
 pub mod er;
 pub mod flowchart;
 pub mod gantt;
-pub mod info;
 pub mod js_object;
 pub mod mindmap;
-pub mod packet;
 pub mod pie;
 pub mod quadrant_chart;
-pub mod radar;
-pub mod sankey;
 pub mod sequence;
 pub mod state;
 pub mod theme;
-pub mod treemap;
 pub mod value;
 pub mod xychart;
 

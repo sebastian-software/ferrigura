@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm -C tools/port port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|er|class|sequence|state|gantt|mindmap|packet|xychart|sankey|quadrantChart|treemap|radar> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|flowchart|er|class|sequence|state|gantt|mindmap|xychart|quadrantChart> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -15,8 +15,8 @@ use ferrigura_syntax::flowchart::{self, FlowchartError};
 use ferrigura_syntax::gantt;
 use ferrigura_syntax::sequence::{self, Options};
 use ferrigura_syntax::{
-    DiagramType, ParseError, class, config, detect, er, info, mindmap, packet, pie, quadrant_chart,
-    radar, sankey, state, treemap, xychart,
+    DiagramType, ParseError, class, config, detect, er, mindmap, pie, quadrant_chart, state,
+    xychart,
 };
 use serde_json::{Value, json};
 
@@ -93,7 +93,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|er|class|sequence|state|gantt|mindmap|packet|xychart|sankey|quadrantChart|treemap|radar> <inputs.json> <outputs.json>".into(),
+            "usage: canonical <pie|flowchart|er|class|sequence|state|gantt|mindmap|xychart|quadrantChart> <inputs.json> <outputs.json>".into(),
         );
     };
 
@@ -106,10 +106,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         let text = item["text"].as_str().ok_or("each input needs a text")?;
         let outcome = match kind.as_str() {
             "pie" => match pie::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
-            "info" => match info::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
@@ -137,27 +133,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
-            "packet" => match packet::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
             "xychart" => match xychart::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
-            "sankey" => match sankey::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
             "quadrantChart" => match quadrant_chart::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
-            "treemap" => match treemap::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
-            "radar" => match radar::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
