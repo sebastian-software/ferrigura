@@ -87,7 +87,7 @@ On an aarch64 machine (CI uses a Linux arm64 runner), the output of the whole co
 cargo test --release --test snapshots
 ```
 
-Each file has one hash, and flowcharts and sequences have a column for the Mermaid-compatible renders; flowcharts and state diagrams have one more, the last, for the design mode. `tools/snapshots/diff.sh` asks the renderer which files it draws in the design mode, since a state diagram's line and a sequence's both have two hashes. When this job fails, its log shows the diff of the manifest that the runner produces, and the `snapshot-manifest` artifact holds the two manifests. Someone on another architecture takes the new manifest from there.
+Each file has one hash, and flowcharts and sequences have a column for the Mermaid-compatible renders; flowcharts, state diagrams and class diagrams have one more, the last, for the design mode. `tools/snapshots/diff.sh` asks the renderer which files it draws in the design mode, since a state or a class diagram's line and a sequence's all have two hashes. When this job fails, its log shows the diff of the manifest that the runner produces, and the `snapshot-manifest` artifact holds the two manifests. Someone on another architecture takes the new manifest from there.
 
 The native matrix also captures the replay test's representative SVGs and publishes a report comparing each target with Linux arm64. The report records ordered elements, labels, embedded font styles and data hashes, and numeric geometry differences without applying a cross-target tolerance. A pull request includes macOS when it has the `ci:macos` label; a main or manually dispatched run includes all seven targets. The individual `native-replay-*` artifacts contain the captured SVGs.
 

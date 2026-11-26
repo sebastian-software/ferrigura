@@ -346,6 +346,20 @@ pub fn layout_inheriting(
     spec: &LabelSpec<'_>,
     inherited: Option<FontWeight>,
 ) -> Result<LabelLayout, RenderError> {
+    layout_in_style(spec, inherited, FontStyle::Normal)
+}
+
+/// [`layout_inheriting`] with the style of the label's plain and strong words: the design mode's
+/// class box sets an abstract member in italics.
+///
+/// # Errors
+///
+/// Returns an error if a bundled font cannot be read.
+pub fn layout_in_style(
+    spec: &LabelSpec<'_>,
+    inherited: Option<FontWeight>,
+    style: FontStyle,
+) -> Result<LabelLayout, RenderError> {
     // The style's font size sets the text. A node label is wrapped inside the group that carries
     // its style, so the wrap sees the size. An edge label and a cluster title are wrapped in their
     // unstyled containers, which are the ones with `text-anchor` set or left to the cluster.
@@ -379,8 +393,8 @@ pub fn layout_inheriting(
             || spec.fonts.clone(),
             |family| spec.fonts.with_family(family),
         );
-    let normal = fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Normal)?;
-    let strong = fonts.face(inherited.unwrap_or(FontWeight::Bold), FontStyle::Normal)?;
+    let normal = fonts.face(inherited.unwrap_or(FontWeight::Normal), style)?;
+    let strong = fonts.face(inherited.unwrap_or(FontWeight::Bold), style)?;
     let emphasis = fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Italic)?;
     let mut wrapped: Vec<Vec<Word>> = Vec::new();
     for line in &lines {

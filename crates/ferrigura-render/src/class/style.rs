@@ -11,8 +11,11 @@
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
+use std::fmt::Write as _;
+
 use crate::context::{Globals, ThemeView};
-use crate::flowchart::style::look_defs;
+use crate::design::{self, Tone};
+use crate::flowchart::style::look_defs_for;
 use crate::svg::{css_text, font_faces};
 use crate::unified::palette::{Palette, palette};
 
@@ -41,12 +44,16 @@ const DARK_FLOOD: &str = "#FFFFFF";
 
 /// The `<style>` element's text of a class diagram with the id `svg_id`. The font of the rules is
 /// the embedded family of the diagram when it has one (`families`), else the theme's `fontFamily`.
+/// In the design mode (`design`), the mode's rules follow the class rules, and the mode's own
+/// properties take the place of the palette and the look's flood
+/// (`docs/decisions/0023-design-mode.md`).
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
     theme: ThemeView<'_>,
     globals: &Globals,
     families: &[EmbeddedFamily],
+    design: Option<Tone>,
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
@@ -81,7 +88,7 @@ pub fn style_sheet(
     } else {
         font_faces(svg_id, families)
     };
-    let mut css = custom_properties(svg_id, theme, globals);
+    let mut css = custom_properties(svg_id, theme, globals, design);
     css.push_str(&format!(
         "{id}{{font-family:{font};font-size:{font_size};fill:var(--textColor);}}\
          @keyframes dash{{to{{stroke-dashoffset:0;}}}}\
@@ -108,15 +115,56 @@ pub fn style_sheet(
          {id} [data-look=\"neo\"].icon-shape .icon{{fill:{neo_stroke};filter:{shadow};}}\
          {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:{neo_stroke};filter:{shadow};}}"
     ));
-    css.push_str(&class_rules(svg_id, look, &font, tokens, globals));
+    css.push_str(&class_rules(svg_id, look, &font, tokens, globals, design));
+    if design.is_some() {
+        css.push_str(&design_rules(&id));
+    }
     css_text(&format!("{faces}{css}"))
 }
 
 /// The `<defs>` of the look (the drop shadows and the gradient), which the class diagram writes after
-/// its title as the flowchart does.
+/// its title as the flowchart does. The design mode draws its own shadows under the same ids.
 #[must_use]
-pub fn defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
-    look_defs(svg_id, theme, globals)
+pub fn defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals, design: Option<Tone>) -> String {
+    look_defs_for(svg_id, theme, globals, design)
+}
+
+/// The rules of the design mode, after the class rules (`docs/decisions/0023-design-mode.md`):
+/// hairlines, a relation in the edge's weight, the markers' paint, muted annotations, visibility
+/// marks, edge labels and cardinalities, a group frame without the node's shadow, a flat note, and
+/// the colors of the roles. A class's own styles are written on its elements and keep the last
+/// word.
+fn design_rules(id: &str) -> String {
+    let node_width = design::NODE_STROKE_WIDTH;
+    let edge_width = design::EDGE_STROKE_WIDTH;
+    let thick_width = design::THICK_EDGE_STROKE_WIDTH;
+    let mut out = format!(
+        "{id} .edge-thickness-normal,{id} .relation{{stroke-width:{edge_width};}}\
+{id} .edge-thickness-thick{{stroke-width:{thick_width};}}\
+{id} .edge-pattern-dashed,{id} .dashed-line{{stroke-dasharray:5 4;}}\
+{id} .node rect,{id} .node polygon,{id} .node path,{id} [data-look=\"neo\"].node path{{stroke-width:{node_width};}}\
+{id} .node line.divider{{stroke:var(--nodeBorder);stroke-width:1px;}}\
+{id} .annotation-group text,{id} .visibility text{{fill:var(--titleColor);}}\
+{id} .marker.classDiagram .design-hollow{{fill:var(--mainBkg);stroke:var(--lineColor);stroke-width:{node_width};stroke-linejoin:round;stroke-dasharray:none;}}\
+{id} .marker.classDiagram .design-filled{{fill:var(--lineColor);stroke:var(--lineColor);stroke-width:{node_width};stroke-linejoin:round;stroke-dasharray:none;}}\
+{id} .marker.classDiagram .design-open{{fill:none;stroke:var(--lineColor);stroke-width:{edge_width};stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:none;}}\
+{id} .edgeLabel .label text{{fill:var(--titleColor);}}\
+{id} .edgeLabel rect.background,{id} .edgeLabel[data-look] rect.background{{fill:none;stroke:none;opacity:1;}}\
+{id} .edgeTerminals text,{id} .edgeTerminals .label text{{fill:var(--titleColor);}}\
+{id} [data-look=\"neo\"].cluster rect{{stroke:var(--clusterBorder);filter:none;}}\
+{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow{{flood-color:var(--floodColor);flood-opacity:1;}}"
+    );
+    for role in design::CLASS_ROLES {
+        let (fill, stroke, text) = role.properties();
+        let node = format!("{id} [data-role=\"{}\"].node", role.name());
+        let _ = write!(
+            out,
+            "{node} rect.outline{{fill:var(--{fill});stroke:var(--{stroke});}}\
+{node} line.divider{{stroke:var(--{stroke});}}\
+{node} .label-group text,{node} .members-group .label text,{node} .methods-group .label text{{fill:var(--{text});}}"
+        );
+    }
+    out
 }
 
 /// The class rules of `styles.js` (lines 42-241) after the common ones, with the palette rules first
@@ -127,11 +175,17 @@ fn class_rules(
     font: &str,
     tokens: &ThemeTokens,
     globals: &Globals,
+    design: Option<Tone>,
 ) -> String {
     let id = format!("#{svg_id}");
     // `${options.strokeWidth}`, written as the value: the theme declares no custom property for it.
     let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
-    let mut css = palette_rules(&id, look, palette(globals, tokens).as_ref());
+    // The design mode uses no palette: a class is neutral unless its role says otherwise.
+    let mut css = if design.is_some() {
+        String::new()
+    } else {
+        palette_rules(&id, look, palette(globals, tokens).as_ref())
+    };
     css.push_str(&format!(
         "{id} g.classGroup text{{fill:var(--nodeBorder);stroke:none;font-family:{font};font-size:10px;}}\
          {id} g.classGroup text .title{{font-weight:bolder;}}\
@@ -205,8 +259,32 @@ fn palette_rules(id: &str, look: &str, palette: Option<&Palette>) -> String {
 /// The custom properties of the colors, declared on the diagram's id. With one set they are
 /// written as they are; with a light and a dark set, the values that differ
 /// are `light-dark()` pairs (decision 0011).
-fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
+fn custom_properties(
+    svg_id: &str,
+    theme: ThemeView<'_>,
+    globals: &Globals,
+    design: Option<Tone>,
+) -> String {
     let id = format!("#{svg_id}");
+    if let Some(tone) = design {
+        let block = |tokens: &ThemeTokens, tone: Tone| {
+            let mut out = String::new();
+            for (name, token) in color_tokens(tokens) {
+                if let Some(colour) = token.text() {
+                    let _ = write!(out, "--{name}:{};", css_text(&colour));
+                }
+            }
+            out.push_str(design::declarations(tone));
+            out.push_str(design::class_declarations(tone));
+            format!("{id}{{{out}}}")
+        };
+        return match theme.dark {
+            None => block(theme.light, tone),
+            Some(dark) => {
+                crate::scheme::both(&block(theme.light, Tone::Light), &block(dark, Tone::Dark))
+            }
+        };
+    }
     match theme.dark {
         None => {
             let flood = if globals.theme.contains("dark") {

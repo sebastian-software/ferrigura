@@ -147,253 +147,253 @@ e2e/diagrams/c4/pr-check/dynamic-diagram.mmd	8ed34b7992defa2b
 e2e/diagrams/c4/pr-check/update-element-style-colors.mmd	662c658da690a98b
 e2e/diagrams/c4/visual-check/update-layout-config-2-shapes-per-row.mmd	20b8c637c01abcc1
 e2e/diagrams/c4/visual-check/update-layout-config-4-shapes-per-row.mmd	c93b9e7ed127c219
-e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram-2.mmd	0b1070509e2c9a33
-e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram.mmd	5093c7ca041d932f
-e2e/diagrams/class-diagram/nightly-check/1-1-should-render-a-simple-class-diagram-without-htmllabels.mmd	42cb0ac06ed75ab7
-e2e/diagrams/class-diagram/nightly-check/1-should-render-a-simple-class-diagram-2.mmd	0508682fd414d237
-e2e/diagrams/class-diagram/nightly-check/1-should-render-a-simple-class-diagram-3.mmd	923822789d30fc97
-e2e/diagrams/class-diagram/nightly-check/10-should-render-a-simple-class-diagram-with-clickable-callback-2.mmd	48504f320ede618b
-e2e/diagrams/class-diagram/nightly-check/10-should-render-a-simple-class-diagram-with-clickable-callback-3.mmd	b8b7192032377fa7
-e2e/diagrams/class-diagram/nightly-check/10-should-render-a-simple-class-diagram-with-clickable-callback.mmd	8297597d4d49b453
-e2e/diagrams/class-diagram/nightly-check/11-1-should-render-a-simple-class-diagram-with-return-type-on-method-without-htmllabels.mmd	9ce6e4df07ad3aa3
-e2e/diagrams/class-diagram/nightly-check/11-should-render-a-simple-class-diagram-with-return-type-on-method-2.mmd	ecc3cb877e680aed
-e2e/diagrams/class-diagram/nightly-check/11-should-render-a-simple-class-diagram-with-return-type-on-method-3.mmd	2754737f68d0e54d
-e2e/diagrams/class-diagram/nightly-check/11-should-render-a-simple-class-diagram-with-return-type-on-method.mmd	b52c2ce4f9a34861
-e2e/diagrams/class-diagram/nightly-check/12-1-should-render-a-simple-class-diagram-with-generic-types-without-htmllabels.mmd	697be1c630db3c3d
-e2e/diagrams/class-diagram/nightly-check/12-should-render-a-simple-class-diagram-with-generic-types-2.mmd	87f5b1b24245000f
-e2e/diagrams/class-diagram/nightly-check/12-should-render-a-simple-class-diagram-with-generic-types-3.mmd	e3ab1534132aa4df
-e2e/diagrams/class-diagram/nightly-check/12-should-render-a-simple-class-diagram-with-generic-types.mmd	ab6a979fa49dc247
-e2e/diagrams/class-diagram/nightly-check/13-should-render-a-simple-class-diagram-with-css-classes-applied-2.mmd	ec695a94cb100021
-e2e/diagrams/class-diagram/nightly-check/13-should-render-a-simple-class-diagram-with-css-classes-applied-3.mmd	cd1a27b226277941
-e2e/diagrams/class-diagram/nightly-check/13-should-render-a-simple-class-diagram-with-css-classes-applied.mmd	2946c12a4075a423
-e2e/diagrams/class-diagram/nightly-check/14-should-render-a-simple-class-diagram-with-css-classes-applied-directly-2.mmd	4e5c5b3b311cac83
-e2e/diagrams/class-diagram/nightly-check/14-should-render-a-simple-class-diagram-with-css-classes-applied-directly-3.mmd	1104f16086c92747
-e2e/diagrams/class-diagram/nightly-check/14-should-render-a-simple-class-diagram-with-css-classes-applied-directly.mmd	dcf8b2b750aa250b
-e2e/diagrams/class-diagram/nightly-check/1433-should-render-a-simple-class-with-a-title-2.mmd	21166a410ee084ff
-e2e/diagrams/class-diagram/nightly-check/1433-should-render-a-simple-class-with-a-title.mmd	34c4f6d9ca8bc7d7
-e2e/diagrams/class-diagram/nightly-check/15-should-render-a-simple-class-diagram-with-css-classes-applied-to-multiple-classes.mmd	e9e3f4a299cf92a5
-e2e/diagrams/class-diagram/nightly-check/15-should-render-a-simple-class-diagram-with-css-classes-applied-two-multiple-classes-2.mmd	3c771c3e27eb500b
-e2e/diagrams/class-diagram/nightly-check/15-should-render-a-simple-class-diagram-with-css-classes-applied-two-multiple-classes.mmd	fa3c94b141a46d43
-e2e/diagrams/class-diagram/nightly-check/16a-should-render-a-simple-class-diagram-with-static-field-2.mmd	b282606ffcb9b617
-e2e/diagrams/class-diagram/nightly-check/16a-should-render-a-simple-class-diagram-with-static-field.mmd	793aeb6de6613dc9
-e2e/diagrams/class-diagram/nightly-check/17a-should-handle-the-direction-statement-with-bt-2.mmd	0420508f5d3b0c87
-e2e/diagrams/class-diagram/nightly-check/17a-should-handle-the-direction-statement-with-bt.mmd	dcdce6d434718db5
-e2e/diagrams/class-diagram/nightly-check/17b-should-handle-the-direction-statement-with-rl.mmd	93aa12cfb90071c3
-e2e/diagrams/class-diagram/nightly-check/18a-should-handle-the-direction-statement-with-lr-2.mmd	8140c63e5c3456c3
-e2e/diagrams/class-diagram/nightly-check/18a-should-handle-the-direction-statement-with-lr.mmd	fd9e444d4f496add
-e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes-2.mmd	32bd5c34d63e3539
-e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes.mmd	25aa8820aaf5eeb1
-e2e/diagrams/class-diagram/nightly-check/19-should-render-a-simple-class-diagram-with-notes.mmd	eb81518812fa19c9
-e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagram-with-different-visibilities.mmd	2d9d4fc45f5257ea
-e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels-2.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/2-2-should-render-a-simple-class-diagram-with-different-visibilities-2.mmd	48530cbd443effe7
-e2e/diagrams/class-diagram/nightly-check/2-2-should-render-a-simple-class-diagram-with-different-visibilities.mmd	2d9d4fc45f5257ea
-e2e/diagrams/class-diagram/nightly-check/2-3-should-render-a-simple-class-diagram-with-different-visibilities-without-htmllabels-2.mmd	2ad0abd884fbacd7
-e2e/diagrams/class-diagram/nightly-check/2-3-should-render-a-simple-class-diagram-with-different-visibilities-without-htmllabels.mmd	2d9d4fc45f5257ea
-e2e/diagrams/class-diagram/nightly-check/2-should-render-a-simple-class-diagrams-with-cardinality-2.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/2-should-render-a-simple-class-diagrams-with-cardinality-3.mmd	ddecc14787952373
-e2e/diagrams/class-diagram/nightly-check/2-should-render-a-simple-class-diagrams-with-cardinality.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/3-should-render-a-simple-class-diagram-with-different-visibilities.mmd	8db0185b9ecf6c60
-e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments-2.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments-3.mmd	019ea936a8ab1012
-e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments-4.mmd	8150aef0b0d94ddd
-e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/nightly-check/5-should-render-a-simple-class-diagram-with-abstract-method-2.mmd	9246c0b75c485119
-e2e/diagrams/class-diagram/nightly-check/5-should-render-a-simple-class-diagram-with-abstract-method-3.mmd	ae2fa31bf7f06d55
-e2e/diagrams/class-diagram/nightly-check/5-should-render-a-simple-class-diagram-with-abstract-method.mmd	4836d11e1327e741
-e2e/diagrams/class-diagram/nightly-check/6-1-should-render-a-simple-class-diagram-with-static-method-without-htmllabels.mmd	7b6f498f1b970d33
-e2e/diagrams/class-diagram/nightly-check/6-should-render-a-simple-class-diagram-with-static-method-2.mmd	d425801a796ea8e7
-e2e/diagrams/class-diagram/nightly-check/6-should-render-a-simple-class-diagram-with-static-method-3.mmd	66c16922d4b00db7
-e2e/diagrams/class-diagram/nightly-check/7-1-should-render-a-simple-class-diagram-with-generic-class-without-htmllabels.mmd	b698a4acc467fe87
-e2e/diagrams/class-diagram/nightly-check/7-should-render-a-simple-class-diagram-with-generic-class-2.mmd	8a8146e7840ff01b
-e2e/diagrams/class-diagram/nightly-check/7-should-render-a-simple-class-diagram-with-generic-class-3.mmd	e338204193420d9b
-e2e/diagrams/class-diagram/nightly-check/7-should-render-a-simple-class-diagram-with-generic-class.mmd	54cfc47da1755d2d
-e2e/diagrams/class-diagram/nightly-check/8-should-render-a-simple-class-diagram-with-generic-class-and-relations-2.mmd	59acca90947ae24d
-e2e/diagrams/class-diagram/nightly-check/8-should-render-a-simple-class-diagram-with-generic-class-and-relations-3.mmd	c4338b9b0ac9ee31
-e2e/diagrams/class-diagram/nightly-check/8-should-render-a-simple-class-diagram-with-generic-class-and-relations.mmd	8285220ef9fe66d1
-e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link-2.mmd	2abf16369b199069
-e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link-3.mmd	5a2bd7a21db65a31
-e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link.mmd	959c0704000d4c91
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-0-should-render-a-simple-class-diagram.mmd	b44cdbed71a30077
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1-1-should-render-a-simple-class-diagram-without-htmllabels.mmd	61b638a15701f1f4
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1-should-render-a-simple-class-diagram.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-10-should-render-a-simple-class-diagram-with-clickable-callback.mmd	3757d4899b98fdef
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-11-1-should-render-a-simple-class-diagram-with-return-type-on-method-without-htmllabels.mmd	5c03f1749cdd32a3
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-11-should-render-a-simple-class-diagram-with-return-type-on-method.mmd	a1500c2c3a62bea3
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-12-1-should-render-a-simple-class-diagram-with-generic-types-without-htmllabels.mmd	e1e84c01708946a3
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-12-should-render-a-simple-class-diagram-with-generic-types.mmd	977c1288b24bc8b5
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-13-should-render-a-simple-class-diagram-with-css-classes-applied.mmd	7c8f6385d38a01b3
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-14-should-render-a-simple-class-diagram-with-css-classes-applied-directly.mmd	714f40da890008b1
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1433-should-render-a-simple-class-with-a-title.mmd	9a546ad8c81a8aa5
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-15-should-render-a-simple-class-diagram-with-css-classes-applied-two-multiple-classes.mmd	5887d287dfefe247
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-16a-should-render-a-simple-class-diagram-with-static-field.mmd	886202ea14cc88cf
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-16b-should-handle-the-direction-statement-with-tb.mmd	cd733d326257217d
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-17a-should-handle-the-direction-statement-with-bt.mmd	d66647a0fd6299d3
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-17b-should-handle-the-direction-statement-with-rl.mmd	3ee2674fa454873f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-18a-should-handle-the-direction-statement-with-lr.mmd	6a569e38bd56168d
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-18b-should-render-a-simple-class-diagram-with-notes.mmd	93b0cdad2e697025
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-2-should-render-a-simple-class-diagram-with-different-visibilities.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-3-should-render-a-simple-class-diagram-with-different-visibilities-without-htmllabels.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-should-render-a-simple-class-diagrams-with-cardinality.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-4-should-render-a-simple-class-diagram-with-comments.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-5-1-should-render-a-simple-class-diagram-with-abstract-method-without-htmllabels.mmd	a449d5ace165b90d
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-5-should-render-a-simple-class-diagram-with-abstract-method.mmd	5a3698b952990cb5
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-6-1-should-render-a-simple-class-diagram-with-static-method-without-htmllabels.mmd	57e19ad328b924fb
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-6-should-render-a-simple-class-diagram-with-static-method.mmd	9a20fce1251d00b7
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-7-1-should-render-a-simple-class-diagram-with-generic-class-without-htmllabels.mmd	07ecfb8e1ff9374b
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-7-should-render-a-simple-class-diagram-with-generic-class.mmd	45fd8171ac6f5871
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-9-should-render-a-simple-class-diagram-with-clickable-link.mmd	7844eb76b1c820c9
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-add-classes-namespaces.mmd	389bd5b71972cc48
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-class-with-a-text-label-members-and-annotation.mmd	9b326eb0849a670d
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-class-with-text-label.mmd	c0d9032e5480b32d
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-full-class-diagram-using-elk.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-full-class-diagram-with-the-handdrawn-look.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-namespace-with-a-custom-label.mmd	4795139aa1dfaaf0
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-self-referential-class-diagram-with-multiplicity-labels.mmd	ada89679bf99c381
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-a-custom-theme.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-classdef-definitions.mmd	e3ec27b2e3e3fb1f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-classdefs-being-applied-without-htmllabels.mmd	2a289347882b2b63
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-classdefs-being-applied.mmd	7249fa0ea8f15f3f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-markdown-styling-without-htmllabels.mmd	7f485b5470ca5ef7
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-markdown-styling.mmd	47ba56355438ad4f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-attributes-only-methods.mmd	63e213e68528762f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-members-if-hideemptymembersbox-is-enabled.mmd	638b73ea410f73d5
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-members.mmd	0234847564684385
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-methods-only-attributes.mmd	7390e1210053a707
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-style-definition-without-htmllabels.mmd	ae0fcfe92cfa282b
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-style-definition.mmd	43663aecfc19082f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look-without-htmllabels.mmd	a8f672b0ffabf88f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look.mmd	60ccd4a976cc7a47
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-the-handdrawn-look.mmd	406c5f6261bf8ce1
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-classes-with-different-text-labels.mmd	8c253eff87f83441
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-classlabel-if-class-has-already-been-defined-earlier.mmd	50d3ef22810e8d4f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-compact-mode-with-hierarchicalnamespaces-false.mmd	15885baf4369115e
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-multiple-classes-with-same-text-labels.mmd	a12d9bf45a07961b
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-nested-namespaces-with-dot-notation.mmd	b329b4757a5e62cb
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-syntactically-nested-namespaces.mmd	a6db9ad65937c44e
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-two-classes-with-text-labels.mmd	ff0364b00d67e7d9
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-full-class-diagram-with-the-handdrawn-look-2.mmd	47cf2b0c9c969e2f
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-full-class-diagram-with-the-handdrawn-look.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look-2.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look-without-htmllabels.mmd	a9bb7f0fdbfaf6c7
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look.mmd	60ccd4a976cc7a47
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-the-handdrawn-look.mmd	406c5f6261bf8ce1
-e2e/diagrams/class-diagram/nightly-check/has-a-label-with-char-sequence-graph.mmd	2238c8c828a66b8f
-e2e/diagrams/class-diagram/nightly-check/renders-a-class-diagram-with-a-generic-class-in-a-namespace.mmd	c7d3353e9c03a0b8
-e2e/diagrams/class-diagram/nightly-check/renders-a-class-diagram-with-multiple-classes-and-relationships-in-a-namespace.mmd	000eaf7298e44798
-e2e/diagrams/class-diagram/nightly-check/renders-a-class-diagram-with-nested-namespaces-and-relationships.mmd	4ef76314a2116f51
-e2e/diagrams/class-diagram/nightly-check/renders-a-namespace-with-a-custom-label.mmd	5e53a479d8057b14
-e2e/diagrams/class-diagram/nightly-check/renders-compact-mode-with-hierarchicalnamespaces-false.mmd	f4d4849dc8f80cb2
-e2e/diagrams/class-diagram/nightly-check/renders-nested-namespaces-with-dot-notation.mmd	5e86d3b64f59b325
-e2e/diagrams/class-diagram/nightly-check/renders-syntactically-nested-namespaces.mmd	3ad89a84357a7476
-e2e/diagrams/class-diagram/nightly-check/should-add-classes-namespaces-2.mmd	785e13ab4d79bcfa
-e2e/diagrams/class-diagram/nightly-check/should-add-classes-namespaces.mmd	c1f8d2a40a294948
-e2e/diagrams/class-diagram/nightly-check/should-add-notes-in-namespaces.mmd	59be3e6a46b66f04
-e2e/diagrams/class-diagram/nightly-check/should-handle-an-empty-class-body-with-empty-braces.mmd	cbf6680e4fa92a9b
-e2e/diagrams/class-diagram/nightly-check/should-handle-backticks-for-namespace-and-class-names.mmd	540a31b36d941316
-e2e/diagrams/class-diagram/nightly-check/should-handle-newline-in-string-label.mmd	26411e0491126a19
-e2e/diagrams/class-diagram/nightly-check/should-handle-newline-title-in-namespace.mmd	f759ba20c9c99ce8
-e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-a-text-label-members-and-annotation-2.mmd	11090d2ba9302e23
-e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-a-text-label-members-and-annotation.mmd	29fc862476f05317
-e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-text-label-2.mmd	b7af30df292cfb57
-e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-text-label.mmd	2d1b4ea09f974763
-e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram-using-elk.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram.mmd	ce586eda1e938277
-e2e/diagrams/class-diagram/nightly-check/should-render-a-namespace-with-a-custom-label-2.mmd	975fbdc72fabded8
-e2e/diagrams/class-diagram/nightly-check/should-render-a-namespace-with-a-custom-label.mmd	c1fb97e595ec9b0c
-e2e/diagrams/class-diagram/nightly-check/should-render-a-self-referential-class-diagram-with-multiplicity-labels-fixes-7560.mmd	66da92d69325008b
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-a-custom-theme-2.mmd	6ed9c1cc74dff00b
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-a-custom-theme.mmd	7cb1d85a93cf41fc
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-classdef-definitions.mmd	995c95aae5071393
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-classdefs-being-applied-without-htmllabels.mmd	459324cd675dc4d5
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-classdefs-being-applied.mmd	e1f67a7456d04f6f
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-markdown-styling-without-htmllabels.mmd	037b59390e7d1eff
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-markdown-styling.mmd	c8ed0325757e9477
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-attributes-only-methods-2.mmd	142421565ed19b09
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-attributes-only-methods.mmd	c38e8bda639877e1
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-members-2.mmd	bea702a40c98046d
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-members-if-hideemptymembersbox-is-enabled.mmd	4b64b828f8a392b5
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-members.mmd	2882b525ff9d7baf
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-methods-only-attributes-2.mmd	1a6092583528d5f9
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-methods-only-attributes.mmd	fe1c7c874320ec35
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-style-definition-2.mmd	2ae95c6413001501
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-style-definition-without-htmllabels.mmd	ea6b185a8fd9f063
-e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-style-definition.mmd	d2228ef3f6a16a29
-e2e/diagrams/class-diagram/nightly-check/should-render-class-diagram-with-many-newlines-in-title.mmd	274b9ada71541171
-e2e/diagrams/class-diagram/nightly-check/should-render-class-diagram-with-newlines-in-title.mmd	98c38149e9e12585
-e2e/diagrams/class-diagram/nightly-check/should-render-classes-with-different-text-labels-2.mmd	e386da8937c0bad1
-e2e/diagrams/class-diagram/nightly-check/should-render-classes-with-different-text-labels.mmd	dc7455fc5c73088d
-e2e/diagrams/class-diagram/nightly-check/should-render-classlabel-if-class-has-already-been-defined-earlier-2.mmd	49f49d67fd2d3c1f
-e2e/diagrams/class-diagram/nightly-check/should-render-classlabel-if-class-has-already-been-defined-earlier.mmd	336db2928d307063
-e2e/diagrams/class-diagram/nightly-check/should-render-compact-mode-with-hierarchicalnamespaces-false.mmd	f4d4849dc8f80cb2
-e2e/diagrams/class-diagram/nightly-check/should-render-multiple-classes-with-same-text-labels-2.mmd	f680eb8666705fe1
-e2e/diagrams/class-diagram/nightly-check/should-render-multiple-classes-with-same-text-labels.mmd	2082fa94412bd8b5
-e2e/diagrams/class-diagram/nightly-check/should-render-nested-namespaces-with-dot-notation-2.mmd	7797eb8b681b0d63
-e2e/diagrams/class-diagram/nightly-check/should-render-nested-namespaces-with-dot-notation.mmd	4fd338cfdc6c8403
-e2e/diagrams/class-diagram/nightly-check/should-render-syntactically-nested-namespaces-2.mmd	ceea2845454ad2da
-e2e/diagrams/class-diagram/nightly-check/should-render-syntactically-nested-namespaces.mmd	fbd210cf2414b93e
-e2e/diagrams/class-diagram/nightly-check/should-render-two-classes-with-text-labels-2.mmd	486809819eb2a6bb
-e2e/diagrams/class-diagram/nightly-check/should-render-two-classes-with-text-labels.mmd	c532ff0d4601c81f
-e2e/diagrams/class-diagram/nightly-check/should-render-with-newlines-in-title-and-an-annotation.mmd	fa62eb29534112e6
-e2e/diagrams/class-diagram/pr-check/1-should-render-a-simple-class-diagram-with-html-labels.mmd	9fd247dff5c8e6e3
-e2e/diagrams/class-diagram/pr-check/1-should-render-a-simple-class-diagram.mmd	0a401689e87a2f93
-e2e/diagrams/class-diagram/pr-check/16b-should-handle-the-direction-statement-with-tb-2.mmd	6da8e8ac167bdbe9
-e2e/diagrams/class-diagram/pr-check/16b-should-handle-the-direction-statement-with-tb.mmd	3b47a8db143c1cc1
-e2e/diagrams/class-diagram/pr-check/17b-should-handle-the-direction-statement-with-rl-2.mmd	a820b0e42320b8a9
-e2e/diagrams/class-diagram/pr-check/2-should-render-a-simple-class-diagrams-with-cardinality-3.mmd	d3214369bfa53edf
-e2e/diagrams/class-diagram/pr-check/5-1-should-render-a-simple-class-diagram-with-abstract-method-without-htmllabels.mmd	4ebd7969d6364bf1
-e2e/diagrams/class-diagram/pr-check/6-should-render-a-simple-class-diagram-with-static-method.mmd	75e0996372f69b87
-e2e/diagrams/class-diagram/pr-check/hd-8-should-render-a-simple-class-diagram-with-generic-class-and-relations.mmd	b8d1a4f40e9938e9
-e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-neo-dark-theme.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-neo-theme.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-color-theme.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-dark-color-theme.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-dark-theme.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-theme.mmd	c5ea2c0ab1d1449a
-e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-neo-dark-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-neo-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-color-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-dark-color-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-dark-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-neo-dark-theme.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-neo-theme.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-color-theme.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-dark-color-theme.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-dark-theme.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-theme.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-neo-dark-theme.mmd	7cb1d85a93cf41fc
-e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-neo-theme.mmd	7cb1d85a93cf41fc
-e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-color-theme.mmd	7cb1d85a93cf41fc
-e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-dark-color-theme.mmd	7cb1d85a93cf41fc
-e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-dark-theme.mmd	7cb1d85a93cf41fc
-e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-theme.mmd	7cb1d85a93cf41fc
-e2e/diagrams/class-diagram/visual-check/dark-theme.mmd	0a2feb7791349831
-e2e/diagrams/class-diagram/visual-check/default-theme.mmd	46fc52e9b5b140e3
-e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-neo-dark-theme.mmd	a486d52e65ded013
-e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-neo-theme.mmd	f3dc9d580ca5f41d
-e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-color-theme.mmd	83379a393d84a367
-e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-dark-color-theme.mmd	cd061d11263d8187
-e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-dark-theme.mmd	c63f1be1a94576b7
-e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-theme.mmd	8457f503dff9e979
-e2e/diagrams/class-diagram/visual-check/forest-theme.mmd	f4242c259b854781
-e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-neo-dark-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-neo-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-color-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-dark-color-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-dark-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-theme.mmd	07b327dc227d7460
-e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-neo-dark-theme.mmd	0d2bcfac06a2894f
-e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-neo-theme.mmd	5141f3becff738a3
-e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-color-theme.mmd	67dca2db369076a3
-e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-dark-color-theme.mmd	9af3c347f1715f8d
-e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-dark-theme.mmd	52af2ba02d31debb
-e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-theme.mmd	1081ae41c25d45e9
-e2e/diagrams/class-diagram/visual-check/neutral-theme.mmd	79b8a6fe159b18af
+e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram-2.mmd	0b1070509e2c9a33	75acdef49b53bf6d
+e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram.mmd	5093c7ca041d932f	e428b4dcca7fb533
+e2e/diagrams/class-diagram/nightly-check/1-1-should-render-a-simple-class-diagram-without-htmllabels.mmd	42cb0ac06ed75ab7	200c3c62f1b8810b
+e2e/diagrams/class-diagram/nightly-check/1-should-render-a-simple-class-diagram-2.mmd	0508682fd414d237	3b48b9b8e7f5b7eb
+e2e/diagrams/class-diagram/nightly-check/1-should-render-a-simple-class-diagram-3.mmd	923822789d30fc97	316a79155830c2cb
+e2e/diagrams/class-diagram/nightly-check/10-should-render-a-simple-class-diagram-with-clickable-callback-2.mmd	48504f320ede618b	c77ec6b432782739
+e2e/diagrams/class-diagram/nightly-check/10-should-render-a-simple-class-diagram-with-clickable-callback-3.mmd	b8b7192032377fa7	18ebb3158ad6dac7
+e2e/diagrams/class-diagram/nightly-check/10-should-render-a-simple-class-diagram-with-clickable-callback.mmd	8297597d4d49b453	c12384665c4b83e1
+e2e/diagrams/class-diagram/nightly-check/11-1-should-render-a-simple-class-diagram-with-return-type-on-method-without-htmllabels.mmd	9ce6e4df07ad3aa3	2319af0c980110a7
+e2e/diagrams/class-diagram/nightly-check/11-should-render-a-simple-class-diagram-with-return-type-on-method-2.mmd	ecc3cb877e680aed	bb9d5c2a3511993d
+e2e/diagrams/class-diagram/nightly-check/11-should-render-a-simple-class-diagram-with-return-type-on-method-3.mmd	2754737f68d0e54d	3233c578c534bdc7
+e2e/diagrams/class-diagram/nightly-check/11-should-render-a-simple-class-diagram-with-return-type-on-method.mmd	b52c2ce4f9a34861	a917b9eeb43ac7dd
+e2e/diagrams/class-diagram/nightly-check/12-1-should-render-a-simple-class-diagram-with-generic-types-without-htmllabels.mmd	697be1c630db3c3d	10ea1e10ca886843
+e2e/diagrams/class-diagram/nightly-check/12-should-render-a-simple-class-diagram-with-generic-types-2.mmd	87f5b1b24245000f	79e5ecf8794f1977
+e2e/diagrams/class-diagram/nightly-check/12-should-render-a-simple-class-diagram-with-generic-types-3.mmd	e3ab1534132aa4df	48145db5bae4fc69
+e2e/diagrams/class-diagram/nightly-check/12-should-render-a-simple-class-diagram-with-generic-types.mmd	ab6a979fa49dc247	9c51914cbaf9fa45
+e2e/diagrams/class-diagram/nightly-check/13-should-render-a-simple-class-diagram-with-css-classes-applied-2.mmd	ec695a94cb100021	922fcb2f21366b13
+e2e/diagrams/class-diagram/nightly-check/13-should-render-a-simple-class-diagram-with-css-classes-applied-3.mmd	cd1a27b226277941	8d3b9512df43d26f
+e2e/diagrams/class-diagram/nightly-check/13-should-render-a-simple-class-diagram-with-css-classes-applied.mmd	2946c12a4075a423	66bec9055da00421
+e2e/diagrams/class-diagram/nightly-check/14-should-render-a-simple-class-diagram-with-css-classes-applied-directly-2.mmd	4e5c5b3b311cac83	10289ca5f00e596f
+e2e/diagrams/class-diagram/nightly-check/14-should-render-a-simple-class-diagram-with-css-classes-applied-directly-3.mmd	1104f16086c92747	5424f74ae705ff8d
+e2e/diagrams/class-diagram/nightly-check/14-should-render-a-simple-class-diagram-with-css-classes-applied-directly.mmd	dcf8b2b750aa250b	ddbb6c355bf2f729
+e2e/diagrams/class-diagram/nightly-check/1433-should-render-a-simple-class-with-a-title-2.mmd	21166a410ee084ff	e1c4b8a565fa0dbd
+e2e/diagrams/class-diagram/nightly-check/1433-should-render-a-simple-class-with-a-title.mmd	34c4f6d9ca8bc7d7	a991e37e700550d7
+e2e/diagrams/class-diagram/nightly-check/15-should-render-a-simple-class-diagram-with-css-classes-applied-to-multiple-classes.mmd	e9e3f4a299cf92a5	62e9d4b00aa4ee6d
+e2e/diagrams/class-diagram/nightly-check/15-should-render-a-simple-class-diagram-with-css-classes-applied-two-multiple-classes-2.mmd	3c771c3e27eb500b	e70a00430d1ee73b
+e2e/diagrams/class-diagram/nightly-check/15-should-render-a-simple-class-diagram-with-css-classes-applied-two-multiple-classes.mmd	fa3c94b141a46d43	88c63d1af6bb3d81
+e2e/diagrams/class-diagram/nightly-check/16a-should-render-a-simple-class-diagram-with-static-field-2.mmd	b282606ffcb9b617	0a84bd825afadac9
+e2e/diagrams/class-diagram/nightly-check/16a-should-render-a-simple-class-diagram-with-static-field.mmd	793aeb6de6613dc9	3e3c8cb58bbc1b77
+e2e/diagrams/class-diagram/nightly-check/17a-should-handle-the-direction-statement-with-bt-2.mmd	0420508f5d3b0c87	1ae2541e34928a95
+e2e/diagrams/class-diagram/nightly-check/17a-should-handle-the-direction-statement-with-bt.mmd	dcdce6d434718db5	ae74b49d99e7b613
+e2e/diagrams/class-diagram/nightly-check/17b-should-handle-the-direction-statement-with-rl.mmd	93aa12cfb90071c3	b3770cdbd1d58007
+e2e/diagrams/class-diagram/nightly-check/18a-should-handle-the-direction-statement-with-lr-2.mmd	8140c63e5c3456c3	9295644989704d05
+e2e/diagrams/class-diagram/nightly-check/18a-should-handle-the-direction-statement-with-lr.mmd	fd9e444d4f496add	99bc39fb162e564d
+e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes-2.mmd	32bd5c34d63e3539	7a51ee1889bf366d
+e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes.mmd	25aa8820aaf5eeb1	c8c5d9801b49f6dd
+e2e/diagrams/class-diagram/nightly-check/19-should-render-a-simple-class-diagram-with-notes.mmd	eb81518812fa19c9	4bc46cf3f02b1d1b
+e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagram-with-different-visibilities.mmd	2d9d4fc45f5257ea	2d9d4fc45f5257ea
+e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels-2.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/2-2-should-render-a-simple-class-diagram-with-different-visibilities-2.mmd	48530cbd443effe7	341b5b354dc928dd
+e2e/diagrams/class-diagram/nightly-check/2-2-should-render-a-simple-class-diagram-with-different-visibilities.mmd	2d9d4fc45f5257ea	2d9d4fc45f5257ea
+e2e/diagrams/class-diagram/nightly-check/2-3-should-render-a-simple-class-diagram-with-different-visibilities-without-htmllabels-2.mmd	2ad0abd884fbacd7	159db2855325b60b
+e2e/diagrams/class-diagram/nightly-check/2-3-should-render-a-simple-class-diagram-with-different-visibilities-without-htmllabels.mmd	2d9d4fc45f5257ea	2d9d4fc45f5257ea
+e2e/diagrams/class-diagram/nightly-check/2-should-render-a-simple-class-diagrams-with-cardinality-2.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/2-should-render-a-simple-class-diagrams-with-cardinality-3.mmd	ddecc14787952373	8239ed142f471315
+e2e/diagrams/class-diagram/nightly-check/2-should-render-a-simple-class-diagrams-with-cardinality.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/3-should-render-a-simple-class-diagram-with-different-visibilities.mmd	8db0185b9ecf6c60	8db0185b9ecf6c60
+e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments-2.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments-3.mmd	019ea936a8ab1012	019ea936a8ab1012
+e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments-4.mmd	8150aef0b0d94ddd	9a59592ee51100f1
+e2e/diagrams/class-diagram/nightly-check/4-should-render-a-simple-class-diagram-with-comments.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/nightly-check/5-should-render-a-simple-class-diagram-with-abstract-method-2.mmd	9246c0b75c485119	373f9d46a6a7622f
+e2e/diagrams/class-diagram/nightly-check/5-should-render-a-simple-class-diagram-with-abstract-method-3.mmd	ae2fa31bf7f06d55	cd0abdfbd495637d
+e2e/diagrams/class-diagram/nightly-check/5-should-render-a-simple-class-diagram-with-abstract-method.mmd	4836d11e1327e741	cd72b948f645f9ff
+e2e/diagrams/class-diagram/nightly-check/6-1-should-render-a-simple-class-diagram-with-static-method-without-htmllabels.mmd	7b6f498f1b970d33	beadc6a3db2211cd
+e2e/diagrams/class-diagram/nightly-check/6-should-render-a-simple-class-diagram-with-static-method-2.mmd	d425801a796ea8e7	697c2da1dfee2309
+e2e/diagrams/class-diagram/nightly-check/6-should-render-a-simple-class-diagram-with-static-method-3.mmd	66c16922d4b00db7	bba76ac3201a71ed
+e2e/diagrams/class-diagram/nightly-check/7-1-should-render-a-simple-class-diagram-with-generic-class-without-htmllabels.mmd	b698a4acc467fe87	ee834a2affb5f14d
+e2e/diagrams/class-diagram/nightly-check/7-should-render-a-simple-class-diagram-with-generic-class-2.mmd	8a8146e7840ff01b	c6f5a072fb459753
+e2e/diagrams/class-diagram/nightly-check/7-should-render-a-simple-class-diagram-with-generic-class-3.mmd	e338204193420d9b	16c9e6fb7ecb8167
+e2e/diagrams/class-diagram/nightly-check/7-should-render-a-simple-class-diagram-with-generic-class.mmd	54cfc47da1755d2d	d71ee42618d24fad
+e2e/diagrams/class-diagram/nightly-check/8-should-render-a-simple-class-diagram-with-generic-class-and-relations-2.mmd	59acca90947ae24d	55f1212b9c0fa533
+e2e/diagrams/class-diagram/nightly-check/8-should-render-a-simple-class-diagram-with-generic-class-and-relations-3.mmd	c4338b9b0ac9ee31	ac574d4d15541089
+e2e/diagrams/class-diagram/nightly-check/8-should-render-a-simple-class-diagram-with-generic-class-and-relations.mmd	8285220ef9fe66d1	16174438ff61716b
+e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link-2.mmd	2abf16369b199069	18fb5bf6a4a109ab
+e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link-3.mmd	5a2bd7a21db65a31	a487daf49eeebc67
+e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link.mmd	959c0704000d4c91	513360a456de870b
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-0-should-render-a-simple-class-diagram.mmd	b44cdbed71a30077	b626286f78991879
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1-1-should-render-a-simple-class-diagram-without-htmllabels.mmd	61b638a15701f1f4	61b638a15701f1f4
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1-should-render-a-simple-class-diagram.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-10-should-render-a-simple-class-diagram-with-clickable-callback.mmd	3757d4899b98fdef	52248f63d1ea8429
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-11-1-should-render-a-simple-class-diagram-with-return-type-on-method-without-htmllabels.mmd	5c03f1749cdd32a3	b589c96e24cf499f
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-11-should-render-a-simple-class-diagram-with-return-type-on-method.mmd	a1500c2c3a62bea3	aaae4619384dd51b
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-12-1-should-render-a-simple-class-diagram-with-generic-types-without-htmllabels.mmd	e1e84c01708946a3	1c3ac4e24f63d7cf
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-12-should-render-a-simple-class-diagram-with-generic-types.mmd	977c1288b24bc8b5	d6a4c5cbea8978f1
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-13-should-render-a-simple-class-diagram-with-css-classes-applied.mmd	7c8f6385d38a01b3	d2c6334a715004db
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-14-should-render-a-simple-class-diagram-with-css-classes-applied-directly.mmd	714f40da890008b1	01779fbb5baddbc5
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1433-should-render-a-simple-class-with-a-title.mmd	9a546ad8c81a8aa5	1d9240498209cffd
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-15-should-render-a-simple-class-diagram-with-css-classes-applied-two-multiple-classes.mmd	5887d287dfefe247	e687b83c2a0c54d3
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-16a-should-render-a-simple-class-diagram-with-static-field.mmd	886202ea14cc88cf	ee40d72ef4f8bd49
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-16b-should-handle-the-direction-statement-with-tb.mmd	cd733d326257217d	d7caaf4d8ce63d73
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-17a-should-handle-the-direction-statement-with-bt.mmd	d66647a0fd6299d3	e4c1452ed652a8a9
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-17b-should-handle-the-direction-statement-with-rl.mmd	3ee2674fa454873f	45c29a4f52e44957
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-18a-should-handle-the-direction-statement-with-lr.mmd	6a569e38bd56168d	0a654dcfd420a597
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-18b-should-render-a-simple-class-diagram-with-notes.mmd	93b0cdad2e697025	e95786f5c6fe37ff
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-2-should-render-a-simple-class-diagram-with-different-visibilities.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-3-should-render-a-simple-class-diagram-with-different-visibilities-without-htmllabels.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-should-render-a-simple-class-diagrams-with-cardinality.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-4-should-render-a-simple-class-diagram-with-comments.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-5-1-should-render-a-simple-class-diagram-with-abstract-method-without-htmllabels.mmd	a449d5ace165b90d	8b028f6e85c6e333
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-5-should-render-a-simple-class-diagram-with-abstract-method.mmd	5a3698b952990cb5	8515304db9b6dd11
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-6-1-should-render-a-simple-class-diagram-with-static-method-without-htmllabels.mmd	57e19ad328b924fb	506240721c59e2af
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-6-should-render-a-simple-class-diagram-with-static-method.mmd	9a20fce1251d00b7	2fb76a296188daf3
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-7-1-should-render-a-simple-class-diagram-with-generic-class-without-htmllabels.mmd	07ecfb8e1ff9374b	d3f8e00b556cd8c9
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-7-should-render-a-simple-class-diagram-with-generic-class.mmd	45fd8171ac6f5871	275e26656172d123
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-9-should-render-a-simple-class-diagram-with-clickable-link.mmd	7844eb76b1c820c9	030187dde1c647fd
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-add-classes-namespaces.mmd	389bd5b71972cc48	836ba9c8a6c0a357
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-class-with-a-text-label-members-and-annotation.mmd	9b326eb0849a670d	91d166d1bf50ba89
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-class-with-text-label.mmd	c0d9032e5480b32d	1528f2ac5f17c607
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-full-class-diagram-using-elk.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-full-class-diagram-with-the-handdrawn-look.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-namespace-with-a-custom-label.mmd	4795139aa1dfaaf0	74fd90bc51017a31
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-self-referential-class-diagram-with-multiplicity-labels.mmd	ada89679bf99c381	75560e60d2ef7a03
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-a-custom-theme.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-classdef-definitions.mmd	e3ec27b2e3e3fb1f	dac0258cf39bdd47
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-classdefs-being-applied-without-htmllabels.mmd	2a289347882b2b63	6484592f547f06a7
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-classdefs-being-applied.mmd	7249fa0ea8f15f3f	0e474eec829cf195
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-markdown-styling-without-htmllabels.mmd	7f485b5470ca5ef7	67d9c462600b7a59
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-markdown-styling.mmd	47ba56355438ad4f	8c8c982ad092e011
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-attributes-only-methods.mmd	63e213e68528762f	56619bef67d7e0bf
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-members-if-hideemptymembersbox-is-enabled.mmd	638b73ea410f73d5	67a5db9924c4cd91
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-members.mmd	0234847564684385	440ef4bb32ce61e9
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-no-methods-only-attributes.mmd	7390e1210053a707	ef18e493b2cc6333
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-style-definition-without-htmllabels.mmd	ae0fcfe92cfa282b	e4e1036ba536fb6d
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-style-definition.mmd	43663aecfc19082f	a38b185bcbf85741
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look-without-htmllabels.mmd	a8f672b0ffabf88f	4e2a5bd38b14d55f
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look.mmd	60ccd4a976cc7a47	f0097c44a520bdc3
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-the-handdrawn-look.mmd	406c5f6261bf8ce1	73ac95f1457727f9
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-classes-with-different-text-labels.mmd	8c253eff87f83441	d02984ebb2f6c34f
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-classlabel-if-class-has-already-been-defined-earlier.mmd	50d3ef22810e8d4f	8cddc12eae6eda05
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-compact-mode-with-hierarchicalnamespaces-false.mmd	15885baf4369115e	6e4aaf48781c0aa7
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-multiple-classes-with-same-text-labels.mmd	a12d9bf45a07961b	2db563370cbc3a67
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-nested-namespaces-with-dot-notation.mmd	b329b4757a5e62cb	b65c659173a37831
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-syntactically-nested-namespaces.mmd	a6db9ad65937c44e	b549a12d96d6d11d
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-two-classes-with-text-labels.mmd	ff0364b00d67e7d9	6467741e669a887d
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-full-class-diagram-with-the-handdrawn-look-2.mmd	47cf2b0c9c969e2f	497e2670f3ba7045
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-full-class-diagram-with-the-handdrawn-look.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look-2.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look-without-htmllabels.mmd	a9bb7f0fdbfaf6c7	2a9860ad854a3c67
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-styles-and-the-handdrawn-look.mmd	60ccd4a976cc7a47	f0097c44a520bdc3
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-the-handdrawn-look.mmd	406c5f6261bf8ce1	73ac95f1457727f9
+e2e/diagrams/class-diagram/nightly-check/has-a-label-with-char-sequence-graph.mmd	2238c8c828a66b8f	2f9ee650325fbc15
+e2e/diagrams/class-diagram/nightly-check/renders-a-class-diagram-with-a-generic-class-in-a-namespace.mmd	c7d3353e9c03a0b8	8f79f56101461721
+e2e/diagrams/class-diagram/nightly-check/renders-a-class-diagram-with-multiple-classes-and-relationships-in-a-namespace.mmd	000eaf7298e44798	1d09a41b19f6fcdd
+e2e/diagrams/class-diagram/nightly-check/renders-a-class-diagram-with-nested-namespaces-and-relationships.mmd	4ef76314a2116f51	bb1a0a150a2a41bb
+e2e/diagrams/class-diagram/nightly-check/renders-a-namespace-with-a-custom-label.mmd	5e53a479d8057b14	f122b9da3462bc41
+e2e/diagrams/class-diagram/nightly-check/renders-compact-mode-with-hierarchicalnamespaces-false.mmd	f4d4849dc8f80cb2	5c14e8f93dfc5153
+e2e/diagrams/class-diagram/nightly-check/renders-nested-namespaces-with-dot-notation.mmd	5e86d3b64f59b325	21ec2df1f696c403
+e2e/diagrams/class-diagram/nightly-check/renders-syntactically-nested-namespaces.mmd	3ad89a84357a7476	1d46d332b57d3a65
+e2e/diagrams/class-diagram/nightly-check/should-add-classes-namespaces-2.mmd	785e13ab4d79bcfa	f2a3069783c20359
+e2e/diagrams/class-diagram/nightly-check/should-add-classes-namespaces.mmd	c1f8d2a40a294948	b52c232fe13fcfc9
+e2e/diagrams/class-diagram/nightly-check/should-add-notes-in-namespaces.mmd	59be3e6a46b66f04	e418a30189e72ee7
+e2e/diagrams/class-diagram/nightly-check/should-handle-an-empty-class-body-with-empty-braces.mmd	cbf6680e4fa92a9b	ca24d844c45659a1
+e2e/diagrams/class-diagram/nightly-check/should-handle-backticks-for-namespace-and-class-names.mmd	540a31b36d941316	e55474ed245e0585
+e2e/diagrams/class-diagram/nightly-check/should-handle-newline-in-string-label.mmd	26411e0491126a19	97aee68727546751
+e2e/diagrams/class-diagram/nightly-check/should-handle-newline-title-in-namespace.mmd	f759ba20c9c99ce8	268de7eaaa469e5b
+e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-a-text-label-members-and-annotation-2.mmd	11090d2ba9302e23	c0ee70aae88c21ed
+e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-a-text-label-members-and-annotation.mmd	29fc862476f05317	7a2543f7c7b2f6fb
+e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-text-label-2.mmd	b7af30df292cfb57	56c46a7ee538fd8f
+e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-text-label.mmd	2d1b4ea09f974763	461a36934fac4aab
+e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram-using-elk.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram.mmd	ce586eda1e938277	549e64f8cc7cc121
+e2e/diagrams/class-diagram/nightly-check/should-render-a-namespace-with-a-custom-label-2.mmd	975fbdc72fabded8	8d32d711ca4baa19
+e2e/diagrams/class-diagram/nightly-check/should-render-a-namespace-with-a-custom-label.mmd	c1fb97e595ec9b0c	dbe0848b35edbb0b
+e2e/diagrams/class-diagram/nightly-check/should-render-a-self-referential-class-diagram-with-multiplicity-labels-fixes-7560.mmd	66da92d69325008b	1073104e253ba475
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-a-custom-theme-2.mmd	6ed9c1cc74dff00b	a8407c57f9481ba8
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-a-custom-theme.mmd	7cb1d85a93cf41fc	7cb1d85a93cf41fc
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-classdef-definitions.mmd	995c95aae5071393	aacae0d9119ef1ad
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-classdefs-being-applied-without-htmllabels.mmd	459324cd675dc4d5	72abe6743c77a3b3
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-classdefs-being-applied.mmd	e1f67a7456d04f6f	af8aa55fa0324ab7
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-markdown-styling-without-htmllabels.mmd	037b59390e7d1eff	afd2e06533382765
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-markdown-styling.mmd	c8ed0325757e9477	c1e1157017f05a41
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-attributes-only-methods-2.mmd	142421565ed19b09	a863bf64c06e5117
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-attributes-only-methods.mmd	c38e8bda639877e1	f692aecbd6083e01
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-members-2.mmd	bea702a40c98046d	3d8616383b9a6113
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-members-if-hideemptymembersbox-is-enabled.mmd	4b64b828f8a392b5	ad9ec217e05be303
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-members.mmd	2882b525ff9d7baf	39a3742a7e729e1f
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-methods-only-attributes-2.mmd	1a6092583528d5f9	1a66ee464016cd59
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-no-methods-only-attributes.mmd	fe1c7c874320ec35	654b2f7f6a13948b
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-style-definition-2.mmd	2ae95c6413001501	f75443f9f1cf19dd
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-style-definition-without-htmllabels.mmd	ea6b185a8fd9f063	748bf2cbb8167e87
+e2e/diagrams/class-diagram/nightly-check/should-render-a-simple-class-diagram-with-style-definition.mmd	d2228ef3f6a16a29	c96bac5894ad53ad
+e2e/diagrams/class-diagram/nightly-check/should-render-class-diagram-with-many-newlines-in-title.mmd	274b9ada71541171	74089591e707c2fb
+e2e/diagrams/class-diagram/nightly-check/should-render-class-diagram-with-newlines-in-title.mmd	98c38149e9e12585	1c7610b85040d30b
+e2e/diagrams/class-diagram/nightly-check/should-render-classes-with-different-text-labels-2.mmd	e386da8937c0bad1	2413856f94f7a07f
+e2e/diagrams/class-diagram/nightly-check/should-render-classes-with-different-text-labels.mmd	dc7455fc5c73088d	39e7a5228d1a80ff
+e2e/diagrams/class-diagram/nightly-check/should-render-classlabel-if-class-has-already-been-defined-earlier-2.mmd	49f49d67fd2d3c1f	24611f4021037a81
+e2e/diagrams/class-diagram/nightly-check/should-render-classlabel-if-class-has-already-been-defined-earlier.mmd	336db2928d307063	4612642ebc4badb9
+e2e/diagrams/class-diagram/nightly-check/should-render-compact-mode-with-hierarchicalnamespaces-false.mmd	f4d4849dc8f80cb2	5c14e8f93dfc5153
+e2e/diagrams/class-diagram/nightly-check/should-render-multiple-classes-with-same-text-labels-2.mmd	f680eb8666705fe1	3e015564531ac4f5
+e2e/diagrams/class-diagram/nightly-check/should-render-multiple-classes-with-same-text-labels.mmd	2082fa94412bd8b5	809f63f54e321493
+e2e/diagrams/class-diagram/nightly-check/should-render-nested-namespaces-with-dot-notation-2.mmd	7797eb8b681b0d63	6d622ef864838019
+e2e/diagrams/class-diagram/nightly-check/should-render-nested-namespaces-with-dot-notation.mmd	4fd338cfdc6c8403	b00e296d55f53f79
+e2e/diagrams/class-diagram/nightly-check/should-render-syntactically-nested-namespaces-2.mmd	ceea2845454ad2da	0f00db552cd98793
+e2e/diagrams/class-diagram/nightly-check/should-render-syntactically-nested-namespaces.mmd	fbd210cf2414b93e	2ee37d80e0767af5
+e2e/diagrams/class-diagram/nightly-check/should-render-two-classes-with-text-labels-2.mmd	486809819eb2a6bb	403313d130512f11
+e2e/diagrams/class-diagram/nightly-check/should-render-two-classes-with-text-labels.mmd	c532ff0d4601c81f	f3fc670afec3c2d1
+e2e/diagrams/class-diagram/nightly-check/should-render-with-newlines-in-title-and-an-annotation.mmd	fa62eb29534112e6	fa62eb29534112e6
+e2e/diagrams/class-diagram/pr-check/1-should-render-a-simple-class-diagram-with-html-labels.mmd	9fd247dff5c8e6e3	f73864306573f9e5
+e2e/diagrams/class-diagram/pr-check/1-should-render-a-simple-class-diagram.mmd	0a401689e87a2f93	c26be32356834337
+e2e/diagrams/class-diagram/pr-check/16b-should-handle-the-direction-statement-with-tb-2.mmd	6da8e8ac167bdbe9	fb93a5c7f8d9b2ff
+e2e/diagrams/class-diagram/pr-check/16b-should-handle-the-direction-statement-with-tb.mmd	3b47a8db143c1cc1	3cb52d407f921bb3
+e2e/diagrams/class-diagram/pr-check/17b-should-handle-the-direction-statement-with-rl-2.mmd	a820b0e42320b8a9	00878eae8402986d
+e2e/diagrams/class-diagram/pr-check/2-should-render-a-simple-class-diagrams-with-cardinality-3.mmd	d3214369bfa53edf	a6817cb3a3c872a9
+e2e/diagrams/class-diagram/pr-check/5-1-should-render-a-simple-class-diagram-with-abstract-method-without-htmllabels.mmd	4ebd7969d6364bf1	a6f142c72d9a7cd9
+e2e/diagrams/class-diagram/pr-check/6-should-render-a-simple-class-diagram-with-static-method.mmd	75e0996372f69b87	da4db4f20092a06d
+e2e/diagrams/class-diagram/pr-check/hd-8-should-render-a-simple-class-diagram-with-generic-class-and-relations.mmd	b8d1a4f40e9938e9	3bfdd15e0c1c6fbf
+e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-neo-dark-theme.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-neo-theme.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-color-theme.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-dark-color-theme.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-dark-theme.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/visual-check/all-relationships-classic-look-redux-theme.mmd	c5ea2c0ab1d1449a	c5ea2c0ab1d1449a
+e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-neo-dark-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-neo-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-color-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-dark-color-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-dark-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/all-relationships-neo-look-redux-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-neo-dark-theme.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-neo-theme.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-color-theme.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-dark-color-theme.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-dark-theme.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/visual-check/cardinality-classic-look-redux-theme.mmd	100e1a0eb96a2262	100e1a0eb96a2262
+e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-neo-dark-theme.mmd	7cb1d85a93cf41fc	7cb1d85a93cf41fc
+e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-neo-theme.mmd	7cb1d85a93cf41fc	7cb1d85a93cf41fc
+e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-color-theme.mmd	7cb1d85a93cf41fc	7cb1d85a93cf41fc
+e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-dark-color-theme.mmd	7cb1d85a93cf41fc	7cb1d85a93cf41fc
+e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-dark-theme.mmd	7cb1d85a93cf41fc	7cb1d85a93cf41fc
+e2e/diagrams/class-diagram/visual-check/cardinality-neo-look-redux-theme.mmd	7cb1d85a93cf41fc	7cb1d85a93cf41fc
+e2e/diagrams/class-diagram/visual-check/dark-theme.mmd	0a2feb7791349831	30b0087b663c24d9
+e2e/diagrams/class-diagram/visual-check/default-theme.mmd	46fc52e9b5b140e3	171607216023952e
+e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-neo-dark-theme.mmd	a486d52e65ded013	866e416207b3a293
+e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-neo-theme.mmd	f3dc9d580ca5f41d	51dcea5979ad5eee
+e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-color-theme.mmd	83379a393d84a367	709a33a226a3a968
+e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-dark-color-theme.mmd	cd061d11263d8187	d5ce8f84bdd4ce57
+e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-dark-theme.mmd	c63f1be1a94576b7	dfdafc36c9a31c27
+e2e/diagrams/class-diagram/visual-check/direction-tb-neo-look-redux-theme.mmd	8457f503dff9e979	c0769748fb35d872
+e2e/diagrams/class-diagram/visual-check/forest-theme.mmd	f4242c259b854781	6363ff740849850a
+e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-neo-dark-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-neo-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-color-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-dark-color-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-dark-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/full-with-notes-neo-look-redux-theme.mmd	07b327dc227d7460	07b327dc227d7460
+e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-neo-dark-theme.mmd	0d2bcfac06a2894f	0ea2ec927e5d292d
+e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-neo-theme.mmd	5141f3becff738a3	316c3bba596e39b0
+e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-color-theme.mmd	67dca2db369076a3	87c9247ebed7fcd8
+e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-dark-color-theme.mmd	9af3c347f1715f8d	c1aae5447fb3cbc9
+e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-dark-theme.mmd	52af2ba02d31debb	9d5515aa6bf15aa9
+e2e/diagrams/class-diagram/visual-check/generic-classes-neo-look-redux-theme.mmd	1081ae41c25d45e9	aceb515cff8c2fce
+e2e/diagrams/class-diagram/visual-check/neutral-theme.mmd	79b8a6fe159b18af	acb21de86a8d9c2a
 e2e/diagrams/conf-and-directives/pr-check/no-config-use-default.mmd	12d3d29b0cc8b3d2	12d3d29b0cc8b3d2	91cf2fd818daec8d
 e2e/diagrams/conf-and-directives/pr-check/settings-from-frontmatter-nodes-should-be-grey.mmd	32027665a36422bf	32027665a36422bf	2521e2c67ddb31c1
 e2e/diagrams/conf-and-directives/pr-check/settings-from-initialize-nodes-should-be-green.mmd	64d701690a1a491d	64d701690a1a491d	2eb2d2a1bbb3eb8b
@@ -2131,9 +2131,9 @@ e2e/platform/dev-diagrams/layout-tests/block-diagrams/test1.mmd	01a6ba8002396862
 e2e/platform/dev-diagrams/layout-tests/block-diagrams/test2.mmd	324db74633d71fe0
 e2e/platform/dev-diagrams/layout-tests/block-diagrams/test3.mmd	76623084b7c0702e
 e2e/platform/dev-diagrams/layout-tests/block-diagrams/test4.mmd	0dfab3865ee2870a
-e2e/platform/dev-diagrams/layout-tests/class-diagram-2.mmd	7761a35c1fe0c087
-e2e/platform/dev-diagrams/layout-tests/class-diagram-3.mmd	ae020fa09064f6dd
-e2e/platform/dev-diagrams/layout-tests/class-diagram.mmd	1d9b71bbff2a7bcf
+e2e/platform/dev-diagrams/layout-tests/class-diagram-2.mmd	7761a35c1fe0c087	4ba3d641b258e813
+e2e/platform/dev-diagrams/layout-tests/class-diagram-3.mmd	ae020fa09064f6dd	4f71ab3745a782c1
+e2e/platform/dev-diagrams/layout-tests/class-diagram.mmd	1d9b71bbff2a7bcf	577e8f88ea132b41
 e2e/platform/dev-diagrams/layout-tests/decision-flow.mmd	da40f8dbafd54d99	6ed08dc98205b1cd	ad5b736d76951727
 e2e/platform/dev-diagrams/layout-tests/decoupled-subgraph.mmd	d65ce1b99312edcc	d65ce1b99312edcc	983f5c8f234c88b1
 e2e/platform/dev-diagrams/layout-tests/deploy-pipeline-simplified.mmd	343b331e81a57b80	95a1d14286418956	272414de90f603ef
@@ -2145,10 +2145,10 @@ e2e/platform/dev-diagrams/layout-tests/edge-to-subgraph.mmd	bb4bc1058f080d46	bb4
 e2e/platform/dev-diagrams/layout-tests/edge-types.mmd	96df88e98d0252b3	dc3dacb505e37bbb	267bf4d40fe94295
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/4813-title-and-arrow-styling.mmd	20df9e6248ea6495	20df9e6248ea6495	96df1db14ae9f477
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/Render-stadium-shape.mmd	522ab5aab9ca3b87	fc61950feff2c599	8de75bf96f801c65
-e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/class-generic-no-html-labels.mmd	8d45af379a2b42a1
+e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/class-generic-no-html-labels.mmd	8d45af379a2b42a1	7d175100607d660f
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/diamond-intersections.mmd	feec8143a207ac72	e9bd868951b17bde	387d06421b53d155
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/flowchart-edge-styling.mmd	b7e1bac2c1d4ea5b	d014191926527b2f	c951e679ba371e99
-e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/full-class-diagram.mmd	ae6087976b1786b1
+e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/full-class-diagram.mmd	ae6087976b1786b1	e55080ffe532bf89
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/nested-subgraphs-reverse-order.mmd	5109737cd28e008c	5109737cd28e008c	c6536f4bb8c7dc55
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/non-rect-intersections.mmd	f39f880314466f39	eeac4e458cf16691	fe01382d2b06eeb7
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/requirement-label-alignment.mmd	95315846504eeb22

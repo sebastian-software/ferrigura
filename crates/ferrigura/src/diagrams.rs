@@ -365,7 +365,9 @@ fn read_class(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_jso
 
 fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<String, RenderError> {
     let id = prepared.id.as_str();
-    let section = Section::of(&prepared.view.config);
+    let mut section = Section::of(&prepared.view.config);
+    section.design = prepared.design;
+    section.roles = ferrigura_render::design::Roles::Class;
     class_render::render(&Context {
         fonts: prepared.fonts,
         diagram: &class::parse_prepared(&prepared.source, class::Options::default())?,

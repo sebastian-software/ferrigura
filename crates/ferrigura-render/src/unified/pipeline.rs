@@ -270,9 +270,10 @@ pub fn measure_for(
         }
         // A `labelRect` is the label of a swimlane edge, which the stylesheet does not center: its lines start
         // at the origin, and `labelRect.ts` moves the label by half its width (`shapes/rect.rs`).
-        // A note of a state diagram is a block of text, which the design mode keeps at the left.
+        // A note of a state or a class diagram is a block of text, which the design mode keeps at
+        // the left.
         let label_anchor = if node.shape == "labelRect"
-            || (node.shape == "note" && config.section.roles == crate::design::Roles::State)
+            || (node.shape == "note" && config.section.roles != crate::design::Roles::Flowchart)
         {
             Anchor::Start
         } else {
@@ -469,6 +470,14 @@ fn apply_layout(
     // side tip.
     if config.section.design.is_some() {
         crate::flowchart::turns::side_exits(&mut measured.data);
+        // A class relation's cardinalities stand beside its ends.
+        if measured.data.diagram_type == super::markers::CLASS {
+            crate::class::tree::merge_generalizations(
+                &mut measured.data.edges,
+                &measured.data.nodes,
+            );
+            super::terminal::place_beside_ends(&mut measured.data.edges, &measured.data.nodes);
+        }
     }
 }
 

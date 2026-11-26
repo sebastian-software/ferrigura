@@ -186,6 +186,10 @@ pub enum Role {
     /// A point where transitions split or meet: the fork and the join bar of a state diagram. It
     /// takes the color of the lines it joins.
     Junction,
+    /// A type that is not instantiated: an interface or an abstract class of a class diagram.
+    Interface,
+    /// A fixed set of values: an enumeration of a class diagram.
+    Enumeration,
 }
 
 /// Which shapes carry a role: the flowchart's, or the state diagram's. A shape that both diagram
@@ -197,6 +201,9 @@ pub enum Roles {
     Flowchart,
     /// The state diagram's: the start and the end state, the choice, the fork and the join.
     State,
+    /// The class diagram's: an interface or an abstract class, and an enumeration, read from the
+    /// class's annotation.
+    Class,
 }
 
 impl Role {
@@ -208,6 +215,8 @@ impl Role {
             Self::Decision => "decision",
             Self::Data => "data",
             Self::Junction => "junction",
+            Self::Interface => "interface",
+            Self::Enumeration => "enumeration",
         }
     }
 
@@ -219,6 +228,8 @@ impl Role {
             Self::Decision => ("decisionBkg", "decisionBorder", "decisionText"),
             Self::Data => ("dataBkg", "dataBorder", "dataText"),
             Self::Junction => ("lineColor", "lineColor", "textColor"),
+            Self::Interface => ("interfaceBkg", "interfaceBorder", "interfaceText"),
+            Self::Enumeration => ("enumerationBkg", "enumerationBorder", "enumerationText"),
         }
     }
 }
@@ -228,6 +239,9 @@ pub const ROLES: [Role; 3] = [Role::Terminal, Role::Decision, Role::Data];
 
 /// The roles of a state diagram, in the order of their rules.
 pub const STATE_ROLES: [Role; 3] = [Role::Terminal, Role::Decision, Role::Junction];
+
+/// The roles of a class diagram, in the order of their rules.
+pub const CLASS_ROLES: [Role; 2] = [Role::Interface, Role::Enumeration];
 
 /// The custom properties of the mode that no theme variable carries, for a tone: the role colors
 /// and the flood of the shadow, as declarations.
@@ -245,6 +259,23 @@ pub fn declarations(tone: Tone) -> &'static str {
              --decisionBkg:#2A2310;--decisionBorder:#92752A;--decisionText:#F0CB6E;\
              --dataBkg:#10271F;--dataBorder:#37856F;--dataText:#9BDDCB;\
              --floodColor:rgba(0, 0, 0, 0.5);"
+        }
+    }
+}
+
+/// The custom properties of the class diagram's roles for a tone, as declarations: a quiet tint
+/// and outline for an interface or an abstract class and for an enumeration, with the text of a
+/// neutral class.
+#[must_use]
+pub fn class_declarations(tone: Tone) -> &'static str {
+    match tone {
+        Tone::Light => {
+            "--interfaceBkg:#F3F6FE;--interfaceBorder:#6B83D3;--interfaceText:#1A1F2B;\
+             --enumerationBkg:#F1F8F5;--enumerationBorder:#3F8F79;--enumerationText:#1A1F2B;"
+        }
+        Tone::Dark => {
+            "--interfaceBkg:#1B2131;--interfaceBorder:#5D74C4;--interfaceText:#E7E9EE;\
+             --enumerationBkg:#17231F;--enumerationBorder:#3F8572;--enumerationText:#E7E9EE;"
         }
     }
 }
@@ -289,7 +320,10 @@ mod tests {
                 colours.insert(name, value.as_str().unwrap().to_owned());
             }
         }
-        for declaration in declarations(tone).split(';') {
+        for declaration in declarations(tone)
+            .split(';')
+            .chain(class_declarations(tone).split(';'))
+        {
             if let Some((name, value)) = declaration.trim().split_once(':')
                 && value.starts_with('#')
             {
@@ -303,8 +337,9 @@ mod tests {
     fn text_and_lines_keep_their_contrast_in_both_tones() {
         // WCAG 2.1: 4.5 for text (1.4.3), 3 for the lines a reader needs to tell shapes and
         // connections apart (1.4.11). A line is checked on the page and inside a group: a
-        // subgraph, a composite state and a concurrency region.
-        const TEXT: [(&str, &str); 13] = [
+        // subgraph, a composite state and a concurrency region. A class box's annotation and
+        // visibility marks and a cardinality are muted text, on a class's ground and on the page.
+        const TEXT: [(&str, &str); 19] = [
             ("textColor", "background"),
             ("nodeTextColor", "mainBkg"),
             ("titleColor", "clusterBkg"),
@@ -318,8 +353,14 @@ mod tests {
             ("transitionLabelColor", "compositeBackground"),
             ("transitionLabelColor", "altBackground"),
             ("noteTextColor", "noteBkgColor"),
+            ("interfaceText", "interfaceBkg"),
+            ("enumerationText", "enumerationBkg"),
+            ("titleColor", "mainBkg"),
+            ("titleColor", "background"),
+            ("titleColor", "interfaceBkg"),
+            ("titleColor", "enumerationBkg"),
         ];
-        const LINES: [&str; 8] = [
+        const LINES: [&str; 10] = [
             "lineColor",
             "arrowheadColor",
             "nodeBorder",
@@ -328,6 +369,8 @@ mod tests {
             "dataBorder",
             "stateBorder",
             "noteBorderColor",
+            "interfaceBorder",
+            "enumerationBorder",
         ];
         for tone in [Tone::Light, Tone::Dark] {
             let colours = colours(tone);
@@ -381,6 +424,13 @@ mod tests {
                 }
             }
             assert!(declared.contains("--floodColor:"));
+            let declared = class_declarations(tone);
+            for role in CLASS_ROLES {
+                let (fill, stroke, text) = role.properties();
+                for property in [fill, stroke, text] {
+                    assert!(declared.contains(&format!("--{property}:")), "{property}");
+                }
+            }
         }
     }
 }

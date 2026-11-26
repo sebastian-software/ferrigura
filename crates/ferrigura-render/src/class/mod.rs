@@ -5,6 +5,7 @@
 pub mod data;
 pub mod member;
 pub mod style;
+pub mod tree;
 
 use ferrigura_model::class::ClassDiagram;
 use ferrigura_text::{
@@ -40,6 +41,10 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     let mut data = data::get_data(diagram, input.section, input.globals, input.theme.light);
     // `classRenderer-v3-unified.ts` 59: the diagram type names the markers and their class.
     data.diagram_type = markers::CLASS.to_owned();
+    let design = input.section.design;
+    if design.is_some() {
+        orient_relations(&mut data);
+    }
     let mut measured = pipeline::measure(data, &config)?;
     pipeline::lay_out_for_render(&mut measured, &config)?;
     let painted = pipeline::paint(&measured, id, &config)?;
@@ -119,7 +124,12 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "classDiagram", &diagram.acc_title, &diagram.acc_descr);
-    let style = style::style_sheet(id, input.theme, input.globals, &families);
+    let style = style::style_sheet(id, input.theme, input.globals, &families, design);
+    let markers = if design.is_some() {
+        markers::design_class_markers(id)
+    } else {
+        markers::class_markers(id)
+    };
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"classDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
@@ -128,9 +138,26 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
         y = number(drawn.y - VIEWPORT_PADDING),
         w = number(view_width),
         h = number(view_height),
-        markers = markers::class_markers(id),
         root = painted.root,
         coloured_markers = painted.coloured_markers,
-        defs = style::defs(id, input.theme, input.globals),
+        defs = style::defs(id, input.theme, input.globals, design),
     ))
+}
+
+/// Turns each relation whose whole or general end is its second one, in the design mode
+/// (`docs/decisions/0023-design-mode.md`): the layout runs an edge from its start to its end, so
+/// `Dog --|> Animal` would put the parent below its child and `Wheel --* Car` the whole below its
+/// part. A relation with a triangle or a diamond at its end and none at its start is drawn from the
+/// other end: its ends, its markers and its cardinalities change places, and the drawing says the
+/// same. A relation with such a marker at both ends, or with none, keeps the direction it is written
+/// in.
+fn orient_relations(data: &mut crate::unified::data::LayoutData) {
+    let general = |arrow: &str| matches!(arrow, "extension" | "composition" | "aggregation");
+    for edge in &mut data.edges {
+        if general(&edge.arrow_type_end) && !general(&edge.arrow_type_start) {
+            std::mem::swap(&mut edge.start, &mut edge.end);
+            std::mem::swap(&mut edge.arrow_type_start, &mut edge.arrow_type_end);
+            std::mem::swap(&mut edge.start_label_right, &mut edge.end_label_left);
+        }
+    }
 }
