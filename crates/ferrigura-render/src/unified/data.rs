@@ -242,18 +242,6 @@ pub struct Edge {
     /// after layout.
     pub curve: Option<String>,
 
-    /// The label's font size when the diagram's stylesheet sets one for its edge labels (the use
-    /// case's `.edgeLabel` is 10px); `None` takes the theme's font size.
-    #[serde(skip)]
-    pub font_size: Option<f64>,
-    /// The `id` of the path, when the diagram names its paths otherwise than by the edge id (the use
-    /// case's `usecase-<diagram>-<edge>`); `None` writes the edge id.
-    #[serde(skip)]
-    pub path_id: Option<String>,
-    /// Attributes the path takes after its markers, each with its leading space (the use case's
-    /// `data-usecase-*`, `role` and `aria-label`); empty for the other diagrams.
-    #[serde(skip)]
-    pub path_attributes: String,
     /// The label's measured width.
     #[serde(skip)]
     pub width: Option<f64>,

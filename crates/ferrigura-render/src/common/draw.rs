@@ -4,7 +4,7 @@
 //! order it sets them; a caller that appends it to a group places it where the reference does.
 //!
 //! Not ported: `createTooltip` appends a `div` to the document body, not to the SVG. The databases of
-//! flowchart, class, state and agentflow use it for the tooltip of a click, and clicks are dropped
+//! flowchart, class and state use it for the tooltip of a click, and clicks are dropped
 //! (`docs/decisions/0006-rust-only-no-browser.md`), so no SVG of this crate needs it.
 
 use ferrigura_syntax::url::sanitize_url;

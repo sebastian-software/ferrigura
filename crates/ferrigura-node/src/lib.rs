@@ -72,7 +72,7 @@ pub struct RenderOptionsInput {
 }
 
 /// Options for one-time, script-free SVG draw animation.
-/// Supports flowcharts, Gantt, Git graphs, mind maps, pie charts, and XY charts.
+/// Supports flowcharts, Gantt, mind maps, pie charts, and XY charts.
 #[napi(object)]
 pub struct AnimationInput {
     /// Positive, finite multiplier of 700 SVG user units per second on average. Defaults to 1.

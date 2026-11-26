@@ -307,26 +307,7 @@ pub fn label(
         font_size,
         title: false,
     };
-    let measured = layout(&spec)?;
-    // A diagram whose stylesheet sets the edge labels' font size (the use case's `.edgeLabel`) gets the
-    // background measured at the theme's size, as the reference does before its class is applied, and the
-    // text drawn at the stylesheet's size, wrapped at the theme's size. The group's size is the background
-    // and the text's box centers the group (`positionRenderedEdgeLabel`).
-    let Some(drawn_size) = edge.font_size else {
-        return Ok(Some(measured));
-    };
-    let mut drawn_styles = styles.clone();
-    drawn_styles.push(format!("font-size: {}px", crate::svg::number(drawn_size)));
-    let drawn = layout(&LabelSpec {
-        styles: &drawn_styles,
-        ..spec
-    })?;
-    // The text's own box is the drawn one (it centers the group), and the background is the measured
-    // one, which holds the group's size.
-    Ok(Some(LabelLayout {
-        background: measured.background,
-        ..drawn
-    }))
+    layout(&spec).map(Some)
 }
 
 /// The size `insertEdgeLabel` records for a label: the label group's box, which holds the text and
@@ -453,13 +434,10 @@ pub fn jump_style(section: &Section<'_>) -> Option<JumpStyle> {
 /// What the paint of an edge holds before the line hops, and what the hops may change.
 pub(crate) struct Painted {
     id: String,
-    /// The path's `id`: `<diagramId>-<edge id>` (`edges.js` 837 and 860), unless the diagram names
-    /// the path itself.
+    /// The path's `id`: `<diagramId>-<edge id>` (`edges.js` 837 and 860).
     path_id: String,
     /// The `data-points` of the path: its points before the marker offsets, as [`data_points`].
     points: String,
-    /// The attributes after the markers, each with its leading space.
-    path_attributes: String,
     pub(crate) d: Option<String>,
     /// The tight box of `d`, taken when `d` is set.
     bbox: BBox,
@@ -685,12 +663,8 @@ fn paint_edge(
 
     Painted {
         id: edge.id.clone(),
-        path_id: edge
-            .path_id
-            .clone()
-            .unwrap_or_else(|| format!("{svg_id}-{}", edge.id)),
+        path_id: format!("{svg_id}-{}", edge.id),
         points: data_points(&edge.points),
-        path_attributes: edge.path_attributes.clone(),
         d,
         bbox: geometry.bounds().unwrap_or_default(),
         style,
@@ -726,7 +700,6 @@ pub(crate) fn format_path(painted: &Painted) -> String {
     if let Some(marker) = &painted.marker_end {
         let _ = write!(path, " marker-end=\"{}\"", escape(marker));
     }
-    path.push_str(&painted.path_attributes);
     path.push_str("/>");
     path
 }
@@ -1196,7 +1169,6 @@ mod tests {
             font_size: 14.0,
             title: false,
             anchor: Anchor::Middle,
-            first_line_class: None,
         };
         assert_eq!(label_size(&layout), (24.0, 21.0));
         assert_eq!(label_size(&LabelLayout::of_box(text)), (20.0, 17.0));
