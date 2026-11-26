@@ -44,6 +44,7 @@ pub use measure::{
 pub use metrics::{FontMetrics, TextBox, font_metrics, text_box, x_height};
 pub use registry::{FontRegistry, MissingGlyph};
 pub use wrap::{
-    Word, fit_line, measure_words, split_line_to_fit_width, split_line_to_words,
-    split_text_to_chars, split_word_to_fit_width, wrap_line,
+    Word, fit_line, fit_line_keeping_words, measure_words, split_line_keeping_words,
+    split_line_to_fit_width, split_line_to_words, split_text_to_chars, split_word_to_fit_width,
+    wrap_line,
 };

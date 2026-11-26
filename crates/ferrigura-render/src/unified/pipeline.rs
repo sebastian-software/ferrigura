@@ -334,7 +334,12 @@ pub fn measure_for(
     let mut edge_labels = HashMap::new();
     let font_size = config.theme.font_size.px().unwrap_or(DEFAULT_FONT_SIZE);
     for edge in &mut data.edges {
-        if let Some(label) = edges::label(edge, font_size, &config.fonts)? {
+        if let Some(label) = edges::label(
+            edge,
+            font_size,
+            &config.fonts,
+            config.section.design.is_some(),
+        )? {
             let (mut width, height) = edges::label_size(&label);
             // The design mode draws the label in a chip; the layout is given the chip's width and
             // the room around it.
