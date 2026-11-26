@@ -60,8 +60,8 @@ fn front_matter_fields(body: &str) -> Result<Vec<(String, Yaml)>, ParseError> {
         Ok(Some(Yaml::Mapping(pairs))) => Ok(pairs),
         Ok(_) => Ok(Vec::new()),
         Err(error) => Err(ParseError {
-            // The body starts on the line after the opening fence.
-            line: error.line + 2,
+            // `error.line` is 1-based inside the body, which starts on line 2 after the opening fence.
+            line: error.line + 1,
             column: error.column + 1,
             message: format!("invalid front matter: {}", error.message),
         }),

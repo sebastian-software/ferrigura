@@ -174,10 +174,7 @@ pub fn load(text: &str) -> Result<Option<Yaml>, YamlError> {
         0 => Ok(None),
         1 => {
             let document = state.documents.pop().unwrap_or(Node::Null);
-            state
-                .to_yaml(document)
-                .map(Some)
-                .map_err(|message| state.error(message))
+            state.to_yaml(document).map(Some)
         }
         _ => Err(state.error("expected a single document in the stream, but found more")),
     }
@@ -409,7 +406,9 @@ struct State {
     transactions: Vec<Vec<(String, Option<Node>)>>,
     strings: Vec<String>,
     sequences: Vec<Vec<Node>>,
+    sequence_spans: Vec<(usize, usize)>,
     mappings: Vec<Vec<(usize, Node)>>,
+    mapping_spans: Vec<(usize, usize)>,
     remaining_key_bytes: usize,
     documents: Vec<Node>,
     tag: Option<String>,
@@ -455,7 +454,9 @@ impl State {
             transactions: Vec::new(),
             strings: Vec::new(),
             sequences: Vec::new(),
+            sequence_spans: Vec::new(),
             mappings: Vec::new(),
+            mapping_spans: Vec::new(),
             remaining_key_bytes: expanded_byte_budget(input_bytes),
             documents: Vec::new(),
             tag: None,
@@ -474,12 +475,16 @@ impl State {
     fn alloc_sequence(&mut self) -> usize {
         let id = self.sequences.len();
         self.sequences.push(Vec::new());
+        self.sequence_spans
+            .push((self.line + 1, self.position.saturating_sub(self.line_start)));
         id
     }
 
     fn alloc_mapping(&mut self) -> usize {
         let id = self.mappings.len();
         self.mappings.push(Vec::new());
+        self.mapping_spans
+            .push((self.line + 1, self.position.saturating_sub(self.line_start)));
         id
     }
 
@@ -543,63 +548,78 @@ impl State {
             .find_map(|t| self.construct(t, data).map(|value| (t, value)))
     }
 
-    /// The tree of a finished node, or an error message when a collection contains itself or
-    /// exceeds expansion limits.
-    fn to_yaml(&self, node: Node) -> Result<Yaml, &'static str> {
+    /// The tree of a finished node, or a `YamlError` positioned inside the YAML when a collection
+    /// contains itself or exceeds expansion limits.
+    fn to_yaml(&self, node: Node) -> Result<Yaml, YamlError> {
         let mut path = Vec::new();
         let mut budget = ExpandBudget::new(self.input_bytes);
-        self.to_yaml_on(node, &mut path, &mut budget)
+        self.to_yaml_on(node, (1, 0), &mut path, &mut budget)
     }
 
     /// `path` holds the collections being converted, outermost first.
     fn to_yaml_on(
         &self,
         node: Node,
+        span: (usize, usize),
         path: &mut Vec<CollectionId>,
         budget: &mut ExpandBudget,
-    ) -> Result<Yaml, &'static str> {
-        budget.take_node()?;
+    ) -> Result<Yaml, YamlError> {
+        let err = |message: &'static str, (line, column): (usize, usize)| YamlError {
+            line,
+            column,
+            message: message.to_owned(),
+        };
+        budget.take_node().map_err(|msg| err(msg, span))?;
         Ok(match node {
             Node::Null => Yaml::Null,
             Node::Bool(flag) => Yaml::Bool(flag),
             Node::Number(number) => Yaml::Number(number),
             Node::String(id) => {
                 let text = &self.strings[id];
-                budget.take_bytes(text.len())?;
+                budget
+                    .take_bytes(text.len())
+                    .map_err(|msg| err(msg, span))?;
                 Yaml::String(text.clone())
             }
             Node::Sequence(id) => {
+                let next_span = self.sequence_spans[id];
                 let collection = CollectionId::Sequence(id);
                 if path.contains(&collection) {
-                    return Err(CYCLIC);
+                    return Err(err(CYCLIC, next_span));
                 }
                 if path.len() >= MAX_EXPANDED_DEPTH {
-                    return Err(EXPANSION_DEPTH_LIMIT);
+                    return Err(err(EXPANSION_DEPTH_LIMIT, next_span));
                 }
                 path.push(collection);
                 let items = &self.sequences[id];
                 let mut converted = Vec::with_capacity(items.len().min(budget.remaining_nodes));
                 for &item in items {
-                    converted.push(self.to_yaml_on(item, path, budget)?);
+                    converted.push(self.to_yaml_on(item, next_span, path, budget)?);
                 }
                 path.pop();
                 Yaml::Sequence(converted)
             }
             Node::Mapping(id) => {
+                let next_span = self.mapping_spans[id];
                 let collection = CollectionId::Mapping(id);
                 if path.contains(&collection) {
-                    return Err(CYCLIC);
+                    return Err(err(CYCLIC, next_span));
                 }
                 if path.len() >= MAX_EXPANDED_DEPTH {
-                    return Err(EXPANSION_DEPTH_LIMIT);
+                    return Err(err(EXPANSION_DEPTH_LIMIT, next_span));
                 }
                 path.push(collection);
                 let pairs = &self.mappings[id];
                 let mut converted = Vec::with_capacity(pairs.len().min(budget.remaining_nodes));
                 for &(key_id, value) in pairs {
                     let key = &self.strings[key_id];
-                    budget.take_bytes(key.len())?;
-                    converted.push((key.clone(), self.to_yaml_on(value, path, budget)?));
+                    budget
+                        .take_bytes(key.len())
+                        .map_err(|msg| err(msg, next_span))?;
+                    converted.push((
+                        key.clone(),
+                        self.to_yaml_on(value, next_span, path, budget)?,
+                    ));
                 }
                 path.pop();
                 Yaml::Mapping(converted)
@@ -1119,7 +1139,9 @@ impl State {
         self.rollback_transaction();
         self.strings.truncate(strings_len);
         self.sequences.truncate(sequences_len);
+        self.sequence_spans.truncate(sequences_len);
         self.mappings.truncate(mappings_len);
+        self.mapping_spans.truncate(mappings_len);
         self.remaining_key_bytes = remaining_key_bytes;
         self.restore(fallback);
         Ok(false)

@@ -393,36 +393,42 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
     }
     shape_bomb.push_str(" }\n");
 
-    for (name, input, expected_error) in [
+    for (name, input, expected_error, max_yaml_line) in [
         (
             "billion laughs front matter",
             billion_laughs.as_str(),
             "YAML alias expansion exceeded size limit",
+            16usize,
         ),
         (
             "string amplification front matter",
             string_bomb.as_str(),
             "YAML alias expansion exceeded size limit",
+            5usize,
         ),
         (
             "deep alias chain front matter",
             deep_chain.as_str(),
             "YAML alias expansion exceeded nesting limit",
+            252usize,
         ),
         (
             "cyclic sequence front matter",
             cyclic_seq.as_str(),
             "a collection that contains itself has no tree",
+            2usize,
         ),
         (
             "cyclic mapping front matter",
             cyclic_map.as_str(),
             "a collection that contains itself has no tree",
+            2usize,
         ),
         (
             "billion laughs shape data",
             shape_bomb.as_str(),
             "YAML alias expansion exceeded size limit",
+            2usize,
         ),
     ] {
         let error = renderer
@@ -432,6 +438,15 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
         assert!(
             message.contains(expected_error),
             "{name}: expected {expected_error:?}, got {message}"
+        );
+        let reported_line: usize = message
+            .strip_prefix("line ")
+            .and_then(|rest| rest.split(',').next())
+            .and_then(|digits| digits.parse().ok())
+            .unwrap_or_else(|| panic!("{name}: expected leading line number in {message:?}"));
+        assert!(
+            (2..=max_yaml_line).contains(&reported_line),
+            "{name}: expected error line in 2..={max_yaml_line}, got {message}"
         );
         assert_eq!(renderer.render(CONTROL).unwrap(), control, "after {name}");
     }
