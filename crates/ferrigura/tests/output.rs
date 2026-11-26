@@ -21,8 +21,6 @@ fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String
         id: id.map(str::to_owned),
         color_scheme: scheme,
         now: None,
-        git_graph_seed: None,
-        random_seed: None,
     };
     render_with(text, &Value::empty_object(), &options).expect("the pie renders")
 }
@@ -214,8 +212,6 @@ fn an_id_that_is_not_a_css_identifier_is_refused() {
             id: Some(bad.to_owned()),
             color_scheme: None,
             now: None,
-            git_graph_seed: None,
-            random_seed: None,
         };
         assert!(
             render_with(PIE, &Value::empty_object(), &options).is_err(),
@@ -436,10 +432,6 @@ fn edge_labels_mask_their_lines_across_diagram_types_and_render_modes() {
         "classDiagram\n A --> B : readable\n",
         "stateDiagram-v2\n A --> B : readable\n",
         "erDiagram\n A ||--o{ B : readable\n",
-        "agentflow-beta LR\n A -->|readable| B\n",
-        "block\n A -- \"readable\" --> B\n",
-        "usecase-beta\n actor A\n B(Read)\n A -- \"readable\" --> B\n",
-        "requirementDiagram\n requirement A {\n id: 1\n text: Readable\n risk: low\n verifymethod: test\n }\n element B {\n type: hardware\n }\n B - satisfies -> A\n",
     ];
     for source in sources {
         for look in ["classic", "neo"] {

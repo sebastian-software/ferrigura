@@ -212,43 +212,28 @@ Two themes ship: `redux-color` (light) and `redux-dark-color` (dark), which are 
 
 ## Diagram types
 
-ferrigura renders 33 diagram types. The header keyword of each is the one Mermaid uses:
+ferrigura draws ten diagram types, each one completely: its drawing is compared with Mermaid's, and flowcharts, state diagrams and class diagrams also draw in the design mode. The header keyword of each is the one Mermaid uses:
 
-| Diagram        | Header                                                                                               |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| Flowchart      | `flowchart`, `graph`                                                                                 |
-| Sequence       | `sequenceDiagram`                                                                                    |
-| Class          | `classDiagram`, `classDiagram-v2`                                                                    |
-| State          | `stateDiagram`, `stateDiagram-v2`                                                                    |
-| ER             | `erDiagram`                                                                                          |
-| Gantt          | `gantt`                                                                                              |
-| Pie            | `pie`                                                                                                |
-| Timeline       | `timeline`                                                                                           |
-| gitGraph       | `gitGraph`                                                                                           |
-| User journey   | `journey`                                                                                            |
-| Info           | `info`                                                                                               |
-| Mindmap        | `mindmap`                                                                                            |
-| Block          | `block`                                                                                              |
-| Packet         | `packet`                                                                                             |
-| XY chart       | `xychart`                                                                                            |
-| Sankey         | `sankey`                                                                                             |
-| Quadrant chart | `quadrantChart`                                                                                      |
-| Requirement    | `requirementDiagram`                                                                                 |
-| C4             | `C4Context`, `C4Container`, `C4Component`, `C4Dynamic`, `C4Deployment`                               |
-| Kanban         | `kanban`                                                                                             |
-| Architecture   | `architecture`, `architecture-beta`                                                                  |
-| Treemap        | `treemap`, `treemap-beta`                                                                            |
-| Ishikawa       | `ishikawa`, `ishikawa-beta`, in any letter case                                                      |
-| Event modeling | `eventmodeling`                                                                                      |
-| Agentflow      | `agentflow-beta`                                                                                     |
-| Cynefin        | `cynefin-beta`                                                                                       |
-| Radar          | `radar-beta`                                                                                         |
-| Railroad       | `railroad-beta`, `railroad-ebnf-beta`, `railroad-abnf-beta`, `railroad-peg-beta`, in any letter case |
-| Swimlane       | `swimlane-beta`                                                                                      |
-| Tree view      | `treeView-beta`                                                                                      |
-| Use case       | `usecase-beta`                                                                                       |
-| Venn           | `venn-beta`                                                                                          |
-| Wardley map    | `wardley-beta`, in any letter case                                                                   |
+| Group  | Diagram        | Header                            |
+| ------ | -------------- | --------------------------------- |
+| Graphs | Flowchart      | `flowchart`, `graph`              |
+|        | State          | `stateDiagram`, `stateDiagram-v2` |
+|        | Class          | `classDiagram`, `classDiagram-v2` |
+|        | ER             | `erDiagram`                       |
+| Single | Mindmap        | `mindmap`                         |
+|        | Sequence       | `sequenceDiagram`                 |
+|        | Gantt          | `gantt`                           |
+| Charts | XY chart       | `xychart`, `xychart-beta`         |
+|        | Pie            | `pie`                             |
+|        | Quadrant chart | `quadrantChart`                   |
+
+A text of any other Mermaid diagram type is refused with `Error::Unsupported`, whose message names the type and lists the ten. `DiagramType::ALL` is the list.
+
+```rust
+let error = ferrigura::render("sankey-beta\n  a,b,8\n", &ferrigura::Value::empty_object()).unwrap_err();
+assert!(matches!(error, ferrigura::Error::Unsupported(_)));
+assert!(error.to_string().starts_with("ferrigura does not draw sankey diagrams; it draws flowchart"));
+```
 
 ## How the output differs from Mermaid
 
@@ -261,7 +246,7 @@ ferrigura renders 33 diagram types. The header keyword of each is the one Mermai
 - The output is SVG only.
 - The library does not print warnings. The low-level registry exposes uncovered-character diagnostics through `FontRegistry::missing_glyphs`; layout fallbacks remain silent.
 
-Layouts: flowcharts, class, state, ER, requirement, agentflow and use case diagrams use ELK Layered. Mindmaps use cose-bilkent by default, and Mermaid's tidy tree with `layout: tidy-tree`. Architecture diagrams use fcose. Venn diagrams use the layout of venn.js 2.0.0, and swimlanes have their own layout.
+Layouts: flowcharts, class, state and ER diagrams use ELK Layered. Mindmaps use cose-bilkent by default, and Mermaid's tidy tree with `layout: tidy-tree`.
 
 The geometry of the output (node and label boxes, edge paths and the viewBox) is compared with Mermaid 12.2.0 run in Chromium, on macOS. It agrees within 0.05 px on every fixture that the comparison covers. The comparison leaves out a fixture only for a stated reason, such as `look: handDrawn`, a layout algorithm other than ELK Layered, or a character that no registered fixture face covers.
 
@@ -274,7 +259,6 @@ Registered primary and fallback faces can extend glyph coverage beyond the compa
 - Mermaid's classic themes (`default`, `dark`, `forest` and `neutral`). A theme name that is not one of the two shipped themes gives one of them, as described above.
 - Images and icon packs. In flowcharts an image is not read, so an image shape needs `assetWidth` and `assetHeight`. Icon packs are not supported.
 - ELK layout algorithms other than `elk.layered`. A diagram that names another one is laid out with `elk.layered`.
-- Swimlane diagrams with `ignoreCrossLaneEdges: false` or `automaticLaneOrdering: true`. The render fails with an error that names the option.
 
 ## Alternatives
 
@@ -296,4 +280,4 @@ The bundled fonts are under the SIL Open Font License 1.1: Lexica Ultralegible, 
 
 ## Input limits
 
-The host configuration supports `maxTextSize` (default 50,000) and `maxEdges` (default 500). Both must be non-negative integers no greater than JavaScript’s maximum safe integer and representable on the host; invalid values return a configuration error. The facade counts the entire input in UTF-16 code units before detection or parsing, including comments, directives, front matter, and line endings. Inputs above `maxTextSize` return an error. Flowchart and agentflow parsers reject edges above `maxEdges` before layout. Diagram configuration cannot change either host limit, even when the host customizes `secure`. These limits apply to the Rust, CLI, and Node rendering interfaces, not direct syntax-crate calls.
+The host configuration supports `maxTextSize` (default 50,000) and `maxEdges` (default 500). Both must be non-negative integers no greater than JavaScript’s maximum safe integer and representable on the host; invalid values return a configuration error. The facade counts the entire input in UTF-16 code units before detection or parsing, including comments, directives, front matter, and line endings. Inputs above `maxTextSize` return an error. The flowchart parser rejects edges above `maxEdges` before layout. Diagram configuration cannot change either host limit, even when the host customizes `secure`. These limits apply to the Rust, CLI, and Node rendering interfaces, not direct syntax-crate calls.

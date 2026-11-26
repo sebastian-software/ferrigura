@@ -17,7 +17,7 @@ use ferrigura_render::RenderError;
 use ferrigura_render::unified::edges::swimlane_points;
 use ferrigura_render::unified::geom::Point;
 use ferroni::Regex;
-use support::{Setup, config_with, count, fixture, svg};
+use support::{Setup, config_with, count, svg};
 
 /// A lane's `data-id`, and the first rectangle of its `class`, as the numbers of its `x`, `y`, `width`
 /// and `height`.
@@ -44,15 +44,6 @@ fn attribute(element: &str, name: &str) -> f64 {
         .unwrap_or_else(|| panic!("no {name} in {element}"))[1]
         .parse()
         .expect("a number")
-}
-
-/// The arc commands of the paths of an SVG: the line hops are the arcs of the paths' `d` attributes.
-fn arcs(svg: &str) -> usize {
-    let pattern = Regex::new(" d=\"([^\"]*)\"").expect("a pattern");
-    pattern
-        .captures_iter(svg)
-        .map(|capture| count(&capture[1], "A"))
-        .sum()
 }
 
 /// The first `d` of the path whose `data-id` is `edge`.
@@ -163,37 +154,6 @@ fn a_diagram_without_loose_nodes_has_no_default_lane() {
 }
 
 #[test]
-fn a_labeled_edge_is_drawn_as_a_label_node_and_not_as_an_edge_label() {
-    // `createEdgeLabelNodes`: the label moves to a node of the layout, which is painted in the nodes group.
-    let svg = fixture_svg("pr-check/9-edge-labels.mmd");
-    assert!(
-        svg.contains("<g class=\"edgeLabels\"></g>"),
-        "no edge label is drawn"
-    );
-    assert!(svg.contains("edge-label-Start-Process1-L_Start_Process1_0"));
-    assert!(svg.contains("class=\"label edgeLabel\""));
-}
-
-#[test]
-fn a_label_node_text_starts_at_its_origin_and_is_shifted_by_half_its_width() {
-    // `labelRect.ts`: the label's lines start at its origin, and the group moves by minus half the label's
-    // size, so the label is centered on the node. "Yes" is 21.28 px wide: the shift is -10.64.
-    let svg = fixture_svg("pr-check/9-edge-labels.mmd");
-    let at = svg
-        .find("class=\"label edgeLabel\"")
-        .expect("the label node");
-    let node = &svg[at..];
-    assert!(
-        node.contains("<g class=\"label\" transform=\"translate(-10.640625, -9.5)\">"),
-        "{node}"
-    );
-    assert!(
-        node.contains("<tspan class=\"text-outer-tspan row\" x=\"0\""),
-        "the line starts at x 0"
-    );
-}
-
-#[test]
 fn an_edge_is_clipped_to_the_outline_of_its_nodes() {
     // The reference's `insertEdge` clips a straight edge to both nodes: Start is 152 px wide and centered at 36,
     // so the edge starts at its right side, x = 112.
@@ -203,18 +163,6 @@ fn an_edge_is_clipped_to_the_outline_of_its_nodes() {
         "{}",
         path_of(&svg, "L_Start_Process1_0")
     );
-}
-
-#[test]
-fn a_virtual_edge_of_a_label_is_never_drawn() {
-    // The two `-to-label` and `-from-label` edges are laid out and not drawn (`isLayoutOnly`).
-    let svg = fixture_svg("pr-check/9-edge-labels.mmd");
-    assert_eq!(
-        count(&svg, "data-edge=\"true\""),
-        2,
-        "the two edges of the loop, and no virtual edge"
-    );
-    assert!(!svg.contains("-to-label"));
 }
 
 #[test]
@@ -250,32 +198,6 @@ fn the_title_is_centered_above_the_drawing_at_the_title_margin() {
         svg.contains("y=\"-25\" class=\"flowchartTitleText\">Flow</text>"),
         "{svg}"
     );
-}
-
-#[test]
-fn a_line_hop_is_an_arc_by_default_and_none_when_the_option_is_false() {
-    // `applySwimlaneLineJumps`: `swimlane.lineHops` is `arc` by default; `false` draws no hop.
-    let text = fixture("pr-check/7-car-sales-constr.mmd");
-    assert!(
-        arcs(&svg(&text)) > 0,
-        "the crossing edges of the fixture draw an arc"
-    );
-    let off = Setup::new(
-        config_with(serde_json::json!({ "swimlane": { "lineHops": false } })),
-        None,
-    );
-    assert_eq!(arcs(&off.svg(&text, "p0")), 0);
-}
-
-#[test]
-fn a_gap_line_hop_draws_no_arc() {
-    // `lineHops: 'gap'`: the crossed edge is broken, and there is no arc command (`adjustLayout.ts` 9-14).
-    let text = fixture("pr-check/7-car-sales-constr.mmd");
-    let gap = Setup::new(
-        config_with(serde_json::json!({ "swimlane": { "lineHops": "gap" } })),
-        None,
-    );
-    assert_eq!(arcs(&gap.svg(&text, "p0")), 0);
 }
 
 #[test]
@@ -389,9 +311,4 @@ fn a_last_inner_point_within_the_tolerance_of_the_end_is_kept_without_clipping()
         |_| panic!("a pinned end is not clipped"),
     );
     assert_eq!(clipped.last().copied(), Some(Point::new(5.0, 0.0)));
-}
-
-/// The SVG of a fixture of the swimlane e2e diagrams, with the default configuration.
-fn fixture_svg(path: &str) -> String {
-    svg(&fixture(path))
 }

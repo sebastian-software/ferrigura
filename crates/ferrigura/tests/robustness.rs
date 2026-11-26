@@ -145,36 +145,13 @@ fn finite_geometry(svg: &str, source: &str, context: &str) {
 /// A compact corpus fixture per registered kind. Paths are explicit so a new fixture cannot change
 /// which cases CI runs; the registry assertion below requires a seed when a plugin is added.
 const ALL_KIND_FIXTURES: &[&str] = &[
-    "tools/port/geometry/probes/kanban/p01-items-under-sections.mmd",
-    "tools/port/geometry/probes/packet/p20-multiline-label.mmd",
     "tools/port/geometry/probes/mindmap/p09-wide-plain.mmd",
-    "tools/port/geometry/probes/treemap/p-single-leaf.mmd",
-    "tools/port/geometry/probes/eventmodeling/p16-quoted-data-single.mmd",
-    "tools/port/geometry/probes/ishikawa/p11-short-head-and-one-leaf.mmd",
-    "tools/port/geometry/probes/railroad/c18-peg.mmd",
-    "tools/port/geometry/probes/sankey/p01-plain-two-nodes.mmd",
-    "tools/port/geometry/probes/treeView/p02-empty-and-slash-names.mmd",
-    "tools/port/geometry/probes/radar/p14-one-axis.mmd",
-    "tools/port/geometry/probes/venn/p05-disjoint-labelled-union.mmd",
-    "tools/port/geometry/probes/cynefin/p08-confusion-four-items.mmd",
-    "tools/port/geometry/probes/wardley/p04-stage-names-and-boundaries.mmd",
-    "tools/port/geometry/probes/agentflow/p11-edge-kinds.mmd",
-    "e2e/diagrams/block/nightly-check/block-types-3-stadium.mmd",
     "e2e/diagrams/flowchart/regressions/routing-review-cycle-bt.mmd",
-    "tools/port/geometry/probes/swimlanes/p01-direction-br.mmd",
-    "e2e/diagrams/info/pr-check/should-handle-an-info-definition.mmd",
-    "e2e/diagrams/usecase/nightly-check/17-direction-bottom-up.mmd",
     "e2e/diagrams/er-diagram/visual-check/er-subgraphs-default.mmd",
     "e2e/diagrams/xychart/nightly-check/should-render-the-simplest-possible-xy-chart.mmd",
-    "e2e/diagrams/git/nightly-check/15-should-render-a-simple-gitgraph-with-commit-on-main-branch-vertical-branch.mmd",
     "tools/port/geometry/probes/quadrantChart/p14-empty-quadrant-texts-with-points.mmd",
-    "tools/port/geometry/probes/timeline/p-named-entities.mmd",
     "e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-simple-class-diagram-with-the-handdrawn-look.mmd",
-    "e2e/diagrams/requirement/nightly-check/a-requirement-diagram-with-empty-information-default.mmd",
-    "tools/port/geometry/probes/architecture/p08-seed-override.mmd",
     "e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-compact-self-loop-edge.mmd",
-    "e2e/diagrams/journey/pr-check/simple-test.mmd",
-    "e2e/diagrams/c4/nightly-check/relationships/bidirectional-relationship.mmd",
     "e2e/diagrams/gantt/nightly-check/should-render-only-the-day-when-using-dateformat-d.mmd",
     "e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top.mmd",
     "e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-showdata.mmd",
@@ -308,32 +285,19 @@ fn small_and_moderate_nesting_stays_isolated() {
     for depth in [2, 8] {
         let mut flow = String::from("flowchart TD\n");
         let mut state = String::from("stateDiagram-v2\n");
-        let mut block = String::from("block\n");
         let mut mindmap = String::from("mindmap\nroot(Root)\n");
-        let mut tree = String::from("treeView-beta\n");
         for n in 0..depth {
             flow.push_str(&format!("subgraph g{n}\n"));
             state.push_str(&format!("state s{n} {{\n"));
-            block.push_str(&format!("block:g{n}\n"));
             mindmap.push_str(&format!("{}n{n}\n", "  ".repeat(n + 1)));
-            tree.push_str(&format!("{}n{n}/\n", "  ".repeat(n + 1)));
         }
         flow.push_str("A --> B\n");
         state.push_str("[*] --> Ready\n");
-        block.push_str("leaf\n");
-        tree.push_str(&format!("{}leaf\n", "  ".repeat(depth + 1)));
         for _ in 0..depth {
             flow.push_str("end\n");
             state.push_str("}\n");
-            block.push_str("end\n");
         }
-        for (kind, source) in [
-            ("flowchart", flow),
-            ("state", state),
-            ("block", block),
-            ("mindmap", mindmap),
-            ("treeView", tree),
-        ] {
+        for (kind, source) in [("flowchart", flow), ("state", state), ("mindmap", mindmap)] {
             let baseline = renderer
                 .render(&source)
                 .unwrap_or_else(|e| panic!("{kind} depth {depth}: {e}"));

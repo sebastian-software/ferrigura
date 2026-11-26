@@ -55,14 +55,6 @@ name = "design"
 path = "crates/ferrigura/tests/design.rs"
 
 [[test]]
-name = "info"
-path = "crates/ferrigura/tests/info.rs"
-
-[[test]]
-name = "journey"
-path = "crates/ferrigura/tests/journey.rs"
-
-[[test]]
 name = "output"
 path = "crates/ferrigura/tests/output.rs"
 

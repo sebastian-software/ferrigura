@@ -110,10 +110,3 @@ pub fn style_of(svg: &str) -> &str {
 pub fn count(text: &str, needle: &str) -> usize {
     text.matches(needle).count()
 }
-
-/// The fixture file of the swimlane e2e diagrams, read from the repository.
-pub fn fixture(path: &str) -> String {
-    let root =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../e2e/diagrams/swimlanes");
-    std::fs::read_to_string(root.join(path)).unwrap_or_else(|error| panic!("{path}: {error}"))
-}

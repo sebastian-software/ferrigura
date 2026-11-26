@@ -348,8 +348,6 @@ fn run(job: &Job) -> Result<(), String> {
         design: job.design,
         animation: job.animation,
         now: job.now,
-        git_graph_seed: None,
-        random_seed: None,
     };
     if let Some(dir) = &job.output_dir {
         fs::create_dir_all(dir)

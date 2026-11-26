@@ -150,7 +150,6 @@ fn an_unclosed_directive_is_not_skipped() {
 #[test]
 fn parse_dispatches_on_the_detected_type() {
     assert!(matches!(parse("pie\n\"a\": 1"), Ok(Diagram::Pie(_))));
-    assert!(matches!(parse("info title T"), Ok(Diagram::Info(_))));
     assert!(matches!(
         parse("flowchart LR\n  a-->b"),
         Ok(Diagram::Flowchart(_))
@@ -165,11 +164,6 @@ fn parse_dispatches_on_the_detected_type() {
     ));
     let error = parse("unknown diagram\n  x").expect_err("no diagram type matches");
     assert_eq!((error.line, error.column), (1, 1));
-    // The swimlane header is detected, and its parser is the flowchart's (`swimlanes_spec.rs`).
-    assert!(matches!(
-        parse("swimlane-beta LR\n  a-->b"),
-        Ok(Diagram::Swimlanes(_))
-    ));
 }
 
 #[test]

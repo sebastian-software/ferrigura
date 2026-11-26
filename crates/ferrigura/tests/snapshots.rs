@@ -66,10 +66,6 @@ fn the_draw_animation_is_pinned() {
             "gantt\n dateFormat YYYY-MM-DD\n todayMarker off\n section Build\n Design :done, a, 2026-01-01, 3d\n Implement :active, b, after a, 5d\n Launch :milestone, after b, 0d\n",
         ),
         (
-            "gitgraph",
-            "gitGraph\n commit id: \"Start\" tag: \"v1\"\n branch feature\n commit id: \"Feature\"\n checkout main\n commit id: \"Fix\"\n merge feature\n",
-        ),
-        (
             "mindmap",
             "---\nconfig:\n  layout: tidy-tree\n---\nmindmap\n root((Release))\n  Research\n   Interviews\n  Build\n   Test\n  Ship\n",
         ),

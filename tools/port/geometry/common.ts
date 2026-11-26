@@ -412,7 +412,6 @@ export function renderFerrigura(
   text: string,
   id: string,
   now?: number,
-  seed?: number,
   compat = true
 ): { svg: string } | { error: string } {
   // The site configuration goes through a file of this process, so parallel runs do not share it.
@@ -425,9 +424,6 @@ export function renderFerrigura(
   args.push('--fonts', fontsPath);
   args.push('--compat', String(compat));
   if (now !== undefined) args.push('--now', String(Math.trunc(now)));
-  // The seed of the reference's random numbers: the generated gitGraph ids (commits, merges and
-  // cherry-picks without an `id:`) are drawn from the same generator.
-  if (seed !== undefined) args.push('--seed', String(seed));
   const result = spawnSync(renderBinary, args, {
     input: text,
     cwd: root,

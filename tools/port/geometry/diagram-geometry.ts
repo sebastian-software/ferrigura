@@ -436,7 +436,7 @@ async function main(): Promise<void> {
           geometry: await measureSvg<MeasuredSvg>(page, second.svg),
         };
       } else {
-        const rendered = renderFerrigura(text, id, clock.now, clock.seed);
+        const rendered = renderFerrigura(text, id, clock.now);
         if ('error' in rendered) {
           result.class = 'not rendered';
           result.reason = rendered.error;

@@ -16,7 +16,7 @@
 
 use ferrigura_model::config::{effective, typed};
 use ferrigura_model::value::Value;
-use ferrigura_syntax::{Diagram, DiagramType, config, detect, parse};
+use ferrigura_syntax::{DiagramType, config, detect};
 use serde_json::json;
 
 const SWIMLANE: &str = "swimlane-beta TD\n  A --> B";
@@ -81,11 +81,6 @@ mod detection {
         );
         assert_eq!(detect("swimlane-beta TD;"), Some(DiagramType::Swimlanes));
         assert_eq!(DiagramType::Swimlanes.config_key(), "swimlane");
-    }
-
-    #[test]
-    fn parses_a_swimlane_text_to_the_swimlane_diagram() {
-        assert!(matches!(parse(SWIMLANE), Ok(Diagram::Swimlanes(_))));
     }
 }
 

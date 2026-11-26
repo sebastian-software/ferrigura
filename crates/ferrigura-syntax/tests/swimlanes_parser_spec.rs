@@ -6,8 +6,8 @@
 //! compares every model on the whole collection.
 
 use ferrigura_model::flowchart::FlowchartDiagram;
+use ferrigura_syntax::flowchart;
 use ferrigura_syntax::swimlanes::parse;
-use ferrigura_syntax::{Diagram, flowchart};
 
 /// The lane titles and members, in the order the DB holds them.
 fn lanes(diagram: &FlowchartDiagram) -> Vec<(&str, &str, Vec<&str>)> {
@@ -126,12 +126,4 @@ fn the_swimlane_keyword_is_only_a_header_at_the_start_of_the_text() {
     // The `swimlane-beta` token is a graph word in the flowchart's scanner (`flowchart/scanner.rs`),
     // as it is in `flow.jison`; the detector, not the parser, decides the diagram type.
     assert!(parse("swimlane-beta TD\n  swimlane-beta --> b").is_err());
-}
-
-#[test]
-fn the_detected_swimlane_text_gives_the_swimlane_variant() {
-    assert!(matches!(
-        ferrigura_syntax::parse("swimlane-beta TD\n  a-->b"),
-        Ok(Diagram::Swimlanes(_))
-    ));
 }

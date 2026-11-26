@@ -45,16 +45,11 @@ const TYPED: &str = "a #nbsp; b #foo; c #1; d #128; e #9829;";
 fn typed_entities() -> Vec<String> {
     vec![
         format!("sequenceDiagram\ntitle {TYPED}\nA->>B: {TYPED}\nNote over A: {TYPED}\n"),
-        format!("timeline\ntitle {TYPED}\n2020 : {TYPED}\n"),
         format!("quadrantChart\ntitle {TYPED}\nx-axis {TYPED}\nPoint {TYPED}: [0.3, 0.6]\n"),
         format!("xychart\ntitle \"{TYPED}\"\nx-axis [\"{TYPED}\", \"c\"]\nbar [1, 2]\n"),
-        format!("C4Context\ntitle {TYPED}\nPerson(a, \"{TYPED}\", \"{TYPED}\")\n"),
         format!(
             "gantt\ndateFormat YYYY-MM-DD\ntitle {TYPED}\nsection s\ntask :t1, 2024-01-01, 1d\n"
         ),
-        format!("journey\ntitle {TYPED}\nsection {TYPED}\n {TYPED}: 5: Me\n"),
-        format!("packet\n0-10: \"{TYPED}\"\n"),
-        format!("treemap-beta\n\"{TYPED}\"\n    \"{TYPED}\": 10\n"),
         format!("flowchart LR\nA[{TYPED}] --> B\n"),
     ]
 }
@@ -153,9 +148,9 @@ fn every_rendered_svg_is_well_formed_xml() {
         }
     }
     println!("{rendered} of {} inputs rendered", files.len());
-    // The corpus had 2459 inputs, of which ferrigura rendered 2390, when this test was written: a
-    // walk that finds far fewer has lost a folder.
-    assert!(rendered > 2000, "only {rendered} inputs rendered");
+    // The corpus holds about 1460 inputs, of which ferrigura renders about 1320: a walk that finds
+    // far fewer has lost a folder.
+    assert!(rendered > 1200, "only {rendered} inputs rendered");
     assert!(
         failures.is_empty(),
         "{} of {rendered} SVGs are not well-formed XML:\n{}",

@@ -170,6 +170,63 @@ pub enum DiagramType {
 }
 
 impl DiagramType {
+    /// The diagram types ferrigura draws, in three groups: the graphs (flowchart, state, class, ER),
+    /// the single types (mindmap, sequence, gantt) and the charts (XY chart, pie, quadrant chart).
+    /// The facade registers one plugin for each, and a text of any other type is refused with an
+    /// error that lists these (`docs/decisions/0024-a-fixed-list-of-diagram-types.md`).
+    pub const ALL: [Self; 10] = [
+        Self::Flowchart,
+        Self::State,
+        Self::Class,
+        Self::Er,
+        Self::Mindmap,
+        Self::Sequence,
+        Self::Gantt,
+        Self::XyChart,
+        Self::Pie,
+        Self::QuadrantChart,
+    ];
+
+    /// The name of the diagram type in messages, such as `flowchart` or `XY chart`.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Pie => "pie",
+            Self::Info => "info",
+            Self::Flowchart => "flowchart",
+            Self::Timeline => "timeline",
+            Self::Journey => "user journey",
+            Self::GitGraph => "Git graph",
+            Self::Er => "ER",
+            Self::Class => "class",
+            Self::Sequence => "sequence",
+            Self::State => "state",
+            Self::Gantt => "gantt",
+            Self::Mindmap => "mindmap",
+            Self::Block => "block",
+            Self::Packet => "packet",
+            Self::XyChart => "XY chart",
+            Self::Sankey => "sankey",
+            Self::QuadrantChart => "quadrant chart",
+            Self::Requirement => "requirement",
+            Self::C4 => "C4",
+            Self::Kanban => "kanban",
+            Self::Architecture => "architecture",
+            Self::Treemap => "treemap",
+            Self::Ishikawa => "ishikawa",
+            Self::EventModeling => "event modeling",
+            Self::Agentflow => "agentflow",
+            Self::Cynefin => "cynefin",
+            Self::Radar => "radar",
+            Self::Railroad => "railroad",
+            Self::Swimlanes => "swimlane",
+            Self::TreeView => "tree view",
+            Self::UseCase => "use case",
+            Self::Venn => "venn",
+            Self::Wardley => "wardley",
+        }
+    }
+
     /// The configuration section of the diagram type, as `getDiagramConfigKey` names it.
     #[must_use]
     pub fn config_key(self) -> &'static str {
@@ -459,9 +516,19 @@ fn keyword_followed_by(text: &str, keyword: &str, follows: impl Fn(char) -> bool
         })
 }
 
-/// Preprocesses `text` and detects its diagram type, surfacing YAML alias-expansion limit and
-/// cyclic-anchor errors from front matter directly instead of folding them into an unrecognized
-/// diagram header.
+/// The name of the diagram type whose header starts `text`, when that is a type ferrigura does not
+/// draw: [`prepare_and_detect`] rejects such a text as it rejects one without a header, and the
+/// facade names the type in its error.
+#[must_use]
+pub fn detect_unsupported(text: &str) -> Option<&'static str> {
+    detect(text)
+        .filter(|kind| !DiagramType::ALL.contains(kind))
+        .map(DiagramType::name)
+}
+
+/// Preprocesses `text` and detects its diagram type, one of [`DiagramType::ALL`], surfacing YAML
+/// alias-expansion limit and cyclic-anchor errors from front matter directly instead of folding them
+/// into an unrecognized diagram header.
 pub fn prepare_and_detect(text: &str) -> Result<(preprocess::Prepared, DiagramType), ParseError> {
     let source = match preprocess::prepare(text) {
         Ok(source) => source,
@@ -474,7 +541,7 @@ pub fn prepare_and_detect(text: &str) -> Result<(preprocess::Prepared, DiagramTy
             });
         }
     };
-    let Some(kind) = detect_prepared(&source) else {
+    let Some(kind) = detect_prepared(&source).filter(|kind| DiagramType::ALL.contains(kind)) else {
         return Err(ParseError {
             line: 1,
             column: 1,

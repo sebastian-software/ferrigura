@@ -1,12 +1,10 @@
 //! Renders the diagram text on standard input to SVG on standard output.
 //!
-//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--fonts local-fonts.json] [--id ID] [--scheme light|dark|auto] [--now MS] [--seed N] [--compat true|false] [--design true|false]`
+//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--fonts local-fonts.json] [--id ID] [--scheme light|dark|auto] [--now MS] [--compat true|false] [--design true|false]`
 //!
 //! `--config` is the `initialize` configuration as JSON; `--id` is the id of the SVG element, and
 //! `--scheme` the color scheme, and `--now` the current time in milliseconds since the epoch (the
-//! harness passes the clock it gives the reference). `--seed` is the seed of the generated gitGraph
-//! ids and of the venn layout's random numbers, which the harness gives the same seed as the
-//! reference's random numbers. `--fonts` reads host-local font inputs for the harness: a JSON
+//! harness passes the clock it gives the reference). `--fonts` reads host-local font inputs for the harness: a JSON
 //! object with `fonts` (`family`, `path`, `weight`, `style`) and `fallbacks` family names. Paths
 //! are relative to that JSON file. Without font inputs the compatible bundled defaults apply.
 
@@ -39,11 +37,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             "--compat" => options.compat = value.parse()?,
             "--design" => options.design = value.parse()?,
             "--now" => options.now = Some(value.parse()?),
-            "--seed" => {
-                let seed = value.parse()?;
-                options.git_graph_seed = Some(seed);
-                options.random_seed = Some(seed);
-            }
             "--scheme" => {
                 options.color_scheme = Some(match value.as_str() {
                     "light" => ColorScheme::Light,

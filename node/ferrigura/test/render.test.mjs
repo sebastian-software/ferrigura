@@ -228,9 +228,6 @@ test('host limits apply to text and flowchart edges', () => {
     assert.match(render(flow, { maxEdges: 3 }, { compat }), /<svg/);
     assert.throws(() => render(flow, { maxEdges: 1, secure: [] }, { compat }), /Edge limit/);
   }
-  const agent = 'agentflow-beta TB\n a["A"]\n b["B"]\n a --> b\n';
-  assert.throws(() => render(agent, { maxEdges: 0 }), /Edge limit/);
-  for (const maxEdges of [1, 2]) assert.match(render(agent, { maxEdges }), /<svg/);
   assert.throws(() => render(text, { maxEdges: -1 }), /maxEdges/);
 });
 

@@ -109,18 +109,6 @@ fn should_reject_a_frame_id_reused_by_a_reset_frame() {
 }
 
 #[test]
-fn should_report_the_original_line_number_when_comments_precede_a_duplicate_frame() {
-    let error = ferrigura_syntax::parse(
-        "eventmodeling
-        tf 01 ui UI
-        %% This comment occupies a source line.
-        rf 01 evt Event",
-    )
-    .expect_err("a reused frame id should be rejected");
-    assert_eq!(error.line, 4);
-}
-
-#[test]
 fn should_keep_explicit_sources_on_a_reset_frame_without_inferring_the_previous_frame() {
     let model = parses(
         "eventmodeling
