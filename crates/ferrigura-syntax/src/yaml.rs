@@ -187,6 +187,17 @@ const CYCLIC: &str = "a collection that contains itself has no tree";
 const EXPANSION_LIMIT: &str = "YAML alias expansion exceeded size limit";
 const EXPANSION_DEPTH_LIMIT: &str = "YAML alias expansion exceeded nesting limit";
 
+/// Returns `true` when `message` is one of this module's alias-expansion limit or cyclic-anchor
+/// errors, so callers can surface these rejections directly instead of treating them as an
+/// unrecognized diagram header.
+#[must_use]
+pub fn is_limit_or_cycle_error(message: &str) -> bool {
+    let core = message
+        .strip_prefix("invalid front matter: ")
+        .unwrap_or(message);
+    matches!(core, CYCLIC | EXPANSION_LIMIT | EXPANSION_DEPTH_LIMIT)
+}
+
 const TAB: u16 = 0x09;
 const LF: u16 = 0x0A;
 const CR: u16 = 0x0D;
@@ -1091,6 +1102,10 @@ impl State {
     ) -> Res<bool> {
         let node_indent = start.position as isize - start.line_start as isize;
         let fallback = self.snapshot();
+        let strings_len = self.strings.len();
+        let sequences_len = self.sequences.len();
+        let mappings_len = self.mappings.len();
+        let remaining_key_bytes = self.remaining_key_bytes;
         self.begin_transaction();
         self.restore(start);
         self.tag = None;
@@ -1102,6 +1117,10 @@ impl State {
             return Ok(true);
         }
         self.rollback_transaction();
+        self.strings.truncate(strings_len);
+        self.sequences.truncate(sequences_len);
+        self.mappings.truncate(mappings_len);
+        self.remaining_key_bytes = remaining_key_bytes;
         self.restore(fallback);
         Ok(false)
     }
@@ -1446,14 +1465,9 @@ impl State {
     /// `storeMappingPair`: the key as an interned string ID, and the pair if the key is new.
     fn store_pair(&mut self, pairs: usize, key: Node, value: Node) -> Res<()> {
         let key_id = match key {
-            Node::String(id) => {
-                let len = self.strings[id].len();
-                self.remaining_key_bytes = self
-                    .remaining_key_bytes
-                    .checked_sub(len)
-                    .ok_or_else(|| self.error(EXPANSION_LIMIT))?;
-                id
-            }
+            // Reusing an existing arena handle allocates and copies zero bytes; retained keys are
+            // charged against `ExpandBudget` when `to_yaml_on` clones them into the public tree.
+            Node::String(id) => id,
             other => {
                 let name = key_string(
                     &self.strings,

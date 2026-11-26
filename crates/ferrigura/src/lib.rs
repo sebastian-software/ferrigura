@@ -205,10 +205,20 @@ impl Renderer {
         options: &RenderOptions,
     ) -> Result<String, RenderError> {
         let (max_text, max_edges) = self.limits(text)?;
-        let Some((source, kind)) = preprocess::prepare(text)
-            .ok()
-            .and_then(|source| detect_prepared(&source).map(|kind| (source, kind)))
-        else {
+        let source = match preprocess::prepare(text) {
+            Ok(source) => source,
+            Err(error) if ferrigura_syntax::yaml::is_limit_or_cycle_error(&error.message) => {
+                return Err(RenderError::Parse(error));
+            }
+            Err(_) => {
+                return Err(RenderError::Parse(ParseError {
+                    line: 1,
+                    column: 1,
+                    message: "no diagram type detected".to_owned(),
+                }));
+            }
+        };
+        let Some(kind) = detect_prepared(&source) else {
             return Err(RenderError::Parse(ParseError {
                 line: 1,
                 column: 1,
