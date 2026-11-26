@@ -519,6 +519,15 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
             "url={raster_url:?}: {raster_image}"
         );
     }
+    let tab_raster_image = render(
+        "flowchart TD\nA@{ img: \"data:im#9;age/png;base64,iVBORw0KGgo=\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        tab_raster_image.contains("<image href=\"data:im&#9;age/png;base64,iVBORw0KGgo=\""),
+        "{tab_raster_image}"
+    );
     let svg_data_image = render(
         "flowchart TD\nA@{ img: \"data:image/svg+xml,<svg onload=alert(1)>\", w: 48, h: 48 }\n",
         &Value::empty_object(),

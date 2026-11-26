@@ -147,30 +147,41 @@ pub fn guard_image_url(url: &str, loose: bool) -> &str {
 }
 
 /// Whether `url` starts (after optional leading whitespace) with `data:` followed by a raster
-/// `image/<subtype>` media type (ignoring MIME whitespace around the media type and subtype,
-/// matching data-URL parsing and DOMPurify's trimmed `data:` check for `DEFAULT_DATA_URI_TAGS`,
-/// restricted to non-scriptable raster image subtypes).
+/// `image/<subtype>` media type, normalizing embedded ASCII tab, LF, and CR characters as WHATWG
+/// URL parsing does before reading the scheme and MIME type (matching data-URL parsing and
+/// DOMPurify's trimmed `data:` check for `DEFAULT_DATA_URI_TAGS`, restricted to non-scriptable
+/// raster image subtypes).
 fn is_safe_raster_data_image_url(url: &str) -> bool {
     let trimmed = url.trim_start_matches(is_js_space);
-    let Some(after_scheme) = trimmed
+    if !trimmed
+        .as_bytes()
+        .first()
+        .is_some_and(|byte| matches!(byte, b'd' | b'D'))
+    {
+        return false;
+    }
+    let Some(delim) = trimmed.find([';', ',']) else {
+        return false;
+    };
+    let header: String = trimmed[..delim]
+        .chars()
+        .filter(|&c| !matches!(c, '\t' | '\n' | '\r'))
+        .collect();
+    let Some(after_scheme) = header
         .get(..5)
         .filter(|prefix| prefix.eq_ignore_ascii_case("data:"))
-        .map(|_| &trimmed[5..])
+        .map(|_| &header[5..])
     else {
         return false;
     };
-    let media = after_scheme.trim_start_matches([' ', '\t', '\n', '\r']);
-    let Some(rest) = media
+    let media = after_scheme.trim_start_matches(' ');
+    let Some(subtype) = media
         .get(..6)
         .filter(|prefix| prefix.eq_ignore_ascii_case("image/"))
-        .map(|_| &media[6..])
+        .map(|_| media[6..].trim_end_matches(' '))
     else {
         return false;
     };
-    let Some(delim) = rest.find([';', ',']) else {
-        return false;
-    };
-    let subtype = rest[..delim].trim_end_matches([' ', '\t', '\n', '\r']);
     SAFE_DATA_IMAGE_SUBTYPES
         .iter()
         .any(|allowed| subtype.eq_ignore_ascii_case(allowed))
@@ -1762,6 +1773,8 @@ mod tests {
             " data:image/png;base64,iVBORw0KGgo=",
             "\tdata:image/png;base64,iVBORw0KGgo=",
             "data: image/png;base64,iVBORw0KGgo=",
+            "data:im\tage/png;base64,iVBORw0KGgo=",
+            "data:image/p\nng;base64,iVBORw0KGgo=",
             "data:\timage/png ;base64,iVBORw0KGgo=",
             "data:image/png ;base64,iVBORw0KGgo=",
             "data:image/png  ,raw",

@@ -366,7 +366,7 @@ fn read_class(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_jso
 /// `getEffectiveHtmlLabels(config)` of Mermaid's `config.ts`: root `htmlLabels` wins, falling
 /// back to the legacy `flowchart.htmlLabels`, then `true`, evaluated with Mermaid's `evaluate()`.
 fn effective_html_labels(effective: &Value) -> bool {
-    let raw = effective
+    let Some(raw) = effective
         .get("htmlLabels")
         .filter(|value| !value.is_null())
         .or_else(|| {
@@ -374,17 +374,20 @@ fn effective_html_labels(effective: &Value) -> bool {
                 .get("flowchart")
                 .and_then(|flowchart| flowchart.get("htmlLabels"))
                 .filter(|value| !value.is_null())
-        });
-    match raw {
-        None => true,
-        Some(Value::Bool(flag)) => *flag,
-        Some(Value::Number(num)) => *num != 0.0,
-        Some(Value::String(text)) => !matches!(
-            text.trim().to_ascii_lowercase().as_str(),
-            "false" | "null" | "0"
-        ),
-        Some(_) => true,
+        })
+    else {
+        return true;
+    };
+    if matches!(raw, Value::Bool(false)) {
+        return false;
     }
+    let text = ferrigura_render::common::template_text(raw);
+    !matches!(
+        ferrigura_render::common::js_trim(&text)
+            .to_ascii_lowercase()
+            .as_str(),
+        "false" | "null" | "0"
+    )
 }
 
 fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<String, RenderError> {

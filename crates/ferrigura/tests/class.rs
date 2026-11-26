@@ -86,4 +86,14 @@ fn class_click_tooltip_respects_html_labels_and_security_level() {
         svg_root_wins.contains("title=\"x&amp;equals;y\""),
         "{svg_root_wins}"
     );
+
+    // JS String(val).trim() coercion: `[false]` and BOM-prefixed `"false"` evaluate to false.
+    for coerced_false in [
+        serde_json::json!({ "htmlLabels": [false], "securityLevel": "custom" }),
+        serde_json::json!({ "htmlLabels": "\u{FEFF}false", "securityLevel": "custom" }),
+    ] {
+        let svg_coerced = render(source, &Value::from(coerced_false)).expect("renders");
+        assert!(svg_coerced.contains("title=\"x=y\""), "{svg_coerced}");
+        assert!(!svg_coerced.contains("&amp;equals;"), "{svg_coerced}");
+    }
 }
