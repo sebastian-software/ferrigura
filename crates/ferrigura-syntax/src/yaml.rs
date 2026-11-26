@@ -1221,10 +1221,13 @@ impl State {
         if self.first_tab_in_line.is_some() {
             return Ok(false);
         }
-        let items = self.alloc_sequence();
-        if let Some(name) = self.anchor.clone() {
-            self.store_anchor(&name, Node::Sequence(items));
-        }
+        // Defer arena allocation for unanchored probes so scalar entries do not leave empty
+        // collections in the arena. Anchored collections still get an ID early for self-references.
+        let mut items = self.anchor.clone().map(|name| {
+            let id = self.alloc_sequence();
+            self.store_anchor(&name, Node::Sequence(id));
+            id
+        });
 
         let mut ch = self.ch();
         while ch != 0 {
@@ -1236,10 +1239,11 @@ impl State {
                 break;
             }
             detected = true;
+            let items_id = *items.get_or_insert_with(|| self.alloc_sequence());
             self.position += 1;
 
             if self.skip_separation_space(true) > 0 && self.line_indent <= node_indent {
-                self.sequences[items].push(Node::Null);
+                self.sequences[items_id].push(Node::Null);
                 ch = self.ch();
                 continue;
             }
@@ -1247,7 +1251,7 @@ impl State {
             let line = self.line;
             self.compose_node(node_indent, Context::BlockIn, false, true)?;
             let item = std::mem::replace(&mut self.result, Node::Null);
-            self.sequences[items].push(item);
+            self.sequences[items_id].push(item);
             self.skip_separation_space(true);
             ch = self.ch();
 
@@ -1259,10 +1263,11 @@ impl State {
         }
 
         if detected {
+            let items_id = items.unwrap_or_else(|| self.alloc_sequence());
             self.tag = saved_tag;
             self.anchor = saved_anchor;
             self.kind = Some(Kind::Sequence);
-            self.result = Node::Sequence(items);
+            self.result = Node::Sequence(items_id);
         }
         Ok(detected)
     }
@@ -1280,10 +1285,11 @@ impl State {
         if self.first_tab_in_line.is_some() {
             return Ok(false);
         }
-        let pairs = self.alloc_mapping();
-        if let Some(name) = self.anchor.clone() {
-            self.store_anchor(&name, Node::Mapping(pairs));
-        }
+        let mut pairs = self.anchor.clone().map(|name| {
+            let id = self.alloc_mapping();
+            self.store_anchor(&name, Node::Mapping(id));
+            id
+        });
         let mut key_node = Node::Null;
         let mut value_node = Node::Null;
 
@@ -1300,11 +1306,13 @@ impl State {
             if (ch == unit(b'?') || ch == unit(b':')) && is_ws_or_eol(following) {
                 if ch == unit(b'?') {
                     if at_explicit_key {
-                        self.store_pair(pairs, key_node, Node::Null)?;
+                        let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
+                        self.store_pair(pairs_id, key_node, Node::Null)?;
                         key_node = Node::Null;
                         value_node = Node::Null;
                     }
                     detected = true;
+                    pairs.get_or_insert_with(|| self.alloc_mapping());
                     at_explicit_key = true;
                     allow_compact = true;
                 } else if at_explicit_key {
@@ -1336,10 +1344,12 @@ impl State {
                             ));
                         }
                         if at_explicit_key {
-                            self.store_pair(pairs, key_node, Node::Null)?;
+                            let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
+                            self.store_pair(pairs_id, key_node, Node::Null)?;
                             value_node = Node::Null;
                         }
                         detected = true;
+                        pairs.get_or_insert_with(|| self.alloc_mapping());
                         at_explicit_key = false;
                         allow_compact = false;
                         key_node = self.result;
@@ -1374,7 +1384,8 @@ impl State {
                     }
                 }
                 if !at_explicit_key {
-                    self.store_pair(pairs, key_node, value_node)?;
+                    let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
+                    self.store_pair(pairs_id, key_node, value_node)?;
                     key_node = Node::Null;
                     value_node = Node::Null;
                 }
@@ -1390,13 +1401,15 @@ impl State {
         }
 
         if at_explicit_key {
-            self.store_pair(pairs, key_node, Node::Null)?;
+            let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
+            self.store_pair(pairs_id, key_node, Node::Null)?;
         }
         if detected {
+            let pairs_id = pairs.unwrap_or_else(|| self.alloc_mapping());
             self.tag = saved_tag;
             self.anchor = saved_anchor;
             self.kind = Some(Kind::Mapping);
-            self.result = Node::Mapping(pairs);
+            self.result = Node::Mapping(pairs_id);
         }
         Ok(detected)
     }

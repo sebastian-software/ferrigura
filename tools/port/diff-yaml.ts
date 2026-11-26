@@ -165,6 +165,7 @@ const jsById = new Map(js.map((output) => [output.id, output]));
 const rsById = new Map(rs.map((output) => [output.id, output]));
 
 const named = new Map((exceptions.yaml ?? []).map((entry) => [entry.text, entry.reason]));
+const seenExceptions = new Set<string>();
 let accepted = 0;
 let differences = 0;
 let excepted = 0;
@@ -173,12 +174,19 @@ for (const input of numbered) {
   const jsOutput = jsById.get(input.id);
   const rsOutput = rsById.get(input.id);
   if (jsOutput?.ok) accepted += 1;
+  if (jsOutput === undefined || rsOutput === undefined) {
+    differences += 1;
+    console.log(`\n✗ ${input.source}`);
+    console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
+    console.log(`  js: ${JSON.stringify(jsOutput).slice(0, 600)}`);
+    console.log(`  rs: ${JSON.stringify(rsOutput).slice(0, 600)}`);
+    continue;
+  }
   const agree =
-    jsOutput !== undefined &&
-    rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
     (!jsOutput.ok || same(wellFormed(jsOutput.value), rsOutput.value));
   if (named.has(input.text)) {
+    seenExceptions.add(input.text);
     if (agree) {
       stale += 1;
       console.log(`\n✗ ${input.source}`);
@@ -195,6 +203,14 @@ for (const input of numbered) {
   console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
   console.log(`  js: ${JSON.stringify(jsOutput).slice(0, 600)}`);
   console.log(`  rs: ${JSON.stringify(rsOutput).slice(0, 600)}`);
+}
+for (const [text, reason] of named) {
+  if (!seenExceptions.has(text)) {
+    stale += 1;
+    console.log(`\n✗ yaml exception has no matching input`);
+    console.log(`  input: ${JSON.stringify(text.slice(0, 300))}`);
+    console.log(`  unused exception: ${reason}`);
+  }
 }
 
 console.log(
