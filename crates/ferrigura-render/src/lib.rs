@@ -8,10 +8,8 @@
 #![warn(missing_docs)]
 
 pub mod a11y;
-pub mod agentflow;
 pub mod animation;
 pub mod architecture;
-pub mod block;
 pub mod c4;
 pub mod class;
 pub mod common;
@@ -34,7 +32,6 @@ pub mod pie;
 pub mod quadrant_chart;
 pub mod radar;
 pub mod railroad;
-pub mod requirement;
 pub mod sankey;
 mod scheme;
 pub mod sequence;
@@ -44,7 +41,6 @@ pub mod timeline;
 pub mod tree_view;
 pub mod treemap;
 pub mod unified;
-pub mod use_case;
 #[cfg(test)]
 mod variables;
 pub mod wardley;

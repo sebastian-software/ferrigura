@@ -42,15 +42,10 @@ fn detects_every_header_of_the_p2_types() {
         ("C4Dynamic\n  title T", DiagramType::C4),
         ("C4Deployment\n  title T", DiagramType::C4),
         ("kanban\n  Todo", DiagramType::Kanban),
-        (
-            "requirementDiagram\n  requirement r {}",
-            DiagramType::Requirement,
-        ),
         ("quadrantChart\n  title T", DiagramType::QuadrantChart),
         ("sankey\n  a,b,8", DiagramType::Sankey),
         ("packet\n  0-15: \"Header\"", DiagramType::Packet),
         ("xychart\n  x-axis [a, b]", DiagramType::XyChart),
-        ("block\n  A", DiagramType::Block),
         ("eventmodeling\n  tf 01 cmd", DiagramType::EventModeling),
         ("treemap\n  \"Root\"", DiagramType::Treemap),
         ("treemap-beta\n  \"Root\"", DiagramType::Treemap),
@@ -72,7 +67,6 @@ fn the_stable_p2_types_take_their_beta_keyword_too() {
         ("sankey-beta\n  a,b,8", DiagramType::Sankey),
         ("packet-beta\n  0-15: \"Header\"", DiagramType::Packet),
         ("xychart-beta\n  x-axis [a, b]", DiagramType::XyChart),
-        ("block-beta\n  A", DiagramType::Block),
     ];
     for (text, expected) in cases {
         assert_eq!(detect(text), Some(expected), "{text:?}");
@@ -86,7 +80,7 @@ fn the_stable_p2_types_take_their_beta_keyword_too() {
     ] {
         assert_eq!(detect(text), None, "{text:?}");
     }
-    assert_eq!(detect("block.A\n"), Some(DiagramType::Block));
+    assert_eq!(detect_unsupported("block.A\n"), Some("block"));
 }
 
 #[test]
@@ -178,8 +172,8 @@ fn front_matter_after_blank_lines_or_comments_is_skipped_as_the_reference_does()
         Some(DiagramType::Flowchart)
     );
     assert_eq!(
-        detect("\n---\n  theme: forest\n---\n  requirementDiagram"),
-        Some(DiagramType::Requirement)
+        detect_unsupported("\n---\n  theme: forest\n---\n  requirementDiagram"),
+        Some("requirement")
     );
 }
 
@@ -192,7 +186,6 @@ fn front_matter_after_blank_lines_or_comments_is_skipped_as_the_reference_does()
 #[test]
 fn detects_every_header_of_the_p3_types() {
     let cases = [
-        ("agentflow-beta\n  node a", DiagramType::Agentflow),
         ("cynefin-beta\n  title T", DiagramType::Cynefin),
         ("cynefin-beta:\n  title T", DiagramType::Cynefin),
         ("radar-beta\n  axis a", DiagramType::Radar),
@@ -203,7 +196,6 @@ fn detects_every_header_of_the_p3_types() {
         ("RAILROAD-BETA\n  rule", DiagramType::Railroad),
         ("Railroad-Peg-Beta\n  rule", DiagramType::Railroad),
         ("treeView-beta\n  root", DiagramType::TreeView),
-        ("usecase-beta\n  actor A", DiagramType::UseCase),
         ("wardley-beta\n  title T", DiagramType::Wardley),
         ("WARDLEY-BETA\n  title T", DiagramType::Wardley),
     ];
@@ -225,8 +217,8 @@ fn the_word_boundary_headers_reject_a_word_character_after_the_keyword() {
     ] {
         assert_eq!(detect(text), None, "{text:?}");
     }
-    assert_eq!(detect("agentflow-beta-x\n"), Some(DiagramType::Agentflow));
-    assert_eq!(detect("agentflow-beta"), Some(DiagramType::Agentflow));
+    assert_eq!(detect_unsupported("agentflow-beta-x\n"), Some("agentflow"));
+    assert_eq!(detect_unsupported("agentflow-beta"), Some("agentflow"));
     assert_eq!(detect_unsupported("swimlane-beta-x\n"), Some("swimlane"));
     assert_eq!(detect_unsupported("swimlane-beta"), Some("swimlane"));
 }
@@ -245,9 +237,12 @@ fn the_cynefin_and_use_case_headers_need_a_space_or_the_end_after_the_keyword() 
         Some(DiagramType::Cynefin)
     );
     assert_eq!(detect("cynefin-beta%%note"), None);
-    assert_eq!(detect("usecase-beta\n"), Some(DiagramType::UseCase));
-    assert_eq!(detect("usecase-beta\u{a0}x\n"), Some(DiagramType::UseCase));
-    assert_eq!(detect("usecase-beta"), Some(DiagramType::UseCase));
+    assert_eq!(detect_unsupported("usecase-beta\n"), Some("use case"));
+    assert_eq!(
+        detect_unsupported("usecase-beta\u{a0}x\n"),
+        Some("use case")
+    );
+    assert_eq!(detect_unsupported("usecase-beta"), Some("use case"));
     assert_eq!(detect("usecase-beta:\n"), None);
     assert_eq!(detect("usecase-beta-x\n"), None);
 }
@@ -287,8 +282,8 @@ fn the_p3_headers_are_taken_only_at_the_start_of_the_text() {
         Some("swimlane")
     );
     assert_eq!(
-        detect("agentflow-beta\n  graph LR"),
-        Some(DiagramType::Agentflow)
+        detect_unsupported("agentflow-beta\n  graph LR"),
+        Some("agentflow")
     );
     assert_eq!(
         detect("flowchart LR\n  swimlane-beta\n"),
@@ -340,5 +335,41 @@ fn the_venn_headers_name_a_type_that_ferrigura_does_not_draw() {
     for text in texts {
         assert_eq!(detect(text), None, "{text:?}");
         assert_eq!(detect_unsupported(text), Some("venn"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_requirement_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["requirementDiagram\n  requirement r {}"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("requirement"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_block_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["block\n  A", "block-beta\n  A"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("block"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_use_case_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["usecase-beta\n  actor A"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("use case"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_agentflow_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["agentflow-beta\n  node a"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("agentflow"), "{text:?}");
     }
 }

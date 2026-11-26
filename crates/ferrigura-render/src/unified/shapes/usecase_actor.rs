@@ -1,24 +1,22 @@
-//! The actor glyphs of the use case diagram: a port of `rendering-elements/shapes/usecaseActor.ts` and its
-//! variants `usecaseActorHollow.ts`, `usecaseActorAwesome.ts` and `usecaseActorIcon.ts`, which share one
-//! handler (`renderUsecaseActor`). The figure is drawn in the plain elements that the neo and classic
-//! looks draw; the hand-drawn look is out of scope.
+//! The actor glyphs: a port of `rendering-elements/shapes/usecaseActor.ts` and its variants
+//! `usecaseActorHollow.ts`, `usecaseActorAwesome.ts` and `usecaseActorIcon.ts`, which share one handler
+//! (`renderUsecaseActor`). Mermaid draws the actors of a use case diagram with them; a flowchart node can
+//! name them too. The figure is drawn in the plain elements that the neo and classic looks draw; the
+//! hand-drawn look is out of scope.
 //!
-//! The label sits under the figure, and a stereotype above it: `label`, then the stereotype and the
-//! figure (`after_label`), as the handler appends them. The outline is an invisible rectangle around the
-//! whole, which sizes the node. See `docs/diagrams/usecase.md#layout-and-rendering`.
-
-use ferrigura_syntax::sanitize::sanitize_text;
+//! The label sits under the figure: `label`, then the figure (`after_label`), as the handler appends them.
+//! The outline is an invisible rectangle around the whole, which sizes the node. The stereotype and the
+//! business marker of the reference come from the fields of a use case's actor, which a flowchart node
+//! does not carry.
 
 use super::icon::fallback_icon_svg;
 use super::registry::Kind;
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::RenderError;
-use crate::common::decode_entities;
 use crate::svg::number;
 use crate::unified::geom::{BBox, Point};
-use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
-use ferrigura_model::flowchart::LabelType;
+use crate::unified::label::LabelLayout;
 
 /// The glyph's variant (`UsecaseActorVariant`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,9 +56,8 @@ impl Variant {
 /// The figure's box (`ACTOR_FIGURE_WIDTH`, `ACTOR_FIGURE_HEIGHT`, `usecaseActor.ts` 21-22).
 const FIGURE_WIDTH: f64 = 56.0;
 const FIGURE_HEIGHT: f64 = 72.0;
-/// The gap under the figure and between the stereotype and the label (`usecaseActor.ts` 24-25).
+/// The gap under the figure (`usecaseActor.ts` 24).
 const LABEL_GAP: f64 = 8.0;
-const STEREOTYPE_GAP: f64 = 2.0;
 
 /// The stick figure's path (`usecaseActor.ts` 255-265).
 const STICK_FIGURE: &str = "M 0 -12 C 6.627 -12 12 -17.373 12 -24 C 12 -30.627 6.627 -36 0 -36 C -6.627 -36 -12 -30.627 -12 -24 C -12 -17.373 -6.627 -12 0 -12 Z M 0 -12 V 8 M -17 -5 H 17 M 0 8 L -15 28 M 0 8 L 15 28";
@@ -71,110 +68,6 @@ const HOLLOW_BODY: &str =
 
 /// The awesome figure's silhouette (`usecaseActorAwesome.ts` 6-18).
 const AWESOME_SILHOUETTE: &str = "M 0 -34 C 7.18 -34 13 -28.18 13 -21 C 13 -13.82 7.18 -8 0 -8 C -7.18 -8 -13 -13.82 -13 -21 C -13 -28.18 -7.18 -34 0 -34 Z M -24 25 C -24 7 -14 -3 0 -3 C 14 -3 24 7 24 25 C 24 28 21 30 18 30 H -18 C -21 30 -24 28 -24 25 Z";
-
-/// The business marker's path for a circle of this center and radius (`usecaseActor.ts` 35-51): a chord
-/// across the top of the figure, at 60 per cent of the radius, at the angle of 60 degrees.
-fn business_marker_for_circle(center_y: f64, radius: f64) -> String {
-    const OFFSET_RATIO: f64 = 0.6;
-    let angle = std::f64::consts::PI / 3.0;
-    let center_offset = radius * OFFSET_RATIO;
-    let half_chord = radius * (1.0 - OFFSET_RATIO * OFFSET_RATIO).sqrt();
-    let direction_x = ferrigura_jsmath::cos(angle);
-    let direction_y = -ferrigura_jsmath::sin(angle);
-    let center_x = center_offset * -direction_y;
-    let marker_center_y = center_y + center_offset * direction_x;
-    let delta_x = half_chord * direction_x;
-    let delta_y = half_chord * direction_y;
-    format!(
-        "M {} {} L {} {}",
-        number(center_x - delta_x),
-        number(marker_center_y - delta_y),
-        number(center_x + delta_x),
-        number(marker_center_y + delta_y),
-    )
-}
-
-/// The business marker of a variant (`businessMarkerPath`, `usecaseActor.ts` 53-58).
-fn business_marker(variant: Variant) -> String {
-    match variant {
-        Variant::Normal => business_marker_for_circle(-24.0, 12.0),
-        Variant::Hollow => business_marker_for_circle(-23.0, 9.0),
-        Variant::Awesome => business_marker_for_circle(-21.0, 13.0),
-        Variant::Icon => "M 12 -8 L 26 -26".to_owned(),
-    }
-}
-
-/// The declarations of a label's style, as `labelHelper` hands them to the label (`node_label`).
-pub(super) fn declarations(style: &str) -> Vec<String> {
-    style
-        .split(';')
-        .filter(|declaration| !declaration.is_empty())
-        .map(str::to_owned)
-        .collect()
-}
-
-/// The font size of the diagram's text when the theme gives none (the root's `font-size`).
-pub(super) fn root_font_size(input: &ShapeInput<'_>) -> f64 {
-    util::theme_number(&input.config.theme.font_size).unwrap_or(input.config.globals.font_size)
-}
-
-/// The width at which the label of a node wraps: the node's wrapping width, which `getData` sets, else the
-/// flowchart's (`insertLabel`'s `options.width || flowchart.wrappingWidth`).
-pub(super) fn node_width(input: &ShapeInput<'_>) -> f64 {
-    input
-        .node
-        .wrapping_width
-        .unwrap_or(input.config.section.flowchart.wrapping_width)
-}
-
-/// The label as the stylesheet draws it: the measured label laid out again at the font size its class sets
-/// (`drawn_font_size`), which the reference applies after it has measured the label. The measured label
-/// gives the box that positions the drawn one, so it is kept for that.
-pub(super) fn drawn_label(
-    input: &ShapeInput<'_>,
-    measured: &LabelLayout,
-) -> Result<LabelLayout, RenderError> {
-    let Some(size) = input
-        .node
-        .use_case
-        .as_ref()
-        .and_then(|fields| fields.drawn_font_size)
-    else {
-        return Ok(measured.clone());
-    };
-    let mut node = input.node.clone();
-    node.font_size = Some(size);
-    Ok(
-        super::node_label(&node, input.config, None, Anchor::Origin)?
-            .unwrap_or_else(|| measured.clone()),
-    )
-}
-
-/// `insertLabel` (`shapes/util.ts` 155-219) for a label that the shape adds to its own elements: the
-/// text as `createText` lays it out at the node's wrapping width, in the node's label style, with no
-/// minimum width. The caller places it with `centerLabel` or its own offset.
-pub(super) fn insert_label(
-    input: &ShapeInput<'_>,
-    text: &str,
-    label_style: &str,
-    width: f64,
-) -> Result<LabelLayout, RenderError> {
-    let text = sanitize_text(&decode_entities(text));
-    let styles = declarations(label_style);
-    label::layout(&LabelSpec {
-        fonts: super::node_fonts(input.node, input.config),
-        text: &text,
-        label_type: LabelType::Text,
-        width,
-        is_node: false,
-        anchor: Anchor::Origin,
-        wrap_in_style: true,
-        add_background: false,
-        styles: &styles,
-        font_size: root_font_size(input),
-        title: false,
-    })
-}
 
 /// `positionLabel` (`usecaseActor.ts` 74-81): the translation that centers a label on `center_y`, with the
 /// origin of its box taken out: `translate(-w/2 - x, center - h/2 - y)`.
@@ -238,9 +131,9 @@ fn icon_glyph() -> String {
     )
 }
 
-/// `renderUsecaseActor` for one variant (`usecaseActor.ts` 154-265): the label, the stereotype above it,
-/// the glyph and the business marker, and the outline that sizes the node. The stereotype is returned
-/// with the shape, so that the fonts of the diagram cover its text.
+/// `renderUsecaseActor` for one variant (`usecaseActor.ts` 154-265): the label, the glyph, and the
+/// outline that sizes the node. A flowchart node has no stereotype, so no further text is returned with
+/// the shape.
 ///
 /// # Errors
 ///
@@ -253,52 +146,14 @@ pub(super) fn actor(
     let styles = styles2string(node);
     // The label as `labelHelper` lays it out: an actor has no minimum width (`usecaseDb.ts` 512-516).
     let label = label_helper(input, false);
-    let stereotype = node
-        .use_case
-        .as_ref()
-        .and_then(|fields| fields.stereotype.clone());
-    let stereotype_label = match stereotype {
-        Some(text) => Some(insert_label(
-            input,
-            &format!("«{text}»"),
-            &styles.label,
-            node_width(input),
-        )?),
-        None => None,
-    };
-    let stereotype_height = stereotype_label
-        .as_ref()
-        .map_or(0.0, |label| label.bbox.height);
-    let stereotype_width = stereotype_label
-        .as_ref()
-        .map_or(0.0, |label| label.bbox.width);
-    let content_height = FIGURE_HEIGHT
-        + LABEL_GAP
-        + label.bbox.height
-        + stereotype_label
-            .as_ref()
-            .map_or(0.0, |_| stereotype_height + STEREOTYPE_GAP);
+    let content_height = FIGURE_HEIGHT + LABEL_GAP + label.bbox.height;
     let padding = node.padding;
-    let total_width = FIGURE_WIDTH.max(label.bbox.width).max(stereotype_width) + padding * 2.0;
+    let total_width = FIGURE_WIDTH.max(label.bbox.width) + padding * 2.0;
     let total_height = content_height + padding * 2.0;
     let content_top = -content_height / 2.0;
 
-    // The stereotype and the label, from the top of the content down (`usecaseActor.ts` 229-237).
-    let mut next_center = content_top + FIGURE_HEIGHT + LABEL_GAP;
-    let mut after = String::new();
-    let mut texts = Vec::new();
-    if let Some(stereotype) = &stereotype_label {
-        next_center += stereotype_height / 2.0;
-        after.push_str(&label_group(
-            "label usecase-stereotype",
-            &styles.label,
-            position_label(stereotype, next_center),
-            stereotype,
-            &styles.label,
-        ));
-        next_center += stereotype_height / 2.0 + STEREOTYPE_GAP;
-        texts.push(stereotype.clone());
-    }
+    // The label, under the figure (`usecaseActor.ts` 229-237).
+    let next_center = content_top + FIGURE_HEIGHT + LABEL_GAP;
     let label_offset = position_label(&label, next_center + label.bbox.height / 2.0);
 
     // The glyph group (`usecaseActor.ts` 210-229): its style only when the node has one.
@@ -307,21 +162,12 @@ pub(super) fn actor(
     } else {
         attribute("style", &styles.node)
     };
-    let business = node.use_case.as_ref().is_some_and(|fields| fields.business);
-    let marker = if business {
-        format!(
-            "<path class=\"usecase-business-marker usecase-actor-business-marker\" d=\"{}\" fill=\"none\" style=\"stroke: inherit !important; stroke-width: inherit !important\"/>",
-            business_marker(variant),
-        )
-    } else {
-        String::new()
-    };
-    after.push_str(&format!(
-        "<g class=\"usecase-actor-glyph {}\"{glyph_style} transform=\"translate(0, {})\">{}{marker}</g>",
+    let after = format!(
+        "<g class=\"usecase-actor-glyph {}\"{glyph_style} transform=\"translate(0, {})\">{}</g>",
         variant.glyph_class(),
         number(content_top + FIGURE_HEIGHT / 2.0),
         glyph(variant),
-    ));
+    );
 
     let outline = format!(
         "<rect class=\"usecase-actor-outline\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" opacity=\"0\" aria-hidden=\"true\"/>",
@@ -330,7 +176,6 @@ pub(super) fn actor(
         number(total_width),
         number(total_height),
     );
-    let drawn = drawn_label(input, &label)?;
     let part = Part {
         svg: outline,
         after_label: after,
@@ -342,9 +187,9 @@ pub(super) fn actor(
         ),
         intersect: Intersect::Rect,
         label_offset: Some(label_offset),
-        label: Some(drawn),
+        label: Some(label),
     };
-    Ok((part, texts))
+    Ok((part, Vec::new()))
 }
 
 /// The `class` of the group of an actor's node: `node`, the node's classes, then the variant's
@@ -364,36 +209,5 @@ pub(super) fn variant_of_kind(kind: Kind) -> Variant {
         Kind::UsecaseActorAwesome => Variant::Awesome,
         Kind::UsecaseActorIcon => Variant::Icon,
         _ => Variant::Normal,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_business_marker_of_the_normal_figure_is_a_chord_across_its_head() {
-        // `usecaseActor.ts` 54: a circle of radius 12 at center -24. The chord rises to the right at 60 degrees
-        // (usecaseShapes.spec.ts), so its ends are not level; it starts left of the figure's axis.
-        let marker = business_marker(Variant::Normal);
-        let coordinates: Vec<f64> = marker
-            .split(' ')
-            .filter_map(|token| token.parse::<f64>().ok())
-            .collect();
-        assert_eq!(coordinates.len(), 4, "{marker}");
-        assert!((coordinates[0] - 1.4353828).abs() < 1e-6, "{marker}");
-        assert!((coordinates[2] - 11.0353828).abs() < 1e-6, "{marker}");
-        assert!(
-            (ferrigura_jsmath::atan2(
-                coordinates[1] - coordinates[3],
-                coordinates[2] - coordinates[0]
-            )
-            .to_degrees()
-                - 60.0)
-                .abs()
-                < 1e-9,
-            "{marker}"
-        );
-        assert!((coordinates[1] + 12.0861562).abs() < 1e-6, "{marker}");
     }
 }

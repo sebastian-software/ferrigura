@@ -26,9 +26,7 @@ mod text;
 mod unsupported;
 pub mod url;
 
-pub mod agentflow;
 pub mod architecture;
-pub mod block;
 pub mod c4;
 pub mod class;
 pub mod config;
@@ -45,7 +43,6 @@ pub mod pie;
 pub mod quadrant_chart;
 pub mod radar;
 pub mod railroad;
-pub mod requirement;
 pub mod sanitize;
 pub mod sankey;
 pub mod sequence;
@@ -53,14 +50,11 @@ pub mod state;
 pub mod timeline;
 pub mod tree_view;
 pub mod treemap;
-pub mod use_case;
 pub mod wardley;
 pub mod xychart;
 pub mod yaml;
 
-use ferrigura_model::agentflow::AgentflowDiagram;
 use ferrigura_model::architecture::ArchitectureDiagram;
-use ferrigura_model::block::BlockDiagram;
 use ferrigura_model::c4::C4Diagram;
 use ferrigura_model::class::ClassDiagram;
 use ferrigura_model::cynefin::CynefinDiagram;
@@ -79,16 +73,17 @@ use ferrigura_model::pie::PieDiagram;
 use ferrigura_model::quadrant_chart::QuadrantChartDiagram;
 use ferrigura_model::radar::RadarDiagram;
 use ferrigura_model::railroad::RailroadDiagram;
-use ferrigura_model::requirement::RequirementDiagram;
 use ferrigura_model::sankey::SankeyDiagram;
 use ferrigura_model::sequence::SequenceDiagram;
 use ferrigura_model::state::StateDiagram;
 use ferrigura_model::timeline::TimelineDiagram;
 use ferrigura_model::tree_view::TreeViewDiagram;
 use ferrigura_model::treemap::TreemapDiagram;
-use ferrigura_model::use_case::UseCaseDiagram;
 use ferrigura_model::wardley::WardleyDiagram;
 use ferrigura_model::xychart::XyChartDiagram;
+
+use unsupported::starts_with_ignore_ascii_case;
+use unsupported::{cynefin_header, is_c4_header, is_ishikawa_header, is_railroad_header};
 
 pub use error::ParseError;
 pub use preprocess::decode_entities;
@@ -120,8 +115,6 @@ pub enum DiagramType {
     Gantt,
     /// The mindmap, written `mindmap`.
     Mindmap,
-    /// The block diagram, written `block`.
-    Block,
     /// The packet diagram, written `packet`.
     Packet,
     /// The xychart, written `xychart`.
@@ -130,8 +123,6 @@ pub enum DiagramType {
     Sankey,
     /// The quadrant chart, written `quadrantChart`.
     QuadrantChart,
-    /// The requirement diagram, written `requirementDiagram`.
-    Requirement,
     /// The C4 diagram, written with one of its five headers: `C4Context`, `C4Container`,
     /// `C4Component`, `C4Dynamic` or `C4Deployment`.
     C4,
@@ -145,8 +136,6 @@ pub enum DiagramType {
     Ishikawa,
     /// The event modeling diagram, written `eventmodeling`.
     EventModeling,
-    /// The agentflow diagram, written `agentflow-beta`.
-    Agentflow,
     /// The cynefin diagram, written `cynefin-beta`.
     Cynefin,
     /// The radar, written `radar-beta`.
@@ -156,8 +145,6 @@ pub enum DiagramType {
     Railroad,
     /// The tree view, written `treeView-beta`.
     TreeView,
-    /// The use case diagram, written `usecase-beta`.
-    UseCase,
     /// The wardley map, written `wardley-beta`, in any letter case.
     Wardley,
 }
@@ -196,24 +183,20 @@ impl DiagramType {
             Self::State => "state",
             Self::Gantt => "gantt",
             Self::Mindmap => "mindmap",
-            Self::Block => "block",
             Self::Packet => "packet",
             Self::XyChart => "XY chart",
             Self::Sankey => "sankey",
             Self::QuadrantChart => "quadrant chart",
-            Self::Requirement => "requirement",
             Self::C4 => "C4",
             Self::Kanban => "kanban",
             Self::Architecture => "architecture",
             Self::Treemap => "treemap",
             Self::Ishikawa => "ishikawa",
             Self::EventModeling => "event modeling",
-            Self::Agentflow => "agentflow",
             Self::Cynefin => "cynefin",
             Self::Radar => "radar",
             Self::Railroad => "railroad",
             Self::TreeView => "tree view",
-            Self::UseCase => "use case",
             Self::Wardley => "wardley",
         }
     }
@@ -234,24 +217,20 @@ impl DiagramType {
             Self::State => "state",
             Self::Gantt => "gantt",
             Self::Mindmap => "mindmap",
-            Self::Block => "block",
             Self::Packet => "packet",
             Self::XyChart => "xyChart",
             Self::Sankey => "sankey",
             Self::QuadrantChart => "quadrantChart",
-            Self::Requirement => "requirement",
             Self::C4 => "c4",
             Self::Kanban => "kanban",
             Self::Architecture => "architecture",
             Self::Treemap => "treemap",
             Self::Ishikawa => "ishikawa",
             Self::EventModeling => "eventmodeling",
-            Self::Agentflow => "agentflow",
             Self::Cynefin => "cynefin",
             Self::Radar => "radar",
             Self::Railroad => "railroad",
             Self::TreeView => "treeView",
-            Self::UseCase => "usecase",
             Self::Wardley => "wardley-beta",
         }
     }
@@ -284,8 +263,6 @@ pub enum Diagram {
     Gantt(GanttDiagram),
     /// A mindmap.
     Mindmap(MindmapDiagram),
-    /// A block diagram.
-    Block(BlockDiagram),
     /// A packet diagram.
     Packet(PacketDiagram),
     /// An xychart.
@@ -294,8 +271,6 @@ pub enum Diagram {
     Sankey(SankeyDiagram),
     /// A quadrant chart.
     QuadrantChart(QuadrantChartDiagram),
-    /// A requirement diagram.
-    Requirement(RequirementDiagram),
     /// A C4 diagram.
     C4(C4Diagram),
     /// A kanban board.
@@ -308,8 +283,6 @@ pub enum Diagram {
     Ishikawa(IshikawaDiagram),
     /// An event modeling diagram.
     EventModeling(EventModelingDiagram),
-    /// An agentflow diagram.
-    Agentflow(AgentflowDiagram),
     /// A cynefin diagram.
     Cynefin(CynefinDiagram),
     /// A radar.
@@ -318,8 +291,6 @@ pub enum Diagram {
     Railroad(RailroadDiagram),
     /// A tree view.
     TreeView(TreeViewDiagram),
-    /// A use case diagram.
-    UseCase(UseCaseDiagram),
     /// A wardley map.
     Wardley(WardleyDiagram),
 }
@@ -359,8 +330,6 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Mindmap)
     } else if rest.starts_with("architecture") {
         Some(DiagramType::Architecture)
-    } else if has_keyword_at_word_boundary(rest, "agentflow-beta") {
-        Some(DiagramType::Agentflow)
     } else if is_c4_header(rest) {
         Some(DiagramType::C4)
     } else if rest.starts_with("kanban") {
@@ -375,8 +344,6 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Info)
     } else if rest.starts_with("pie") {
         Some(DiagramType::Pie)
-    } else if rest.starts_with("requirementDiagram") {
-        Some(DiagramType::Requirement)
     } else if rest.starts_with("sequenceDiagram") {
         Some(DiagramType::Sequence)
     } else if rest.starts_with("graph") || rest.starts_with("flowchart") {
@@ -397,8 +364,6 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Packet)
     } else if has_keyword_alone(rest, "xychart") {
         Some(DiagramType::XyChart)
-    } else if has_keyword_alone(rest, "block") {
-        Some(DiagramType::Block)
     } else if rest.starts_with("eventmodeling") {
         Some(DiagramType::EventModeling)
     } else if rest.starts_with("treeView-beta") {
@@ -415,8 +380,6 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Wardley)
     } else if cynefin_header(rest) {
         Some(DiagramType::Cynefin)
-    } else if keyword_followed_by(rest, "usecase-beta", text::is_js_space) {
-        Some(DiagramType::UseCase)
     } else {
         None
     }
@@ -427,84 +390,10 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
 /// or a hyphen. Upstream's detectors end without that boundary (`^\s*sankey(-beta)?`), so they also
 /// take `sankeyfoo`; ferrigura keeps the boundary, a fix the reference gets as a patch
 /// (`docs/decisions/0014-upstream-reference-at-a-pin.md`).
-fn has_keyword_alone(text: &str, keyword: &str) -> bool {
+pub(crate) fn has_keyword_alone(text: &str, keyword: &str) -> bool {
     let alone = |after: &str| !matches!(after.as_bytes().first(), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-');
     text.strip_prefix(keyword)
         .is_some_and(|after| alone(after) || after.strip_prefix("-beta").is_some_and(alone))
-}
-
-/// `^\s*(?:C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)`, the detector of `c4`.
-fn is_c4_header(text: &str) -> bool {
-    [
-        "C4Context",
-        "C4Container",
-        "C4Component",
-        "C4Dynamic",
-        "C4Deployment",
-    ]
-    .iter()
-    .any(|header| text.starts_with(header))
-}
-
-/// `^\s*ishikawa(-beta)?\b` with the `i` flag, the detector of `ishikawa`. The optional `-beta` does
-/// not change the outcome: the match ends at a word boundary after `ishikawa`, and a hyphen or the end
-/// of the text always gives one. The `i` flag folds ASCII letters only, as it does without `u`.
-fn is_ishikawa_header(text: &str) -> bool {
-    text.get(..8)
-        .is_some_and(|keyword| keyword.eq_ignore_ascii_case("ishikawa"))
-        && !matches!(text.as_bytes().get(8), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_')
-}
-
-/// `^\s*<keyword>\b`, the header test of the agentflow and swimlane detectors: the keyword ends at a
-/// word boundary, so an ASCII letter, a digit or `_` after it is not taken, while a hyphen, a space
-/// or a non-ASCII character is.
-pub(crate) fn has_keyword_at_word_boundary(text: &str, keyword: &str) -> bool {
-    text.strip_prefix(keyword).is_some_and(|after| {
-        !matches!(after.as_bytes().first(), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_')
-    })
-}
-
-/// `^\s*<keyword>` with the `i` flag, for the detectors that fold case (`railroad`, `wardley`). The
-/// fold covers ASCII letters only, as it does without the `u` flag.
-fn starts_with_ignore_ascii_case(text: &str, keyword: &str) -> bool {
-    text.get(..keyword.len())
-        .is_some_and(|head| head.eq_ignore_ascii_case(keyword))
-}
-
-/// The four railroad headers: `railroad-beta`, `railroad-ebnf-beta`, `railroad-abnf-beta` and
-/// `railroad-peg-beta`, with the `i` flag. None of them is a prefix of another.
-fn is_railroad_header(text: &str) -> bool {
-    [
-        "railroad-beta",
-        "railroad-ebnf-beta",
-        "railroad-abnf-beta",
-        "railroad-peg-beta",
-    ]
-    .iter()
-    .any(|keyword| starts_with_ignore_ascii_case(text, keyword))
-}
-
-/// `^\s*cynefin-beta(?:[\s:]|$)` on the text after `stripAnyComments`, as `detectType` matches it
-/// (`diagram-api/detectType.ts`, `diagram-api/regexes.ts`). That function replaces a `%%` comment
-/// that ends in a line break with a line break, so `cynefin-beta%%note` followed by a line is the
-/// header too, and the same comment without a line break after it is not.
-fn cynefin_header(text: &str) -> bool {
-    if keyword_followed_by(text, "cynefin-beta", |c| text::is_js_space(c) || c == ':') {
-        return true;
-    }
-    text.strip_prefix("cynefin-beta")
-        .and_then(|after| after.strip_prefix("%%"))
-        .is_some_and(|comment| comment.contains('\n'))
-}
-
-/// Whether `text` starts with `keyword`, and the character after it is absent or accepted by
-/// `follows`: `^\s*<keyword>(?:[\s:]|$)` for cynefin and `^\s*<keyword>(?:\s|$)` for use case.
-fn keyword_followed_by(text: &str, keyword: &str, follows: impl Fn(char) -> bool) -> bool {
-    text.strip_prefix(keyword)
-        .is_some_and(|after| match after.chars().next() {
-            None => true,
-            Some(next) => follows(next),
-        })
 }
 
 /// The name of the diagram type whose header starts `text`, when that is a type ferrigura does not
@@ -565,24 +454,20 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         DiagramType::State => state::parse(text).map(Diagram::State),
         DiagramType::Gantt => gantt::parse(text).map(Diagram::Gantt),
         DiagramType::Mindmap => mindmap::parse(text).map(Diagram::Mindmap),
-        DiagramType::Block => block::parse(text).map(Diagram::Block),
         DiagramType::Packet => packet::parse(text).map(Diagram::Packet),
         DiagramType::XyChart => xychart::parse(text).map(Diagram::XyChart),
         DiagramType::Sankey => sankey::parse(text).map(Diagram::Sankey),
         DiagramType::QuadrantChart => quadrant_chart::parse(text).map(Diagram::QuadrantChart),
-        DiagramType::Requirement => requirement::parse(text).map(Diagram::Requirement),
         DiagramType::C4 => c4::parse(text).map(Diagram::C4),
         DiagramType::Kanban => kanban::parse(text).map(Diagram::Kanban),
         DiagramType::Architecture => architecture::parse(text).map(Diagram::Architecture),
         DiagramType::Treemap => treemap::parse(text).map(Diagram::Treemap),
         DiagramType::Ishikawa => ishikawa::parse(text).map(Diagram::Ishikawa),
         DiagramType::EventModeling => event_modeling::parse(text).map(Diagram::EventModeling),
-        DiagramType::Agentflow => agentflow::parse(text).map(Diagram::Agentflow),
         DiagramType::Cynefin => cynefin::parse(text).map(Diagram::Cynefin),
         DiagramType::Radar => radar::parse(text).map(Diagram::Radar),
         DiagramType::Railroad => railroad::parse(text).map(Diagram::Railroad),
         DiagramType::TreeView => tree_view::parse(text).map(Diagram::TreeView),
-        DiagramType::UseCase => use_case::parse(text).map(Diagram::UseCase),
         DiagramType::Wardley => wardley::parse(text).map(Diagram::Wardley),
     }
 }

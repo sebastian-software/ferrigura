@@ -1,20 +1,18 @@
-//! The JSON table of the use case diagram: a port of `rendering-elements/shapes/usecaseJsonTable.ts` in the
-//! plain elements. A title row names the table, and each row has a key cell and a value cell, sized from
-//! their texts. The shape draws its own labels: the title and every key and value (`insertLabel`, the
-//! flowchart's wrapping width, centered).
+//! The JSON table: a port of `rendering-elements/shapes/usecaseJsonTable.ts` in the plain elements.
+//! Mermaid draws the JSON tables of a use case diagram with it; a flowchart node can name it too. A title
+//! row names the table; the key and value rows of the reference come from the fields of a use case,
+//! which a flowchart node does not carry, so the table is its title row. The shape draws its own label.
 //!
 //! The reference's rough.js cells (the hand-drawn look) are out of scope; the plain rectangles are the
 //! output of the other looks.
 
 use super::Intersect;
 use super::ShapeInput;
-use super::usecase_actor::{declarations, insert_label, label_group, root_font_size};
+use super::usecase_actor::label_group;
 use super::util::{self, Part, attribute, label_helper, styles2string};
-use crate::RenderError;
 use crate::svg::number;
 use crate::unified::geom::BBox;
 use crate::unified::geom::Point;
-use crate::unified::label::Anchor;
 use crate::unified::label::LabelLayout;
 
 /// The padding of a cell's text on each side (`CELL_PADDING_X` and `CELL_PADDING_Y`, `usecaseJsonTable.ts`).
@@ -79,60 +77,20 @@ fn cell(class: &str, x: f64, y: f64, width: f64, height: f64, style: &str) -> St
     )
 }
 
-/// The JSON table (`usecaseJsonTable.ts` 57-195). The cells and the labels are drawn in the shape's own
-/// elements; the title and the cell texts are returned with the part for the fonts of the diagram.
-///
-/// # Errors
-///
-/// Returns an error if a bundled font cannot be read.
-pub(super) fn json_table(input: &ShapeInput<'_>) -> Result<(Part, Vec<LabelLayout>), RenderError> {
+/// The JSON table (`usecaseJsonTable.ts` 57-195) without rows: the title cell inside the border, at least
+/// as wide as an empty key cell and an empty value cell. The title is returned with the part for the fonts
+/// of the diagram.
+pub(super) fn json_table(input: &ShapeInput<'_>) -> (Part, Vec<LabelLayout>) {
     let node = input.node;
     let styles = styles2string(node);
     let label_style = styles.label.clone();
     let title = label_helper(input, false);
-    let rows: Vec<(String, String)> = node
-        .use_case
-        .as_ref()
-        .map(|fields| {
-            fields
-                .json_rows
-                .iter()
-                .map(|row| (row.key.clone(), row.value.clone()))
-                .collect()
-        })
-        .unwrap_or_default();
-    let cell_width = input.config.section.flowchart.wrapping_width;
-    let _ = declarations(&label_style);
-    let _ = root_font_size(input);
-
-    // The key and value labels, measured as `insertLabel` measures them (`usecaseJsonTable.ts` 79-91).
-    let mut measured = Vec::with_capacity(rows.len());
-    for (key, value) in &rows {
-        let key_label = insert_label(input, key, &label_style, cell_width)?;
-        let value_label = insert_label(input, value, &label_style, cell_width)?;
-        measured.push((key_label, value_label));
-    }
-
-    let key_width = measured
-        .iter()
-        .map(|(key, _)| key.bbox.width)
-        .fold(0.0, f64::max)
-        + CELL_PADDING_X * 2.0;
-    let measured_value_width = measured
-        .iter()
-        .map(|(_, value)| value.bbox.width)
-        .fold(0.0, f64::max)
-        + CELL_PADDING_X * 2.0;
+    // An empty key cell and an empty value cell are their padding wide.
+    let empty_cell_width = CELL_PADDING_X * 2.0;
     let title_width = title.bbox.width + CELL_PADDING_X * 2.0;
-    let inner_width = title_width.max(key_width + measured_value_width);
-    let value_width =
-        measured_value_width + (inner_width - key_width - measured_value_width).max(0.0);
+    let inner_width = title_width.max(empty_cell_width + empty_cell_width);
     let title_height = title.bbox.height + CELL_PADDING_Y * 2.0;
-    let row_heights: Vec<f64> = measured
-        .iter()
-        .map(|(key, value)| key.bbox.height.max(value.bbox.height) + CELL_PADDING_Y * 2.0)
-        .collect();
-    let inner_height = title_height + row_heights.iter().sum::<f64>();
+    let inner_height = title_height;
     let border = border_width(&styles);
     let total_width = inner_width + border * 2.0;
     let total_height = inner_height + border * 2.0;
@@ -149,7 +107,7 @@ pub(super) fn json_table(input: &ShapeInput<'_>) -> Result<(Part, Vec<LabelLayou
         style,
     );
 
-    // The grid: the title cell, the title, then one group per row (`usecaseJsonTable.ts` 156-190).
+    // The grid: the title cell, then the title (`usecaseJsonTable.ts` 156-164).
     let mut grid = String::new();
     grid.push_str(&cell(
         "usecase-json-cell usecase-json-title-cell",
@@ -167,54 +125,9 @@ pub(super) fn json_table(input: &ShapeInput<'_>) -> Result<(Part, Vec<LabelLayou
         &title,
         &label_style,
     ));
-    let mut row_top = top + title_height;
-    for (index, ((key, value), row_height)) in measured.iter().zip(&row_heights).enumerate() {
-        let key_center = Point::new(left + key_width / 2.0, row_height / 2.0);
-        let value_center = Point::new(left + key_width + value_width / 2.0, row_height / 2.0);
-        grid.push_str(&format!(
-            "<g class=\"usecase-json-row\" data-row-index=\"{index}\" transform=\"translate(0, {})\">{}{}{}{}</g>",
-            number(row_top),
-            cell(
-                "usecase-json-cell usecase-json-key-cell",
-                left,
-                0.0,
-                key_width,
-                *row_height,
-                style,
-            ),
-            cell(
-                "usecase-json-cell usecase-json-value-cell",
-                left + key_width,
-                0.0,
-                value_width,
-                *row_height,
-                style,
-            ),
-            label_group(
-                "label usecase-json-key",
-                &label_style,
-                position_at(key, key_center),
-                key,
-                &label_style,
-            ),
-            label_group(
-                "label usecase-json-value",
-                &label_style,
-                position_at(value, value_center),
-                value,
-                &label_style,
-            ),
-        ));
-        row_top += row_height;
-    }
 
     let svg = format!("{outer}<g class=\"usecase-json-table-grid\">{grid}</g>",);
-    let mut texts = vec![title.clone()];
-    for (key, value) in measured {
-        texts.push(key);
-        texts.push(value);
-    }
-    let _ = Anchor::Middle;
+    let texts = vec![title.clone()];
     let part = Part {
         svg,
         after_label: String::new(),
@@ -228,5 +141,5 @@ pub(super) fn json_table(input: &ShapeInput<'_>) -> Result<(Part, Vec<LabelLayou
         label_offset: None,
         label: None,
     };
-    Ok((part, texts))
+    (part, texts)
 }

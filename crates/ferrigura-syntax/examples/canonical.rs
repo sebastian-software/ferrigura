@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm -C tools/port port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|treeView|usecase|wardley> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|packet|xychart|sankey|quadrantChart|c4|kanban|architecture|treemap|ishikawa|eventmodeling|cynefin|radar|railroad|treeView|wardley> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -19,10 +19,9 @@ use ferrigura_syntax::flowchart::{self, FlowchartError};
 use ferrigura_syntax::gantt;
 use ferrigura_syntax::sequence::{self, Options};
 use ferrigura_syntax::{
-    DiagramType, ParseError, agentflow, architecture, block, c4, class, config, cynefin, detect,
-    er, event_modeling, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie,
-    quadrant_chart, radar, railroad, requirement, sankey, state, timeline, tree_view, treemap,
-    use_case, wardley, xychart,
+    DiagramType, ParseError, architecture, c4, class, config, cynefin, detect, er, event_modeling,
+    git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie, quadrant_chart, radar,
+    railroad, sankey, state, timeline, tree_view, treemap, wardley, xychart,
 };
 use serde_json::{Value, json};
 
@@ -246,72 +245,11 @@ fn normalize_auto_ids(mut model: Value) -> Value {
     model
 }
 
-/// The placeholders of the generated block ids, numbered in the order the tree gives them.
-#[derive(Default)]
-struct BlockNames(std::collections::HashMap<String, String>);
-
-impl BlockNames {
-    /// The placeholder of a base id: `$genK` for the k-th base first seen.
-    fn placeholder(&mut self, base: &str) -> String {
-        let next = self.0.len() + 1;
-        self.0
-            .entry(base.to_owned())
-            .or_insert_with(|| format!("$gen{next}"))
-            .clone()
-    }
-}
-
-/// The generated ids of a block diagram, as `normalizeGenerated` in `tools/port/export-block.ts`
-/// replaces them: a generated id `id-<random>-<n>` becomes the placeholder of its base, with the
-/// cell suffix `-<j>` of a space kept; the label of a space cell is its base and takes the same
-/// placeholder. The blocks are visited in tree order, id before label before children.
-fn normalize_block_ids(mut model: Value) -> Value {
-    let generated = ferroni::Regex::new(r"\A(id-[0-9a-z]*-[0-9]+)(-[0-9]+)?\z").expect("a pattern");
-    let base = ferroni::Regex::new(r"\Aid-[0-9a-z]*-[0-9]+\z").expect("a pattern");
-    let mut names = BlockNames::default();
-    if let Some(blocks) = model.get_mut("blocks").and_then(Value::as_array_mut) {
-        visit_blocks(blocks, &mut names, &generated, &base);
-    }
-    model
-}
-
-fn visit_blocks(
-    blocks: &mut [Value],
-    names: &mut BlockNames,
-    generated: &ferroni::Regex,
-    base: &ferroni::Regex,
-) {
-    for block in blocks {
-        // The captures borrow the id until they are dropped, so the replacement is built first.
-        let replacement = block["id"]
-            .as_str()
-            .and_then(|id| generated.captures(id))
-            .map(|caps| {
-                let name = names.placeholder(&caps[1]);
-                let suffix = caps.get(2).map_or("", |m| m.as_str());
-                format!("{name}{suffix}")
-            });
-        if let Some(id) = replacement {
-            block["id"] = json!(id);
-        }
-        let space_label = (block["type"] == json!("space"))
-            .then(|| block["label"].as_str().filter(|label| base.is_match(label)))
-            .flatten()
-            .map(str::to_owned);
-        if let Some(label) = space_label {
-            block["label"] = json!(names.placeholder(&label));
-        }
-        if let Some(children) = block.get_mut("children").and_then(Value::as_array_mut) {
-            visit_blocks(children, names, generated, base);
-        }
-    }
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|treeView|usecase|wardley> <inputs.json> <outputs.json>".into(),
+            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|packet|xychart|sankey|quadrantChart|c4|kanban|architecture|treemap|ishikawa|eventmodeling|cynefin|radar|railroad|treeView|wardley> <inputs.json> <outputs.json>".into(),
         );
     };
 
@@ -366,12 +304,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
-            "block" => match block::parse(text) {
-                Ok(model) => Outcome::Model(normalize_block_ids(
-                    serde_json::to_value(model).unwrap_or_default(),
-                )),
-                Err(error) => Outcome::Rejected(error),
-            },
             "packet" => match packet::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
@@ -385,10 +317,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "quadrantChart" => match quadrant_chart::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
-            "requirement" => match requirement::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
@@ -410,10 +338,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
-            "agentflow" => match agentflow::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
             "cynefin" => cynefin_outcome(text),
             "radar" => match radar::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
@@ -421,10 +345,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
             "railroad" => railroad_outcome(text),
             "treeView" => match tree_view::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
-            "usecase" => match use_case::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },

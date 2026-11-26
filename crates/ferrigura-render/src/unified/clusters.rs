@@ -70,8 +70,6 @@ pub fn paint_among(
         "roundedWithTitle" => rounded_with_title(node, config, edges),
         "noteGroup" => Ok(note_group(node)),
         "divider" => Ok(divider(node, config)),
-        "flowGroup" => super::flow_group::paint(node, config),
-        "usecaseSystemBoundary" => super::shapes::usecase_boundary::paint(node, config),
         _ => rect(node, config, edges),
     }
 }
@@ -80,10 +78,7 @@ pub fn paint_among(
 /// (`clusters.js` 806-815: the state diagram's). Their labels are still measured as the others' are.
 #[must_use]
 pub fn is_cluster_kind(shape: &str) -> bool {
-    matches!(
-        shape,
-        "roundedWithTitle" | "noteGroup" | "divider" | "flowGroup" | "usecaseSystemBoundary"
-    )
+    matches!(shape, "roundedWithTitle" | "noteGroup" | "divider")
 }
 
 /// The `rect` cluster: the frame of a flowchart subgraph, with its title.

@@ -67,5 +67,5 @@ pub fn detector_id_prepared(prepared: &crate::preprocess::Prepared) -> &'static 
 fn syntax_of(text: &str) -> Option<Syntax> {
     [Syntax::Ir, Syntax::Ebnf, Syntax::Abnf, Syntax::Peg]
         .into_iter()
-        .find(|syntax| crate::starts_with_ignore_ascii_case(text, syntax.header()))
+        .find(|syntax| crate::unsupported::starts_with_ignore_ascii_case(text, syntax.header()))
 }

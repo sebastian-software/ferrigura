@@ -17,13 +17,6 @@ pub const FLOWCHART: &str = "flowchart-v2";
 /// The diagram type of an ER diagram, in its marker ids and classes (`erDetector.ts`).
 pub const ER: &str = "er";
 
-/// The diagram type of a requirement diagram, in its marker ids (`requirementRenderer.ts` 19).
-pub const REQUIREMENT: &str = "requirement";
-
-/// The diagram type of a use case diagram, in its marker ids and classes (`usecaseRenderer.ts`'s
-/// `USECASE_MARKERS`: point, circle, cross and extension).
-pub const USECASE: &str = "usecase";
-
 /// The marker kinds an edge end can use: the flowchart's three in the order `markers.js` writes
 /// them, and the four cardinalities of ER diagrams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,10 +37,6 @@ pub enum Kind {
     ZeroOrMore,
     /// `arrow_barb` and `arrow_barb_neo`: the barb of the state diagram (`markers.js` `barb`).
     Barb,
-    /// `requirement_arrow`: the open arrow of a requirement relationship (`markers.js` 869-958).
-    RequirementArrow,
-    /// `requirement_contains`: the circle with a cross of a `contains` relationship.
-    RequirementContains,
 }
 
 impl Kind {
@@ -64,9 +53,6 @@ impl Kind {
             "one_or_more" => Some(Self::OneOrMore),
             "zero_or_more" => Some(Self::ZeroOrMore),
             "arrow_barb" | "arrow_barb_neo" => Some(Self::Barb),
-            // `edgeMarker.ts` 55-56: the requirement arrows of a requirement diagram.
-            "requirement_arrow" => Some(Self::RequirementArrow),
-            "requirement_contains" => Some(Self::RequirementContains),
             _ => None,
         }
     }
@@ -83,8 +69,6 @@ impl Kind {
             Self::OneOrMore => "oneOrMore",
             Self::ZeroOrMore => "zeroOrMore",
             Self::Barb => "barb",
-            Self::RequirementArrow => "requirement_arrow",
-            Self::RequirementContains => "requirement_contains",
         }
     }
 
@@ -732,58 +716,6 @@ pub fn er_markers(svg_id: &str, neo: bool, stroke_width: &str, background: &str)
     out
 }
 
-/// The requirement markers of a diagram on the `neo` look or the `classic` one, as `insertMarkers`
-/// writes them for `data4Layout.markers` (`requirementRenderer.ts` 19-24, `markers.js` 869-958):
-/// `requirement_arrow` and `requirement_contains`, each in its own `<defs>`, under the diagram's id.
-/// The reference writes the neo set with the theme's stroke width and `markerUnits` set to
-/// `userSpaceOnUse`; the arrow has a `viewBox` and a miter join, and the contains marker's circle and
-/// lines take the stroke width. The classic set has neither.
-///
-/// The arrow's path keeps the line breaks and indentation of the reference's template literal, which
-/// the attribute holds.
-#[must_use]
-pub fn requirement_markers(svg_id: &str, neo: bool, stroke_width: &str) -> String {
-    let units = if neo {
-        " markerUnits=\"userSpaceOnUse\""
-    } else {
-        ""
-    };
-    let stroke = if neo {
-        format!(" stroke-width=\"{}\"", escape(stroke_width))
-    } else {
-        String::new()
-    };
-    let arrow_id = marker_id(svg_id, REQUIREMENT, Kind::RequirementArrow, false, false);
-    let contains_id = marker_id(svg_id, REQUIREMENT, Kind::RequirementContains, true, false);
-    // The neo arrow takes the theme's stroke width and a viewBox, then a miter join on its path.
-    let arrow_neo = if neo {
-        format!(
-            " stroke-width=\"{}\" viewBox=\"0 0 25 20\"",
-            escape(stroke_width)
-        )
-    } else {
-        String::new()
-    };
-    let arrow_join = if neo {
-        " stroke-linejoin=\"miter\""
-    } else {
-        ""
-    };
-    // The reference's template literal: the line breaks and the six spaces of its indentation.
-    let arrow_path = "M0,0\n      L20,10\n      M20,10\n      L0,20";
-    let contains_children = format!(
-        "<circle cx=\"10\" cy=\"10\" r=\"9\" fill=\"none\"{stroke}/>\
-         <line x1=\"1\" x2=\"19\" y1=\"10\" y2=\"10\"{stroke}/>\
-         <line y1=\"1\" y2=\"19\" x1=\"10\" x2=\"10\"{stroke}/>"
-    );
-    format!(
-        "<defs><marker id=\"{}\" refX=\"20\" refY=\"10\" markerWidth=\"20\" markerHeight=\"20\" orient=\"auto\"{units}{arrow_neo}><path d=\"{arrow_path}\"{arrow_join}/></marker></defs>\
-         <defs><marker id=\"{}\" refX=\"0\" refY=\"10\" markerWidth=\"20\" markerHeight=\"20\" orient=\"auto\"{units}><g>{contains_children}</g></marker></defs>",
-        escape(&arrow_id),
-        escape(&contains_id),
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -822,32 +754,6 @@ mod tests {
         assert!(svg.contains(
             "<marker id=\"svg_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"/></marker>"
         ));
-    }
-
-    #[test]
-    fn the_requirement_markers_are_two_with_the_ids_the_edges_use() {
-        let classic = requirement_markers("svg", false, "2");
-        assert_eq!(classic.matches("<defs><marker ").count(), 2);
-        assert!(classic.contains("id=\"svg_requirement-requirement_arrowEnd\""));
-        assert!(classic.contains("id=\"svg_requirement-requirement_containsStart\""));
-        // The classic set has no marker units and no stroke width.
-        assert!(!classic.contains("markerUnits"));
-        let neo = requirement_markers("svg", true, "2");
-        assert!(neo.contains("markerUnits=\"userSpaceOnUse\""));
-        assert!(neo.contains("viewBox=\"0 0 25 20\""));
-        assert!(neo.contains("stroke-width=\"2\""));
-    }
-
-    #[test]
-    fn the_requirement_arrow_types_have_their_kinds() {
-        assert_eq!(
-            Kind::from_arrow("requirement_arrow"),
-            Some(Kind::RequirementArrow)
-        );
-        assert_eq!(
-            Kind::from_arrow("requirement_contains"),
-            Some(Kind::RequirementContains)
-        );
     }
 
     #[test]
@@ -1321,65 +1227,3 @@ const DESIGN_ARROW_LENGTH: f64 = 9.0;
 
 /// How far a class relation is pulled back for a lollipop (`markerOffsets`): the ring's diameter.
 const DESIGN_LOLLIPOP_OFFSET: f64 = 13.5;
-
-/// The id of a use case's extension marker: `<svgId>_usecase-extensionStart|End`, with `-margin` for the
-/// neo variant (`markers.js` 12-75, named by the use case diagram).
-#[must_use]
-pub fn usecase_extension_id(svg_id: &str, start: bool, margin: bool) -> String {
-    let position = if start { "Start" } else { "End" };
-    let suffix = if margin { "-margin" } else { "" };
-    format!("{svg_id}_{USECASE}-extension{position}{suffix}")
-}
-
-/// The markers of a use case diagram, in the order `insertMarkers` writes them for its marker set: the
-/// flowchart's point, circle and cross (twelve, under the use case's name), then the extension's four,
-/// each with its own `<defs>` but the start-margin marker, as `markers.js` 12-75 writes them.
-#[must_use]
-pub fn usecase_markers(svg_id: &str) -> String {
-    let mut out = markers(svg_id, USECASE);
-    let mut push = |id: String, ref_x: &str, ref_y: &str, child: &str, in_defs: bool| {
-        let marker = format!(
-            "<marker id=\"{}\" class=\"marker extension {USECASE}\" refX=\"{ref_x}\" refY=\"{ref_y}\" markerWidth=\"20\" markerHeight=\"28\" orient=\"auto\" markerUnits=\"userSpaceOnUse\"{}>{child}</marker>",
-            escape(&id),
-            if child.starts_with("<polygon") {
-                " viewBox=\"0 0 20 14\""
-            } else {
-                ""
-            },
-        );
-        if in_defs {
-            out.push_str(&format!("<defs>{marker}</defs>"));
-        } else {
-            out.push_str(&marker);
-        }
-    };
-    push(
-        usecase_extension_id(svg_id, true, false),
-        "18",
-        "7",
-        "<path d=\"M 1,7 L18,13 V 1 Z\"/>",
-        true,
-    );
-    push(
-        usecase_extension_id(svg_id, false, false),
-        "1",
-        "7",
-        "<path d=\"M 1,1 V 13 L18,7 Z\"/>",
-        true,
-    );
-    push(
-        usecase_extension_id(svg_id, true, true),
-        "18",
-        "7",
-        "<polygon points=\"10,7 18,13 18,1\" style=\"stroke-width: 2; stroke-dasharray: 0;\"/>",
-        false,
-    );
-    push(
-        usecase_extension_id(svg_id, false, true),
-        "9",
-        "7",
-        "<polygon points=\"10,1 10,13 18,7\" style=\"stroke-width: 2; stroke-dasharray: 0;\"/>",
-        true,
-    );
-    out
-}

@@ -653,14 +653,6 @@ fn paint_edge(
         // A class relation's marker is named by its kind, and a class relation has no color
         // (`edgeMarker.ts` names the marker after the diagram type, and the relation's style is
         // not a stroke color of the class syntax).
-        // The use case's extension marker is its own, named by its diagram (`usecaseRenderer`'s
-        // marker set), not the class diagram's.
-        if diagram_type == markers::USECASE && arrow == "extension" {
-            return Some(format!(
-                "url(#{})",
-                markers::usecase_extension_id(svg_id, start, margin)
-            ));
-        }
         if let Some(class) = markers::ClassKind::from_arrow(arrow) {
             return Some(format!(
                 "url(#{})",

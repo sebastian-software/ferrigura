@@ -9,9 +9,7 @@
 
 #![warn(missing_docs)]
 
-pub mod agentflow;
 pub mod architecture;
-pub mod block;
 pub mod c4;
 pub mod class;
 pub mod config;
@@ -32,7 +30,6 @@ pub mod pie;
 pub mod quadrant_chart;
 pub mod radar;
 pub mod railroad;
-pub mod requirement;
 pub mod sankey;
 pub mod sequence;
 pub mod state;
@@ -40,7 +37,6 @@ pub mod theme;
 pub mod timeline;
 pub mod tree_view;
 pub mod treemap;
-pub mod use_case;
 pub mod value;
 pub mod wardley;
 pub mod xychart;

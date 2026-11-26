@@ -6,10 +6,8 @@
 //! change the lexer's state, so the token sequence does not depend on the parser, except for the
 //! first `graph` keyword, which the scanner decides itself.
 //!
-//! The agentflow lexer (`agentflow.jison`) differs from this one in a few rules. Those differences
-//! are the [`Dialect`] parameters: the header words, the keyword table, the link operators, the
-//! `%%` comments and the blank rule. The agentflow values are in `agentflow.rs`, next to its
-//! grammar (`docs/diagrams/agentflow.md`).
+//! The header words and the keyword literals of the INITIAL state are the [`Dialect`] of the
+//! flowchart, [`FLOWCHART`].
 
 use crate::scan::{StateStack, delimited_form_len, line_len, literal_len, space_len, word_len};
 use crate::text::{is_js_space, is_line_term};
@@ -116,19 +114,6 @@ pub(crate) enum Kind {
     EllipseStart,
     EllipseEnd,
     VertexWithPropsStart,
-    Flow,
-    Connector,
-    Global,
-    Comment,
-}
-
-/// Which link operators the lexer knows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Links {
-    /// `flow.jison`: solid, thick, dotted and invisible links, each with its start and its end.
-    Flowchart,
-    /// `agentflow.jison`: solid links that end in `x` or `>`, and dotted links `-.-` with no text.
-    Agentflow,
 }
 
 /// What a keyword takes after itself.
@@ -136,8 +121,6 @@ pub(crate) enum Links {
 pub(crate) enum Trailing {
     /// Nothing: the keyword is the token.
     Nothing,
-    /// `[ \t]*`.
-    Blanks,
     /// `\s*`: line breaks included.
     Spaces,
 }
@@ -150,22 +133,14 @@ pub(crate) struct Keyword {
     pub trailing: Trailing,
 }
 
-/// The parameters of a lexer that follows Jison's rules. Every rule the two diagram lexers share
-/// is in the scanner once; these are the values in which they differ.
+/// The header words and the keyword literals of a lexer that follows the rules of `flow.jison`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Dialect {
     /// The words that open the header (`graph` and the others), each followed by a direction.
     pub graph_words: &'static [&'static str],
     /// The keyword literals of the INITIAL state, in the order of the grammar's rules. `href` is
-    /// not here: it takes one blank after it, and both lexers have it.
+    /// not here: it takes one blank after it.
     pub keywords: &'static [Keyword],
-    /// The link operators.
-    pub links: Links,
-    /// Whether `%%` starts a comment, which the lexer returns as a token in INITIAL and skips in
-    /// the text states.
-    pub comments: bool,
-    /// Whether a run of blanks is one SPACE token (`[^\S\n\r]+`), or each blank is one (`\s`).
-    pub space_run: bool,
 }
 
 /// The flowchart's values: `flow.jison`.
@@ -233,9 +208,6 @@ pub(crate) const FLOWCHART: Dialect = Dialect {
             trailing: Trailing::Spaces,
         },
     ],
-    links: Links::Flowchart,
-    comments: false,
-    space_run: true,
 };
 
 /// One token: its kind, its value as the lexer's `yytext` would give it, and its byte offset.
@@ -639,88 +611,61 @@ impl Lexer {
             }
         }
 
-        // The agentflow link operators, where the dialect has them (see `Links`).
-        if self.dialect.links == Links::Agentflow
-            && let Some(hit) = self.agentflow_links(rest, state)
-        {
-            return Some(hit);
-        }
-
         // Links: the solid, thick and dotted arrows, each with its start and its end; the text
         // inside a link is read in the state its start opens.
-        if self.dialect.links == Links::Flowchart
-            && (state == Initial || state == EdgeText)
+        if (state == Initial || state == EdgeText)
             && let Some(len) = link_end_len(rest, '-')
         {
             self.states.pop();
             return hit(len, Kind::Link);
         }
-        if self.dialect.links == Links::Flowchart
-            && state == Initial
+        if state == Initial
             && let Some(len) = link_start_len(rest, '-')
         {
             self.states.push(EdgeText);
             return hit(len, Kind::StartLink);
         }
-        if self.dialect.links == Links::Flowchart
-            && state == EdgeText
+        if state == EdgeText
             && let Some(len) = edge_text_char_len(rest, '-')
         {
             return hit(len, Kind::EdgeText);
         }
-        if self.dialect.links == Links::Flowchart
-            && (state == Initial || state == ThickEdgeText)
+        if (state == Initial || state == ThickEdgeText)
             && let Some(len) = link_end_len(rest, '=')
         {
             self.states.pop();
             return hit(len, Kind::Link);
         }
-        if self.dialect.links == Links::Flowchart
-            && state == Initial
+        if state == Initial
             && let Some(len) = link_start_len(rest, '=')
         {
             self.states.push(ThickEdgeText);
             return hit(len, Kind::StartLink);
         }
-        if self.dialect.links == Links::Flowchart
-            && state == ThickEdgeText
+        if state == ThickEdgeText
             && let Some(len) = edge_text_char_len(rest, '=')
         {
             return hit(len, Kind::EdgeText);
         }
-        if self.dialect.links == Links::Flowchart
-            && (state == Initial || state == DottedEdgeText)
+        if (state == Initial || state == DottedEdgeText)
             && let Some(len) = dotted_link_end_len(rest)
         {
             self.states.pop();
             return hit(len, Kind::Link);
         }
-        if self.dialect.links == Links::Flowchart
-            && state == Initial
+        if state == Initial
             && let Some(len) = dotted_link_start_len(rest)
         {
             self.states.push(DottedEdgeText);
             return hit(len, Kind::StartLink);
         }
-        if self.dialect.links == Links::Flowchart
-            && state == DottedEdgeText
+        if state == DottedEdgeText
             && let Some(len) = dotted_edge_text_len(rest)
         {
             return hit(len, Kind::EdgeText);
         }
-        if self.dialect.links == Links::Flowchart
-            && let Some(len) = invisible_link_len(rest)
-        {
+        if let Some(len) = invisible_link_len(rest) {
             return hit(len, Kind::Link);
-        }
-
-        // Comments of the dialect that skip the text of an ellipse or a trapezoid, and the text of
-        // a shape's brackets, up to the end of the line.
-        if self.dialect.comments
-            && (state == EllipseText || state == TrapText || state == Text)
-            && let Some(len) = comment_len(rest)
-        {
-            return silent(len);
         }
 
         // Ellipse text: `(-` … `-)`.
@@ -790,7 +735,7 @@ impl Lexer {
             return hit(2, kind);
         }
         if state == TrapText
-            && let Some(len) = trap_text_len(rest, self.dialect.comments)
+            && let Some(len) = trap_text_len(rest)
         {
             return hit(len, Kind::Text);
         }
@@ -814,15 +759,6 @@ impl Lexer {
             && let Some(len) = word_len(rest, "v")
         {
             return hit(len, Kind::Down);
-        }
-
-        // The comment token of the INITIAL state (agentflow): blanks, then `%%` to the end of the
-        // line. It comes before the node strings, whose class holds `%`.
-        if state == Initial
-            && self.dialect.comments
-            && let Some(len) = comment_token_len(rest)
-        {
-            return hit(len, Kind::Comment);
         }
 
         // Node strings, the minus sign, and characters of UNICODE_TEXT (INITIAL only).
@@ -877,11 +813,7 @@ impl Lexer {
             return hit(1, Kind::DiamondStart);
         }
         if state == Text {
-            let len = run_len(
-                rest,
-                &['[', ']', '(', ')', '{', '}', '|', '"'],
-                self.dialect.comments,
-            );
+            let len = run_len(rest, &['[', ']', '(', ')', '{', '}', '|', '"']);
             if len > 0 {
                 return hit(len, Kind::Text);
             }
@@ -892,50 +824,13 @@ impl Lexer {
             if let Some(len) = newline_len(rest) {
                 return hit(len, Kind::Newline);
             }
-            let len = if self.dialect.space_run {
-                rest.char_indices()
-                    .find(|&(_, c)| !is_js_space(c) || c == '\n' || c == '\r')
-                    .map_or(rest.len(), |(index, _)| index)
-            } else {
-                rest.chars()
-                    .next()
-                    .filter(|&c| is_js_space(c))
-                    .map_or(0, char::len_utf8)
-            };
+            let len = rest
+                .char_indices()
+                .find(|&(_, c)| !is_js_space(c) || c == '\n' || c == '\r')
+                .map_or(rest.len(), |(index, _)| index);
             if len > 0 {
                 return hit(len, Kind::Space);
             }
-        }
-        None
-    }
-
-    /// The agentflow link operators (`agentflow.jison`, lines 181 to 185): `\s*\-\-+[x>]\s*` ends a
-    /// solid link, `\s*\-\-\s*` starts one with its text, and `\s*\-\.+\-\s*` is a dotted link with
-    /// no text.
-    fn agentflow_links(&mut self, rest: &str, state: State) -> Option<Hit> {
-        use State::*;
-
-        if (state == Initial || state == EdgeText)
-            && let Some(len) = agentflow_solid_end_len(rest)
-        {
-            self.states.pop();
-            return hit(len, Kind::Link);
-        }
-        if state == Initial
-            && let Some(len) = agentflow_solid_start_len(rest)
-        {
-            self.states.push(EdgeText);
-            return hit(len, Kind::StartLink);
-        }
-        if state == EdgeText
-            && let Some(len) = edge_text_char_len(rest, '-')
-        {
-            return hit(len, Kind::EdgeText);
-        }
-        if state == Initial
-            && let Some(len) = agentflow_dotted_len(rest)
-        {
-            return hit(len, Kind::Link);
         }
         None
     }
@@ -1014,9 +909,6 @@ fn keyword(rest: &str, dialect: &Dialect) -> Option<Hit> {
         if let Some(len) = word_len(rest, keyword.word) {
             let trailing = match keyword.trailing {
                 Trailing::Nothing => 0,
-                Trailing::Blanks => {
-                    rest[len..].len() - rest[len..].trim_start_matches([' ', '\t']).len()
-                }
                 Trailing::Spaces => space_len(&rest[len..]),
             };
             return hit(len + trailing, keyword.kind);
@@ -1038,77 +930,10 @@ fn graph_keyword_len(rest: &str, dialect: &Dialect) -> Option<usize> {
         .find_map(|word| word_len(rest, word))
 }
 
-/// `%%(?!\{)[^\n]*`: a comment at the start of `rest`, with its length. The `%%{` of a directive
-/// is not one.
-fn comment_len(rest: &str) -> Option<usize> {
-    let after = rest.strip_prefix("%%")?;
-    if after.starts_with('{') {
-        return None;
-    }
-    Some(2 + line_len(after))
-}
-
-/// `[ \t]*%%(?!\{)[^\n]*`: a comment token at the start of `rest`, the blanks before it included.
-fn comment_token_len(rest: &str) -> Option<usize> {
-    let blanks = rest.len() - rest.trim_start_matches([' ', '\t']).len();
-    Some(blanks + comment_len(&rest[blanks..])?)
-}
-
-/// The length of a run of characters that are none of `specials`. With `comments`, a `%%` ends the
-/// run too, as the agentflow text rule `(?:[^…%]+|%(?!%))+` does; a single `%` is text.
-fn run_len(rest: &str, specials: &[char], comments: bool) -> usize {
-    let mut chars = rest.char_indices().peekable();
-    while let Some((index, c)) = chars.next() {
-        if specials.contains(&c) {
-            return index;
-        }
-        if comments && c == '%' && chars.peek().is_some_and(|&(_, next)| next == '%') {
-            return index;
-        }
-    }
-    rest.len()
-}
-
-/// `\s*\-\-+[x>]\s*`: the end of an agentflow solid link.
-fn agentflow_solid_end_len(rest: &str) -> Option<usize> {
-    let spaces = space_len(rest);
-    let dashes = rest[spaces..]
-        .find(|c: char| c != '-')
-        .unwrap_or(rest.len() - spaces);
-    if dashes < 2 {
-        return None;
-    }
-    let end = spaces + dashes;
-    if !rest[end..].starts_with(['x', '>']) {
-        return None;
-    }
-    let end = end + 1;
-    Some(end + space_len(&rest[end..]))
-}
-
-/// `\s*\-\-\s*`: the start of an agentflow solid link that has text.
-fn agentflow_solid_start_len(rest: &str) -> Option<usize> {
-    let spaces = space_len(rest);
-    if !rest[spaces..].starts_with("--") {
-        return None;
-    }
-    let end = spaces + 2;
-    Some(end + space_len(&rest[end..]))
-}
-
-/// `\s*\-\.+\-\s*`: an agentflow dotted link, which has no text.
-fn agentflow_dotted_len(rest: &str) -> Option<usize> {
-    let spaces = space_len(rest);
-    let after_dash = rest[spaces..].strip_prefix('-')?;
-    let dots = after_dash
-        .find(|c: char| c != '.')
-        .unwrap_or(after_dash.len());
-    if dots == 0 {
-        return None;
-    }
-    let after_dots = after_dash[dots..].strip_prefix('-')?;
-    let end = rest.len() - after_dots.len();
-    Some(end + space_len(after_dots))
+/// The length of a run of characters that are none of `specials`.
+fn run_len(rest: &str, specials: &[char]) -> usize {
+    rest.find(|c: char| specials.contains(&c))
+        .unwrap_or(rest.len())
 }
 
 /// The end of a trapezoid whose two characters `\(?=]`-class and `]` or `/]` close it.
@@ -1264,13 +1089,13 @@ fn ellipse_end_len(rest: &str) -> Option<usize> {
 
 /// The trapezoid text rules of `flow.jison` after the end patterns: a slash or a backslash not
 /// followed by `]`, or a run of characters that are none of `\[](){}/`.
-fn trap_text_len(rest: &str, comments: bool) -> Option<usize> {
+fn trap_text_len(rest: &str) -> Option<usize> {
     let mut chars = rest.chars();
     let first = chars.next()?;
     if matches!(first, '/' | '\\') {
         return (!rest[first.len_utf8()..].starts_with(']')).then_some(first.len_utf8());
     }
-    let len = run_len(rest, &['\\', '[', ']', '(', ')', '{', '}', '/'], comments);
+    let len = run_len(rest, &['\\', '[', ']', '(', ')', '{', '}', '/']);
     (len > 0).then_some(len)
 }
 
