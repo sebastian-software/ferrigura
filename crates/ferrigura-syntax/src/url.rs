@@ -413,15 +413,17 @@ fn is_allowed_sink_candidate(candidate: &str) -> bool {
         end += 1;
     }
     let rest = &stripped[end..];
-    if rest.starts_with(':') {
+    let has_colon = rest.starts_with(':')
+        || rest
+            .get(.."&colon;".len())
+            .is_some_and(|head| head.eq_ignore_ascii_case("&colon;"));
+    if has_colon {
         let scheme = &stripped[..end];
         ALLOWED_SINK_SCHEMES
             .iter()
             .any(|allowed| scheme.eq_ignore_ascii_case(allowed))
     } else {
-        !rest
-            .get(.."&colon;".len())
-            .is_some_and(|head| head.eq_ignore_ascii_case("&colon;"))
+        true
     }
 }
 
@@ -1525,6 +1527,7 @@ mod tests {
 
         for safe_url in [
             "https://google.com",
+            "https&colon;//example.org",
             "https://example.com/A%23B.png",
             "https://example.com/files?q=A%26B",
             "https://tickets.example.com/browse/A%2526B",

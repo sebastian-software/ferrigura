@@ -18,7 +18,6 @@ use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::kanban::KanbanDiagram;
 use ferrigura_model::value::Value;
 use ferrigura_syntax::sanitize::sanitize_text;
-use ferrigura_syntax::url::guard_url;
 use ferrigura_text::{EmbeddedFamily, Run, embed_runs};
 
 use crate::RenderError;
@@ -146,7 +145,7 @@ pub fn render(
         }) {
             let labels = item_labels_of(&fonts, item, item_width, text_size)?;
             let priority: Option<&Value> = item.priority.as_ref();
-            let link = ticket_link(item, &input.section.kanban.ticket_base_url, loose);
+            let link = ticket_link(item, &input.section.kanban.ticket_base_url);
             links |= link.is_some();
             let shape = kanban_item_with_security(
                 &KanbanItem {
@@ -360,16 +359,11 @@ fn layout_label(
 }
 
 /// The link of an item's ticket (`kanbanItem.ts` 46-47): the ticket base URL with the first
-/// `#TICKET#` replaced by the ticket, validated with [`guard_url`]. The item needs a ticket and the
-/// configuration a base URL.
-fn ticket_link(item: &DataNode, base_url: &str, loose: bool) -> Option<String> {
+/// `#TICKET#` replaced by the ticket. Entity placeholder resolution and URL validation run once
+/// at the SVG anchor sink in `kanban_item_with_security`.
+fn ticket_link(item: &DataNode, base_url: &str) -> Option<String> {
     let ticket = item.ticket.as_deref().filter(|ticket| !ticket.is_empty())?;
-    if base_url.is_empty() {
-        return None;
-    }
-    let raw = replace_first(base_url, "#TICKET#", ticket);
-    let resolved = crate::common::resolve_entity_placeholders(&raw);
-    Some(guard_url(&resolved, loose).to_owned())
+    (!base_url.is_empty()).then(|| replace_first(base_url, "#TICKET#", ticket))
 }
 
 /// `String.prototype.replace` with a string pattern: the first occurrence is replaced, and the

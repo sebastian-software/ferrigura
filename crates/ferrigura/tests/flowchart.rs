@@ -650,6 +650,20 @@ fn kanban_ticket_links_are_sanitized_under_default_security_level() {
         "{encoded}"
     );
 
+    let single_pass = render(
+        "%%{init: {\"kanban\": {\"ticketBaseUrl\": \"/docs/#TICKET#\"}}}%%\nkanban\n  Todo\n    Task@{ ticket: '#64258;°copy;' }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        single_pass.contains("xlink:href=\"/docs/ﬂ°copy;\""),
+        "{single_pass}"
+    );
+    assert!(
+        !single_pass.contains("xlink:href=\"/docs/©\""),
+        "{single_pass}"
+    );
+
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
     let loose = render(
         "%%{init: {\"kanban\": {\"ticketBaseUrl\": \"javascript:alert(1)//#TICKET#\"}}}%%\nkanban\n  Todo\n    Task@{ ticket: MC-42 }\n",

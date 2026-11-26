@@ -179,6 +179,31 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         "{entity_https}"
     );
 
+    let named_colon_https = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https&colon;//example.org\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        named_colon_https.contains("xlink:href=\"https&amp;colon;//example.org\""),
+        "{named_colon_https}"
+    );
+
+    // Placeholders are resolved only once at the SVG sink, not re-interpreted by a second pass.
+    let single_pass = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"/docs/#64258;°copy;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        single_pass.contains("xlink:href=\"/docs/ﬂ°copy;\""),
+        "{single_pass}"
+    );
+    assert!(
+        !single_pass.contains("xlink:href=\"/docs/©\""),
+        "{single_pass}"
+    );
+
     let opaque_cid = render(
         "stateDiagram-v2\n  s1\n  click s1 href \"cid:asset%2525252525252525252541@example.com\"\n",
         &Value::empty_object(),
