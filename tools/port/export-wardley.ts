@@ -118,7 +118,7 @@ async function convert(input: { text: string }, modules: Modules) {
 
   const data = db.getWardleyData();
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

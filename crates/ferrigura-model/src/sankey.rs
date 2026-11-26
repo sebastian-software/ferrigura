@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn the_header_texts_are_camel_case_and_empty_by_default() {
         let json = serde_json::to_value(SankeyDiagram::new()).expect("serialises");
-        assert_eq!(json["version"], serde_json::json!(1));
+        assert_eq!(json["version"], serde_json::json!(CANONICAL_VERSION));
         assert_eq!(json["title"], serde_json::json!(""));
         assert_eq!(json["accTitle"], serde_json::json!(""));
         assert_eq!(json["accDescr"], serde_json::json!(""));

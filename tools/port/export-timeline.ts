@@ -74,7 +74,7 @@ await runExporter(loadModules, (input, modules) => {
 
   // The arrays are copied: the DB reuses them on the next `clear`.
   return {
-    version: 1,
+    version: 2,
     direction: db.getDirection(),
     title: common.getDiagramTitle(),
     accTitle: common.getAccTitle(),

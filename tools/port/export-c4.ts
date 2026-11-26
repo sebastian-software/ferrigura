@@ -244,7 +244,7 @@ await runExporter(loadModules, (input, modules) => {
   parser.parse(encode.encodeEntities(processed.code.cleaned) + '\n');
 
   return {
-    version: 1,
+    version: 2,
     c4Type: db.getC4Type(),
     title: db.getTitle(),
     accTitle: commonDb.getAccTitle(),

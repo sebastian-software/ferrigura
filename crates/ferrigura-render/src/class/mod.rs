@@ -39,15 +39,6 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     let diagram = input.diagram;
 
     let mut data = data::get_data(diagram, input.section, input.globals, input.theme.light);
-    // `class::parse_prepared` does not run `encodeEntities` (matching the differential parser
-    // harness), whereas Mermaid's `Diagram.fromText` does before rendering. Encode `#...;`
-    // placeholders on class click links so the unified anchor sink resolves and guards them the
-    // same way as flowchart, state, and agentflow links.
-    for node in &mut data.nodes {
-        if let Some(link) = &mut node.link {
-            *link = ferrigura_syntax::preprocess::encode_hash_entities(link);
-        }
-    }
     // `classRenderer-v3-unified.ts` 59: the diagram type names the markers and their class.
     data.diagram_type = markers::CLASS.to_owned();
     let design = input.section.design;

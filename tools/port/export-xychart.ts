@@ -132,7 +132,7 @@ await runExporter(loadModules, (input, { config, preprocess, detectType, utils, 
   const points = (plotData: Point[]): [string, number | string | null][] =>
     plotData.map(([x, y]) => [x, y === undefined ? null : number(y)]);
   return {
-    version: 1,
+    version: 2,
     orientation: xyChartDb.getChartConfig().chartOrientation,
     title: xyChartDb.getDiagramTitle(),
     accTitle: xyChartDb.getAccTitle(),

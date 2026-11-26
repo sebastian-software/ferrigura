@@ -59,8 +59,24 @@ pub fn parse_prepared(
     prepared: &crate::preprocess::Prepared,
     options: Options,
 ) -> Result<ClassDiagram, ParseError> {
+    parse_prepared_with_db(prepared, db::ClassDb::new(options))
+}
+
+/// Parses an already prepared source for rendering: encodes Mermaid `#...;` entities on click
+/// links before `formatUrl` runs (matching Mermaid's `Diagram.fromText` `encodeEntities` order
+/// without affecting the differential parser model of [`parse_prepared`]).
+pub fn parse_prepared_for_render(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+) -> Result<ClassDiagram, ParseError> {
+    parse_prepared_with_db(prepared, db::ClassDb::new_for_render(options))
+}
+
+fn parse_prepared_with_db(
+    prepared: &crate::preprocess::Prepared,
+    mut db: db::ClassDb,
+) -> Result<ClassDiagram, ParseError> {
     let cleaned = clean_comments(&remove_directives(&prepared.text));
-    let mut db = db::ClassDb::new(options);
     // `Diagram.ts` sets the front matter's title before the parser runs, and only when it is set.
     if let Some(title) = prepared.title.as_deref().filter(|title| !title.is_empty()) {
         db.set_diagram_title(title);

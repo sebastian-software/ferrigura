@@ -163,7 +163,7 @@ await runExporter(
     const builder = db.__exposeBuilder();
     const { data, classes } = builder;
     return {
-      version: 1,
+      version: 2,
       title: quadrantDb.getDiagramTitle(),
       accTitle: quadrantDb.getAccTitle(),
       accDescr: quadrantDb.getAccDescription(),

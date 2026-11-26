@@ -129,7 +129,7 @@ await runExporter(loadModules, (input, { preprocess, parser, classDb }) => {
   parser.default.parse(code.cleaned);
 
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

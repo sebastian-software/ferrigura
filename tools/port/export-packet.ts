@@ -102,7 +102,7 @@ await runExporter(
     await parser.parse(utils.encodeEntities(processed.code.cleaned) + '\n');
 
     return {
-      version: 1,
+      version: 2,
       title: packetDb.getDiagramTitle(),
       accTitle: packetDb.getAccTitle(),
       accDescr: packetDb.getAccDescription(),

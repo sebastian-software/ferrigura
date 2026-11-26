@@ -158,7 +158,7 @@ await runExporter(loadModules, (input, { preprocess, utils, grammar, db }) => {
   const blocks = blockDb.getBlocks().map(toBlock);
   normalizeGenerated(blocks);
   return {
-    version: 1,
+    version: 2,
     columns: blockDb.getBlock('root')?.columns,
     blocks,
     edges: blockDb.getEdges().map(toEdge),

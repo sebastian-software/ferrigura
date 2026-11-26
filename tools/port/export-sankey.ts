@@ -73,7 +73,7 @@ await runExporter(loadModules, (input, { preprocess, utils, sankeyUtils, grammar
 
   const graph = sankeyDb.getGraph();
   return {
-    version: 1,
+    version: 2,
     title: sankeyDb.getDiagramTitle(),
     accTitle: sankeyDb.getAccTitle(),
     accDescr: sankeyDb.getAccDescription(),

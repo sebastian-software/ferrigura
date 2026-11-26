@@ -82,7 +82,7 @@ export function flowchartModel(text: string, modules: FlowchartModules): unknown
   const edges = db.getEdges();
 
   return {
-    version: 1,
+    version: 2,
     title: title ?? '',
     accTitle: header.accTitle,
     accDescr: header.accDescr,

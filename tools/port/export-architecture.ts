@@ -131,7 +131,7 @@ async function convert(input: { text: string }, modules: Modules): Promise<Canon
 
   const structures = db.getDataStructures();
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

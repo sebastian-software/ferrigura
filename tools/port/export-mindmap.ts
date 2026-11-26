@@ -142,5 +142,5 @@ await runExporter(loadModules, (input, { config, preprocess, detectType, encode,
   grammar.parse(encode.encodeEntities(processed.code.cleaned) + '\n');
 
   const root = mindmapDb.getMindmap();
-  return { version: 1, root: root === null ? null : canonicalNode(root) } satisfies CanonicalModel;
+  return { version: 2, root: root === null ? null : canonicalNode(root) } satisfies CanonicalModel;
 });

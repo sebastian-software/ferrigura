@@ -67,7 +67,7 @@ await runExporter(loadModules, async (input, { detectType, preprocess, utils, pa
   await parser.parser.parse(utils.encodeEntities(processed.code.cleaned) + '\n');
 
   return {
-    version: 1,
+    version: 2,
     title: cynefinDb.getDiagramTitle(),
     accTitle: cynefinDb.getAccTitle(),
     accDescr: cynefinDb.getAccDescription(),

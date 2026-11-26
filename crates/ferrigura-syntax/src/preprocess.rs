@@ -446,8 +446,7 @@ fn has_colon_hash(segment: &str) -> bool {
 }
 
 /// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name.
-#[must_use]
-pub fn encode_hash_entities(text: &str) -> String {
+pub(crate) fn encode_hash_entities(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(hash) = rest.find('#') {

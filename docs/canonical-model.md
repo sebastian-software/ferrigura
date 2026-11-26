@@ -6,7 +6,7 @@ The model is ours, not a dump of the JS DB: where the DB holds something that th
 
 ## Shape
 
-- Every model has `"version": 1`, the constant `CANONICAL_VERSION`. It changes when a field is added, removed or changes meaning; the change is described in this page before the code changes.
+- Every model has `"version": 2`, the constant `CANONICAL_VERSION`. It changes when a field is added, removed or changes meaning; the change is described in this page before the code changes.
 - Keys are camelCase (`showData`, `accTitle`, `accDescr`), as serde writes them with `rename_all = "camelCase"`.
 - Strings are always present. An absent header text is `""`, not `null`, because the DB defaults to `''` and the JS exporters read it that way.
 - Numbers are JSON numbers. The differential run compares them with `===`, so `-0` and `0` agree.

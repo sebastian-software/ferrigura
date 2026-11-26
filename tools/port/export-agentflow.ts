@@ -152,7 +152,7 @@ await runExporter(loadModules, (input, { preprocess, utils, parser, db, commonDb
   const vertices = [...parsed.getVertices().values()];
   const connectors = parsed.getConnectors();
   return {
-    version: 1,
+    version: 2,
     title: commonDb.getDiagramTitle(),
     accTitle: commonDb.getAccTitle(),
     accDescr: commonDb.getAccDescription(),

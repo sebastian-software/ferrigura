@@ -88,7 +88,7 @@ await runExporter(loadModules, async (input, { preprocess, utils, parser, db }) 
   await parser.parse(utils.encodeEntities(code.cleaned) + '\n');
 
   return {
-    version: 1,
+    version: 2,
     title: treemapDb.getDiagramTitle(),
     accTitle: treemapDb.getAccTitle(),
     accDescr: treemapDb.getAccDescription(),

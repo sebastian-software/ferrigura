@@ -93,7 +93,7 @@ fn should_sanitize_the_head_and_the_causes() {
 fn should_serialize_a_missing_root_as_null() {
     let value = serde_json::to_value(parsed("ishikawa\n")).expect("serialises");
     assert!(value["root"].is_null());
-    assert_eq!(value["version"], 1);
+    assert_eq!(value["version"], ferrigura_model::CANONICAL_VERSION);
     assert_eq!(value["accTitle"], "");
     assert_eq!(value["accDescr"], "");
 }

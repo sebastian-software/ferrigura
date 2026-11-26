@@ -63,7 +63,7 @@ await runExporter(loadModules, async (input, { preprocess, diagram }) => {
   const db = parsed.db;
   const root = db.getRoot();
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

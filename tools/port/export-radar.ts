@@ -107,7 +107,7 @@ async function convert(input: { text: string }, modules: Modules): Promise<Canon
 
   const options = db.getOptions();
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

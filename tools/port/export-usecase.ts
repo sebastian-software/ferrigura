@@ -103,7 +103,7 @@ await runExporter(loadModules, async (input, { preprocess, utils, parser, db: db
   }
 
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     direction: db.getDirection(),
     accTitle: db.getAccTitle(),

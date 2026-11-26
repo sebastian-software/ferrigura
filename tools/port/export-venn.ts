@@ -81,7 +81,7 @@ await runExporter(loadModules, (input, { preprocess, utils, grammar, db }) => {
   grammar.parse(utils.encodeEntities(code.cleaned) + '\n');
 
   return {
-    version: 1,
+    version: 2,
     title: vennDb.getDiagramTitle(),
     subsets: vennDb.getSubsetData().map((subset) => ({
       sets: subset.sets,

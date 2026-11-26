@@ -60,7 +60,7 @@ await runExporter(loadModules, async (input, { preprocess, parser, db }) => {
   }
 
   return {
-    version: 1,
+    version: 2,
     ...pieHeader(ast, frontMatterTitle),
     showData: db.getShowData(),
     sections: [...db.getSections()].map(([label, value]) => ({ label, value })),

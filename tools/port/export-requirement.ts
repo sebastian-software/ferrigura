@@ -95,7 +95,7 @@ await runExporter(loadModules, (input, { preprocess, utils, grammar, db }) => {
   grammar.parse(utils.encodeEntities(code.cleaned) + '\n');
 
   return {
-    version: 1,
+    version: 2,
     direction: requirementDb.getDirection(),
     requirements: [...requirementDb.getRequirements().values()].map((requirement) => ({
       name: requirement.name,

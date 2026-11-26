@@ -375,7 +375,7 @@ fn the_header_texts_are_empty_without_a_statement() {
     let diagram = parses("---\ntitle: T\n---\nsankey\na,b,1");
     assert_eq!(diagram.acc_title, "");
     assert_eq!(diagram.acc_descr, "");
-    assert_eq!(diagram.version, 1);
+    assert_eq!(diagram.version, ferrigura_model::CANONICAL_VERSION);
 }
 
 // Comment lines and directives go before the parse; a `%%` in the middle of a line is text.

@@ -123,7 +123,7 @@ async function convert(input: { text: string }, modules: Modules): Promise<Canon
   await parser.parse(text);
 
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

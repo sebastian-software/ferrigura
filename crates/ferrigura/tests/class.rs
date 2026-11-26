@@ -110,6 +110,22 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         "{entity_https}"
     );
 
+    // Percent-encoded `#` decoded by `formatUrl` must not be re-encoded into a Mermaid entity
+    // placeholder after URL formatting (matching Mermaid's `encodeEntities` -> `formatUrl` order).
+    let percent_hash = render(
+        "classDiagram\n  class A\n  click A href \"/docs/%23copy;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        percent_hash.contains("xlink:href=\"/docs/#copy;\""),
+        "{percent_hash}"
+    );
+    assert!(
+        !percent_hash.contains("xlink:href=\"/docs/©\""),
+        "{percent_hash}"
+    );
+
     for unsafe_url in [
         "javascript#58;alert(1)",
         "javascript#colon;alert(1)",

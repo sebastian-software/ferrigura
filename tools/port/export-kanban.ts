@@ -114,7 +114,7 @@ await runExporter(
     // A section is the same object as its node, so membership in the sections is the flag.
     const sections = new Set<KanbanDbNode>(kanbanDb.getSections());
     return {
-      version: 1,
+      version: 2,
       nodes: db.__exposeNodes().map((node) => ({
         id: node.id,
         level: node.level,

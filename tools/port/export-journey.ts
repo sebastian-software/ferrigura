@@ -88,7 +88,7 @@ await runExporter(loadModules, (input, { preprocess, utils, grammar, db }) => {
   const show = (text: string) => displayText(utils, text);
 
   return {
-    version: 1,
+    version: 2,
     title: show(journeyDb.getDiagramTitle()),
     accTitle: show(journeyDb.getAccTitle()),
     accDescr: show(journeyDb.getAccDescription()),

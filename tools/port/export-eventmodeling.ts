@@ -188,7 +188,7 @@ await runExporter(loadModules, async (input, { preprocess, utils, parser, common
   const state = db.db.getState();
   const sanitize = (value: string) => common.sanitizeText(value, config.getConfig());
   return {
-    version: 1,
+    version: 2,
     title: db.db.getDiagramTitle(),
     accTitle: db.db.getAccTitle(),
     accDescr: db.db.getAccDescription(),

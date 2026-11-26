@@ -113,6 +113,6 @@ await runExporter(loadModules, async (input, { detectType, preprocess, encode, s
       })),
     })
   );
-  const model = { version: 1, ...snapshot, layoutDirection: db.getData().direction };
+  const model = { version: 2, ...snapshot, layoutDirection: db.getData().direction };
   return replaceGenerated(model, placeholders);
 });

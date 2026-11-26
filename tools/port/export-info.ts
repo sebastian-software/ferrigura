@@ -37,7 +37,7 @@ await runExporter(loadModules, async (input, { preprocess, parser }) => {
   const ast = await parser.parse('info', code.cleaned);
 
   return {
-    version: 1,
+    version: 2,
     title: ast.title ?? '',
     accTitle: ast.accTitle ?? '',
     accDescr: ast.accDescr ?? '',
