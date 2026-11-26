@@ -41,6 +41,12 @@
 //! spread as far as the labels stand apart, and both edges run straight; where not, the ports stay
 //! a bundle in the middle, and both edges turn out alike. Where one of them has no label, it
 //! stays the axis.
+//!
+//! Two such edges with labels beside other edges of their sides are **one unit** when the axes are
+//! chosen: where the axis of a side would go to an edge beside the pair, it goes to the pair, and
+//! the bundle moves so that the pair's middle is the middle of the node. The other node then
+//! stands below the pair, and the other edges beside it. Twins beside other edges are set apart
+//! as above only where neither runs straight, and their ports stay a bundle.
 
 use std::collections::BTreeSet;
 
@@ -141,9 +147,11 @@ fn way(layers: &Layers, port: usize) -> Option<(Vec<usize>, usize)> {
     }
 }
 
-/// Sets twins apart: two edges that leave a node as the only two edges of its side and arrive at
-/// one other node as the only two edges of that side, through dummies that stand next to each
-/// other in each layer, where both nodes or both bundles have their middles on one line. Their
+/// Sets twins apart: two edges that leave a node from two ports next to each other and arrive at
+/// one other node at two ports next to each other, through dummies that stand next to each other
+/// in each layer, where both nodes or both pairs of ports have their middles on one line. Twins
+/// beside other edges of their sides are set apart only where neither runs straight and none of
+/// their ports is one an edge crosses into a group, and their ports stay a bundle. Their
 /// dummies move to both sides of that line, as close as their layer allows, where it has room for
 /// that. Where both sides have room for it with [`END_ROOM`] left at their ends, the ports spread
 /// around the line as far as the dummies are apart, and both edges run straight; where one has
@@ -162,107 +170,139 @@ fn spread_twins(layers: &mut Layers) {
             continue;
         }
         let ports = side_ports(layers, node, Side::After);
-        let [first, second] = ports.as_slice() else {
-            continue;
-        };
-        let (Some((left, arrive_left)), Some((right, arrive_right))) =
-            (way(layers, *first), way(layers, *second))
-        else {
-            continue;
-        };
-        let other = layers.ports[arrive_left].node;
-        if left.is_empty()
-            || left.len() != right.len()
-            || other != layers.ports[arrive_right].node
-            || side_ports(layers, other, Side::Before) != [arrive_left, arrive_right]
-        {
-            continue;
-        }
-        // The line of the twins: through the middles of both nodes where they stand on one, else
-        // through the middles of both bundles.
-        let middle = |node: usize| layers.nodes[node].place + layers.nodes[node].size / 2.0;
-        let absolute =
-            |port: usize| layers.nodes[layers.ports[port].node].place + layers.ports[port].at;
-        let bundles = (
-            (absolute(*first) + absolute(*second)) / 2.0,
-            (absolute(arrive_left) + absolute(arrive_right)) / 2.0,
-        );
-        let line = if (middle(node) - middle(other)).abs() <= 0.5 {
-            middle(node)
-        } else if (bundles.0 - bundles.1).abs() <= 0.5 {
-            bundles.0
-        } else {
-            continue;
-        };
-        // The pairs of dummies stand next to each other, the left one first.
-        let next_to = left.iter().zip(&right).all(|(&a, &b)| {
-            let ((layer_a, index_a), (layer_b, index_b)) = (position[a], position[b]);
-            layer_a == layer_b && index_b == index_a + 1
-        });
-        if !next_to {
-            continue;
-        }
-        // The least distance of the middles of two dummies of a layer, the widest over the layers.
-        let apart = left
-            .iter()
-            .zip(&right)
-            .map(|(&a, &b)| {
-                layers.nodes[b].gap + layers.nodes[b].size / 2.0 - layers.nodes[a].size / 2.0
-            })
-            .fold(0.0_f64, f64::max)
-            .ceil();
-        let half = apart / 2.0;
-        let places: Vec<(usize, f64)> = left
-            .iter()
-            .map(|&a| (a, line - half - layers.nodes[a].size / 2.0))
-            .chain(
-                right
-                    .iter()
-                    .map(|&b| (b, line + half - layers.nodes[b].size / 2.0)),
-            )
-            .collect();
-        let room = places.iter().all(|&(dummy, place)| {
-            let (layer, index) = position[dummy];
-            let members = &layers.layers[layer];
-            let before = index
-                .checked_sub(1)
-                .map(|at| members[at])
-                .filter(|other| !left.contains(other));
-            let after = members
-                .get(index + 1)
-                .copied()
-                .filter(|other| !right.contains(other));
-            before.is_none_or(|other| place - layers.nodes[other].place >= layers.nodes[dummy].gap)
-                && after.is_none_or(|other| {
+        let mut index = 0;
+        while index + 1 < ports.len() {
+            let (first, second) = (&ports[index], &ports[index + 1]);
+            index += 1;
+            let (Some((left, arrive_left)), Some((right, arrive_right))) =
+                (way(layers, *first), way(layers, *second))
+            else {
+                continue;
+            };
+            let other = layers.ports[arrive_left].node;
+            let arrivals = side_ports(layers, other, Side::Before);
+            let next_to_each_other = arrivals
+                .windows(2)
+                .any(|pair| pair == [arrive_left, arrive_right]);
+            // Whether the twins are the only edges of their sides. Twins beside other edges keep
+            // away from the ports of a group that an edge crosses into it.
+            let sole = ports.len() == 2 && arrivals.len() == 2;
+            let inside = [*first, *second, arrive_left, arrive_right]
+                .iter()
+                .any(|&port| layers.ports[port].inside);
+            if left.is_empty()
+                || left.len() != right.len()
+                || other != layers.ports[arrive_right].node
+                || !next_to_each_other
+                || (inside && !sole)
+            {
+                continue;
+            }
+            // Twins beside other edges keep one of them where it runs straight.
+            let absolute =
+                |port: usize| layers.nodes[layers.ports[port].node].place + layers.ports[port].at;
+            let straight_way = |from: usize, dummies: &[usize], to: usize| {
+                let line = absolute(from);
+                (absolute(to) - line).abs() < 1e-6
+                    && dummies.iter().all(|&dummy| {
+                        layers.nodes[dummy]
+                            .ports
+                            .iter()
+                            .all(|&port| (absolute(port) - line).abs() < 1e-6)
+                    })
+            };
+            if !sole
+                && (straight_way(*first, &left, arrive_left)
+                    || straight_way(*second, &right, arrive_right))
+            {
+                continue;
+            }
+            // The line of the twins: through the middles of both nodes where they stand on one and
+            // the twins are alone, else through the middles of both pairs of ports.
+            let middle = |node: usize| layers.nodes[node].place + layers.nodes[node].size / 2.0;
+            let bundles = (
+                (absolute(*first) + absolute(*second)) / 2.0,
+                (absolute(arrive_left) + absolute(arrive_right)) / 2.0,
+            );
+            let line = if sole && (middle(node) - middle(other)).abs() <= 0.5 {
+                middle(node)
+            } else if (bundles.0 - bundles.1).abs() <= 0.5 {
+                bundles.0
+            } else {
+                continue;
+            };
+            // The pairs of dummies stand next to each other, the left one first.
+            let next_to = left.iter().zip(&right).all(|(&a, &b)| {
+                let ((layer_a, index_a), (layer_b, index_b)) = (position[a], position[b]);
+                layer_a == layer_b && index_b == index_a + 1
+            });
+            if !next_to {
+                continue;
+            }
+            // The least distance of the middles of two dummies of a layer, the widest over the layers.
+            let apart = left
+                .iter()
+                .zip(&right)
+                .map(|(&a, &b)| {
+                    layers.nodes[b].gap + layers.nodes[b].size / 2.0 - layers.nodes[a].size / 2.0
+                })
+                .fold(0.0_f64, f64::max)
+                .ceil();
+            let half = apart / 2.0;
+            let places: Vec<(usize, f64)> = left
+                .iter()
+                .map(|&a| (a, line - half - layers.nodes[a].size / 2.0))
+                .chain(
+                    right
+                        .iter()
+                        .map(|&b| (b, line + half - layers.nodes[b].size / 2.0)),
+                )
+                .collect();
+            let room = places.iter().all(|&(dummy, place)| {
+                let (layer, index) = position[dummy];
+                let members = &layers.layers[layer];
+                let before = index
+                    .checked_sub(1)
+                    .map(|at| members[at])
+                    .filter(|other| !left.contains(other));
+                let after = members
+                    .get(index + 1)
+                    .copied()
+                    .filter(|other| !right.contains(other));
+                before.is_none_or(|other| {
+                    place - layers.nodes[other].place >= layers.nodes[dummy].gap
+                }) && after.is_none_or(|other| {
                     layers.nodes[other].place - place >= layers.nodes[other].gap
                 })
-        });
-        // An edge without a label stays the axis: twins are equals only when both carry a label.
-        let labeled = |dummies: &[usize]| {
-            dummies
-                .iter()
-                .any(|&dummy| layers.nodes[dummy].kind == Kind::Label)
-        };
-        if !room || !labeled(&left) || !labeled(&right) {
-            continue;
-        }
-        for &(dummy, place) in &places {
-            layers.nodes[dummy].place = place;
-        }
-        // The middle of each end's side, from its node's place, and the room from there to
-        // [`END_ROOM`] before the nearer end of the side.
-        let ends = [(*first, *second), (arrive_left, arrive_right)].map(|(a, b)| {
-            let owner = &layers.nodes[layers.ports[a].node];
-            let middle = line - owner.place;
-            let reach = (middle - END_ROOM).min(owner.size - END_ROOM - middle);
-            (a, b, middle, reach)
-        });
-        let straight = ends.iter().all(|&(_, _, _, reach)| half <= reach);
-        for (a, b, middle, _) in ends {
-            let bundle = (layers.ports[b].at - layers.ports[a].at) / 2.0;
-            let spread = if straight { half.max(bundle) } else { bundle };
-            layers.ports[a].at = middle - spread;
-            layers.ports[b].at = middle + spread;
+            });
+            // An edge without a label stays the axis: twins are equals only when both carry a label.
+            let labeled = |dummies: &[usize]| {
+                dummies
+                    .iter()
+                    .any(|&dummy| layers.nodes[dummy].kind == Kind::Label)
+            };
+            if !room || !labeled(&left) || !labeled(&right) {
+                continue;
+            }
+            for &(dummy, place) in &places {
+                layers.nodes[dummy].place = place;
+            }
+            // The middle of each end's side, from its node's place, and the room from there to
+            // [`END_ROOM`] before the nearer end of the side.
+            let ends = [(*first, *second), (arrive_left, arrive_right)].map(|(a, b)| {
+                let owner = &layers.nodes[layers.ports[a].node];
+                let middle = line - owner.place;
+                let reach = (middle - END_ROOM).min(owner.size - END_ROOM - middle);
+                (a, b, middle, reach)
+            });
+            let straight = sole && ends.iter().all(|&(_, _, _, reach)| half <= reach);
+            for (a, b, middle, _) in ends {
+                let bundle = (layers.ports[b].at - layers.ports[a].at) / 2.0;
+                let spread = if straight { half.max(bundle) } else { bundle };
+                layers.ports[a].at = middle - spread;
+                layers.ports[b].at = middle + spread;
+            }
+            index += 1;
         }
     }
 }
@@ -362,8 +402,24 @@ fn lead(layers: &Layers, port: usize) -> (Option<usize>, i32) {
 /// port beside the middle of an odd number comes before the middle one where its edge is more of
 /// a main edge and the bundle can move by one port. Two middle ports whose edges lead to the same
 /// node alike are both such ports. A port of `chosen` comes before its equal. With `moved`, the
-/// side's bundle was moved in an earlier pass and stays.
+/// side's bundle was moved in an earlier pass and stays. Where these would put the axis on an edge
+/// beside the pair of twins in the middle of the side, the pair's two ports are the middle
+/// instead.
 fn middle_ports(
+    layers: &Layers,
+    ports: &[usize],
+    chosen: &BTreeSet<usize>,
+    moved: bool,
+) -> Vec<usize> {
+    let single = single_middle_ports(layers, ports, chosen, moved);
+    match middle_twins(layers, ports) {
+        Some(pair) if !single.is_empty() && !single.iter().any(|port| pair.contains(port)) => pair,
+        _ => single,
+    }
+}
+
+/// The ports of [`middle_ports`] but for twins.
+fn single_middle_ports(
     layers: &Layers,
     ports: &[usize],
     chosen: &BTreeSet<usize>,
@@ -409,6 +465,76 @@ fn middle_ports(
         vec![b]
     } else {
         Vec::new()
+    }
+}
+
+/// Where the edges of a port lead, through the bends of a long edge and its label: the node, the
+/// layers passed, and whether a label is among them.
+fn trail(layers: &Layers, port: usize) -> Option<(usize, usize, bool)> {
+    let &first = layers.ports[port].edges.first()?;
+    let (mut edge, mut from, mut passed, mut labeled) = (first, port, 0, false);
+    loop {
+        let (source, target) = (layers.edges[edge].source, layers.edges[edge].target);
+        let arrival = if source == from { target } else { source };
+        let node = layers.ports[arrival].node;
+        match layers.nodes[node].kind {
+            Kind::Node => return Some((node, passed, labeled)),
+            Kind::Bend | Kind::Label => {}
+            Kind::Border => return None,
+        }
+        labeled |= layers.nodes[node].kind == Kind::Label;
+        let next = layers.nodes[node]
+            .ports
+            .iter()
+            .copied()
+            .find(|&next| next != arrival && !layers.ports[next].edges.is_empty())?;
+        if passed >= layers.nodes.len() {
+            return None;
+        }
+        edge = layers.ports[next].edges[0];
+        from = next;
+        passed += 1;
+    }
+}
+
+/// The two ports of a pair of twins that is the middle of its side, where the side has one: two
+/// next to each other whose edges both carry a label and lead to the same node through the same
+/// layers, whatever their direction. Such a pair counts as one, and its two ports are the middle
+/// where the pair is the middle one of the side's units, or one of the middle two beside a
+/// single port: it weighs as much as two edges.
+fn middle_twins(layers: &Layers, ports: &[usize]) -> Option<Vec<usize>> {
+    // The ports of a side that an edge crosses into its group stay where the group's layout put
+    // them.
+    if ports.iter().any(|&port| layers.ports[port].inside) {
+        return None;
+    }
+    let trails: Vec<_> = ports.iter().map(|&port| trail(layers, port)).collect();
+    let twins = |index: usize| match (trails[index], trails.get(index + 1).copied().flatten()) {
+        (Some((a, passed_a, true)), Some((b, passed_b, true))) => a == b && passed_a == passed_b,
+        _ => false,
+    };
+    let mut units: Vec<Vec<usize>> = Vec::new();
+    let mut index = 0;
+    while index < ports.len() {
+        if twins(index) {
+            units.push(vec![ports[index], ports[index + 1]]);
+            index += 2;
+        } else {
+            units.push(vec![ports[index]]);
+            index += 1;
+        }
+    }
+    if units.len() == ports.len() {
+        return None;
+    }
+    let half = units.len() / 2;
+    if units.len() % 2 == 1 {
+        return Some(units[half].clone()).filter(|unit| unit.len() == 2);
+    }
+    match (units[half - 1].len(), units[half].len()) {
+        (2, 1) => Some(units[half - 1].clone()),
+        (1, 2) => Some(units[half].clone()),
+        _ => None,
     }
 }
 
@@ -480,10 +606,16 @@ fn center_axis_ports(layers: &mut Layers, axis: &[bool], moved: &mut BTreeSet<(u
                 .copied()
                 .filter(|&port| layers.ports[port].edges.iter().any(|&edge| axis[edge]))
                 .collect();
-            let [port] = on_axis.as_slice() else {
-                continue;
+            // One port, or the two of the pair of twins in the middle of the side.
+            let together = match on_axis.as_slice() {
+                [_] => true,
+                [a, b] => middle_twins(layers, &ports).is_some_and(|pair| pair == [*a, *b]),
+                _ => false,
             };
-            let shift = bundle_middle(layers, &ports) - layers.ports[*port].at;
+            if !together {
+                continue;
+            }
+            let shift = bundle_middle(layers, &ports) - bundle_middle(layers, &on_axis);
             if shift == 0.0 || !fits(layers, &ports, shift) {
                 continue;
             }
@@ -1198,5 +1330,67 @@ mod tests {
         for (port, kept) in layers.ports.iter().zip(&before.ports) {
             assert_eq!(port.at, kept.at);
         }
+    }
+
+    /// The twins of [`twins`], with a third edge from the upper node to a node beside the lower
+    /// one, from a port after theirs.
+    fn twins_beside(kinds: [Kind; 2]) -> Layers {
+        use ferrigura_elk::placement::{Edge, Node, Port};
+        let mut layers = twins(kinds);
+        layers.nodes.push(Node {
+            kind: Kind::Node,
+            size: 100.0,
+            place: 300.0,
+            gap: 200.0,
+            ports: vec![9],
+        });
+        layers.nodes[0].ports.push(8);
+        for (node, side, at) in [(0, Side::After, 98.0), (4, Side::Before, 50.0)] {
+            layers.ports.push(Port {
+                node,
+                side,
+                at,
+                edges: vec![4],
+                inside: false,
+            });
+        }
+        layers.edges.push(Edge {
+            source: 8,
+            target: 9,
+            reversed: false,
+        });
+        layers.layers[1].push(4);
+        layers
+    }
+
+    #[test]
+    fn labeled_twins_beside_another_edge_are_the_middle_of_their_side() {
+        let layers = twins_beside([Kind::Label, Kind::Label]);
+        // Of the units of the side, the twins and the edge beside them, the twins weigh more.
+        let side = side_ports(&layers, 0, Side::After);
+        assert_eq!(side, [0, 4, 8]);
+        assert_eq!(middle_twins(&layers, &side), Some(vec![0, 4]));
+        assert_eq!(
+            middle_ports(&layers, &side, &BTreeSet::new(), false),
+            [0, 4]
+        );
+        // Without a label on both, the side has no twins.
+        let layers = twins_beside([Kind::Label, Kind::Bend]);
+        assert_eq!(middle_twins(&layers, &side), None);
+    }
+
+    #[test]
+    fn labeled_twins_beside_another_edge_stand_on_both_sides_of_their_line() {
+        let mut layers = twins_beside([Kind::Label, Kind::Label]);
+        // The pairs of ports at 58 and 78 of both nodes: their middles on one line at 68.
+        spread_twins(&mut layers);
+        assert_eq!(layers.nodes[1].place + 50.0, 8.0);
+        assert_eq!(layers.nodes[2].place + 50.0, 128.0);
+        // Beside another edge, the ports stay a bundle.
+        let at: Vec<f64> = layers.ports.iter().map(|port| port.at).collect();
+        assert_eq!(
+            at,
+            [58.0, 50.0, 50.0, 58.0, 78.0, 50.0, 50.0, 78.0, 98.0, 50.0]
+        );
     }
 }

@@ -1676,3 +1676,23 @@ fn a_word_stays_whole_in_an_edge_label_and_the_default_still_breaks_it() {
     let plain = renderer.render_with(&text, &default(None)).unwrap();
     assert!(!words(&plain).contains(&word));
 }
+
+#[test]
+fn two_labeled_relations_between_two_classes_are_one_unit_beside_another_edge() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // `User` has a third edge on the side of the two relations, and one of them runs against
+    // the flow.
+    let text = "classDiagram\n  class User { +String name }\n  class Team { +String title }\n  User \"*\" --> \"*\" Team : member of\n  Team \"1\" --> \"1\" User : led by\n  User --> Profile\n  Team --> Project\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let x = |name: &str| class_middle(&svg, name).0;
+    // The two relations take the axis from the edge to `Profile`: they leave `User` around its
+    // middle, the one with the flow runs straight down to `Team`, and `Profile` stands beside.
+    let member = route(&svg, "id_User_Team_1");
+    let led = route(&svg, "id_Team_User_2");
+    let at_user = (member[0].0 + led[led.len() - 1].0) / 2.0;
+    assert!((at_user - x("User")).abs() <= 1.0, "{at_user}");
+    assert!(runs_straight_down(&svg, "id_User_Team_1"));
+    assert!((x("Team") - x("User")).abs() <= 20.0);
+    assert!((x("Profile") - x("User")).abs() > 40.0);
+    assert!(!runs_straight_down(&svg, "id_User_Profile_3"));
+}
