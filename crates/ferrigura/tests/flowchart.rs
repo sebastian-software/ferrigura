@@ -572,6 +572,17 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         "{entity_image}"
     );
 
+    // Over-budget parser click URLs still fail closed even when another segment has a malformed %.
+    let over_budget_malformed = render(
+        "flowchart TD\nA[x]\nclick A \"https://example.com/a%252525252525252541?value=50%\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        over_budget_malformed.contains("xlink:href=\"about:blank\""),
+        "{over_budget_malformed}"
+    );
+
     // Untrusted front matter cannot bypass default strict securityLevel.
     let fm_bypass = render(
         "---\nconfig:\n  securityLevel: loose\n---\nflowchart TD\nA[x]\nclick A \"javascript:alert(1)\"\n",

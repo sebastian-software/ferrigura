@@ -119,29 +119,6 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
         Some(pos) => &url[..=pos],
         None => url,
     };
-    let mut skipped_hashes = 0usize;
-    for (idx, byte) in head.bytes().enumerate() {
-        if byte != b'#' {
-            continue;
-        }
-        let Some(decoded_before) = decode_sink_prefix_bounded(&head[..idx], MAX_DECODE_PASSES)
-        else {
-            return BLANK_URL;
-        };
-        if !(decoded_before.ends_with('&') && starts_with_sink_entity_body(&head[idx + 1..])) {
-            return if decoded_before.chars().all(is_sink_ignored)
-                || is_allowed_sink_candidate(&decoded_before)
-            {
-                url
-            } else {
-                BLANK_URL
-            };
-        }
-        skipped_hashes += 1;
-        if skipped_hashes >= MAX_DECODE_PASSES {
-            break;
-        }
-    }
     match decode_sink_prefix_bounded(head, MAX_DECODE_PASSES) {
         Some(decoded)
             if decoded.chars().all(is_sink_ignored) || is_allowed_sink_candidate(&decoded) =>
@@ -204,6 +181,26 @@ fn decode_obfuscation_step(text: &str) -> String {
     let without_controls = remove_ctrl(&without_newlines);
     let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
     decode_uri(js_trim(&without_escapes))
+}
+
+/// Runs one obfuscation-decoding step of `sanitizeUrl` with lossy percent decoding, used to check
+/// nesting depth independently of unrelated malformed `%` escapes elsewhere in the URL.
+fn decode_obfuscation_step_lossy(text: &str) -> String {
+    let entities = decode_html_characters(text);
+    let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
+    let without_controls = remove_ctrl(&without_newlines);
+    let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
+    decode_uri_lossy(js_trim(&without_escapes))
+}
+
+/// Runs one obfuscation-decoding step for a render-sink prefix without trimming trailing
+/// whitespace, so a literal space between `&` and `#` (such as `& #123`) is preserved.
+fn decode_sink_step_untrimmed(text: &str) -> String {
+    let entities = decode_html_characters_sink(text);
+    let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
+    let without_controls = remove_ctrl(&without_newlines);
+    let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
+    decode_uri_lossy(&without_escapes)
 }
 
 /// Runs one obfuscation-decoding step for a render-sink scheme prefix: HTML5 numeric character
@@ -359,117 +356,89 @@ fn needs_another_sink_pass(text: &str) -> bool {
         })
 }
 
+/// Whether `before` (the slice immediately preceding `#`) can decode to end with `&` within
+/// `max_passes` modifying steps. Returns `None` (fail-closed) if `before` itself exceeds
+/// `max_passes`.
+fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
+    if before.ends_with('&') {
+        return Some(true);
+    }
+    if !before.contains(['&', '%', '\\']) && !before.chars().any(is_ctrl) {
+        return Some(false);
+    }
+    let mut decoded = decode_uri_lossy(before);
+    let mut passes_used = usize::from(decoded != before);
+    if passes_used > max_passes {
+        return None;
+    }
+    while passes_used < max_passes {
+        let next = decode_sink_step_untrimmed(&decoded);
+        if next == decoded && !needs_another_sink_pass(&next) {
+            return Some(decoded.ends_with('&'));
+        }
+        if next == decoded {
+            return None;
+        }
+        decoded = next;
+        passes_used += 1;
+    }
+    (decode_sink_step_untrimmed(&decoded) == decoded && !needs_another_sink_pass(&decoded))
+        .then(|| decoded.ends_with('&'))
+}
+
 /// Truncates `text` at the first literal `/`, `?`, or `:` delimiter, or at a literal `#`
 /// fragment delimiter that cannot form a numeric character reference with its surroundings, since
 /// nothing after such a delimiter can participate in a URI scheme.
 ///
-/// Tracks in a single O(N) forward scan whether the suffix immediately preceding `#` could decode
-/// to `&` (or vanish while an earlier `&` is pending), so unrelated escapes earlier in the path
-/// (such as `rate%25x#123`) never prevent stopping at `#`.
-fn truncate_at_scheme_delimiter(text: &str) -> &str {
-    // Whether the immediately preceding token(s) could end with `&` after decoding.
-    let mut can_end_with_amp = false;
-    // Immediately after `&` (ignoring controls), before seeing `#` or entity name.
-    let mut after_amp = false;
-    // Inside a numeric entity `&#...` (digits/hex/radix chars can end with or without `;`).
-    let mut in_num_entity = false;
-    // Inside a named control entity (`&tab;` / `&newline;`) that could vanish.
-    let mut in_ctrl_entity = false;
-    // Inside a `%XX...` percent-escape run (hex digits may chain across nested `%25...26`).
-    let mut in_percent = false;
-    // Immediately after `\` (so `n`/`r`/`t` could form a stripped whitespace escape).
-    let mut after_backslash = false;
-
-    for (idx, ch) in text.char_indices() {
-        match ch {
-            '/' | '?' | ':' => return &text[..=idx],
-            '#' => {
-                if !can_end_with_amp || !starts_with_sink_entity_body(&text[idx + 1..]) {
-                    return &text[..=idx];
-                }
-                can_end_with_amp = true;
-                after_amp = false;
-                in_num_entity = true;
-                in_ctrl_entity = false;
-                in_percent = false;
-                after_backslash = false;
-            }
-            c if is_ctrl(c) => {}
-            '&' => {
-                can_end_with_amp = true;
-                after_amp = true;
-                in_num_entity = false;
-                in_ctrl_entity = false;
-                in_percent = false;
-                after_backslash = false;
-            }
-            '%' => {
-                can_end_with_amp = true;
-                after_amp = false;
-                in_num_entity = false;
-                in_ctrl_entity = false;
-                in_percent = true;
-                after_backslash = false;
-            }
-            '\\' => {
-                can_end_with_amp = true;
-                after_amp = false;
-                in_num_entity = false;
-                in_ctrl_entity = false;
-                in_percent = false;
-                after_backslash = true;
-            }
-            ';' if in_num_entity || in_ctrl_entity => {
-                can_end_with_amp = true;
-                after_amp = false;
-                in_num_entity = false;
-                in_ctrl_entity = false;
-                in_percent = false;
-                after_backslash = false;
-            }
-            'n' | 'r' | 't' if after_backslash => {
-                after_backslash = false;
-            }
-            c if in_percent && c.is_ascii_hexdigit() => {
-                can_end_with_amp = true;
-            }
-            c if in_num_entity && is_word(c) => {
-                can_end_with_amp = true;
-            }
-            c if after_amp && matches!(c, 't' | 'T' | 'n' | 'N') => {
-                after_amp = false;
-                in_ctrl_entity = true;
-                can_end_with_amp = true;
-            }
-            c if in_ctrl_entity && c.is_ascii_alphabetic() => {
-                can_end_with_amp = true;
-            }
-            _ => {
-                can_end_with_amp = false;
-                after_amp = false;
-                in_num_entity = false;
-                in_ctrl_entity = false;
-                in_percent = false;
-                after_backslash = false;
-            }
+/// Returns `None` (fail-closed) if the prefix before a candidate numeric-entity `#` itself
+/// exceeds `max_passes`.
+fn truncate_at_scheme_delimiter_bounded(text: &str, max_passes: usize) -> Option<&str> {
+    let head = match text.find(['/', '?', ':']) {
+        Some(pos) => &text[..=pos],
+        None => text,
+    };
+    let mut non_trivial_checks = 0usize;
+    for (idx, byte) in head.bytes().enumerate() {
+        if byte != b'#' {
+            continue;
+        }
+        if !starts_with_sink_entity_body(&head[idx + 1..]) {
+            return Some(&head[..=idx]);
+        }
+        let before = &head[..idx];
+        if before.ends_with('&') {
+            continue;
+        }
+        if non_trivial_checks >= max_passes {
+            continue;
+        }
+        non_trivial_checks += 1;
+        if !prefix_can_end_with_amp(before, max_passes)? {
+            return Some(&head[..=idx]);
         }
     }
-    text
+    Some(head)
 }
 
 /// Runs [`decode_sink_step`] on a sink scheme prefix until it reaches a fixpoint (catching
 /// nested percent escapes such as `notes%25253Adoc`, malformed trailing percent escapes such as
 /// `notes%3Afoo%FF`, and nested HTML entities) or exceeds `max_passes`, returning `None`
 /// (fail-closed) if it does not stabilize within `max_passes` modifying passes. Re-truncates at
-/// any newly decoded `/`, `?`, `:`, or non-entity `#` delimiter after each step so suffixes past
-/// a decoded delimiter cannot exhaust the budget.
+/// any `/`, `?`, `:`, or non-entity `#` delimiter before the initial decode and after each step
+/// so suffixes past a delimiter cannot exhaust the budget.
 fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
-    let trimmed = js_trim(url);
+    let trimmed = truncate_at_scheme_delimiter_bounded(js_trim(url), max_passes)?;
     let initial = decode_uri_lossy(trimmed);
     let mut passes_used = usize::from(initial != trimmed);
-    let mut decoded = truncate_at_scheme_delimiter(&initial).to_owned();
+    let mut decoded =
+        truncate_at_scheme_delimiter_bounded(&initial, max_passes.saturating_sub(passes_used))?
+            .to_owned();
     while passes_used < max_passes {
-        let next = truncate_at_scheme_delimiter(&decode_sink_step(&decoded)).to_owned();
+        let step = decode_sink_step(&decoded);
+        let next_passes = passes_used + usize::from(step != decoded);
+        let next =
+            truncate_at_scheme_delimiter_bounded(&step, max_passes.saturating_sub(next_passes))?
+                .to_owned();
         if next == decoded && !needs_another_sink_pass(&next) {
             return Some(decoded);
         }
@@ -479,14 +448,37 @@ fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
         decoded = next;
         passes_used += 1;
     }
-    let check = truncate_at_scheme_delimiter(&decode_sink_step(&decoded)).to_owned();
+    let final_step = decode_sink_step(&decoded);
+    let check = truncate_at_scheme_delimiter_bounded(&final_step, 0)?;
     (check == decoded && !needs_another_sink_pass(&decoded)).then_some(decoded)
+}
+
+/// Whether `trimmed` stabilizes under lossy percent and entity decoding within `max_passes`
+/// modifying passes (counting the initial `decode_uri_lossy` pass when it modifies the input).
+/// Using lossy decoding here ensures an unrelated malformed `%` escape elsewhere in the URL (such
+/// as `?value=50%`) cannot mask over-budget nested percent escapes in another segment.
+fn within_lossy_decode_budget(trimmed: &str, max_passes: usize) -> bool {
+    let mut probe = decode_uri_lossy(trimmed);
+    let mut passes_used = usize::from(probe != trimmed);
+    while passes_used < max_passes {
+        let next = decode_obfuscation_step_lossy(&probe);
+        if next == probe && !needs_another_pass(&probe) {
+            return true;
+        }
+        if next == probe {
+            return false;
+        }
+        probe = next;
+        passes_used += 1;
+    }
+    decode_obfuscation_step_lossy(&probe) == probe && !needs_another_pass(&probe)
 }
 
 /// Runs the [`sanitize_url`] fixpoint loop up to `max_passes` times (counting the initial
 /// `decodeURI` pass when it modifies the input), returning `None` (fail-closed) when nested
-/// obfuscations—including percent-only or mixed percent/entity nesting—exceed `max_passes`. For
-/// ordinary URLs within budget, returns the exact `@braintree/sanitize-url` decoded spelling.
+/// obfuscations—including percent-only or mixed percent/entity nesting, even alongside unrelated
+/// malformed `%` escapes—exceed `max_passes`. For ordinary URLs within budget, returns the exact
+/// `@braintree/sanitize-url` decoded spelling.
 fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<String> {
     let trimmed = js_trim(url);
     let mut decoded = decode_uri(trimmed);
@@ -499,20 +491,7 @@ fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<Strin
         }
         decoded = next;
         if !needs_another_pass(&decoded) {
-            let mut probe = decoded.clone();
-            while passes_used < max_passes {
-                let next_probe = decode_obfuscation_step(&probe);
-                if next_probe == probe && !needs_another_pass(&probe) {
-                    return Some(decoded);
-                }
-                if next_probe == probe {
-                    return None;
-                }
-                probe = next_probe;
-                passes_used += 1;
-            }
-            return (decode_obfuscation_step(&probe) == probe && !needs_another_pass(&probe))
-                .then_some(decoded);
+            return within_lossy_decode_budget(trimmed, max_passes).then_some(decoded);
         }
         if !changed {
             return None;
@@ -1648,6 +1627,8 @@ mod tests {
             "&#106avascript:alert(1)",
             "javascript&#x3A;alert(1)#frag",
             "%26#106;avascript:alert(1)",
+            "%&tab;26#106;avascript:alert(1)",
+            "&\n#106;avascript:alert(1)",
             "&#38;#106;avascript:alert(1)",
             "&#106;avascript:alert(1)",
             "javascript&colon;alert(1)",
@@ -1686,6 +1667,9 @@ mod tests {
             "item%23section%2525252525252525252541",
             "item%23123%2525252525252525252541",
             "rate%25x%23123%2525252525252525252541",
+            "rate%25%23123%2525252525252525252541",
+            "foo\\n#123%2525252525252525252541",
+            "&%20#123%2525252525252525252541",
             "R&D%23123%2525252525252525252541",
             "/images/logo.png",
             "./relative:path.png",
@@ -1716,7 +1700,15 @@ mod tests {
             "https://example.com/a%252525252541"
         );
         assert_eq!(
+            sanitize_url("https://example.com/a%2525252525252541?value=50%"),
+            "https://example.com/a%2525252525252541?value=50%"
+        );
+        assert_eq!(
             sanitize_url("https://example.com/a%252525252525252541"),
+            "about:blank"
+        );
+        assert_eq!(
+            sanitize_url("https://example.com/a%252525252525252541?value=50%"),
             "about:blank"
         );
         assert_eq!(
