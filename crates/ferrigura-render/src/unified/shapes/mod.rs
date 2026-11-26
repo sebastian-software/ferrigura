@@ -286,7 +286,12 @@ pub fn node_label(
     // The reference's `labelHelper` takes the label's box from `text.getBBox()` (shapes/util.ts
     // 135-140), before `withMinWidth` widens it. That box is a float32 value. Group titles are
     // measured through the same `labelHelper` (createGraph.ts `measureGroupLabel`).
-    label::layout(&spec).map(|mut label| {
+    let laid_out = if config.section.design.is_some() {
+        label::layout_keeping_words(&spec)
+    } else {
+        label::layout(&spec)
+    };
+    laid_out.map(|mut label| {
         // A label with a background is measured as its group, which holds the background rectangle
         // (`createText.ts` 186-196, `labelHelper` 135-140): the box is the background's, two pixels
         // around the text on each side, not the text's.

@@ -100,7 +100,12 @@ fn rect(node: &Node, config: &Config<'_>, edges: &[Edge]) -> Result<Cluster, Ren
         LabelType::Markdown => node.width.unwrap_or(MARKDOWN_TITLE_WIDTH),
         _ => f64::INFINITY,
     };
-    let title = label::layout(&LabelSpec {
+    let layout = if config.section.design.is_some() {
+        label::layout_keeping_words
+    } else {
+        label::layout
+    };
+    let title = layout(&LabelSpec {
         fonts: config.fonts.clone(),
         text: &node.label,
         label_type: node.label_type,

@@ -29,6 +29,11 @@ pub const EDGE_STROKE_WIDTH: &str = "1.5px";
 /// The stroke width of a thick edge: twice the normal one, and still slimmer than the arrowhead.
 pub const THICK_EDGE_STROKE_WIDTH: &str = "3px";
 
+/// How many times the wrapping width a single word may measure and still stay whole in a label.
+/// A word is never broken inside in the mode; a word wider than this bound (a pasted URL) is
+/// broken as the default breaks it, so that one label cannot blow a diagram up.
+pub const WHOLE_WORD_LIMIT: f64 = 4.0;
+
 /// The corner radius of a rectangular node.
 pub const NODE_RADIUS: f64 = 8.0;
 

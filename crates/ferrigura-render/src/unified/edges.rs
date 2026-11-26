@@ -273,7 +273,8 @@ fn declarations(style: &str) -> Vec<String> {
 /// Lays out an edge's label as `insertEdgeLabel` does when it measures it: wrapped at 200 pixels,
 /// with a background, in `font_size`, the theme's `fontSize` that the root rule of the reference's
 /// SVG sets and every label inherits. The caller stores the size on the edge before layout (see
-/// [`label_size`]). `None` for an edge without a label.
+/// [`label_size`]). `None` for an edge without a label. With `keep_words` (the design mode), a word
+/// is not broken inside ([`label::layout_keeping_words`]).
 ///
 /// # Errors
 ///
@@ -282,7 +283,13 @@ pub fn label(
     edge: &Edge,
     font_size: f64,
     fonts: &crate::fonts::FontContext,
+    keep_words: bool,
 ) -> Result<Option<LabelLayout>, RenderError> {
+    let layout = if keep_words {
+        label::layout_keeping_words
+    } else {
+        label::layout
+    };
     if edge.label.is_empty() {
         return Ok(None);
     }
@@ -300,7 +307,7 @@ pub fn label(
         font_size,
         title: false,
     };
-    let measured = label::layout(&spec)?;
+    let measured = layout(&spec)?;
     // A diagram whose stylesheet sets the edge labels' font size (the use case's `.edgeLabel`) gets the
     // background measured at the theme's size, as the reference does before its class is applied, and the
     // text drawn at the stylesheet's size, wrapped at the theme's size. The group's size is the background
@@ -310,7 +317,7 @@ pub fn label(
     };
     let mut drawn_styles = styles.clone();
     drawn_styles.push(format!("font-size: {}px", crate::svg::number(drawn_size)));
-    let drawn = label::layout(&LabelSpec {
+    let drawn = layout(&LabelSpec {
         styles: &drawn_styles,
         ..spec
     })?;

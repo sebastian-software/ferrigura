@@ -1583,3 +1583,74 @@ fn a_class_loops_beside_itself_with_its_cardinalities_at_its_ends() {
         assert!(near.unwrap().0 < label.0);
     }
 }
+
+/// The texts of the inner tspans of an SVG: the words of its labels.
+fn words(svg: &str) -> Vec<&str> {
+    let marker = "class=\"text-inner-tspan\"";
+    svg.match_indices(marker)
+        .filter_map(|(at, _)| {
+            let rest = &svg[at..];
+            let start = rest.find('>')? + 1;
+            Some(&rest[start..start + rest[start..].find('<')?])
+        })
+        .collect()
+}
+
+/// The width of the first rectangle of an SVG's nodes.
+fn first_node_width(svg: &str) -> f64 {
+    let nodes = nodes(svg);
+    let rect = &nodes[nodes.find("<rect").expect("a rect")..];
+    let marker = " width=\"";
+    let rest = &rect[rect.find(marker).expect("a width") + marker.len()..];
+    rest[..rest.find('"').expect("the end")]
+        .parse()
+        .expect("a number")
+}
+
+#[test]
+fn a_word_stays_whole_in_the_label_of_a_state_and_a_node() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let word = "WaitingForConfirmation";
+    for text in [
+        format!("stateDiagram-v2\n  {word} --> Done\n"),
+        format!("flowchart TD\n  A[{word}] --> B[Done]\n"),
+        format!("flowchart LR\n  A[{word}] --> B[Done]\n"),
+    ] {
+        let plain = renderer.render_with(&text, &default(None)).unwrap();
+        assert!(!words(&plain).contains(&word), "the default breaks it");
+        let designed = renderer.render_with(&text, &design(None)).unwrap();
+        assert!(words(&designed).contains(&word), "{designed}");
+        // The node grows as wide as the word needs, where the default's holds half of it. The word
+        // is the only one of its line, so the node's text is as wide as the line and its padding.
+        assert!(
+            first_node_width(&designed) > first_node_width(&plain),
+            "{text}"
+        );
+    }
+}
+
+#[test]
+fn a_label_still_wraps_between_words_and_an_absurd_word_breaks() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "flowchart TD\n  A[Send ConfirmationNotification now]\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    assert_eq!(
+        words(&designed),
+        ["Send", "ConfirmationNotification", "now"]
+    );
+    let url = "https://example.com/a/very/long/pasted/url/that/goes/on/and/on/forever/and/ever/and/ever/and/ever/and/ever";
+    let text = format!("flowchart TD\n  A[{url}]\n");
+    let designed = renderer.render_with(&text, &design(None)).unwrap();
+    assert!(!words(&designed).contains(&url), "{designed}");
+}
+
+#[test]
+fn a_word_stays_whole_in_an_edge_label_and_the_default_still_breaks_it() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let word = "UnbelievablyLongEdgeLabelWordHere";
+    let text = format!("flowchart TD\n  A -->|{word}| B\n");
+    let designed = renderer.render_with(&text, &design(None)).unwrap();
+    assert!(words(&designed).contains(&word), "{designed}");
+    let plain = renderer.render_with(&text, &default(None)).unwrap();
+    assert!(!words(&plain).contains(&word));
+}

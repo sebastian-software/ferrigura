@@ -133,13 +133,35 @@ pub fn split_line_to_fit_width<'a, F>(
 where
     F: FnMut(&[Word]) -> Result<bool, TextError>,
 {
+    split_line_keeping_words(line, fits, None::<&mut F>)
+}
+
+/// [`split_line_to_fit_width`] with an optional second test, `whole`: a word that does not fit on
+/// a line of its own but that `whole` accepts stays one line instead of being split inside. A word
+/// that `whole` rejects is split as before. With `None` this is exactly the reference's algorithm.
+///
+/// # Errors
+///
+/// As [`split_line_to_fit_width`], and the first error `whole` reports.
+pub fn split_line_keeping_words<'a, F, G>(
+    line: &[Word<'a>],
+    fits: &mut F,
+    mut whole: Option<&mut G>,
+) -> Result<Vec<Vec<Word<'a>>>, TextError>
+where
+    F: FnMut(&[Word]) -> Result<bool, TextError>,
+    G: FnMut(&[Word]) -> Result<bool, TextError>,
+{
     if line.iter().any(|word| word.text.contains('\n')) {
         return Err(TextError::NewlineInLine);
     }
     let mut words: VecDeque<Word> = line.iter().cloned().collect();
     let mut lines: Vec<Vec<Word>> = Vec::new();
     let mut new_line: Vec<Word> = Vec::new();
+    // Set when a word was too wide to stay whole: its rest is broken at the width too.
+    let mut breaking = false;
     while let Some(first) = words.pop_front() {
+        let broken_rest = std::mem::take(&mut breaking);
         let (joiner, next) = if first.text == " " {
             let next = words.pop_front().unwrap_or_else(|| Word {
                 text: " ".to_owned(),
@@ -165,9 +187,17 @@ where
             lines.push(std::mem::take(&mut new_line));
             words.push_front(next);
         } else if !next.text.is_empty() {
+            if let Some(whole) = whole.as_deref_mut()
+                && !broken_rest
+                && whole(std::slice::from_ref(&next))?
+            {
+                lines.push(vec![next]);
+                continue;
+            }
             let (first_part, rest) = split_word_to_fit_width(&next, fits)?;
             lines.push(vec![first_part]);
             if !rest.text.is_empty() {
+                breaking = whole.is_some();
                 words.push_front(rest);
             }
         }
@@ -176,6 +206,26 @@ where
         lines.push(new_line);
     }
     Ok(lines)
+}
+
+/// [`fit_line`] that keeps a word whole where `whole` accepts it (see [`split_line_keeping_words`]).
+///
+/// # Errors
+///
+/// As [`fit_line`].
+pub fn fit_line_keeping_words<'a, F, G>(
+    line: &[Word<'a>],
+    mut fits: F,
+    mut whole: G,
+) -> Result<Vec<Vec<Word<'a>>>, TextError>
+where
+    F: FnMut(&[Word]) -> Result<bool, TextError>,
+    G: FnMut(&[Word]) -> Result<bool, TextError>,
+{
+    if fits(line)? {
+        return Ok(vec![line.to_vec()]);
+    }
+    split_line_keeping_words(line, &mut fits, Some(&mut whole))
 }
 
 /// `createFormattedText` in `createText.ts`: a line that fits is kept as it is, including an empty

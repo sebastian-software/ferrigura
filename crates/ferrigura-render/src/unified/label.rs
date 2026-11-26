@@ -13,8 +13,8 @@ use std::fmt::Write as _;
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_text::{
-    Face, FontStyle, FontWeight, Run, TextError, Word, fit_line, layout_width, measure,
-    measure_line_metrics, text_box,
+    Face, FontStyle, FontWeight, Run, TextError, Word, fit_line, fit_line_keeping_words,
+    layout_width, measure, measure_line_metrics, text_box,
 };
 
 use super::geom::{BBox, Point};
@@ -360,6 +360,28 @@ pub fn layout_in_style(
     inherited: Option<FontWeight>,
     style: FontStyle,
 ) -> Result<LabelLayout, RenderError> {
+    layout_with(spec, inherited, style, false)
+}
+
+/// [`layout`] for the design mode: a word is never broken inside, unless it is wider than
+/// [`crate::design::WHOLE_WORD_LIMIT`] times the wrapping width. A line that holds such a word
+/// stays one line, wider than the wrapping width (`docs/decisions/0023-design-mode.md`).
+///
+/// # Errors
+///
+/// Returns an error if a bundled font cannot be read.
+pub fn layout_keeping_words(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
+    layout_with(spec, None, FontStyle::Normal, true)
+}
+
+/// The layout of a label; `keep_words` is the design mode's rule for a word wider than the
+/// wrapping width.
+fn layout_with(
+    spec: &LabelSpec<'_>,
+    inherited: Option<FontWeight>,
+    style: FontStyle,
+    keep_words: bool,
+) -> Result<LabelLayout, RenderError> {
     // The style's font size sets the text. A node label is wrapped inside the group that carries
     // its style, so the wrap sees the size. An edge label and a cluster title are wrapped in their
     // unstyled containers, which are the ones with `text-anchor` set or left to the cluster.
@@ -419,7 +441,7 @@ pub fn layout_in_style(
                 .entry(word.text.clone())
                 .or_insert([None; 2]);
         }
-        let fits = |line: &[Word]| -> Result<bool, TextError> {
+        let mut measured_width = |line: &[Word]| -> Result<f64, TextError> {
             let mut total = 0.0;
             for (index, word) in line.iter().enumerate() {
                 let variant = usize::from(index != 0);
@@ -444,9 +466,20 @@ pub fn layout_in_style(
                 };
                 total += advance;
             }
-            Ok(total <= width)
+            Ok(total)
         };
-        wrapped.extend(fit_line(&words, fits)?);
+        if keep_words {
+            // The mode's rule: a word wider than the wrapping width stays one line, up to a bound.
+            let limit = width * crate::design::WHOLE_WORD_LIMIT;
+            let measured = std::cell::RefCell::new(measured_width);
+            wrapped.extend(fit_line_keeping_words(
+                &words,
+                |line| Ok((measured.borrow_mut())(line)? <= width),
+                |line| Ok((measured.borrow_mut())(line)? <= limit),
+            )?);
+        } else {
+            wrapped.extend(fit_line(&words, |line| Ok(measured_width(line)? <= width))?);
+        }
     }
 
     let pieces: Vec<Vec<(String, &Face)>> = wrapped
@@ -803,5 +836,34 @@ mod tests {
         let mut plain = label.clone();
         plain.styles = &[];
         layout(&plain).expect("lays out")
+    }
+
+    /// The design mode keeps a word whole where the default breaks it, wraps between words as the
+    /// default does, and breaks a word wider than the bound.
+    #[test]
+    fn the_design_mode_keeps_a_word_whole_up_to_the_bound() {
+        let styles = [];
+        let mut label = spec(
+            "Send ConfirmationNotification now",
+            LabelType::Text,
+            &styles,
+        );
+        label.width = 150.0;
+        let broken = line_texts(&layout(&label).expect("lays out"));
+        assert_eq!(broken, ["Send", "ConfirmationNotifica", "tion now"]);
+        let whole = layout_keeping_words(&label).expect("lays out");
+        assert_eq!(
+            line_texts(&whole),
+            ["Send", "ConfirmationNotification", "now"]
+        );
+        // A line wider than the wrapping width, and the box is that line's.
+        assert!(whole.lines[1].width > label.width);
+        assert!((whole.bbox.width - whole.lines[1].width).abs() < 2.0);
+
+        let url = "x".repeat(200);
+        label.text = &url;
+        let lines = line_texts(&layout_keeping_words(&label).expect("lays out"));
+        assert!(lines.len() > 1, "a word past the bound still breaks");
+        assert_eq!(lines, line_texts(&layout(&label).expect("lays out")));
     }
 }
