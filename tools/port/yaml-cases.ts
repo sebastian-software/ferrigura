@@ -300,6 +300,7 @@ export const yamlCases: string[] = [
   // `[object Object]`: the expanded output stays small and both parsers must accept it.
   `label: &label "${'a'.repeat(10_000)}"\nrows:\n${'  - { ? { *label : 1 } : ok }\n'.repeat(110)}`,
   `label: &label "${'a'.repeat(10_000)}"\nrows:\n${'  - { ? { [*label] : 1 } : ok }\n'.repeat(110)}`,
+  `label: &label "${'a'.repeat(10_000)}"\nkey: &key [prefix, *label]\nrows:\n${'  - { ? { *key : 1 } : ok }\n'.repeat(110)}`,
   // Safely sized 15-level alias DAG (~131k expanded nodes): js-yaml shares references in JS,
   // whereas ferrigura rejects excessive alias expansion to prevent Billion Laughs DoS.
   [

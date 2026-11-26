@@ -389,6 +389,7 @@ fn find_type(tag: &str, kind: Option<Kind>) -> Option<TypeId> {
 }
 
 type Span = (usize, usize);
+type SequenceItem = (Node, Span);
 type MappingEntry = (usize, Node, Span);
 
 /// The state of `js-yaml`'s reader: the input in UTF-16 code units (so that columns and
@@ -408,8 +409,9 @@ struct State {
     anchor_map: HashMap<String, Node>,
     transactions: Vec<Vec<(String, Option<Node>)>>,
     strings: Vec<String>,
-    sequences: Vec<Vec<Node>>,
+    sequences: Vec<Vec<SequenceItem>>,
     sequence_spans: Vec<Span>,
+    sequence_keys: Vec<Option<(usize, usize)>>,
     mappings: Vec<Vec<MappingEntry>>,
     mapping_spans: Vec<Span>,
     remaining_key_bytes: usize,
@@ -458,6 +460,7 @@ impl State {
             strings: Vec::new(),
             sequences: Vec::new(),
             sequence_spans: Vec::new(),
+            sequence_keys: Vec::new(),
             mappings: Vec::new(),
             mapping_spans: Vec::new(),
             remaining_key_bytes: expanded_byte_budget(input_bytes),
@@ -480,6 +483,7 @@ impl State {
         self.sequences.push(Vec::new());
         self.sequence_spans
             .push((self.line + 1, self.position.saturating_sub(self.line_start)));
+        self.sequence_keys.push(None);
         id
     }
 
@@ -599,8 +603,9 @@ impl State {
                 path.push(collection);
                 let items = &self.sequences[id];
                 let mut converted = Vec::with_capacity(items.len().min(budget.remaining_nodes));
-                for &item in items {
-                    converted.push(self.to_yaml_on(item, next_span, path, budget)?);
+                for &(item, item_span) in items {
+                    let entry_span = item_span.max(next_span);
+                    converted.push(self.to_yaml_on(item, entry_span, path, budget)?);
                 }
                 path.pop();
                 Yaml::Sequence(converted)
@@ -1147,6 +1152,7 @@ impl State {
         self.strings.truncate(strings_len);
         self.sequences.truncate(sequences_len);
         self.sequence_spans.truncate(sequences_len);
+        self.sequence_keys.truncate(sequences_len);
         self.mappings.truncate(mappings_len);
         self.mapping_spans.truncate(mappings_len);
         self.remaining_key_bytes = remaining_key_bytes;
@@ -1316,11 +1322,12 @@ impl State {
                 break;
             }
             detected = true;
+            let item_span = (self.line + 1, self.position.saturating_sub(self.line_start));
             let items_id = *items.get_or_insert_with(|| self.alloc_sequence());
             self.position += 1;
 
             if self.skip_separation_space(true) > 0 && self.line_indent <= node_indent {
-                self.sequences[items_id].push(Node::Null);
+                self.sequences[items_id].push((Node::Null, item_span));
                 ch = self.ch();
                 continue;
             }
@@ -1328,7 +1335,7 @@ impl State {
             let line = self.line;
             self.compose_node(node_indent, Context::BlockIn, false, true)?;
             let item = std::mem::replace(&mut self.result, Node::Null);
-            self.sequences[items_id].push(item);
+            self.sequences[items_id].push((item, item_span));
             self.skip_separation_space(true);
             ch = self.ch();
 
@@ -1508,12 +1515,18 @@ impl State {
             // charged against `ExpandBudget` when `to_yaml_on` clones them into the public tree.
             Node::String(id) => id,
             Node::Sequence(seq_id)
-                if matches!(self.sequences[seq_id].as_slice(), [Node::String(_)]) =>
+                if matches!(self.sequences[seq_id].as_slice(), [(Node::String(_), _)]) =>
             {
-                let [Node::String(id)] = self.sequences[seq_id].as_slice() else {
+                let [(Node::String(id), _)] = self.sequences[seq_id].as_slice() else {
                     unreachable!()
                 };
                 *id
+            }
+            Node::Sequence(seq_id)
+                if let Some((cached_len, key_id)) = self.sequence_keys[seq_id]
+                    && cached_len == self.sequences[seq_id].len() =>
+            {
+                key_id
             }
             other => {
                 let name = key_string(
@@ -1536,6 +1549,9 @@ impl State {
                 })?;
                 let id = self.strings.len();
                 self.strings.push(name);
+                if let Node::Sequence(seq_id) = other {
+                    self.sequence_keys[seq_id] = Some((self.sequences[seq_id].len(), id));
+                }
                 id
             }
         };
@@ -1634,10 +1650,10 @@ impl State {
                     // A pair in a sequence is a mapping of its own.
                     let single = self.alloc_mapping();
                     self.store_pair(single, key_node, value_node, entry_span)?;
-                    self.sequences[items].push(Node::Mapping(single));
+                    self.sequences[items].push((Node::Mapping(single), entry_span));
                 }
                 CollectionId::Sequence(items) => {
-                    self.sequences[items].push(key_node);
+                    self.sequences[items].push((key_node, entry_span));
                 }
             }
 
@@ -2132,7 +2148,7 @@ fn code_units(value: i32) -> Vec<u16> {
 /// array joins its items, and an object is `[object Object]`.
 fn key_string(
     strings: &[String],
-    sequences: &[Vec<Node>],
+    sequences: &[Vec<SequenceItem>],
     remaining_bytes: &mut usize,
     key: Node,
 ) -> Result<String, &'static str> {
@@ -2167,7 +2183,7 @@ fn key_string(
         Node::Sequence(id) => {
             let items = &sequences[id];
             let mut out = String::new();
-            for (index, &item) in items.iter().enumerate() {
+            for (index, &(item, _)) in items.iter().enumerate() {
                 if index > 0 {
                     take(remaining_bytes, 1)?;
                     out.push(',');
@@ -2603,7 +2619,11 @@ mod tests {
     fn mapping_key_alias_amplification_is_rejected() {
         // Direct unit test on `key_string` with a small remaining budget, independent of `to_yaml`.
         let strings = vec!["k".repeat(32)];
-        let sequences = vec![vec![Node::String(0), Node::String(0), Node::String(0)]];
+        let sequences = vec![vec![
+            (Node::String(0), (1, 0)),
+            (Node::String(0), (1, 0)),
+            (Node::String(0), (1, 0)),
+        ]];
         let mut remaining = 64;
         assert_eq!(
             key_string(&strings, &sequences, &mut remaining, Node::Sequence(0)),
