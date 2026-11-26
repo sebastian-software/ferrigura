@@ -136,42 +136,19 @@ jobs:
         diagram:
           [
             pie,
-            info,
             flowchart,
             sequence,
             class,
             state,
             er,
             gantt,
-            timeline,
-            gitgraph,
-            journey,
             mindmap,
-            block,
-            packet,
             xychart,
-            sankey,
             quadrantChart,
-            requirement,
-            c4,
-            kanban,
-            architecture,
-            treemap,
-            ishikawa,
-            eventmodeling,
-            agentflow,
-            cynefin,
-            radar,
-            railroad,
-            treeView,
-            usecase,
-            wardley,
             flowchart-data,
             class-data,
             state-data,
             er-data,
-            requirement-data,
-            kanban-data,
             config,
             yaml,
             theme,
@@ -247,7 +224,7 @@ jobs:
         # Every type runs, so one failing type does not hide the others.
         run: |
           status=0
-          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling mindmap architecture agentflow cynefin radar railroad treeView usecase wardley; do
+          for type in sequence class state er gantt xychart quadrantChart mindmap; do
             pnpm -C tools/port port:geometry "$type" || status=1
           done
           exit $status

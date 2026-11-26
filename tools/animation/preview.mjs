@@ -37,13 +37,6 @@ const samples = [
       'gantt\n title Release plan\n dateFormat YYYY-MM-DD\n axisFormat %b %d\n todayMarker off\n section Discovery\n Research :done, research, 2026-01-05, 3d\n Design :active, design, after research, 4d\n section Delivery\n Build :crit, build, after design, 5d\n Launch :milestone, launch, after build, 0d\n',
   },
   {
-    id: 'gitgraph',
-    title: 'Commits, branches, and a merge',
-    description: 'Connections trace the commit history; commit markers and tags appear on arrival.',
-    source:
-      'gitGraph\n commit id: "Start" tag: "v1"\n branch docs\n commit id: "Guide"\n commit id: "Examples"\n checkout main\n commit id: "Fix" type: HIGHLIGHT\n merge docs id: "Merge"\n commit id: "Ship" tag: "v2"\n',
-  },
-  {
     id: 'mindmap',
     title: 'An idea branches outward',
     description:

@@ -21,7 +21,6 @@ const cases = JSON.parse(
 ) as Case[];
 const decodedDescription = new Set([
   'e2e/diagrams/flowchart/regressions/routing-review-cycle-bt.mmd',
-  'tools/port/geometry/probes/swimlanes/p01-direction-br.mmd',
   'e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-showdata.mmd',
 ]);
 const unmatchedDifferences = new Set(decodedDescription);

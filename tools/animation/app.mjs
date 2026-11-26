@@ -102,7 +102,6 @@ async function render({ autoplay = false } = {}) {
       'request',
       'review',
       'styles',
-      'gitgraph',
       'mindmap',
     ].includes(sample.id)
       ? 'Follow the flow'

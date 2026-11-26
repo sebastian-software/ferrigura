@@ -1,11 +1,11 @@
 /**
- * Differential run for the configuration. The pie, flowchart, timeline, journey, gitGraph, ER, class, sequence and state inputs of `inputs.ts`, the inputs of the P2 and P3 types, and every
- * explicit case of `config-cases.ts` go through the TypeScript reference (`export-config.ts`) and
- * through ferrigura (`cargo run --example config`). Each side detects the diagram type from the
- * text, as a render does, so each input gets its own diagram scope: the reference through
- * `processAndSetConfigs`, ferrigura through `detect`. A flowchart input must come out in the
- * `flowchart` scope on both sides, a journey input in `journey`, a gitGraph input in `gitGraph`, a state input in `state`, and a pie input or case in `pie`. A P2 or P3 input must come
- * out in its own scope, whose section is compared too.
+ * Differential run for the configuration. The inputs of `inputs.ts` of the diagram types that
+ * ferrigura draws, and every explicit case of `config-cases.ts`, go through the TypeScript reference
+ * (`export-config.ts`) and through ferrigura (`cargo run --example config`). Each side detects the
+ * diagram type from the text, as a render does, so each input gets its own diagram scope: the
+ * reference through `processAndSetConfigs`, ferrigura through `detect`. A flowchart input must come
+ * out in the `flowchart` scope on both sides, a state input in `state`, a pie input or case in `pie`,
+ * and a mindmap, XY chart or quadrant chart input in its own scope, whose section is compared too.
  *
  * The key set that directives may use is compared first. Then, per input, the scope and the
  * effective configuration: the top level (with `theme`, `look` and `layout` resolved), `elk`, the
@@ -29,7 +29,7 @@ interface ConfigInput {
   source: string;
   text: string;
   site?: Record<string, unknown>;
-  /** The collection the input came from: `pie`, `flowchart`, `timeline`, `journey`, `gitgraph`, `er`, `class`, `sequence` or `case`. */
+  /** The collection the input came from: the diagram type as `inputs.ts` collects it, or `case`. */
   group: string;
   /** The scope the input must be run in, or `null` for an input that no detector takes. */
   expectedScope: string | null;
@@ -80,10 +80,6 @@ function same(a: unknown, b: unknown): boolean {
 const pieInputs = await collectInputs('pie');
 const undetectedPie = new Set(undetectedCases.pie ?? []);
 const flowchartInputs = await collectInputs('flowchart');
-const timelineInputs = await collectInputs('timeline');
-const undetectedTimeline = new Set(undetectedCases.timeline ?? []);
-const journeyInputs = await collectInputs('journey');
-const gitGraphInputs = await collectInputs('gitgraph');
 const erInputs = await collectInputs('er');
 const classInputs = await collectInputs('class');
 const sequenceInputs = await collectInputs('sequence');
@@ -94,56 +90,19 @@ const stateInputs = (await collectInputs('state')).filter((input) =>
 );
 const ganttInputs = await collectInputs('gantt');
 /**
- * The P2 types, each with its group name (as `inputs.ts` collects it) and its configuration section
- * (`getDiagramConfigKey`). Their inputs must be detected in that scope on both sides.
+ * The types whose own section is compared, each with its group name (as `inputs.ts` collects it) and
+ * its configuration section (`getDiagramConfigKey`). Their inputs must be detected in that scope on
+ * both sides.
  */
-const p2Groups: [group: string, scope: string][] = [
+const scopedGroups: [group: string, scope: string][] = [
   ['mindmap', 'mindmap'],
-  ['block', 'block'],
-  ['packet', 'packet'],
   ['xychart', 'xyChart'],
-  ['sankey', 'sankey'],
   ['quadrantChart', 'quadrantChart'],
-  ['requirement', 'requirement'],
-  ['c4', 'c4'],
-  ['kanban', 'kanban'],
-  ['architecture', 'architecture'],
-  ['treemap', 'treemap'],
-  ['ishikawa', 'ishikawa'],
-  ['eventmodeling', 'eventmodeling'],
-  // The railroad and swimlane sections are compared like the sections above.
-  ['railroad', 'railroad'],
-  ['swimlanes', 'swimlane'],
 ];
-const p2Inputs: ConfigInput[] = [];
-for (const [group, scope] of p2Groups) {
+const scopedInputs: ConfigInput[] = [];
+for (const [group, scope] of scopedGroups) {
   for (const input of await collectInputs(group)) {
-    p2Inputs.push({
-      id: 0,
-      source: input.source,
-      text: input.text,
-      group,
-      expectedScope: (undetectedCases[group] ?? []).includes(input.text) ? null : scope,
-    });
-  }
-}
-/**
- * The P3 types, with the same meaning as `p2Groups`: their inputs must be detected in their own
- * scope on both sides, and their sections are compared (`NOT_PORTED_SECTIONS` lists the exceptions).
- */
-const p3Groups: [group: string, scope: string][] = [
-  ['agentflow', 'agentflow'],
-  ['treeView', 'treeView'],
-  ['radar', 'radar'],
-  ['venn', 'venn'],
-  ['wardley', 'wardley-beta'],
-  ['cynefin', 'cynefin'],
-  ['usecase', 'usecase'],
-];
-const p3Inputs: ConfigInput[] = [];
-for (const [group, scope] of p3Groups) {
-  for (const input of await collectInputs(group)) {
-    p3Inputs.push({
+    scopedInputs.push({
       id: 0,
       source: input.source,
       text: input.text,
@@ -166,27 +125,6 @@ const inputs: ConfigInput[] = [
     text: input.text,
     group: 'flowchart',
     expectedScope: 'flowchart',
-  })),
-  ...timelineInputs.map((input) => ({
-    id: 0,
-    source: input.source,
-    text: input.text,
-    group: 'timeline',
-    expectedScope: undetectedTimeline.has(input.text) ? null : 'timeline',
-  })),
-  ...journeyInputs.map((input) => ({
-    id: 0,
-    source: input.source,
-    text: input.text,
-    group: 'journey',
-    expectedScope: 'journey',
-  })),
-  ...gitGraphInputs.map((input) => ({
-    id: 0,
-    source: input.source,
-    text: input.text,
-    group: 'gitgraph',
-    expectedScope: 'gitGraph',
   })),
   ...erInputs.map((input) => ({
     id: 0,
@@ -223,8 +161,7 @@ const inputs: ConfigInput[] = [
     group: 'gantt',
     expectedScope: 'gantt',
   })),
-  ...p2Inputs,
-  ...p3Inputs,
+  ...scopedInputs,
   ...configCases.map((testCase) => ({
     id: 0,
     source: testCase.source,
@@ -267,12 +204,11 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
 }
 
 /**
- * The diagram sections whose defaults the port does not own yet. The reference fills them with its
- * own generator (`.build/jsonSchema.ts`), which applies a section's own defaults only, and the
- * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
- * is compared only for an input of its own diagram type, and only once that type is ported (a
- * ported type is not in `NOT_PORTED_SECTIONS`); `info` has no section. Every other section is left
- * out.
+ * The diagram sections that are compared only for an input of their own diagram type. The reference
+ * fills them with its own generator (`.build/jsonSchema.ts`), which applies a section's own defaults
+ * only, and the TypeScript defaults replace some sections whole; ferrigura takes them from the
+ * schema. The sections of the types that ferrigura does not draw have no input of their type, so
+ * they are never compared.
  */
 const UNPORTED_SECTIONS = [
   'flowchart',
@@ -298,22 +234,14 @@ const UNPORTED_SECTIONS = [
 ];
 
 /**
- * The sections of the P3 types whose parsers are not ported yet. Their inputs are run in their own
- * scope, but the section is not compared, not even for those inputs, until the type is ported. Every
- * P3 parser is ported now, so the set is empty.
- */
-const NOT_PORTED_SECTIONS = new Set<string>();
-
-/**
- * The output with the sections that are not compared removed: the sections of diagram types that
- * are not ported, and the sections of the other ported types. `scope` is the section of the input,
- * which is compared only when its type is ported.
+ * The output with the sections that are not compared removed: every section of `UNPORTED_SECTIONS`
+ * other than `scope`, the section of the input.
  */
 function ported(config: unknown, scope: string | null): unknown {
   if (typeof config !== 'object' || config === null) return config;
   const copy = { ...(withoutInertOptions(config) as Record<string, unknown>) };
   for (const section of UNPORTED_SECTIONS) {
-    if (section !== scope || NOT_PORTED_SECTIONS.has(section)) delete copy[section];
+    if (section !== scope) delete copy[section];
   }
   return copy;
 }
