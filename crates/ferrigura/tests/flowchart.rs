@@ -421,6 +421,7 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         "vbscript:msgbox(1)",
         "data:text/html,<script>alert(1)</script>",
         "notes://do-your-thing/id",
+        "notes#58;meeting",
         "a%3Ab",
         "javascript&colon;alert(1)",
         "%6aavascript:alert(1)",
@@ -551,6 +552,25 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         "{token_image}"
     );
 
+    let entity_click = render(
+        "flowchart TD\nA[x]\nclick A \"https#58;//example.org/\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        entity_click.contains("xlink:href=\"https://example.org/\""),
+        "{entity_click}"
+    );
+    let entity_image = render(
+        "flowchart TD\nA@{ img: \"https#58;//example.org/logo.png\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        entity_image.contains("<image href=\"https://example.org/logo.png\""),
+        "{entity_image}"
+    );
+
     // Untrusted front matter cannot bypass default strict securityLevel.
     let fm_bypass = render(
         "---\nconfig:\n  securityLevel: loose\n---\nflowchart TD\nA[x]\nclick A \"javascript:alert(1)\"\n",
@@ -593,6 +613,7 @@ fn kanban_ticket_links_are_sanitized_under_default_security_level() {
         ("%6aavascript:alert(1)//#TICKET#", "MC-1"),
         ("&#106;avascript:alert(1)//#TICKET#", "MC-1"),
         ("notes&#x3A;#TICKET#", "MC-1"),
+        ("#TICKET#", "notes#58;meeting"),
         ("#TICKET#", "javascript:alert(1)"),
     ] {
         let input = format!(

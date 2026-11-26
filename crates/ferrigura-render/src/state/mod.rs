@@ -7,7 +7,6 @@ mod notes;
 pub mod style;
 
 use ferrigura_model::state::{Link, StateDiagram};
-use ferrigura_syntax::decode_entities;
 use ferrigura_syntax::url::guard_url;
 use ferrigura_text::{
     FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
@@ -247,7 +246,8 @@ fn apply_links(data: &mut LayoutData, links: &[Link], security_level: &str) {
         if node.is_group {
             continue;
         }
-        let cleaned = decode_entities(&unquote(&link.url));
+        let unquoted = unquote(&link.url);
+        let cleaned = crate::common::resolve_entity_placeholders(&unquoted);
         node.link = Some(guard_url(&cleaned, loose).to_owned());
         let tooltip = unquote(&link.tooltip);
         node.tooltip = (!tooltip.is_empty()).then_some(tooltip);

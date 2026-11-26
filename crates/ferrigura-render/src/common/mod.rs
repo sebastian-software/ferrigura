@@ -13,6 +13,8 @@ pub mod text;
 pub mod title;
 pub mod viewbox;
 
+use std::borrow::Cow;
+
 pub use element::Element;
 pub use ferrigura_syntax::decode_entities;
 pub use text::{BreakString, MeasureError, TextDimensions, TextMemo, TextStyle, WrapStyle};
@@ -52,6 +54,17 @@ pub fn shown_text(text: &str) -> String {
         .replace('<', "&lt;")
         .replace('>', "&gt;");
     ferrigura_syntax::sanitize::decode_references(&decode_entities(&escaped))
+}
+
+/// Resolves Mermaid's internal entity placeholders (`ﬂ°°<digits>¶ß` and `ﬂ°<name>¶ß`) into their
+/// characters while leaving literal `&`, `<`, and `>` outside placeholders unchanged. Returns a
+/// borrowed slice without allocating when no placeholder is present.
+#[must_use]
+pub(crate) fn resolve_entity_placeholders(text: &str) -> Cow<'_, str> {
+    if !text.contains("ﬂ°") {
+        return Cow::Borrowed(text);
+    }
+    Cow::Owned(shown_text(text))
 }
 
 /// `${value}`: the text that a template literal of the reference writes for a theme value. A number

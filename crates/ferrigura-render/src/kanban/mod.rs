@@ -368,7 +368,8 @@ fn ticket_link(item: &DataNode, base_url: &str, loose: bool) -> Option<String> {
         return None;
     }
     let raw = replace_first(base_url, "#TICKET#", ticket);
-    Some(guard_url(&raw, loose).to_owned())
+    let resolved = crate::common::resolve_entity_placeholders(&raw);
+    Some(guard_url(&resolved, loose).to_owned())
 }
 
 /// `String.prototype.replace` with a string pattern: the first occurrence is replaced, and the

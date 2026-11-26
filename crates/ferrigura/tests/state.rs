@@ -169,6 +169,16 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         );
     }
 
+    let entity_https = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https#58;//example.org/\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        entity_https.contains("xlink:href=\"https://example.org/\""),
+        "{entity_https}"
+    );
+
     let opaque_cid = render(
         "stateDiagram-v2\n  s1\n  click s1 href \"cid:asset%2525252525252525252541@example.com\"\n",
         &Value::empty_object(),

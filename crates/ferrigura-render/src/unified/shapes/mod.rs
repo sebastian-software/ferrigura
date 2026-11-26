@@ -366,7 +366,11 @@ pub fn node_svg_with_security(
         .as_deref()
         .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
 
-    let link = node.link.as_deref().map(|link| guard_url(link, loose));
+    let resolved_link = node
+        .link
+        .as_deref()
+        .map(crate::common::resolve_entity_placeholders);
+    let link = resolved_link.as_deref().map(|link| guard_url(link, loose));
     match link {
         // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
         // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.
