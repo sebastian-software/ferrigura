@@ -353,7 +353,8 @@ pub fn node_svg_with_security(
         );
     }
 
-    let class = kind.map_or_else(|| util::node_classes(node), |kind| kind.group_class(node));
+    let raw_class = kind.map_or_else(|| util::node_classes(node), |kind| kind.group_class(node));
+    let class = crate::common::resolve_entity_placeholders(&raw_class);
     let dom_id = crate::common::resolve_entity_placeholders(&node.dom_id);
     let id = format!("{svg_id}-{dom_id}");
     let x = node.x.unwrap_or(0.0);

@@ -28,39 +28,77 @@ const VIEWPORT_PADDING: f64 = 8.0;
 /// The font size of the title: `.classTitleText` in the class styles.
 const TITLE_FONT_SIZE: f64 = 18.0;
 
-/// Ensures rendered class DOM IDs stay unique after Mermaid entity placeholder resolution (for
-/// example when a diagram defines both `Foo-Bar` and `` `Foo#45;Bar` ``), and rewrites matching
-/// raw fragment links so each fragment targets its disambiguated node.
+/// Normalizes XML 1.0 attribute-value whitespace (`\r\n`, `\t`, `\n`, `\r` -> `' '`) on a resolved
+/// DOM ID so collision detection, emitted IDs, and fragment links agree with parsed XML values.
+fn canonical_dom_id(raw: &str) -> String {
+    let resolved = crate::common::resolve_entity_placeholders(raw);
+    if !resolved.contains(['\t', '\n', '\r']) {
+        return resolved.into_owned();
+    }
+    let mut out = String::with_capacity(resolved.len());
+    let mut chars = resolved.chars().peekable();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\r' => {
+                if chars.peek() == Some(&'\n') {
+                    chars.next();
+                }
+                out.push(' ');
+            }
+            '\t' | '\n' => out.push(' '),
+            other => out.push(other),
+        }
+    }
+    out
+}
+
+/// Ensures rendered class DOM IDs stay unique after Mermaid entity placeholder resolution and XML
+/// attribute normalization (for example `Foo-Bar` vs. `` `Foo#45;Bar` `` or `Foo Bar` vs.
+/// `` `Foo#9;Bar` ``), and rewrites matching raw fragment links to each canonical unique ID.
 fn disambiguate_resolved_dom_ids(data: &mut crate::unified::data::LayoutData, svg_id: &str) {
-    if !data.nodes.iter().any(|node| node.dom_id.contains("ﬂ°")) {
+    if !data
+        .nodes
+        .iter()
+        .any(|node| node.dom_id.contains("ﬂ°") || node.dom_id.contains(['\t', '\n', '\r']))
+    {
         return;
     }
     let reserved: std::collections::HashSet<String> = data
         .nodes
         .iter()
-        .map(|node| crate::common::resolve_entity_placeholders(&node.dom_id).into_owned())
+        .map(|node| canonical_dom_id(&node.dom_id))
         .collect();
     let mut seen: std::collections::HashSet<String> =
         std::collections::HashSet::with_capacity(data.nodes.len());
+    let mut next_suffix: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
     let mut remapped_fragments: std::collections::HashMap<String, String> =
         std::collections::HashMap::new();
     for node in &mut data.nodes {
-        let resolved = crate::common::resolve_entity_placeholders(&node.dom_id).into_owned();
-        if seen.insert(resolved.clone()) {
-            continue;
-        }
-        let mut suffix = 1usize;
-        let unique = loop {
-            let candidate = format!("{resolved}-{suffix}");
-            if !reserved.contains(&candidate) && seen.insert(candidate.clone()) {
-                break candidate;
+        let had_placeholder = node.dom_id.contains("ﬂ°");
+        let resolved = crate::common::resolve_entity_placeholders(&node.dom_id);
+        let canonical = canonical_dom_id(&node.dom_id);
+        let collided = !seen.insert(canonical.clone());
+        let final_id = if !collided {
+            canonical
+        } else {
+            let suffix = next_suffix.entry(canonical.clone()).or_insert(1);
+            loop {
+                let candidate = format!("{canonical}-{}", *suffix);
+                *suffix += 1;
+                if !reserved.contains(&candidate) && seen.insert(candidate.clone()) {
+                    break candidate;
+                }
             }
-            suffix += 1;
         };
-        let raw_fragment = format!("#{svg_id}-{}", node.dom_id);
-        let new_fragment = format!("#{svg_id}-{unique}");
-        remapped_fragments.insert(raw_fragment, new_fragment);
-        node.dom_id = unique;
+        if collided || had_placeholder {
+            if final_id != resolved.as_ref() {
+                let raw_fragment = format!("#{svg_id}-{}", node.dom_id);
+                let new_fragment = format!("#{svg_id}-{final_id}");
+                remapped_fragments.insert(raw_fragment, new_fragment);
+            }
+            node.dom_id = final_id;
+        }
     }
     if !remapped_fragments.is_empty() {
         for node in &mut data.nodes {

@@ -291,4 +291,59 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .expect("desc text");
     assert_eq!(seq_title, "ﬂ°copy;");
     assert_eq!(seq_desc, "ﬂ°copy;");
+
+    // Class style entities (`#44;` for `,` inside `rgb(...)`) resolve before emitting SVG `style`.
+    let rgb_style = render(
+        "classDiagram\n  class A\n  style A fill:rgb(255#44;0#44;0);\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(rgb_style.contains("fill:rgb(255,0,0)"), "{rgb_style}");
+    assert!(!rgb_style.contains("ﬂ°"), "{rgb_style}");
+
+    // XML attribute whitespace normalization collapses tabs to spaces, so `Foo Bar` and
+    // `Foo#9;Bar` are disambiguated as parsed XML IDs and their fragment links match uniquely.
+    let tab_collide = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo Bar`\n  class `Foo#9;Bar`\n  click `Foo Bar` href \"#graph-classId-Foo Bar\"\n  click `Foo#9;Bar` href \"#graph-classId-Foo#9;Bar\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let tab_doc = roxmltree::Document::parse(&tab_collide).expect("well-formed SVG XML");
+    let node_ids: Vec<&str> = tab_doc
+        .descendants()
+        .filter_map(|node| node.attribute("id"))
+        .filter(|id| id.starts_with("graph-classId-Foo"))
+        .collect();
+    assert_eq!(
+        node_ids,
+        vec!["graph-classId-Foo Bar", "graph-classId-Foo Bar-1"]
+    );
+    let hrefs: Vec<&str> = tab_doc
+        .descendants()
+        .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(
+        hrefs,
+        vec!["#graph-classId-Foo Bar", "#graph-classId-Foo Bar-1"]
+    );
+
+    // Terminal-only class relation label groups use the same resolved `data-id` as the edge path.
+    let term_only = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  `Invoice#45;Item` \"1\" --> \"*\" Account\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        term_only.contains("data-id=\"id_Invoice-Item_Account_1\""),
+        "{term_only}"
+    );
+    assert!(!term_only.contains("ﬂ°"), "{term_only}");
 }

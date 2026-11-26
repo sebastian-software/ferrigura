@@ -701,9 +701,10 @@ pub(crate) fn paint_with_animation<'a>(
         // `insertEdgeLabel` runs for an edge with a label or a terminal label (`hasEdgeLabel`,
         // `edges.js` 55-62): without text, the label has no position, and its background sits beside it.
         if edge.label.is_empty() && !edge.terminals.is_empty() {
+            let edge_id = crate::common::resolve_entity_placeholders(&edge.id);
             edge_labels.push_str(&format!(
                 "<g class=\"edgeLabel\"><g class=\"label\" data-id=\"{}\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g>",
-                crate::svg::escape(&edge.id),
+                crate::svg::escape(&edge_id),
             ));
         }
         // The terminal labels of an edge follow its center label in `edgeLabels` (`insertEdgeLabel`).

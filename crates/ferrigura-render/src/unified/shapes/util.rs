@@ -178,10 +178,12 @@ fn compile_styles(node: &Node) -> Vec<(String, String)> {
         .chain(label_styles)
     {
         let mut parts = style.split(':');
-        let key = parts.next().unwrap_or_default().trim().to_owned();
+        let key =
+            crate::common::resolve_entity_placeholders(parts.next().unwrap_or_default().trim())
+                .into_owned();
         let value = parts
             .next()
-            .map(|value| value.trim().to_owned())
+            .map(|value| crate::common::resolve_entity_placeholders(value.trim()).into_owned())
             .unwrap_or_default();
         match entries.iter_mut().find(|(existing, _)| *existing == key) {
             Some(entry) => entry.1 = value,

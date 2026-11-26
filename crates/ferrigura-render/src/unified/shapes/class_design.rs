@@ -193,7 +193,8 @@ pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<DesignClassBox, Render
         util::theme_number(&input.config.theme.font_size).unwrap_or(input.config.globals.font_size);
     let member_size = font_size * MEMBER_SCALE;
     let annotation_size = font_size * ANNOTATION_SCALE;
-    let styles = data.styles.join(";");
+    let raw_styles = data.styles.join(";");
+    let styles = crate::common::resolve_entity_placeholders(&raw_styles);
     let style = if styles.is_empty() {
         String::new()
     } else {

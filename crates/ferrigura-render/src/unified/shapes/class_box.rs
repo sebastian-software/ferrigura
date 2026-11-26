@@ -217,7 +217,8 @@ pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<ClassBox, RenderError>
 
     // The style of the paths is the class's own declarations, joined (`classNode.styles`), and the
     // stroke width is read from them as `userNodeOverrides` reads them.
-    let styles = data.styles.join(";");
+    let raw_styles = data.styles.join(";");
+    let styles = crate::common::resolve_entity_placeholders(&raw_styles);
     let mut styled = input.node.clone();
     styled.css_styles = data.styles.clone();
     let stroke_width = util::stroke_width(&util::styles2string(&styled));
@@ -399,7 +400,7 @@ pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<ClassBox, RenderError>
         "<g class=\"basic label-container outer-path\">{}</g>",
         rough::paths(
             &rough::rectangle(rect_x, rect_y, rect_width, rect_height, rough::Paint::BOTH,),
-            Some(styles.as_str()),
+            Some(styles.as_ref()),
             &stroke_width,
         ),
     );
