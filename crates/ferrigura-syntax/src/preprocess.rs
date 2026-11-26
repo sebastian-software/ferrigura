@@ -70,12 +70,15 @@ fn front_matter_fields(
         Ok(_) => Ok(Vec::new()),
         Err(error) => {
             let line_index = error.line.saturating_sub(1);
-            let char_column = body
+            let bom_stripped = line_index == 0 && body.starts_with('\u{FEFF}');
+            let yaml_body = body.strip_prefix('\u{FEFF}').unwrap_or(&body);
+            let char_column = yaml_body
                 .split('\n')
                 .nth(line_index)
                 .map_or(error.column, |line| {
                     utf16_offset_to_chars(line, error.column)
-                });
+                })
+                + usize::from(bom_stripped);
             let indent_offset = if !indent.is_empty()
                 && raw_body
                     .split('\n')

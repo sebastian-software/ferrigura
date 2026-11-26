@@ -516,4 +516,14 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
         emoji_err.starts_with("line 2, column 17:"),
         "expected line 2, column 17 for emoji cycle, got {emoji_err}"
     );
+
+    let bom_cycle = "---\n\u{FEFF}a: &x [*x]\n---\nflowchart LR\nA --> B\n";
+    let bom_err = renderer
+        .render(bom_cycle)
+        .expect_err("BOM cyclic front matter must fail")
+        .to_string();
+    assert!(
+        bom_err.starts_with("line 2, column 9:"),
+        "expected line 2, column 9 for BOM cycle, got {bom_err}"
+    );
 }
