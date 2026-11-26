@@ -32,7 +32,10 @@
 //! chain runs straight.
 //!
 //! Before the steps, every side's bundle moves into the middle of its node: ELK leaves the ports
-//! of a group at the start of its side, and a leaf's are already in the middle.
+//! of a group at the start of its side, and a leaf's are already in the middle. Where ELK spread
+//! the ports of a group unevenly over a side whose edges are a fan of equals, they become a bundle
+//! [`PORT_GAP`] apart in the middle; after the steps, they move to where their edges meet the next
+//! layer where the side has room for all of them to run straight.
 //!
 //! After the steps, **twins** are set apart: two edges between the same two nodes, through the
 //! same layers, that are the only edges of their sides. The axis makes one of them straight and
@@ -69,6 +72,9 @@ const ROUNDS: usize = 8;
 /// where its corner turns.
 const END_ROOM: f64 = 12.0;
 
+/// The distance between two ports of a side, as the layout is given it.
+const PORT_GAP: f64 = 20.0;
+
 /// The least step of the edges of a fan that stands symmetric: a shorter one would show as a jog
 /// and not as a turn.
 const TURN: f64 = 20.0;
@@ -83,7 +89,7 @@ pub(crate) struct Axes;
 
 impl Placement for Axes {
     fn place(&self, layers: &mut Layers) {
-        center_bundles(layers);
+        let bundled = center_bundles(layers);
         // The ports a later pass puts in the middle of an even side, the sides whose bundle
         // moved, and the even fans that cannot stand symmetric and are placed as other sides.
         let mut chosen = BTreeSet::new();
@@ -116,6 +122,7 @@ impl Placement for Axes {
             }
         }
         center_fans(layers, &last.0, &last.1, &fans);
+        straighten_bundles(layers, &bundled);
         spread_twins(layers);
     }
 }
@@ -565,8 +572,11 @@ fn axis_edges(
 /// a group, which ELK keeps at the start of the side. ELK centers the bundle of a leaf on whole
 /// units, so a bundle less than one unit off the middle is centered already and stays. A side
 /// with a port that an edge crosses into the group stays too: the group's inner layout placed the
-/// way on.
-fn center_bundles(layers: &mut Layers) {
+/// way on. Where ELK spread the ports of a group over its side unevenly, they become a bundle
+/// [`PORT_GAP`] apart in the middle of the side, where it has room for that with [`END_ROOM`]
+/// left at its ends. Returns those sides.
+fn center_bundles(layers: &mut Layers) -> BTreeSet<(usize, Side)> {
+    let mut bundled = BTreeSet::new();
     for node in 0..layers.nodes.len() {
         if layers.nodes[node].kind != Kind::Node {
             continue;
@@ -576,6 +586,24 @@ fn center_bundles(layers: &mut Layers) {
             if ports.is_empty() || ports.iter().any(|&port| layers.ports[port].inside) {
                 continue;
             }
+            let gaps: Vec<f64> = ports
+                .windows(2)
+                .map(|pair| layers.ports[pair[1]].at - layers.ports[pair[0]].at)
+                .collect();
+            let uneven =
+                gaps.iter().any(|gap| (gap - gaps[0]).abs() > 0.5) && fan_of_equals(layers, &ports);
+            let size = layers.nodes[node].size;
+            let start = ((size - PORT_GAP * gaps.len() as f64) / 2.0).round();
+            if uneven
+                && start >= END_ROOM
+                && size - start - PORT_GAP * gaps.len() as f64 >= END_ROOM
+            {
+                for (index, &port) in ports.iter().enumerate() {
+                    layers.ports[port].at = start + PORT_GAP * index as f64;
+                }
+                bundled.insert((node, side));
+                continue;
+            }
             let off = layers.nodes[node].size / 2.0 - bundle_middle(layers, &ports);
             let shift = off.round();
             if off.abs() < 1.0 || !fits(layers, &ports, shift) {
@@ -583,6 +611,40 @@ fn center_bundles(layers: &mut Layers) {
             }
             for port in ports {
                 layers.ports[port].at += shift;
+            }
+        }
+    }
+    bundled
+}
+
+/// Lets the edges of the sides that [`center_bundles`] made a bundle run straight where the side
+/// has room for it: each port moves to where its edge meets the next layer, where all of them
+/// then keep [`PORT_GAP`] between them and [`END_ROOM`] to the ends of the side. Where one does
+/// not, the bundle stays, and its outer edges turn.
+fn straighten_bundles(layers: &mut Layers, bundled: &BTreeSet<(usize, Side)>) {
+    for &(node, side) in bundled {
+        let ports = side_ports(layers, node, side);
+        let place = layers.nodes[node].place;
+        let size = layers.nodes[node].size;
+        let wanted: Option<Vec<f64>> = ports
+            .iter()
+            .map(|&port| {
+                let [edge] = layers.ports[port].edges.as_slice() else {
+                    return None;
+                };
+                let other = far_end(layers, *edge, port);
+                Some(layers.nodes[layers.ports[other].node].place + layers.ports[other].at - place)
+            })
+            .collect();
+        let Some(wanted) = wanted else {
+            continue;
+        };
+        let fits = wanted.first().is_some_and(|&at| at >= END_ROOM)
+            && wanted.last().is_some_and(|&at| at <= size - END_ROOM)
+            && wanted.windows(2).all(|pair| pair[1] - pair[0] >= PORT_GAP);
+        if fits {
+            for (&port, at) in ports.iter().zip(wanted) {
+                layers.ports[port].at = at;
             }
         }
     }
@@ -730,6 +792,28 @@ struct Fan {
     ports: Vec<usize>,
 }
 
+/// The other side.
+fn opposite(side: Side) -> Side {
+    match side {
+        Side::Before => Side::After,
+        Side::After => Side::Before,
+    }
+}
+
+/// Whether the edges of the ports of a side are a fan of equals: none more of a main edge than
+/// the others, each to a node of its own, one that meets no other edge on its side towards them.
+fn fan_of_equals(layers: &Layers, ports: &[usize]) -> bool {
+    let leads: Vec<(Option<usize>, i32)> = ports.iter().map(|&port| lead(layers, port)).collect();
+    let targets: BTreeSet<usize> = leads.iter().filter_map(|lead| lead.0).collect();
+    let equal = leads.iter().all(|lead| lead.1 == leads[0].1);
+    let facing = opposite(layers.ports[ports[0]].side);
+    let own = targets.iter().all(|&other| {
+        let facing = side_ports(layers, other, facing);
+        facing.len() == 1 && layers.ports[facing[0]].edges.len() == 1
+    });
+    targets.len() == ports.len() && equal && own
+}
+
 /// The even fans of equals, and the ports of the chains that go on beside a branch. A side of two
 /// edges whose node continues a chain, where one edge leads on from its other end and the other
 /// ends there, is a chain with a branch beside it and not a fan: the chain runs straight on, so
@@ -746,25 +830,14 @@ fn even_fans(layers: &Layers, axis: &[bool]) -> (Vec<Fan>, Vec<usize>) {
             if ports.len() != 2 && ports.len() != 4 {
                 continue;
             }
-            let leads: Vec<(Option<usize>, i32)> =
-                ports.iter().map(|&port| lead(layers, port)).collect();
-            let targets: BTreeSet<usize> = leads.iter().filter_map(|lead| lead.0).collect();
-            let equal = leads.iter().all(|lead| lead.1 == leads[0].1);
-            let opposite = if side == Side::After {
-                Side::Before
-            } else {
-                Side::After
-            };
-            // Each edge leads to a node of its own: one that meets no other edge on that side.
-            let own = targets.iter().all(|&other| {
-                let facing = side_ports(layers, other, opposite);
-                facing.len() == 1 && layers.ports[facing[0]].edges.len() == 1
-            });
-            if targets.len() != ports.len() || !equal || !own {
+            if !fan_of_equals(layers, &ports) {
                 continue;
             }
+            let leads: Vec<(Option<usize>, i32)> =
+                ports.iter().map(|&port| lead(layers, port)).collect();
+            let back = opposite(side);
             if ports.len() == 2 {
-                let near = side_ports(layers, node, opposite);
+                let near = side_ports(layers, node, back);
                 let chain = near.len() % 2 == 1
                     && layers.ports[near[near.len() / 2]]
                         .edges
@@ -1330,6 +1403,64 @@ mod tests {
         for (port, kept) in layers.ports.iter().zip(&before.ports) {
             assert_eq!(port.at, kept.at);
         }
+    }
+
+    /// A group of the given size and place over three nodes 152 long at 0, 200 and 400, with the
+    /// ports of its edges to them where ELK leaves them: at 12, 184 and 204.
+    fn group_over_three(size: f64, place: f64) -> Layers {
+        use ferrigura_elk::placement::{Edge, Node, Port};
+        let node = |size, place, gap| Node {
+            kind: Kind::Node,
+            size,
+            place,
+            gap,
+            ports: Vec::new(),
+        };
+        let mut nodes = vec![
+            node(size, place, 0.0),
+            node(152.0, 0.0, 0.0),
+            node(152.0, 200.0, 200.0),
+            node(152.0, 400.0, 200.0),
+        ];
+        let mut ports = Vec::new();
+        let mut edges = Vec::new();
+        for (index, at) in [12.0, 184.0, 204.0].into_iter().enumerate() {
+            for (owner, side, at) in [(0, Side::After, at), (index + 1, Side::Before, 76.0)] {
+                nodes[owner].ports.push(ports.len());
+                ports.push(Port {
+                    node: owner,
+                    side,
+                    at,
+                    edges: vec![index],
+                    inside: false,
+                });
+            }
+            edges.push(Edge {
+                source: 2 * index,
+                target: 2 * index + 1,
+                reversed: false,
+            });
+        }
+        Layers::new(vec![vec![0], vec![1, 2, 3]], nodes, ports, edges)
+    }
+
+    #[test]
+    fn the_uneven_ports_of_a_group_over_a_fan_become_a_bundle() {
+        let mut layers = group_over_three(216.0, 92.0);
+        let bundled = center_bundles(&mut layers);
+        assert_eq!(bundled, BTreeSet::from([(0, Side::After)]));
+        let at = |layers: &Layers| [0, 2, 4].map(|port| layers.ports[port].at);
+        assert_eq!(at(&layers), [88.0, 108.0, 128.0]);
+        // The outer nodes stand beyond the group's side: the bundle stays, and both outer edges
+        // turn.
+        straighten_bundles(&mut layers, &bundled);
+        assert_eq!(at(&layers), [88.0, 108.0, 128.0]);
+        // A group wide enough: each edge runs straight.
+        let mut layers = group_over_three(600.0, -24.0);
+        let bundled = center_bundles(&mut layers);
+        straighten_bundles(&mut layers, &bundled);
+        assert_eq!(at(&layers), [100.0, 300.0, 500.0]);
+        assert!((0..3).all(|edge| layers.step(edge) == 0.0));
     }
 
     /// The twins of [`twins`], with a third edge from the upper node to a node beside the lower

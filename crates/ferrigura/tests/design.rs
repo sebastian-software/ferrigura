@@ -962,6 +962,34 @@ fn state_middle(svg: &str, id: &str) -> (f64, f64) {
 }
 
 #[test]
+fn a_fan_out_of_a_composite_state_leaves_it_as_a_bundle_around_its_middle() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "stateDiagram-v2\n  [*] --> NotShooting : Pacifist\n  state NotShooting {\n    [*] --> Idle : Yet another long long label\n    Idle --> Configuring : EvConfig\n    Configuring --> Idle : EvConfig EvConfig EvConfig EvConfig\n  }\n  NotShooting --> A\n  NotShooting --> B\n  NotShooting --> C\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    // The transitions to `A`, `B` and `C`: the middle one runs straight down from the middle of
+    // the composite, the outer two leave 20 beside it and turn alike.
+    let [a, b, c] = ["edge4", "edge5", "edge6"].map(|id| route(&svg, id));
+    assert!(runs_straight_down(&svg, "edge5"));
+    assert!((b[0].0 - (a[0].0 + c[0].0) / 2.0).abs() <= 1.0);
+    assert!(((c[0].0 - a[0].0) - 40.0).abs() <= 1.0);
+    let turn = |route: &[(f64, f64)]| route[route.len() - 1].0 - route[0].0;
+    assert!(
+        (turn(&a) + turn(&c)).abs() <= 1.0,
+        "{} {}",
+        turn(&a),
+        turn(&c)
+    );
+    assert!(turn(&a).abs() > 20.0);
+    // The same out of a flowchart's subgraph.
+    let text = "flowchart TD\n  subgraph S\n    X --> Y\n  end\n  S --> A\n  S --> B\n  S --> C\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let [a, b, c] = ["L_S_A_0", "L_S_B_0", "L_S_C_0"].map(|id| route(&svg, id));
+    assert!(runs_straight_down(&svg, "L_S_B_0"));
+    assert!((b[0].0 - (a[0].0 + c[0].0) / 2.0).abs() <= 1.0);
+    assert!((turn(&a) + turn(&c)).abs() <= 1.0);
+}
+
+#[test]
 fn concurrency_regions_stand_side_by_side_around_their_states() {
     let renderer = Renderer::new(&Value::empty_object());
     let svg = renderer.render_with(REGIONS, &design(None)).unwrap();
