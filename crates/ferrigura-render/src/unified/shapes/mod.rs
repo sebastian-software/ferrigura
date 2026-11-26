@@ -361,10 +361,10 @@ pub fn node_svg_with_security(
     let data_look = util::attribute("data-look", &node.look);
     let group_attributes = &shape.group_attributes;
     let colour_slot = &shape.colour_slot;
-    let title = node
-        .tooltip
-        .as_deref()
-        .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
+    let title = node.tooltip.as_deref().map_or_else(String::new, |tooltip| {
+        let resolved = crate::common::resolve_entity_placeholders(tooltip);
+        util::attribute("title", &resolved)
+    });
 
     let resolved_link = node
         .link
@@ -374,18 +374,12 @@ pub fn node_svg_with_security(
     match link {
         // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
         // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.
-        Some(link) if links == LinkForm::PostRender => {
-            let tooltip = node
-                .tooltip
-                .as_deref()
-                .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
-            format!(
-                "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{tooltip}>{shape_svg}{label_svg}{after_label}</g></a>",
-                escape_url_attr(link),
-                escape(&class),
-                escape(&id),
-            )
-        }
+        Some(link) if links == LinkForm::PostRender => format!(
+            "<a xlink:href=\"{}\"{title}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{title}>{shape_svg}{label_svg}{after_label}</g></a>",
+            escape_url_attr(link),
+            escape(&class),
+            escape(&id),
+        ),
         // With a link the `<a>` takes the look and the position, and the `<g>` the class and id.
         Some(link) => {
             let target = node

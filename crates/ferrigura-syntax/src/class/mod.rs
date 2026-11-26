@@ -20,7 +20,7 @@ use ferrigura_model::class::{ClassDiagram, ClassMember};
 
 use crate::error::ParseError;
 use crate::flowchart::clean_comments;
-use crate::preprocess::{encode_entities, prepare, remove_directives};
+use crate::preprocess::{encode_entities, prepare, remap_encoded_error, remove_directives};
 
 /// The options of the parser, which change how the DB sanitizes its texts. The defaults are the
 /// reference's defaults: `htmlLabels` is on and `securityLevel` is `strict`.
@@ -58,13 +58,15 @@ pub fn parse_prepared(
     prepared: &crate::preprocess::Prepared,
     options: Options,
 ) -> Result<ClassDiagram, ParseError> {
-    let cleaned = encode_entities(&clean_comments(&remove_directives(&prepared.text)));
+    let cleaned = clean_comments(&remove_directives(&prepared.text));
+    let encoded = encode_entities(&cleaned);
     let mut db = db::ClassDb::new(options);
     // `Diagram.ts` sets the front matter's title before the parser runs, and only when it is set.
     if let Some(title) = prepared.title.as_deref().filter(|title| !title.is_empty()) {
         db.set_diagram_title(title);
     }
-    grammar::parse(&cleaned, prepared.line_offset, db)
+    grammar::parse(&encoded, prepared.line_offset, db)
+        .map_err(|error| remap_encoded_error(&cleaned, prepared.line_offset, error))
 }
 
 /// `new ClassMember(input, type)` of the reference, with the default options: the text is

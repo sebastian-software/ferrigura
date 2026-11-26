@@ -56,17 +56,27 @@ pub fn root_attributes(
 pub fn children(base_id: &str, title: &str, description: &str) -> String {
     let mut out = String::new();
     if !title.is_empty() {
+        let resolved = if title.contains("ﬂ°") {
+            std::borrow::Cow::Owned(crate::common::shown_text(title))
+        } else {
+            std::borrow::Cow::Borrowed(title)
+        };
         out.push_str(&format!(
             "<title id=\"{}\">{}</title>",
             title_id(base_id),
-            escape(title)
+            escape(&resolved)
         ));
     }
     if !description.is_empty() {
+        let resolved = if description.contains("ﬂ°") {
+            std::borrow::Cow::Owned(crate::common::shown_text(description))
+        } else {
+            std::borrow::Cow::Borrowed(description)
+        };
         out.push_str(&format!(
             "<desc id=\"{}\">{}</desc>",
             description_id(base_id),
-            escape(description)
+            escape(&resolved)
         ));
     }
     out

@@ -152,4 +152,32 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         loose.contains("xlink:href=\"javascript:alert(1)\""),
         "{loose}"
     );
+
+    // Accessibility titles/descriptions and click tooltips decode Mermaid `#...;` entities instead
+    // of leaking internal placeholders.
+    let a11y_and_tooltip = render(
+        "classDiagram\n  accTitle: Price #36;10\n  accDescr: Cost #36;20\n  class A\n  click A href \"https://example.org\" \"Price #36;10\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        a11y_and_tooltip.contains(">Price $10</title>"),
+        "{a11y_and_tooltip}"
+    );
+    assert!(
+        a11y_and_tooltip.contains(">Cost $20</desc>"),
+        "{a11y_and_tooltip}"
+    );
+    assert!(
+        a11y_and_tooltip.contains("title=\"Price $10\""),
+        "{a11y_and_tooltip}"
+    );
+    assert!(!a11y_and_tooltip.contains("ﬂ°"), "{a11y_and_tooltip}");
+
+    // Parse errors report the original source column even when earlier tokens on the line contain
+    // Mermaid `#...;` entities.
+    let err = ferrigura_syntax::class::parse("classDiagram\nclass A[\"#36;\"] @\n")
+        .expect_err("invalid token fails");
+    assert_eq!(err.line, 2);
+    assert_eq!(err.column, 17);
 }

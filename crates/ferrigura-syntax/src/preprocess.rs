@@ -390,9 +390,86 @@ fn comment_match_end(text: &str, start: usize) -> Option<usize> {
 /// `encodeEntities`: the semicolon that ends a `style` or `classDef` line with a color is dropped,
 /// and `#name;` or `#123;` become placeholders that the renderer decodes.
 pub(crate) fn encode_entities(text: &str) -> String {
+    if !text.contains('#') {
+        return text.to_owned();
+    }
     let text = drop_color_semicolons(text, "style");
     let text = drop_color_semicolons(&text, "classDef");
     encode_hash_entities(&text)
+}
+
+/// Maps a [`ParseError`](crate::error::ParseError) produced on `encode_entities(cleaned)` back to
+/// its 1-based column in `cleaned`. `encode_entities` never adds or removes line breaks, so
+/// `error.line` already identifies the exact line in `cleaned`.
+pub(crate) fn remap_encoded_error(
+    cleaned: &str,
+    line_offset: usize,
+    mut error: crate::error::ParseError,
+) -> crate::error::ParseError {
+    if !cleaned.contains('#') {
+        return error;
+    }
+    let Some(target_line) = error.line.checked_sub(1 + line_offset) else {
+        return error;
+    };
+    let Some(orig_line) = cleaned.split('\n').nth(target_line) else {
+        return error;
+    };
+    if !orig_line.contains('#') {
+        return error;
+    }
+    error.column = remap_encoded_line_column(orig_line, error.column);
+    error
+}
+
+/// Maps a 1-based column in `encode_entities(orig_line)` back to its 1-based column in `orig_line`.
+fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
+    let mut chars: Vec<(char, usize)> = orig_line
+        .chars()
+        .enumerate()
+        .map(|(col, ch)| (ch, col))
+        .collect();
+    for word in ["style", "classDef"] {
+        let current: String = chars.iter().map(|&(c, _)| c).collect();
+        if let Some(semi_byte) = color_semicolon_byte(&current, word) {
+            let semi_char = current[..semi_byte].chars().count();
+            chars.remove(semi_char);
+        }
+    }
+    let current: String = chars.iter().map(|&(c, _)| c).collect();
+    let mut mapped_cols: Vec<usize> = Vec::with_capacity(chars.len());
+    let mut char_idx = 0usize;
+    let mut byte_idx = 0usize;
+    while char_idx < chars.len() {
+        let (ch, orig_col) = chars[char_idx];
+        if ch == '#' {
+            let after = &current[byte_idx + 1..];
+            let name_len = after
+                .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                .unwrap_or(after.len());
+            if name_len > 0 && after[name_len..].starts_with(';') {
+                let name = &after[..name_len];
+                let prefix_chars = if name.bytes().all(|b| b.is_ascii_digit()) {
+                    "ﬂ°°".chars().count()
+                } else {
+                    "ﬂ°".chars().count()
+                };
+                let replacement_chars = prefix_chars + name_len + "¶ß".chars().count();
+                mapped_cols.extend(std::iter::repeat_n(orig_col, replacement_chars));
+                // `#`, ASCII `name`, and `;` are all single-byte ASCII characters.
+                char_idx += 1 + name_len + 1;
+                byte_idx += 1 + name_len + 1;
+                continue;
+            }
+        }
+        mapped_cols.push(orig_col);
+        char_idx += 1;
+        byte_idx += ch.len_utf8();
+    }
+    let target = encoded_column.saturating_sub(1);
+    mapped_cols
+        .get(target)
+        .map_or_else(|| orig_line.chars().count() + 1, |&orig| orig + 1)
 }
 
 /// `decodeEntities` (`utils.ts:904-906`): the placeholders that `encode_entities` writes become
@@ -405,44 +482,46 @@ pub fn decode_entities(text: &str) -> String {
         .replace("¶ß", ";")
 }
 
-/// `<word>.*:\S*#.*;` with the semicolon removed: the last semicolon of the line, when a colon
-/// followed by non-blank text and a `#` come after the word on that line.
+/// Byte offset of the color-terminating semicolon to drop on a single line for `<word>.*:\S*#.*;`,
+/// if any. Because the match is greedy from the first occurrence of `word` to the last `;` on the
+/// line, each line is scanned at most once (O(line length)).
+fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
+    let found = line.find(word)?;
+    let after_word = found + word.len();
+    let rel_semi = line[after_word..].rfind(';')?;
+    let semicolon = after_word + rel_semi;
+    has_colon_hash(&line[after_word..semicolon]).then_some(semicolon)
+}
+
+/// `<word>.*:\S*#.*;` with the semicolon removed: the last semicolon of each line, when a colon
+/// followed by non-blank text and a `#` come after the first occurrence of `word` on that line.
 fn drop_color_semicolons(text: &str, word: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut pos = 0;
-    while let Some(found) = text[pos..].find(word) {
-        let start = pos + found;
-        let after_word = start + word.len();
-        let line_end = text[after_word..]
-            .find('\n')
-            .map_or(text.len(), |newline| after_word + newline);
-        let last_semicolon = text[after_word..line_end]
-            .rfind(';')
-            .map(|i| after_word + i);
-        match last_semicolon {
-            Some(semicolon) if has_colon_hash(&text[after_word..semicolon]) => {
-                out.push_str(&text[pos..semicolon]);
-                pos = semicolon + 1;
-            }
-            _ => {
-                out.push_str(&text[pos..after_word]);
-                pos = after_word;
-            }
+    for line in text.split_inclusive('\n') {
+        let content = line.strip_suffix('\n').unwrap_or(line);
+        if let Some(semicolon) = color_semicolon_byte(content, word) {
+            out.push_str(&line[..semicolon]);
+            out.push_str(&line[semicolon + 1..]);
+        } else {
+            out.push_str(line);
         }
     }
-    out.push_str(&text[pos..]);
     out
 }
 
 /// Whether `segment` has a colon followed by blank-free text and a `#`: `.*:\S*#.*`.
 fn has_colon_hash(segment: &str) -> bool {
-    segment.char_indices().any(|(colon, c)| {
-        c == ':'
-            && segment[colon + 1..]
-                .char_indices()
-                .take_while(|&(_, c)| !is_js_space(c))
-                .any(|(_, c)| c == '#')
-    })
+    let mut seen_colon = false;
+    for c in segment.chars() {
+        if c == ':' {
+            seen_colon = true;
+        } else if is_js_space(c) {
+            seen_colon = false;
+        } else if seen_colon && c == '#' {
+            return true;
+        }
+    }
+    false
 }
 
 /// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name.
