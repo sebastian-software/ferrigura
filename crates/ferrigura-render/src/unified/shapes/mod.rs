@@ -324,8 +324,11 @@ pub fn node_svg_with_security(
 ) -> String {
     let kind = registry::resolve_node(node);
     let styles = util::styles2string(node);
-    let shape_svg = shape.svg.replace(SVG_ID_TOKEN, svg_id);
-    let after_label = shape.after_label.replace(SVG_ID_TOKEN, svg_id);
+    let shape_svg = shape.svg.replace(
+        &format!("filter:url(#{SVG_ID_TOKEN}-drop-shadow-small)"),
+        &format!("filter:url(#{svg_id}-drop-shadow-small)"),
+    );
+    let after_label = &shape.after_label;
 
     let mut label_svg = String::new();
     if let (Some(label), Some(offset)) = (&shape.label, shape.label_offset) {
@@ -773,5 +776,23 @@ mod tests {
                 "form={form:?}: {loose_svg}"
             );
         }
+
+        // `{svg-id}` substitution only rewrites the generated drop-shadow filter and must never
+        // mutate validated `<image href="...">` URLs in `after_label`.
+        let mut image_node = node("imageSquare", "neo");
+        image_node.dom_id = "flowchart-IMG-0".to_owned();
+        image_node.img = Some("{svg-id}:alert(1)".to_owned());
+        image_node.asset_width = Some(48.0);
+        image_node.asset_height = Some(48.0);
+        let image_shape = draw_box(&image_node, &LabelLayout::of_box(BBox::default()));
+        let image_svg = node_svg(&image_node, &image_shape, "javascript", LinkForm::Flowchart);
+        assert!(
+            image_svg.contains("<image href=\"{svg-id}:alert(1)\""),
+            "{image_svg}"
+        );
+        assert!(
+            !image_svg.contains("href=\"javascript:alert(1)\""),
+            "{image_svg}"
+        );
     }
 }

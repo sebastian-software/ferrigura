@@ -55,6 +55,25 @@ const ALLOWED_SINK_SCHEMES: &[&str] = &[
     "http", "https", "ftp", "ftps", "mailto", "tel", "callto", "sms", "cid", "xmpp", "matrix",
 ];
 
+/// Raster image MIME subtypes permitted in `data:image/...` URIs on SVG `<image href>`.
+/// Excludes active formats such as `svg+xml`.
+const SAFE_DATA_IMAGE_SUBTYPES: &[&str] = &[
+    "png",
+    "jpeg",
+    "jpg",
+    "gif",
+    "webp",
+    "avif",
+    "bmp",
+    "x-icon",
+    "vnd.microsoft.icon",
+];
+
+/// Maximum obfuscation-decoding passes permitted when validating a URL prefix at an SVG sink.
+/// Legitimate URLs stabilize in at most a couple of passes; inputs still carrying nested escapes
+/// past this bound fail closed to `about:blank` to prevent quadratic decoding work.
+const MAX_SINK_DECODE_PASSES: usize = 8;
+
 /// `formatUrl` of the reference.
 ///
 /// The link is trimmed with JavaScript's `trim`, and an empty result gives `None`. `loose` is
@@ -72,25 +91,94 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
     }
 }
 
-/// Validates `url` at an SVG rendering sink without altering accepted URLs.
+/// Validates `url` at an SVG link sink without altering accepted URLs.
 ///
 /// When `loose` is `true` (`securityLevel === 'loose'`), `url` is returned unchanged. Otherwise
-/// both `url` and its obfuscation-decoded form must either be a relative URL (no scheme before a
-/// path, query, or fragment delimiter) or use one of DOMPurify's permitted schemes (`http`,
-/// `https`, `ftp`, `ftps`, `mailto`, `tel`, `callto`, `sms`, `cid`, `xmpp`, `matrix`). Rejected
-/// or empty URLs become `"about:blank"`. Accepted URLs are returned verbatim so already-sanitized
-/// parser links are not decoded a second time and percent-encoded delimiters (such as `%23` or
-/// `%26`) in image or link URLs are preserved.
+/// both `url` and its bounded obfuscation-decoded scheme prefix must either be a relative URL (no
+/// scheme before a path, query, or fragment delimiter) or use one of DOMPurify's permitted schemes
+/// (`http`, `https`, `ftp`, `ftps`, `mailto`, `tel`, `callto`, `sms`, `cid`, `xmpp`, `matrix`).
+/// Rejected, empty, or overly nested obfuscated URLs become `"about:blank"`. Accepted URLs are
+/// returned verbatim so already-sanitized parser links are not decoded a second time and
+/// percent-encoded delimiters (such as `%23` or `%26`) are preserved.
 #[must_use]
 pub fn guard_url(url: &str, loose: bool) -> &str {
     if loose {
         return url;
     }
-    if is_allowed_sink_candidate(url) && is_allowed_sink_candidate(&decode_url_obfuscations(url)) {
-        url
-    } else {
-        BLANK_URL
+    if !is_allowed_sink_candidate(url) {
+        return BLANK_URL;
     }
+    let prefix = scheme_prefix(url);
+    match decode_url_obfuscations_bounded(prefix, MAX_SINK_DECODE_PASSES) {
+        Some(decoded) if is_allowed_sink_candidate(&decoded) => url,
+        _ => BLANK_URL,
+    }
+}
+
+/// Validates an image URL at an SVG `<image href>` sink without altering accepted URLs.
+///
+/// Permits everything [`guard_url`] permits, plus embedded raster `data:image/...` URIs (`png`,
+/// `jpeg`, `jpg`, `gif`, `webp`, `avif`, `bmp`, `x-icon`, `vnd.microsoft.icon`). Active `data:`
+/// payloads such as `data:image/svg+xml` and `data:text/html` are rejected to `"about:blank"`.
+#[must_use]
+pub fn guard_image_url(url: &str, loose: bool) -> &str {
+    if loose || is_safe_raster_data_image_url(url) {
+        return url;
+    }
+    guard_url(url, false)
+}
+
+/// Whether `url` starts with a raster `data:image/<subtype>` URI immediately followed by `;` or
+/// `,` (matching DOMPurify's `data:` check at offset 0 for `DEFAULT_DATA_URI_TAGS`, restricted to
+/// non-scriptable raster image subtypes).
+fn is_safe_raster_data_image_url(url: &str) -> bool {
+    let Some(rest) = url
+        .get(..11)
+        .filter(|prefix| prefix.eq_ignore_ascii_case("data:image/"))
+        .map(|_| &url[11..])
+    else {
+        return false;
+    };
+    let Some(delim) = rest.find([';', ',']) else {
+        return false;
+    };
+    let subtype = &rest[..delim];
+    SAFE_DATA_IMAGE_SUBTYPES
+        .iter()
+        .any(|allowed| subtype.eq_ignore_ascii_case(allowed))
+}
+
+/// Returns the shortest prefix of `url` that can influence scheme detection: everything up to and
+/// including the first literal `/`, `?`, or `#` delimiter that cannot be part of a numeric HTML
+/// character reference (`&#...;`), or the whole string when no such delimiter occurs.
+fn scheme_prefix(url: &str) -> &str {
+    let mut saw_amp = false;
+    for (idx, byte) in url.bytes().enumerate() {
+        match byte {
+            b'&' => saw_amp = true,
+            b'/' | b'?' => return &url[..=idx],
+            b'#' if !saw_amp => return &url[..=idx],
+            _ => {}
+        }
+    }
+    url
+}
+
+/// Runs the [`sanitize_url`] obfuscation-decoding loop up to `max_passes` times.
+/// Returns `None` if obfuscations remain after `max_passes` (fail-closed).
+fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<String> {
+    let mut decoded = decode_uri(js_trim(url));
+    for _ in 0..max_passes {
+        let entities = decode_html_characters(&decoded);
+        let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
+        let without_controls = remove_ctrl(&without_newlines);
+        let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
+        decoded = decode_uri(js_trim(&without_escapes));
+        if !needs_another_pass(&decoded) {
+            return Some(decoded);
+        }
+    }
+    None
 }
 
 /// DOMPurify's `ATTR_WHITESPACE` plus `sanitizeUrl`'s control characters (`is_ctrl`).
@@ -543,7 +631,7 @@ fn escaped_byte(bytes: &[u8], index: usize) -> Option<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{decode_uri, format_url, guard_url, sanitize_url, word_to_uint16};
+    use super::{decode_uri, format_url, guard_image_url, guard_url, sanitize_url, word_to_uint16};
 
     // The expected values are the output of the reference in node 24, which runs `index.js` of
     // @braintree/sanitize-url 7.1.2. Each surrogate code unit in an expected value is written as
@@ -1258,6 +1346,61 @@ mod tests {
                 guard_url(guard_url(safe_url, false), false),
                 safe_url,
                 "idempotent {safe_url:?}"
+            );
+        }
+
+        // Deeply nested entities in the scheme-relevant prefix fail closed once the pass budget is
+        // exhausted, while entities after a path/query delimiter do not trigger extra passes.
+        let mut deeply_nested = "&#106;avascript:alert(1)".to_owned();
+        for _ in 0..16 {
+            deeply_nested = deeply_nested.replace('&', "&#38;");
+        }
+        assert_eq!(guard_url(&deeply_nested, false), "about:blank");
+
+        let query_nested = format!("https://example.com/?q={deeply_nested}");
+        assert_eq!(guard_url(&query_nested, false), query_nested);
+    }
+
+    #[test]
+    fn guard_image_url_allows_safe_raster_data_uris_but_blocks_active_payloads() {
+        for safe_data_url in [
+            "data:image/png;base64,iVBORw0KGgo=",
+            "DATA:IMAGE/PNG;base64,iVBORw0KGgo=",
+            "data:image/jpeg;base64,/9j/4AAQ",
+            "data:image/gif;base64,R0lGODlh",
+            "data:image/webp;base64,UklGR",
+            "data:image/png,raw",
+        ] {
+            assert_eq!(
+                guard_image_url(safe_data_url, false),
+                safe_data_url,
+                "{safe_data_url:?}"
+            );
+            // Links never permit data: URLs even for raster images.
+            assert_eq!(
+                guard_url(safe_data_url, false),
+                "about:blank",
+                "link {safe_data_url:?}"
+            );
+        }
+
+        for unsafe_data_url in [
+            "data:image/svg+xml,<svg onload=alert(1)>",
+            "data:image/svg+xml;base64,PHN2Zz4=",
+            "data:text/html,<script>alert(1)</script>",
+            "data:image/png",
+            " data:image/png;base64,iVBORw0KGgo=",
+            "javascript:alert(1)",
+        ] {
+            assert_eq!(
+                guard_image_url(unsafe_data_url, false),
+                "about:blank",
+                "{unsafe_data_url:?}"
+            );
+            assert_eq!(
+                guard_image_url(unsafe_data_url, true),
+                unsafe_data_url,
+                "loose {unsafe_data_url:?}"
             );
         }
     }

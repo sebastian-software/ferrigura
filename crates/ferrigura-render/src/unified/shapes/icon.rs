@@ -20,7 +20,7 @@
 //! ferrigura does not check that, so it draws an image whose sizes it was given.
 
 use ferrigura_model::value::Value;
-use ferrigura_syntax::url::guard_url;
+use ferrigura_syntax::url::guard_image_url;
 
 use super::rough::{self, Outline};
 use super::util::{self, Part, Styles, label_helper, styles2string};
@@ -522,7 +522,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
     let mut after_label = outline_group(&outer, &stroke_width);
     if let Some(img) = node.img.as_deref().filter(|img| !img.is_empty()) {
         let loose = input.config.globals.security_level == "loose";
-        let href = guard_url(img, loose);
+        let href = guard_image_url(img, loose);
         let image_y = if top {
             outer_height / 2.0 - image_height
         } else {
@@ -672,6 +672,7 @@ mod tests {
             "javascript:alert(1)",
             "vbscript:msgbox(1)",
             "data:text/html,<script>alert(1)</script>",
+            "data:image/svg+xml,<svg onload=alert(1)>",
             "&#106;avascript:alert(1)",
             "javascript&colon;alert(1)",
             "%6aavascript:alert(1)",
@@ -712,6 +713,19 @@ mod tests {
                 .contains("<image href=\"https://example.com/A%23B.png\""),
             "{}",
             encoded_shape.after_label
+        );
+
+        let mut raster_data = node("imageSquare", "neo");
+        raster_data.img = Some("data:image/png;base64,iVBORw0KGgo=".to_owned());
+        raster_data.asset_width = Some(48.0);
+        raster_data.asset_height = Some(48.0);
+        let raster_shape = draw_box(&raster_data, &label);
+        assert!(
+            raster_shape
+                .after_label
+                .contains("<image href=\"data:image/png;base64,iVBORw0KGgo=\""),
+            "{}",
+            raster_shape.after_label
         );
 
         let loose_config = MermaidConfig {

@@ -497,6 +497,50 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         relative_colon_image.contains("<image href=\"data/chart.svg?time=12:30\""),
         "{relative_colon_image}"
     );
+    let raster_data_image = render(
+        "flowchart TD\nA@{ img: \"data:image/png;base64,iVBORw0KGgo=\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        raster_data_image.contains("<image href=\"data:image/png;base64,iVBORw0KGgo=\""),
+        "{raster_data_image}"
+    );
+    let svg_data_image = render(
+        "flowchart TD\nA@{ img: \"data:image/svg+xml,<svg onload=alert(1)>\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        svg_data_image.contains("<image href=\"about:blank\""),
+        "{svg_data_image}"
+    );
+    let raster_data_click = render(
+        "flowchart TD\nA[x]\nclick A \"data:image/png;base64,iVBORw0KGgo=\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        raster_data_click.contains("xlink:href=\"about:blank\""),
+        "{raster_data_click}"
+    );
+    let token_image = Renderer::new(&Value::empty_object())
+        .render_with(
+            "flowchart TD\nA@{ img: \"{svg-id}:alert(1)\", w: 48, h: 48 }\n",
+            &RenderOptions {
+                id: Some("javascript".to_owned()),
+                ..RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        token_image.contains("<image href=\"{svg-id}:alert(1)\""),
+        "{token_image}"
+    );
+    assert!(
+        !token_image.contains("href=\"javascript:alert(1)\""),
+        "{token_image}"
+    );
 
     // Untrusted front matter cannot bypass default strict securityLevel.
     let fm_bypass = render(
