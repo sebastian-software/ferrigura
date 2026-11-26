@@ -252,15 +252,6 @@ pub fn measure_for(
         Vec::new()
     };
     // The nodes with a self-loop that the design mode draws beside them.
-    let looped: std::collections::HashSet<String> = if config.section.design.is_some() {
-        data.edges
-            .iter()
-            .filter(|edge| edge.start == edge.end && edge.thickness != "invisible")
-            .map(|edge| edge.start.clone())
-            .collect()
-    } else {
-        std::collections::HashSet::new()
-    };
     let mut shapes = HashMap::new();
     for index in 0..data.nodes.len() {
         let node = &data.nodes[index];
@@ -299,16 +290,10 @@ pub fn measure_for(
             dir: directions.get(index).and_then(Option::as_deref),
         })?;
         // The design mode gives a node room for the edges of its busiest side: it draws the shape
-        // again with that length as its size along the side, and keeps the larger drawing. A node
-        // with a self-loop is at least `LOOP_SIDE` long on the other side, where its loop stands.
+        // again with that length as its size along the side, and keeps the larger drawing.
         let grows =
             !(config.section.roles == crate::design::Roles::State && shapes::is_choice(node));
-        let mut lengths: Vec<(f64, bool)> = busiest.get(index).copied().into_iter().collect();
-        if let Some(&(_, along_height)) = busiest.get(index)
-            && looped.contains(node.id.as_str())
-        {
-            lengths.push((crate::design::LOOP_SIDE, !along_height));
-        }
+        let lengths: Vec<(f64, bool)> = busiest.get(index).copied().into_iter().collect();
         let mut grown = None;
         for (length, along_height) in lengths.into_iter().filter(|_| grows) {
             let current = if along_height {

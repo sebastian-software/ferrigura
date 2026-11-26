@@ -48,13 +48,9 @@ pub const EDGE_RADIUS: f64 = 10.0;
 pub const PORT_PITCH: f64 = 20.0;
 
 /// How far a self-loop stands out from the side of its node. Its ends meet the side
-/// [`PORT_PITCH`] apart around the middle, so the loop is a rounded rectangle this deep.
+/// [`PORT_PITCH`] apart around the middle, or half the side apart where the side is shorter than
+/// twice that, so the loop is a rounded rectangle this deep.
 pub const LOOP_REACH: f64 = 32.0;
-
-/// The least length of the side of a node that a self-loop meets: the ends of the loop, and the
-/// corner radius and a little room at both ends of the side, so that the loop does not meet the
-/// node where its corner turns. A box of one line has it.
-pub const LOOP_SIDE: f64 = PORT_PITCH + 2.0 * (NODE_RADIUS + 4.0);
 
 /// The room between a self-loop and the box of its label beside it.
 pub const LOOP_LABEL_GAP: f64 = 4.0;
