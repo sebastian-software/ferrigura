@@ -115,6 +115,7 @@ const gallery = [
     source: `gantt
   dateFormat YYYY-MM-DD
   axisFormat %b %d
+  todayMarker off
   section Writing
     Draft the guide: draft, 2026-03-02, 5d
     Draw the diagrams: diagrams, 2026-03-02, 4d

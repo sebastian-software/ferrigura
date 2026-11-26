@@ -41,7 +41,7 @@
       "id": "gantt",
       "label": "Gantt",
       "description": "A guide is drafted and its diagrams drawn at the same time; review follows both, and the guide is published once review ends.",
-      "source": "gantt\n  dateFormat YYYY-MM-DD\n  axisFormat %b %d\n  section Writing\n    Draft the guide: draft, 2026-03-02, 5d\n    Draw the diagrams: diagrams, 2026-03-02, 4d\n  section Release\n    Review: review, after draft diagrams, 3d\n    Publish: milestone, after review, 0d\n",
+      "source": "gantt\n  dateFormat YYYY-MM-DD\n  axisFormat %b %d\n  todayMarker off\n  section Writing\n    Draft the guide: draft, 2026-03-02, 5d\n    Draw the diagrams: diagrams, 2026-03-02, 4d\n  section Release\n    Review: review, after draft diagrams, 3d\n    Publish: milestone, after review, 0d\n",
       "file": "gantt.svg"
     }
   ],
