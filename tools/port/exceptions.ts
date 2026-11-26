@@ -58,6 +58,17 @@ export const exceptions: Record<string, PortException[]> = {
   usecase: [],
   venn: [],
   wardley: [],
+  yaml: [
+    {
+      text: [
+        'a0: &a0 [1, 1]',
+        ...Array.from({ length: 14 }, (_, i) => `a${i + 1}: &a${i + 1} [*a${i}, *a${i}]`),
+      ].join('\n'),
+      kind: 'unsupported',
+      reason:
+        'ferrigura bounds YAML alias expansion to prevent Billion Laughs memory exhaustion; js-yaml shares JS object references without materializing the tree',
+    },
+  ],
 };
 
 // The runs that take exceptions import this file, so a pending entry without an issue stops them.

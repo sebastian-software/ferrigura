@@ -364,8 +364,10 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
     let renderer = Renderer::new(&Value::empty_object());
     let control = renderer.render(CONTROL).expect("control renders");
 
+    // 15 levels (a0..a14) expand to ~131k nodes: exceeds the 50,000-node expansion cap while
+    // staying safe to materialize if the guard ever regresses.
     let mut billion_laughs = String::from("---\na0: &a0 [1, 1]\n");
-    for i in 1..30 {
+    for i in 1..15 {
         billion_laughs.push_str(&format!("a{i}: &a{i} [*a{}, *a{}]\n", i - 1, i - 1));
     }
     billion_laughs.push_str("---\nflowchart LR\nA --> B\n");
@@ -386,7 +388,7 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
         format!("---\na: &x {{self: *x, data: \"{payload}\"}}\n---\nflowchart LR\nA --> B\n");
 
     let mut shape_bomb = String::from("flowchart LR\nA@{ a0: &a0 [1, 1]");
-    for i in 1..30 {
+    for i in 1..15 {
         shape_bomb.push_str(&format!(", a{i}: &a{i} [*a{}, *a{}]", i - 1, i - 1));
     }
     shape_bomb.push_str(" }\n");

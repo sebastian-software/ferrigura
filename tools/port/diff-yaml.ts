@@ -12,6 +12,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { exceptions } from './exceptions.ts';
 import { referenceRoot } from './reference-root.ts';
 import { yamlCases } from './yaml-cases.ts';
 
@@ -163,8 +164,11 @@ const rs = JSON.parse(await readFile(rsPath, 'utf8')) as YamlOutput[];
 const jsById = new Map(js.map((output) => [output.id, output]));
 const rsById = new Map(rs.map((output) => [output.id, output]));
 
+const named = new Map((exceptions.yaml ?? []).map((entry) => [entry.text, entry.reason]));
 let accepted = 0;
 let differences = 0;
+let excepted = 0;
+let stale = 0;
 for (const input of numbered) {
   const jsOutput = jsById.get(input.id);
   const rsOutput = rsById.get(input.id);
@@ -174,6 +178,17 @@ for (const input of numbered) {
     rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
     (!jsOutput.ok || same(wellFormed(jsOutput.value), rsOutput.value));
+  if (named.has(input.text)) {
+    if (agree) {
+      stale += 1;
+      console.log(`\n✗ ${input.source}`);
+      console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
+      console.log(`  stale exception, now agrees: ${named.get(input.text)}`);
+    } else {
+      excepted += 1;
+    }
+    continue;
+  }
   if (agree) continue;
   differences += 1;
   console.log(`\n✗ ${input.source}`);
@@ -183,14 +198,19 @@ for (const input of numbered) {
 }
 
 console.log(
-  `\nyaml: ${numbered.length} inputs, ${accepted} accepted by js-yaml, ${differences} differences`
+  `\nyaml: ${numbered.length} inputs, ${accepted} accepted by js-yaml, ` +
+    `${excepted} named exceptions, ${differences} differences, ${stale} stale exceptions`
 );
 
 await writeFile(
   join(workDir, 'yaml-summary.json'),
-  JSON.stringify({ type: 'yaml', inputs: numbered.length, accepted, differences }, null, 2)
+  JSON.stringify(
+    { type: 'yaml', inputs: numbered.length, accepted, excepted, differences, stale },
+    null,
+    2
+  )
 );
 
-if (differences > 0) {
+if (differences > 0 || stale > 0) {
   process.exit(1);
 }

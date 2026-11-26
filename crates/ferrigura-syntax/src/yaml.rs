@@ -195,8 +195,12 @@ const SPACE: u16 = 0x20;
 /// `MAX_DEPTH` of `js-yaml`: the nesting of nodes.
 const MAX_DEPTH: usize = 100;
 
-/// Maximum number of `Yaml` nodes produced when expanding a document tree.
-const MAX_EXPANDED_NODES: usize = 50_000;
+/// Minimum expanded `Yaml` node budget; larger inputs scale linearly with input size so
+/// alias-free documents with more than `MIN_EXPANDED_NODES` literal nodes still load.
+const MIN_EXPANDED_NODES: usize = 50_000;
+
+/// Multiplier on input bytes for the expanded `Yaml` node budget.
+const EXPANDED_NODES_PER_INPUT_BYTE: usize = 2;
 
 /// Minimum expanded string and key byte budget; larger inputs scale linearly with input size.
 const MIN_EXPANDED_BYTES: usize = 1024 * 1024;
@@ -209,6 +213,12 @@ const EXPANDED_BYTES_PER_INPUT_BYTE: usize = 8;
 /// it), so `2 * MAX_DEPTH` accepts every valid non-aliased document while bounding deep alias
 /// chains.
 const MAX_EXPANDED_DEPTH: usize = MAX_DEPTH * 2;
+
+fn expanded_node_budget(input_bytes: usize) -> usize {
+    input_bytes
+        .saturating_mul(EXPANDED_NODES_PER_INPUT_BYTE)
+        .max(MIN_EXPANDED_NODES)
+}
 
 fn expanded_byte_budget(input_bytes: usize) -> usize {
     input_bytes
@@ -272,7 +282,7 @@ struct ExpandBudget {
 impl ExpandBudget {
     fn new(input_bytes: usize) -> Self {
         Self {
-            remaining_nodes: MAX_EXPANDED_NODES,
+            remaining_nodes: expanded_node_budget(input_bytes),
             remaining_bytes: expanded_byte_budget(input_bytes),
         }
     }
@@ -2405,12 +2415,35 @@ mod tests {
 
     #[test]
     fn billion_laughs_alias_dag_is_rejected() {
+        // 15 levels (a0..a14) expand to ~131k nodes: well above `MIN_EXPANDED_NODES` (50,000),
+        // yet small enough to fail cleanly rather than OOM the test process if the guard regresses.
         let mut yaml = String::from("a0: &a0 [1, 1]\n");
-        for i in 1..30 {
+        for i in 1..15 {
             yaml.push_str(&format!("a{i}: &a{i} [*a{}, *a{}]\n", i - 1, i - 1));
         }
-        let error = load(&yaml).expect_err("30-level alias DAG must fail");
+        let error = load(&yaml).expect_err("15-level alias DAG must fail");
         assert_eq!(error.message, EXPANSION_LIMIT);
+    }
+
+    #[test]
+    fn alias_free_sequence_above_50_000_nodes_loads() {
+        let mut yaml = String::from("series: [");
+        for i in 0..50_000 {
+            if i > 0 {
+                yaml.push(',');
+            }
+            yaml.push('1');
+        }
+        yaml.push(']');
+        let Yaml::Mapping(pairs) = value(&yaml) else {
+            panic!("a mapping");
+        };
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(pairs[0].0, "series");
+        let Yaml::Sequence(items) = &pairs[0].1 else {
+            panic!("a sequence");
+        };
+        assert_eq!(items.len(), 50_000);
     }
 
     #[test]
@@ -2437,10 +2470,21 @@ mod tests {
 
     #[test]
     fn mapping_key_alias_amplification_is_rejected() {
+        // Direct unit test on `key_string` with a small remaining budget, independent of `to_yaml`.
+        let strings = vec!["k".repeat(32)];
+        let sequences = vec![vec![Node::String(0), Node::String(0), Node::String(0)]];
+        let mut remaining = 64;
+        assert_eq!(
+            key_string(&strings, &sequences, &mut remaining, Node::Sequence(0)),
+            Err(EXPANSION_LIMIT)
+        );
+
+        // End-to-end check proving rejection occurs while reading the key (before the trailing
+        // syntax error and before `to_yaml` runs): `s` alone is 40 KB, well under the 1 MiB budget.
         let payload = "k".repeat(40_000);
         let refs = vec!["*s"; 40].join(", ");
-        let yaml = format!("s: &s \"{payload}\"\nk: &k [{refs}]\nm:\n  *k : 1\n");
-        let error = load(&yaml).expect_err("mapping key amplification must fail");
+        let yaml = format!("s: &s \"{payload}\"\nm:\n  ? [{refs}]\n  : 1\n  [unterminated\n");
+        let error = load(&yaml).expect_err("mapping key amplification must fail during parsing");
         assert_eq!(error.message, EXPANSION_LIMIT);
     }
 

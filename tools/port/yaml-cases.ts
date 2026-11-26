@@ -294,4 +294,12 @@ export const yamlCases: string[] = [
   '{a}',
   '{a: }',
   '{? a}',
+  // Alias-free sequence above the minimum alias-expansion node budget (50,000 nodes).
+  `series: [${Array.from({ length: 50_000 }, () => '1').join(',')}]`,
+  // Safely sized 15-level alias DAG (~131k expanded nodes): js-yaml shares references in JS,
+  // whereas ferrigura rejects excessive alias expansion to prevent Billion Laughs DoS.
+  [
+    'a0: &a0 [1, 1]',
+    ...Array.from({ length: 14 }, (_, i) => `a${i + 1}: &a${i + 1} [*a${i}, *a${i}]`),
+  ].join('\n'),
 ];
