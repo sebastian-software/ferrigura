@@ -34,15 +34,15 @@ use crate::unified::data::{Edge, LayoutData, Node};
 use crate::unified::elk_build::{ElkState, sub_graphs};
 use crate::unified::elk_geometry::find_common_ancestor;
 use crate::unified::geom::{BBox, Point};
+use crate::unified::room::{
+    absolute_boxes, contains, crosses, ends_onto_outlines, find_mut, grown, overlaps,
+};
 
 /// The distance between a state and its note, which the connector spans.
 pub(crate) const NOTE_GAP: f64 = 32.0;
 
 /// The least distance between a note and anything else it does not belong to.
 const CLEARANCE: f64 = 4.0;
-
-/// How far a point may be off a side to count as on it.
-const TOLERANCE: f64 = 0.5;
 
 /// The side of its state a note stands on, along the state's layer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,9 +100,9 @@ fn is_connector(edge: &Edge) -> bool {
 /// `kept_hosts` keep their notes where the reference puts them.
 ///
 /// A note stays where the reference puts it when its state is a composite or has no size, when
-/// its state has a transition to itself, which ELK would route through the note's room, when
-/// another note of the state stands on the same side, or when something else than its connector
-/// meets it or its group.
+/// its state has an invisible transition to itself or more of them than the sides without a note
+/// can take (`crate::unified::loops`), when another note of the state stands on the same side, or
+/// when something else than its connector meets it or its group.
 pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> Option<Notes> {
     let groups: HashSet<&str> = data
         .nodes
@@ -204,13 +204,22 @@ pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> O
         });
     }
 
-    // A state with a transition to itself, with two notes on one side, or narrower than the bundle
-    // of its transitions keeps its notes where the reference puts them.
+    // A state with more transitions to itself than free sides for them, with two notes on one
+    // side, or narrower than the bundle of its transitions keeps its notes where the reference
+    // puts them.
     for host in &hosts {
-        let looped = data
+        let loops: Vec<&Edge> = data
             .edges
             .iter()
-            .any(|edge| edge.start == host.id && edge.end == host.id);
+            .filter(|edge| edge.start == host.id && edge.end == host.id)
+            .collect();
+        let noted_sides = [Side::Before, Side::After]
+            .iter()
+            .filter(|&&side| host.notes.iter().any(|note| note.side == side))
+            .count();
+        let looped = !loops.is_empty()
+            && (loops.len() + noted_sides > 2
+                || loops.iter().any(|edge| edge.thickness == "invisible"));
         let ends = |at_start: bool| {
             data.edges
                 .iter()
@@ -321,6 +330,21 @@ fn room(host: &Host) -> (f64, f64) {
 }
 
 impl Notes {
+    /// The states whose boxes hold the room of their notes, with their own size and the sides
+    /// their notes take, for the self-loops that stand beside them on the other side.
+    pub(crate) fn reserved(&self) -> Vec<crate::unified::loops::Reserved> {
+        self.hosts
+            .iter()
+            .map(|host| crate::unified::loops::Reserved {
+                id: host.id.clone(),
+                width: host.width,
+                height: host.height,
+                before: host.notes.iter().any(|note| note.side == Side::Before),
+                after: host.notes.iter().any(|note| note.side == Side::After),
+            })
+            .collect()
+    }
+
     /// Puts the notes back into ELK's result and into the layout data: each state takes its own
     /// size in the middle of its box, the ends of its transitions move onto its outline, and its
     /// notes stand beside it. Where an end of a transition does not leave a state's box straight
@@ -354,53 +378,7 @@ impl Notes {
         }
 
         // The ends of the transitions, on the outline of their state.
-        let mut ends: Vec<(usize, bool, JsonPoint)> = Vec::new();
-        for (position, edge) in graph.edges.iter().enumerate() {
-            let (Some(source), Some(target)) = (edge.sources.first(), edge.targets.first()) else {
-                continue;
-            };
-            let Some(section) = edge.sections.first() else {
-                continue;
-            };
-            let offset = origin(find_common_ancestor(source, target, &state.parent_by_id).as_ref());
-            let absolute = |point: Option<JsonPoint>| {
-                point.map(|point| Point::new(point.x + offset.x, point.y + offset.y))
-            };
-            let start = absolute(section.start_point);
-            let end = absolute(section.end_point);
-            let first_bend = absolute(section.bend_points.first().copied()).or(end);
-            let last_bend = absolute(section.bend_points.last().copied()).or(start);
-            for (at_start, id, point, next) in [
-                (true, source, start, first_bend),
-                (false, target, end, last_bend),
-            ] {
-                let Some(&(laid, real)) = own.get(id.as_str()) else {
-                    continue;
-                };
-                let (Some(point), Some(next)) = (point, next) else {
-                    return Err(id.clone());
-                };
-                let Some(moved) = onto_outline(point, next, laid, real) else {
-                    return Err(id.clone());
-                };
-                ends.push((
-                    position,
-                    at_start,
-                    JsonPoint {
-                        x: moved.x - offset.x,
-                        y: moved.y - offset.y,
-                    },
-                ));
-            }
-        }
-        for (position, at_start, point) in ends {
-            let section = &mut graph.edges[position].sections[0];
-            if at_start {
-                section.start_point = Some(point);
-            } else {
-                section.end_point = Some(point);
-            }
-        }
+        ends_onto_outlines(graph, &boxes, &own, &state.parent_by_id)?;
 
         // The layout data with the notes, their groups and their connectors, each group in the
         // parent of its state.
@@ -648,130 +626,10 @@ fn connector_ends(host: &Host, note: &Note, real: BBox, placed: BBox) -> (Point,
     }
 }
 
-/// Moves the end of a transition from the side of a state's box in the layout onto the state's
-/// own outline, along the transition's last part, which must leave the side straight. `None`
-/// where the end is not on a side of the box, leaves it at a slant, or misses the state.
-fn onto_outline(point: Point, next: Point, laid: BBox, real: BBox) -> Option<Point> {
-    let near = |a: f64, b: f64| (a - b).abs() <= TOLERANCE;
-    let within =
-        |value: f64, from: f64, to: f64| value >= from - TOLERANCE && value <= to + TOLERANCE;
-    if near(point.y, laid.y) || near(point.y, laid.bottom()) {
-        if !near(point.x, next.x) || !within(point.x, real.x, real.right()) {
-            return None;
-        }
-        let y = if near(point.y, laid.y) {
-            real.y
-        } else {
-            real.bottom()
-        };
-        return Some(Point::new(point.x, y));
-    }
-    if near(point.x, laid.x) || near(point.x, laid.right()) {
-        if !near(point.y, next.y) || !within(point.y, real.y, real.bottom()) {
-            return None;
-        }
-        let x = if near(point.x, laid.x) {
-            real.x
-        } else {
-            real.right()
-        };
-        return Some(Point::new(x, point.y));
-    }
-    None
-}
-
-/// The absolute box of every node of ELK's result, with the id of its parent.
-fn absolute_boxes(node: &JsonNode, origin: Point, boxes: &mut HashMap<String, (BBox, String)>) {
-    for child in &node.children {
-        let at = Point::new(
-            origin.x + child.x.unwrap_or(0.0),
-            origin.y + child.y.unwrap_or(0.0),
-        );
-        boxes.insert(
-            child.id.clone(),
-            (
-                BBox::new(
-                    at.x,
-                    at.y,
-                    child.width.unwrap_or(0.0),
-                    child.height.unwrap_or(0.0),
-                ),
-                node.id.clone(),
-            ),
-        );
-        absolute_boxes(child, at, boxes);
-    }
-}
-
-/// The node of ELK's result with the id, at any depth below `node`.
-fn find_mut<'a>(node: &'a mut JsonNode, id: &str) -> Option<&'a mut JsonNode> {
-    for child in &mut node.children {
-        if child.id == id {
-            return Some(child);
-        }
-        if let Some(found) = find_mut(child, id) {
-            return Some(found);
-        }
-    }
-    None
-}
-
-/// The box grown by `by` on every side.
-fn grown(bbox: BBox, by: f64) -> BBox {
-    BBox::new(
-        bbox.x - by,
-        bbox.y - by,
-        bbox.width + 2.0 * by,
-        bbox.height + 2.0 * by,
-    )
-}
-
-/// Whether two boxes share more than an edge.
-fn overlaps(a: BBox, b: BBox) -> bool {
-    a.x < b.right() && b.x < a.right() && a.y < b.bottom() && b.y < a.bottom()
-}
-
-/// Whether `outer` holds all of `inner`.
-fn contains(outer: BBox, inner: BBox) -> bool {
-    inner.x >= outer.x
-        && inner.y >= outer.y
-        && inner.right() <= outer.right()
-        && inner.bottom() <= outer.bottom()
-}
-
-/// Whether the segment from `a` to `b` passes through the inside of the box.
-fn crosses(a: Point, b: Point, bbox: BBox) -> bool {
-    // Liang-Barsky clipping of the segment against the box.
-    let (dx, dy) = (b.x - a.x, b.y - a.y);
-    let (mut low, mut high) = (0.0_f64, 1.0_f64);
-    for (p, q) in [
-        (-dx, a.x - bbox.x),
-        (dx, bbox.right() - a.x),
-        (-dy, a.y - bbox.y),
-        (dy, bbox.bottom() - a.y),
-    ] {
-        if p == 0.0 {
-            if q <= 0.0 {
-                return false;
-            }
-            continue;
-        }
-        let t = q / p;
-        if p < 0.0 {
-            low = low.max(t);
-        } else {
-            high = high.min(t);
-        }
-        if low >= high {
-            return false;
-        }
-    }
-    true
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::unified::room::onto_outline;
 
     fn host(across: bool, sides: &[Side]) -> Host {
         Host {
@@ -963,9 +821,20 @@ mod tests {
     }
 
     #[test]
-    fn a_state_that_loops_keeps_its_note_where_the_reference_puts_it() {
+    fn a_state_with_a_loop_keeps_its_note_beside_it() {
         let mut data = noted();
         data.edges.push(edge("e2", "A", "A", "transition"));
+        let notes = take_out(&mut data, &HashSet::new()).expect("the note beside its state");
+        let reserved = notes.reserved();
+        assert_eq!(reserved.len(), 1);
+        assert_eq!(reserved[0].id, "A");
+    }
+
+    #[test]
+    fn a_state_with_more_loops_than_free_sides_keeps_its_note_where_the_reference_puts_it() {
+        let mut data = noted();
+        data.edges.push(edge("e2", "A", "A", "transition"));
+        data.edges.push(edge("e3", "A", "A", "transition"));
         let before = data.nodes.len();
         assert!(take_out(&mut data, &HashSet::new()).is_none());
         assert_eq!(data.nodes.len(), before);

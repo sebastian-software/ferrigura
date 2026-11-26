@@ -82,12 +82,14 @@ fn lay_out_with_notes_beside(
     let mut kept = std::collections::HashSet::new();
     while let Some(notes) = notes::take_out(&mut measured.data, &kept) {
         let mut failed = None;
-        let laid = pipeline::lay_out_adjusted(measured, config, |graph, data, state| {
-            notes
-                .put_back(graph, data, state)
-                .map_err(|host| failed = Some(host))
-                .is_ok()
-        })?;
+        let reserved = notes.reserved();
+        let laid =
+            pipeline::lay_out_adjusted(measured, config, &reserved, |graph, data, state| {
+                notes
+                    .put_back(graph, data, state)
+                    .map_err(|host| failed = Some(host))
+                    .is_ok()
+            })?;
         if laid {
             failed = notes.blocked(&measured.data);
             if failed.is_none() {

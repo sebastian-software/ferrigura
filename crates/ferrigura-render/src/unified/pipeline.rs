@@ -19,7 +19,9 @@ use crate::unified::geom::BBox;
 use crate::unified::label::{Anchor, LabelLayout};
 use crate::unified::line_jumps::JumpStyle;
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{Config, clusters, edges, elk_apply, elk_build, swimlane_layout, terminal};
+use crate::unified::{
+    Config, clusters, edges, elk_apply, elk_build, loops, swimlane_layout, terminal,
+};
 
 /// The layout that placed the nodes of a diagram. It decides how the paint clips the edges and which
 /// line hops it draws: `insertEdge` takes the swimlane branch for the `swimlane` layout (`edges.js`
@@ -249,6 +251,16 @@ pub fn measure_for(
     } else {
         Vec::new()
     };
+    // The nodes with a self-loop that the design mode draws beside them.
+    let looped: std::collections::HashSet<String> = if config.section.design.is_some() {
+        data.edges
+            .iter()
+            .filter(|edge| edge.start == edge.end && edge.thickness != "invisible")
+            .map(|edge| edge.start.clone())
+            .collect()
+    } else {
+        std::collections::HashSet::new()
+    };
     let mut shapes = HashMap::new();
     for index in 0..data.nodes.len() {
         let node = &data.nodes[index];
@@ -287,30 +299,33 @@ pub fn measure_for(
             dir: directions.get(index).and_then(Option::as_deref),
         })?;
         // The design mode gives a node room for the edges of its busiest side: it draws the shape
-        // again with that length as its size along the side, and keeps the larger drawing.
+        // again with that length as its size along the side, and keeps the larger drawing. A node
+        // with a self-loop is at least `LOOP_SIDE` long on the other side, where its loop stands.
         let grows =
             !(config.section.roles == crate::design::Roles::State && shapes::is_choice(node));
-        if let Some(grown) =
-            busiest
-                .get(index)
-                .filter(|_| grows)
-                .and_then(|&(length, along_height)| {
-                    let current = if along_height {
-                        shape.bbox.height
-                    } else {
-                        shape.bbox.width
-                    };
-                    (length > current).then(|| {
-                        let mut grown = node.clone();
-                        if along_height {
-                            grown.height = Some(length);
-                        } else {
-                            grown.width = Some(length);
-                        }
-                        grown
-                    })
-                })
+        let mut lengths: Vec<(f64, bool)> = busiest.get(index).copied().into_iter().collect();
+        if let Some(&(_, along_height)) = busiest.get(index)
+            && looped.contains(node.id.as_str())
         {
+            lengths.push((crate::design::LOOP_SIDE, !along_height));
+        }
+        let mut grown = None;
+        for (length, along_height) in lengths.into_iter().filter(|_| grows) {
+            let current = if along_height {
+                shape.bbox.height
+            } else {
+                shape.bbox.width
+            };
+            if length > current {
+                let node = grown.get_or_insert_with(|| node.clone());
+                if along_height {
+                    node.height = Some(length);
+                } else {
+                    node.width = Some(length);
+                }
+            }
+        }
+        if let Some(grown) = grown {
             let label = shapes::node_label(&grown, config, None, label_anchor)?;
             let redrawn = shapes::draw(&ShapeInput {
                 node: &grown,
@@ -402,8 +417,8 @@ pub(crate) fn lay_out_for_render(
     measured: &mut Measured,
     config: &Config<'_>,
 ) -> Result<(), RenderError> {
-    if own_placement(config) {
-        return lay_out(measured, config).map(|_| ());
+    if config.section.design.is_some() {
+        return lay_out_adjusted(measured, config, &[], |_, _, _| true).map(|_| ());
     }
     let elk = elk_build::build(&measured.data, config);
     let layout = ferrigura_elk::layout_owned(elk.graph, false)
@@ -417,10 +432,62 @@ pub(crate) fn lay_out_for_render(
 /// and may change all three. When it returns `false`, nothing is applied and the result is
 /// `false`; the caller then lays the diagram out another way.
 ///
+/// In the design mode, the self-loops stand beside their nodes ([`loops`]): a node whose loops
+/// cannot is laid out again with its loops on the sides of the other direction, then with its
+/// loops where ELK puts them. The nodes of `reserved` have their
+/// boxes grown for something of the caller's beside them already.
+///
 /// # Errors
 ///
 /// Returns an error if the layout fails.
 pub(crate) fn lay_out_adjusted(
+    measured: &mut Measured,
+    config: &Config<'_>,
+    reserved: &[loops::Reserved],
+    mut adjust: impl FnMut(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
+) -> Result<bool, RenderError> {
+    if config.section.design.is_none() {
+        return lay_out_once(measured, config, adjust);
+    }
+    let original = measured.data.clone();
+    let (mut kept, mut turned) = (
+        std::collections::HashSet::new(),
+        std::collections::HashSet::new(),
+    );
+    while let Some(beside) = loops::take_out(&mut measured.data, &kept, &turned, reserved) {
+        let mut failed = None;
+        let laid = lay_out_once(measured, config, |graph, data, state| {
+            if let Err(host) = beside.put_back(graph, data, state) {
+                failed = Some(host);
+                return false;
+            }
+            adjust(graph, data, state)
+        })?;
+        if laid {
+            failed = beside.blocked(&measured.data);
+            if failed.is_none() {
+                return Ok(true);
+            }
+        } else if failed.is_none() {
+            // The caller's step declined the layout.
+            return Ok(false);
+        }
+        measured.data.clone_from(&original);
+        // A node whose loops do not fit tries the sides of the other direction, then keeps them
+        // where ELK puts them.
+        let Some(host) = failed else {
+            break;
+        };
+        if !turned.insert(host.clone()) && !kept.insert(host) {
+            break;
+        }
+    }
+    measured.data = original;
+    lay_out_once(measured, config, adjust)
+}
+
+/// One layout with the caller's step: see [`lay_out_adjusted`].
+fn lay_out_once(
     measured: &mut Measured,
     config: &Config<'_>,
     adjust: impl FnOnce(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
