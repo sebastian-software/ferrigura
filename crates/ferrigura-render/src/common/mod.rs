@@ -57,14 +57,21 @@ pub fn shown_text(text: &str) -> String {
 }
 
 /// Resolves Mermaid's internal entity placeholders (`ﬂ°°<digits>¶ß` and `ﬂ°<name>¶ß`) into their
-/// characters while leaving literal `&`, `<`, and `>` outside placeholders unchanged. Returns a
-/// borrowed slice without allocating when no placeholder is present.
+/// characters using HTML attribute-value reference rules while leaving literal `&`, `<`, and `>`
+/// outside placeholders unchanged. Returns a borrowed slice without allocating when no placeholder
+/// is present.
 #[must_use]
 pub(crate) fn resolve_entity_placeholders(text: &str) -> Cow<'_, str> {
     if !text.contains("ﬂ°") {
         return Cow::Borrowed(text);
     }
-    Cow::Owned(shown_text(text))
+    let escaped = text
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
+    Cow::Owned(ferrigura_syntax::sanitize::decode_attribute_references(
+        &decode_entities(&escaped),
+    ))
 }
 
 /// `${value}`: the text that a template literal of the reference writes for a theme value. A number

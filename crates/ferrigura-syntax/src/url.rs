@@ -370,13 +370,24 @@ fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
 }
 
 /// Runs the [`sanitize_url`] fixpoint loop up to `max_passes` times, returning `None`
-/// (fail-closed) when nested obfuscations exceed the pass budget.
+/// (fail-closed) when nested obfuscations—including percent-only nesting—exceed the pass budget.
+/// For ordinary URLs within budget, returns the exact `@braintree/sanitize-url` decoded spelling.
 fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<String> {
     let mut decoded = decode_uri(js_trim(url));
+    let mut passes_used = 0usize;
     for _ in 0..max_passes {
         decoded = decode_obfuscation_step(&decoded);
+        passes_used += 1;
         if !needs_another_pass(&decoded) {
-            return Some(decoded);
+            let mut probe = decoded.clone();
+            for _ in passes_used..=max_passes {
+                let next = decode_uri(&probe);
+                if next == probe {
+                    return Some(decoded);
+                }
+                probe = next;
+            }
+            return None;
         }
     }
     None
@@ -1562,6 +1573,16 @@ mod tests {
         }
         assert_eq!(guard_url(&deeply_nested, false), "about:blank");
         assert_eq!(sanitize_url(&deeply_nested), "about:blank");
+        // Percent-only nesting past the pass budget also fails closed on the parser path,
+        // while ordinary multi-encoded URLs within budget keep exact sanitizeUrl parity.
+        assert_eq!(
+            sanitize_url("https://example.com/a%25252525252525252541"),
+            "about:blank"
+        );
+        assert_eq!(
+            sanitize_url("https://example.com/files?q=A%252526B"),
+            "https://example.com/files?q=A%26B"
+        );
 
         let query_nested = format!("https://example.com/?q={deeply_nested}");
         assert_eq!(guard_url(&query_nested, false), query_nested);

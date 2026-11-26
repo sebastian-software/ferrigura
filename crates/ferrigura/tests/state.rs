@@ -204,6 +204,19 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         "{single_pass}"
     );
 
+    // HTML attribute-value entity rules keep legacy prefixes like `&not` literal when followed by
+    // ASCII alphanumerics.
+    let attr_entity = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"/docs/#notebook_1;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        attr_entity.contains("xlink:href=\"/docs/&amp;notebook_1;\""),
+        "{attr_entity}"
+    );
+    assert!(!attr_entity.contains("¬ebook_1;"), "{attr_entity}");
+
     let opaque_cid = render(
         "stateDiagram-v2\n  s1\n  click s1 href \"cid:asset%2525252525252525252541@example.com\"\n",
         &Value::empty_object(),
