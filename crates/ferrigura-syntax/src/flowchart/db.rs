@@ -93,10 +93,10 @@ pub(crate) struct Db {
 }
 
 impl Db {
-    pub(crate) fn new(options: Options) -> Self {
+    pub(crate) fn new(options: Options, security_level: SecurityLevel) -> Self {
         Self {
             max_edges: options.max_edges,
-            security_level: options.security_level,
+            security_level,
             direction: String::from("TB"),
             acc_title: String::new(),
             acc_descr: String::new(),

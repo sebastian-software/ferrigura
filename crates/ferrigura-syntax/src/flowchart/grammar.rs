@@ -9,7 +9,7 @@ use ferrigura_model::flowchart::{FlowchartDiagram, LabelType};
 
 use super::db::{BodyItem, Db, DbError, FlowText, LinkData, LinkPosition};
 use super::scanner::{Kind, Token};
-use super::{FlowchartError, Options};
+use super::{FlowchartError, Options, SecurityLevel};
 use crate::error::Source;
 
 /// What a statement gives its enclosing document: the grammar's value of the statement.
@@ -44,6 +44,7 @@ pub(crate) fn parse_text(
     line_offset: usize,
     title: String,
     options: Options,
+    security_level: SecurityLevel,
 ) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     let source = Source::new(text, line_offset);
     let tokens = super::scanner::tokenize(text, &super::scanner::FLOWCHART)
@@ -52,7 +53,7 @@ pub(crate) fn parse_text(
         source,
         tokens,
         pos: 0,
-        db: Db::new(options),
+        db: Db::new(options, security_level),
     };
     parser.graph_config()?;
     parser.document(false)?;

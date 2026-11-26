@@ -1053,14 +1053,14 @@ fn render_swimlanes(
     let section = Section::of(&prepared.view.config);
     swimlanes_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &swimlanes::parse_prepared_with(
+        diagram: &swimlanes::parse_prepared_with_security(
             &prepared.source,
             ferrigura_syntax::flowchart::Options {
                 max_edges: prepared.max_edges,
-                security_level: ferrigura_syntax::url::SecurityLevel::from_config(
-                    &prepared.view.globals.security_level,
-                ),
             },
+            ferrigura_syntax::url::SecurityLevel::from_config(
+                &prepared.view.globals.security_level,
+            ),
         )?,
         section: &SwimlaneSection {
             swimlane: &typed_config.swimlane,

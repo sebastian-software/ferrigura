@@ -125,7 +125,7 @@ mod interactions_when_parsing {
 
     #[test]
     fn should_sanitize_unsafe_click_urls_by_default_and_allow_them_when_loose() {
-        use ferrigura_syntax::flowchart::{Options, SecurityLevel, parse_with};
+        use ferrigura_syntax::flowchart::{Options, SecurityLevel, parse_with_security};
 
         for unsafe_url in [
             "javascript:alert(1)",
@@ -153,12 +153,10 @@ mod interactions_when_parsing {
             Some("https://example.com/docs")
         );
 
-        let loose = parse_with(
+        let loose = parse_with_security(
             "flowchart TD\nA[x]\nclick A \"javascript:alert(1)\"",
-            Options {
-                security_level: SecurityLevel::Loose,
-                ..Options::default()
-            },
+            Options::default(),
+            SecurityLevel::Loose,
         )
         .expect("parses");
         assert_eq!(

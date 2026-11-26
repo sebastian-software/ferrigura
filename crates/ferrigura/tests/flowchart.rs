@@ -590,6 +590,7 @@ fn kanban_ticket_links_are_sanitized_under_default_security_level() {
         ("javascript&colon;alert(1)//#TICKET#", "MC-1"),
         ("%6aavascript:alert(1)//#TICKET#", "MC-1"),
         ("&#106;avascript:alert(1)//#TICKET#", "MC-1"),
+        ("notes&#x3A;#TICKET#", "MC-1"),
         ("#TICKET#", "javascript:alert(1)"),
     ] {
         let input = format!(

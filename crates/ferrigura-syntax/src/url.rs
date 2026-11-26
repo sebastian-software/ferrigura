@@ -115,8 +115,32 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
     if !is_allowed_sink_candidate(url) {
         return BLANK_URL;
     }
-    let prefix = scheme_prefix(url);
-    match decode_sink_prefix_bounded(prefix, MAX_DECODE_PASSES) {
+    let head = match url.find(['/', '?']) {
+        Some(pos) => &url[..=pos],
+        None => url,
+    };
+    let mut skipped_hashes = 0usize;
+    for (idx, byte) in head.bytes().enumerate() {
+        if byte != b'#' {
+            continue;
+        }
+        let Some(decoded_before) = decode_sink_prefix_bounded(&head[..idx], MAX_DECODE_PASSES)
+        else {
+            return BLANK_URL;
+        };
+        if !decoded_before.ends_with('&') {
+            return if decoded_before.is_empty() || is_allowed_sink_candidate(&decoded_before) {
+                url
+            } else {
+                BLANK_URL
+            };
+        }
+        skipped_hashes += 1;
+        if skipped_hashes >= MAX_DECODE_PASSES {
+            break;
+        }
+    }
+    match decode_sink_prefix_bounded(head, MAX_DECODE_PASSES) {
         Some(decoded) if is_allowed_sink_candidate(&decoded) => url,
         _ => BLANK_URL,
     }
@@ -156,40 +180,6 @@ fn is_safe_raster_data_image_url(url: &str) -> bool {
         .any(|allowed| subtype.eq_ignore_ascii_case(allowed))
 }
 
-/// Returns the shortest prefix of `url` that can influence scheme detection: everything up to and
-/// including the first literal `/`, `?`, or fragment `#` delimiter that cannot be part of a
-/// numeric HTML character reference (`&#...;`), or the whole string when no such delimiter occurs.
-///
-/// A `#` is treated as potentially belonging to an entity only when immediately preceded by `&`
-/// (ignoring control characters) or when an earlier `&#` or `%` could decode to `&`. A plain
-/// ampersand in a relative path (such as `R&D#frag`) therefore does not prevent stopping at `#`.
-fn scheme_prefix(url: &str) -> &str {
-    let mut after_amp = false;
-    let mut might_produce_amp = false;
-    for (idx, ch) in url.char_indices() {
-        match ch {
-            '/' | '?' => return &url[..=idx],
-            '#' => {
-                if !after_amp && !might_produce_amp {
-                    return &url[..=idx];
-                }
-                if after_amp {
-                    might_produce_amp = true;
-                }
-                after_amp = false;
-            }
-            '&' => after_amp = true,
-            '%' => {
-                might_produce_amp = true;
-                after_amp = false;
-            }
-            c if is_ctrl(c) => {}
-            _ => after_amp = false,
-        }
-    }
-    url
-}
-
 /// Runs one obfuscation-decoding step of `sanitizeUrl`: HTML character references, control
 /// entities, control characters, whitespace escapes, and `decodeURI`.
 fn decode_obfuscation_step(text: &str) -> String {
@@ -200,14 +190,55 @@ fn decode_obfuscation_step(text: &str) -> String {
     decode_uri(js_trim(&without_escapes))
 }
 
-/// Runs one obfuscation-decoding step for a render-sink scheme prefix, using lossy percent
-/// decoding so a malformed `%XX` sequence later in the segment cannot mask an encoded scheme.
+/// Runs one obfuscation-decoding step for a render-sink scheme prefix: HTML5 numeric character
+/// references (including `&#x...;` hex references), control entities, control characters,
+/// whitespace escapes, and lossy percent decoding so a malformed `%XX` later in the segment
+/// cannot mask an encoded scheme.
 fn decode_sink_step(text: &str) -> String {
-    let entities = decode_html_characters(text);
+    let entities = decode_html_characters_sink(text);
     let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
     let without_controls = remove_ctrl(&without_newlines);
     let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
     decode_uri_lossy(js_trim(&without_escapes))
+}
+
+/// Decodes numeric character references for render-sink validation, honoring standard HTML5 hex
+/// references (`&#x3A;`, `&#X6A;`) in addition to decimal and JS-radix forms handled by
+/// [`decode_html_characters`].
+fn decode_html_characters_sink(text: &str) -> String {
+    let chars: Vec<char> = text.chars().filter(|&c| !is_ctrl(c)).collect();
+    let mut out = String::with_capacity(chars.len());
+    let mut index = 0;
+    while let Some(&c) = chars.get(index) {
+        match entity_at(&chars, index) {
+            Some((end, digits)) => {
+                out.push(sink_entity_char(&digits));
+                index = end;
+            }
+            None => {
+                out.push(c);
+                index += 1;
+            }
+        }
+    }
+    out
+}
+
+/// Decodes the payload of `&#<digits>[;]` for render-sink validation: HTML5 hex (`x...` / `X...`)
+/// first, then [`from_char_code`] for decimal and `0x`/`0o`/`0b` forms.
+fn sink_entity_char(digits: &str) -> char {
+    if let Some(hex) = digits
+        .strip_prefix('x')
+        .or_else(|| digits.strip_prefix('X'))
+        && !hex.is_empty()
+        && hex.bytes().all(|b| b.is_ascii_hexdigit())
+    {
+        return u32::from_str_radix(hex, 16)
+            .ok()
+            .and_then(char::from_u32)
+            .unwrap_or(char::REPLACEMENT_CHARACTER);
+    }
+    from_char_code(digits)
 }
 
 /// Decodes each valid UTF-8 `%XX` sequence independently, keeping malformed `%` sequences as-is.
@@ -1411,6 +1442,11 @@ mod tests {
             "notes%25253Adoc",
             "notes%3Afoo%FF",
             "notes%253Afoo%FF",
+            "notes&#x3A;item",
+            "notes&#X3a;item",
+            "&#x6a;avascript:alert(1)",
+            "javascript&#x3A;alert(1)#frag",
+            "%26#106;avascript:alert(1)",
             "&#38;#106;avascript:alert(1)",
             "&#106;avascript:alert(1)",
             "javascript&colon;alert(1)",
@@ -1440,6 +1476,7 @@ mod tests {
             "dir/a%3Ab.png",
             "#section",
             "R&D#A%2525252525252525252541",
+            "my%20notes#A%2525252525252525252541",
             "/images/logo.png",
             "./relative:path.png",
         ] {

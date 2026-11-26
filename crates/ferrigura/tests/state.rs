@@ -167,15 +167,26 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         );
     }
 
-    let ampersand_fragment = render(
-        "stateDiagram-v2\n  s1\n  click s1 href \"R&D#A%2525252525252525252541\"\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(
-        ampersand_fragment.contains("xlink:href=\"R&amp;D#A%2525252525252525252541\""),
-        "{ampersand_fragment}"
-    );
+    for (raw, escaped) in [
+        (
+            "R&D#A%2525252525252525252541",
+            "R&amp;D#A%2525252525252525252541",
+        ),
+        (
+            "my%20notes#A%2525252525252525252541",
+            "my%20notes#A%2525252525252525252541",
+        ),
+    ] {
+        let fragment = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{raw}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            fragment.contains(&format!("xlink:href=\"{escaped}\"")),
+            "raw={raw:?}: {fragment}"
+        );
+    }
 
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
     let loose = render(

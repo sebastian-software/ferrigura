@@ -947,14 +947,12 @@ fn with_flowchart<T>(
     compat: bool,
     step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
-    let diagram = ferrigura_syntax::flowchart::parse_prepared(
+    let diagram = ferrigura_syntax::flowchart::parse_prepared_with_security(
         &prepared.source,
         ferrigura_syntax::flowchart::Options {
             max_edges: prepared.max_edges,
-            security_level: ferrigura_syntax::url::SecurityLevel::from_config(
-                &prepared.view.globals.security_level,
-            ),
         },
+        ferrigura_syntax::url::SecurityLevel::from_config(&prepared.view.globals.security_level),
     )
     .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
     let mut section = Section::of(&prepared.view.config);

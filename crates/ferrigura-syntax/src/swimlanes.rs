@@ -39,3 +39,13 @@ pub fn parse_prepared_with(
 ) -> Result<SwimlanesDiagram, ParseError> {
     flowchart::parse_prepared(prepared, options).map_err(|FlowchartError::Syntax(error)| error)
 }
+
+/// Parses an already prepared swimlane source with the given flowchart options and `securityLevel`.
+pub fn parse_prepared_with_security(
+    prepared: &crate::preprocess::Prepared,
+    options: flowchart::Options,
+    security_level: flowchart::SecurityLevel,
+) -> Result<SwimlanesDiagram, ParseError> {
+    flowchart::parse_prepared_with_security(prepared, options, security_level)
+        .map_err(|FlowchartError::Syntax(error)| error)
+}

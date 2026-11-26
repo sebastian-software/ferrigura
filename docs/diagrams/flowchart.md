@@ -128,7 +128,7 @@ What the model keeps from the DB's quirks, so that the differential run sees the
 - **`dir` is subgraph-only.** The grammar never passes a direction to a vertex.
 - **`click`.** A link is kept for the vertices that exist when the statement runs, so a `click` before the node is declared sets no link. A callback is not in the model, and only the `clickable` class it adds is.
 
-Left out of the model: `maxEdges` and `securityLevel`, which are parser options (`Options::max_edges`, 500; `Options::security_level`, `strict`), and `htmlLabels`, `inheritDir` and `curve`, which act at render time and are read from the configuration.
+Left out of the model: `maxEdges` (`Options::max_edges`, 500) and `securityLevel` (`parse_with_security`, `strict` by default), which are parser options, and `htmlLabels`, `inheritDir` and `curve`, which act at render time and are read from the configuration.
 
 ## Parsing
 

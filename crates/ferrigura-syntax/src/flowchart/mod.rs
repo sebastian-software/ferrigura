@@ -25,15 +25,12 @@ pub use crate::url::SecurityLevel;
 pub struct Options {
     /// The most edges a diagram may have; more is an error (`maxEdges`, 500 by default).
     pub max_edges: usize,
-    /// `securityLevel`, `strict` by default.
-    pub security_level: SecurityLevel,
 }
 
 impl Default for Options {
     fn default() -> Self {
         Self {
             max_edges: db::DEFAULT_MAX_EDGES,
-            security_level: SecurityLevel::Strict,
         }
     }
 }
@@ -62,7 +59,18 @@ pub fn parse(raw: &str) -> Result<FlowchartDiagram, FlowchartError> {
 
 /// Parses a flowchart with the given options.
 pub fn parse_with(raw: &str, options: Options) -> Result<FlowchartDiagram, FlowchartError> {
-    parse_with_warnings(raw, options).map(|(diagram, _)| diagram)
+    parse_with_security(raw, options, SecurityLevel::Strict)
+}
+
+/// Parses a flowchart with the given options and `securityLevel`.
+pub fn parse_with_security(
+    raw: &str,
+    options: Options,
+    security_level: SecurityLevel,
+) -> Result<FlowchartDiagram, FlowchartError> {
+    let prepared = prepare(raw).map_err(FlowchartError::Syntax)?;
+    parse_prepared_with_warnings_and_security(&prepared, options, security_level)
+        .map(|(diagram, _)| diagram)
 }
 
 /// Parses flowchart text with the grammar and the DB alone, and nothing else. It exists for the
@@ -71,8 +79,14 @@ pub fn parse_with(raw: &str, options: Options) -> Result<FlowchartDiagram, Flowc
 /// entity encoding and no trailing line break. [`parse`] is the diagram text, as `Diagram.fromText`
 /// gives it to the parser, and it is the entry point for everything else.
 pub fn parse_grammar(text: &str) -> Result<FlowchartDiagram, FlowchartError> {
-    grammar::parse_text(&close_braces(text), 0, String::new(), Options::default())
-        .map(|(diagram, _)| diagram)
+    grammar::parse_text(
+        &close_braces(text),
+        0,
+        String::new(),
+        Options::default(),
+        SecurityLevel::Strict,
+    )
+    .map(|(diagram, _)| diagram)
 }
 
 /// The comment removal of the reference (`cleanupComments`): the lines that start with `%%`
@@ -97,12 +111,21 @@ pub fn parse_prepared_with_warnings(
     prepared: &crate::preprocess::Prepared,
     options: Options,
 ) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
+    parse_prepared_with_warnings_and_security(prepared, options, SecurityLevel::Strict)
+}
+
+/// Parses an already prepared source with its warnings and `securityLevel`.
+pub fn parse_prepared_with_warnings_and_security(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+    security_level: SecurityLevel,
+) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     // `Diagram.fromText` encodes the entities and adds a line break before the parser sees the
     // text; the parser's own wrapper then closes the braces.
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = close_braces(&(encode_entities(&cleaned) + "\n"));
     let title = prepared.title.clone().unwrap_or_default();
-    grammar::parse_text(&text, prepared.line_offset, title, options)
+    grammar::parse_text(&text, prepared.line_offset, title, options, security_level)
 }
 
 /// `}\s*\n` becomes `}\n`: the blanks after a closing brace are dropped up to the last line
@@ -131,5 +154,15 @@ pub fn parse_prepared(
     prepared: &crate::preprocess::Prepared,
     options: Options,
 ) -> Result<FlowchartDiagram, FlowchartError> {
-    parse_prepared_with_warnings(prepared, options).map(|(diagram, _)| diagram)
+    parse_prepared_with_security(prepared, options, SecurityLevel::Strict)
+}
+
+/// Parses an already prepared source with the given `securityLevel`.
+pub fn parse_prepared_with_security(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+    security_level: SecurityLevel,
+) -> Result<FlowchartDiagram, FlowchartError> {
+    parse_prepared_with_warnings_and_security(prepared, options, security_level)
+        .map(|(diagram, _)| diagram)
 }
