@@ -168,6 +168,7 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
     }
 
     for (raw, escaped) in [
+        ("R&#section:1", "R&amp;#section:1"),
         (
             "R&D#A%2525252525252525252541",
             "R&amp;D#A%2525252525252525252541",

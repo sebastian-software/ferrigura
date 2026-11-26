@@ -128,7 +128,7 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
         else {
             return BLANK_URL;
         };
-        if !decoded_before.ends_with('&') {
+        if !(decoded_before.ends_with('&') && starts_with_sink_entity_body(&head[idx + 1..])) {
             return if decoded_before.is_empty() || is_allowed_sink_candidate(&decoded_before) {
                 url
             } else {
@@ -174,7 +174,7 @@ fn is_safe_raster_data_image_url(url: &str) -> bool {
     let Some(delim) = rest.find([';', ',']) else {
         return false;
     };
-    let subtype = &rest[..delim];
+    let subtype = rest[..delim].trim_end_matches([' ', '\t', '\n', '\r']);
     SAFE_DATA_IMAGE_SUBTYPES
         .iter()
         .any(|allowed| subtype.eq_ignore_ascii_case(allowed))
@@ -202,17 +202,32 @@ fn decode_sink_step(text: &str) -> String {
     decode_uri_lossy(js_trim(&without_escapes))
 }
 
-/// Decodes numeric character references for render-sink validation, honoring standard HTML5 hex
-/// references (`&#x3A;`, `&#X6A;`) in addition to decimal and JS-radix forms handled by
-/// [`decode_html_characters`].
+/// Whether the slice immediately following `#` can begin a numeric character reference body
+/// (decimal digits, `x`/`X` followed by a hex digit, or a `%`/`&`/`\` escape that may decode to
+/// one after stripping control characters).
+fn starts_with_sink_entity_body(after_hash: &str) -> bool {
+    let mut chars = after_hash.chars().filter(|&c| !is_ctrl(c));
+    match chars.next() {
+        Some('0'..='9' | '%' | '&' | '\\') => true,
+        Some('x' | 'X') => matches!(
+            chars.next(),
+            Some('0'..='9' | 'a'..='f' | 'A'..='F' | '%' | '&' | '\\')
+        ),
+        _ => false,
+    }
+}
+
+/// Decodes numeric character references for render-sink validation using a radix-aware scanner so
+/// non-numeric `#section` fragments stay untouched and semicolonless references (such as
+/// `&#106avascript:`) stop after their valid digits instead of consuming following letters.
 fn decode_html_characters_sink(text: &str) -> String {
     let chars: Vec<char> = text.chars().filter(|&c| !is_ctrl(c)).collect();
     let mut out = String::with_capacity(chars.len());
     let mut index = 0;
     while let Some(&c) = chars.get(index) {
-        match entity_at(&chars, index) {
-            Some((end, digits)) => {
-                out.push(sink_entity_char(&digits));
+        match sink_entity_at(&chars, index) {
+            Some((end, ch)) => {
+                out.push(ch);
                 index = end;
             }
             None => {
@@ -224,21 +239,44 @@ fn decode_html_characters_sink(text: &str) -> String {
     out
 }
 
-/// Decodes the payload of `&#<digits>[;]` for render-sink validation: HTML5 hex (`x...` / `X...`)
-/// first, then [`from_char_code`] for decimal and `0x`/`0o`/`0b` forms.
-fn sink_entity_char(digits: &str) -> char {
-    if let Some(hex) = digits
-        .strip_prefix('x')
-        .or_else(|| digits.strip_prefix('X'))
-        && !hex.is_empty()
-        && hex.bytes().all(|b| b.is_ascii_hexdigit())
-    {
-        return u32::from_str_radix(hex, 16)
-            .ok()
-            .and_then(char::from_u32)
-            .unwrap_or(char::REPLACEMENT_CHARACTER);
+/// Radix-aware numeric character reference scanner for render-sink validation.
+/// Matches HTML5 decimal (`&#106;`), HTML5 hex (`&#x3A;`, `&#X6A;`), and JS-radix (`&#0x6a;`,
+/// `&#0o152;`, `&#0b1101010;`) references with an optional trailing `;`, stopping at the first
+/// non-digit for that radix.
+fn sink_entity_at(chars: &[char], start: usize) -> Option<(usize, char)> {
+    if chars.get(start) != Some(&'&') || chars.get(start + 1) != Some(&'#') {
+        return None;
     }
-    from_char_code(digits)
+    let body = start + 2;
+    let (digits_start, radix, is_digit): (usize, u32, fn(char) -> bool) =
+        match (chars.get(body).copied(), chars.get(body + 1).copied()) {
+            (Some('x' | 'X'), _) => (body + 1, 16, |c: char| c.is_ascii_hexdigit()),
+            (Some('0'), Some('x' | 'X')) => (body + 2, 16, |c: char| c.is_ascii_hexdigit()),
+            (Some('0'), Some('o' | 'O')) => (body + 2, 8, |c: char| matches!(c, '0'..='7')),
+            (Some('0'), Some('b' | 'B')) => (body + 2, 2, |c: char| matches!(c, '0' | '1')),
+            (Some(c), _) if c.is_ascii_digit() => (body, 10, |c: char| c.is_ascii_digit()),
+            _ => return None,
+        };
+
+    let mut end = digits_start;
+    while let Some(&c) = chars.get(end) {
+        if !is_digit(c) {
+            break;
+        }
+        end += 1;
+    }
+    if end == digits_start {
+        return None;
+    }
+    let digits: String = chars[digits_start..end].iter().collect();
+    if chars.get(end) == Some(&';') {
+        end += 1;
+    }
+    let decoded = u32::from_str_radix(&digits, radix)
+        .ok()
+        .and_then(char::from_u32)
+        .unwrap_or(char::REPLACEMENT_CHARACTER);
+    Some((end, decoded))
 }
 
 /// Decodes each valid UTF-8 `%XX` sequence independently, keeping malformed `%` sequences as-is.
@@ -293,6 +331,18 @@ fn decode_utf8_percent_at(bytes: &[u8], index: usize, out: &mut Vec<u8>) -> Opti
     Some((cursor - index, width))
 }
 
+/// Whether another render-sink pass is needed: a control character, a radix-aware numeric entity,
+/// a `&newline;`/`&tab;` entity, or a whitespace escape is still present.
+fn needs_another_sink_pass(text: &str) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+    chars.iter().any(|&c| is_ctrl(c))
+        || (0..chars.len()).any(|index| {
+            sink_entity_at(&chars, index).is_some()
+                || html_ctrl_entity_at(&chars, index).is_some()
+                || whitespace_escape_at(&chars, index).is_some()
+        })
+}
+
 /// Runs [`decode_sink_step`] on a sink scheme prefix until it reaches a fixpoint (catching
 /// nested percent escapes such as `notes%25253Adoc`, malformed trailing percent escapes such as
 /// `notes%3Afoo%FF`, and nested HTML entities) or exceeds `max_passes`, returning `None`
@@ -301,7 +351,7 @@ fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
     let mut decoded = decode_uri_lossy(js_trim(url));
     for _ in 0..max_passes {
         let next = decode_sink_step(&decoded);
-        let stable = next == decoded && !needs_another_pass(&next);
+        let stable = next == decoded && !needs_another_sink_pass(&next);
         decoded = next;
         if stable {
             return Some(decoded);
@@ -1445,6 +1495,7 @@ mod tests {
             "notes&#x3A;item",
             "notes&#X3a;item",
             "&#x6a;avascript:alert(1)",
+            "&#106avascript:alert(1)",
             "javascript&#x3A;alert(1)#frag",
             "%26#106;avascript:alert(1)",
             "&#38;#106;avascript:alert(1)",
@@ -1475,6 +1526,7 @@ mod tests {
             "javascript/docs.html?t=1:2",
             "dir/a%3Ab.png",
             "#section",
+            "R&#section:1",
             "R&D#A%2525252525252525252541",
             "my%20notes#A%2525252525252525252541",
             "/images/logo.png",
@@ -1505,6 +1557,8 @@ mod tests {
     fn guard_image_url_allows_safe_raster_data_uris_but_blocks_active_payloads() {
         for safe_data_url in [
             "data:image/png;base64,iVBORw0KGgo=",
+            "data:image/png ;base64,iVBORw0KGgo=",
+            "data:image/png  ,raw",
             "data:image/apng;base64,iVBORw0KGgo=",
             "data:image/tiff;base64,SUkqAAg=",
             "data:image/jxl;base64,/wo=",
