@@ -22,8 +22,8 @@ How ferrigura stands next to other renderers of Mermaid's syntax. Each project h
 | API                    | Synchronous, returns the SVG                                                             | Asynchronous, draws into the page                           | Synchronous, returns the SVG                                 | Synchronous, returns the SVG or another format                     | Synchronous, returns the SVG                        |
 | Goal                   | Mermaid's output                                                                         | (the reference)                                             | Mermaid's syntax, its own drawing                            | Mermaid's output, without pixel identity                           | Mermaid's syntax, its own drawing                   |
 | Output against Mermaid | The same geometry within 0.05 px on every comparable fixture                             | (the reference)                                             | Its own layout and style                                     | Compared as SVG DOM with mermaid-cli's output                      | Its own layout and style                            |
-| Diagram families       | 33 of 33                                                                                 | 33                                                          | 33 (those of Mermaid 12.1.0)                                 | 37 by its count, the railroad dialects one by one                  | 23                                                  |
-| Layout                 | Mermaid's engines, ported: ELK Layered, cose-bilkent, fcose, the tidy tree               | ELK (the default since 12.0), cose-bilkent, fcose, and more | Its own: layered, compound, lanes                            | Mermaid's engines, ported: dagre, ELK Layered, cose-bilkent, fcose | Its own layered layout                              |
+| Diagram families       | 10 of 33, each one completely                                                            | 33                                                          | 33 (those of Mermaid 12.1.0)                                 | 37 by its count, the railroad dialects one by one                  | 23                                                  |
+| Layout                 | Mermaid's engines, ported: ELK Layered, cose-bilkent, the tidy tree                      | ELK (the default since 12.0), cose-bilkent, fcose, and more | Its own: layered, compound, lanes                            | Mermaid's engines, ported: dagre, ELK Layered, cose-bilkent, fcose | Its own layered layout                              |
 | Text measurement       | Local registered faces or bundled defaults; HarfRust and Chromium-aligned metrics        | The DOM: `getBBox()`, `getComputedTextLength()`             | The canvas's `measureText`; an Arial width table without one | Deterministic heuristics; font files as an option                  | The fonts installed on the machine                  |
 | Fonts                  | Embedded: TrueType subsets; complete CFF/CFF2 faces                                      | The page's                                                  | The page's                                                   | The viewer's                                                       | The viewer's                                        |
 | Labels                 | SVG text                                                                                 | HTML in `foreignObject` by default                          | SVG text                                                     | HTML in `foreignObject` by default; SVG text as an option          | SVG text                                            |
@@ -52,7 +52,7 @@ The two ferrigura columns are the same: the shorthand's cache of the resolved co
 
 ¹ Chromium's timer resolution is 0.1 ms on a page that is not cross-origin isolated, which is below what Pele needs.
 
-The median per type, in milliseconds:
+The median per type that ferrigura draws, in milliseconds (the overall figures above cover all 25 types of the run):
 
 | Type          | Fixtures | ferrigura | ferrigura (Renderer) | Pele (Node) | Mermaid |
 | ------------- | -------: | --------: | -------------------: | ----------: | ------: |
@@ -63,24 +63,10 @@ The median per type, in milliseconds:
 | state v2      |       10 |      0.28 |                 0.26 |        0.07 |   23.77 |
 | ER            |       10 |      0.20 |                 0.20 |        0.07 |   18.70 |
 | gantt         |       11 |      0.17 |                 0.16 |        0.10 |    5.00 |
-| timeline      |       10 |      0.17 |                 0.17 |        0.03 |    5.87 |
-| gitGraph      |       10 |      0.10 |                 0.10 |        0.04 |    8.88 |
-| journey       |       11 |      0.10 |                 0.10 |        0.03 |    7.00 |
 | pie           |       10 |      0.04 |                 0.04 |        0.02 |    2.90 |
-| info          |        2 |      0.02 |                 0.02 |        0.01 |    1.90 |
 | mindmap       |        4 |      0.30 |                 0.29 |        0.04 |   23.98 |
-| block         |       10 |      0.09 |                 0.09 |        0.04 |   21.65 |
-| packet        |        5 |      0.04 |                 0.04 |        0.02 |    2.85 |
 | xychart       |       10 |      0.32 |                 0.32 |        0.04 |    8.12 |
-| sankey        |        3 |      0.12 |                 0.11 |        0.12 |    8.70 |
 | quadrantChart |       10 |      0.08 |                 0.08 |        0.03 |    5.83 |
-| requirement   |        2 |      0.44 |                 0.41 |        0.10 |   25.97 |
-| C4            |       10 |      0.14 |                 0.13 |        0.06 |    9.88 |
-| kanban        |       10 |      0.09 |                 0.09 |        0.02 |    6.30 |
-| architecture  |       10 |      0.24 |                 0.24 |        0.08 |   20.42 |
-| treemap       |       10 |      0.11 |                 0.11 |        0.05 |    4.33 |
-| ishikawa      |       11 |      0.05 |                 0.05 |        0.01 |    4.75 |
-| eventmodeling |        6 |      0.07 |                 0.07 |        0.04 |    4.05 |
 
 The work is not the same either: ferrigura embeds a font subset and reproduces Mermaid's layout, Mermaid lays out and measures in the page, and Pele in Node estimates text widths and draws a simpler layout.
 

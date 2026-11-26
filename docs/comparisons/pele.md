@@ -22,13 +22,13 @@ Pele reports 0.05 to 0.3 ms per diagram, against 6 to 82 ms for Mermaid.js, and 
 | Topic            | Pele                                                                                  | ferrigura                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Goal             | Mermaid's syntax, its own drawing                                                     | Mermaid's drawing: the same geometry within 0.05 px on every comparable fixture                                   |
-| Layout           | Its own layered, compound and lane layouts                                            | Mermaid's engines, ported: ELK Layered, cose-bilkent, fcose, the tidy tree, and each type's own renderer          |
+| Layout           | Its own layered, compound and lane layouts                                            | Mermaid's engines, ported: ELK Layered, cose-bilkent, the tidy tree, and each type's own renderer                 |
 | Text measurement | Canvas in a browser, an Arial width table elsewhere; depends on the fonts of the host | The bundled faces, shaped with HarfRust and rounded as Chromium rounds; the same on every host                    |
 | Fonts            | The page's fonts (`--pele-font`); `mount()` measures again when they change           | Lexica Ultralegible and Atkinson Hyperlegible Mono, embedded as a subset, so every viewer draws what was measured |
 | Colors           | CSS custom properties, eight series colors                                            | CSS custom properties with presentation attributes as a fallback (decision 0011); Mermaid's redux themes          |
 | Small screens    | Adapts the layout: `maxWidth`, and a vertical layout below 640 px (`autoDirection`)   | Scales the diagram, as Mermaid does                                                                               |
 | Runs in          | Any JavaScript runtime, browser or server, no DOM                                     | Rust: a library, a CLI and a native Node addon; no browser and no WebAssembly (decision 0006)                     |
-| Diagram types    | All 33 of Mermaid 12.1.0                                                              | 33 of 33 (P1, P2, P3 and swimlanes), those of Mermaid 12.2.0                                                      |
+| Diagram types    | All 33 of Mermaid 12.1.0                                                              | 10 of the 33 of Mermaid 12.2.0, each one completely                                                               |
 | Security         | Escapes text, filters links, images and styles, limits source, output and edges       | DOMPurify's rules on the texts, as the reference runs them; no scripts or callbacks                               |
 
 ## What ferrigura can learn from it

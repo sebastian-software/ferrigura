@@ -1,7 +1,7 @@
 # 0021 Optional draw animation belongs to the SVG output
 
-**Scope:** optional, one-time draw animation for flowchart, Gantt, Git graph,
-mind map, pie, and XY chart in the Rust library,
+**Scope:** optional, one-time draw animation for flowchart, Gantt, mind map,
+pie, and XY chart in the Rust library,
 Node.js addon and CLI. It does not change Mermaid syntax, configuration, layout,
 or the existing per-edge moving-dash animations.
 

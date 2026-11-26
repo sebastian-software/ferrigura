@@ -40,6 +40,7 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 | [0020](./0020-diagram-types-as-plugins.md)        | Diagram types are plugins of the renderer; a program links only the types it registers              |
 | [0021](./0021-optional-svg-draw-animation.md) | Supported diagrams can carry optional, script-free draw animation with length-based speed and per-section easing |
 | [0023](./0023-design-mode.md) | An optional design mode draws ferrigura's own look with its own measures, through the same layout engines; it excludes `compat` |
+| [0024](./0024-a-fixed-list-of-diagram-types.md) | ferrigura draws a fixed list of ten diagram types, each one completely, and names any other type in its error |
 
 ## Verification
 

@@ -98,7 +98,6 @@ A release build links with fat LTO in one codegen unit and takes minutes where a
 - **A parser change:** `pnpm -C tools/port port:diff <type>` compares the canonical models of ferrigura and the reference on every input of the type.
 - **Accessibility metadata:** `pnpm -C tools/port exec tsx geometry/accessibility.ts` compares roles, accessible texts and their ID references with the reference on one case per registered type, with and without metadata. It uses a fresh reference page per render because Mermaid shares some diagram state. The test in `crates/ferrigura/tests/accessibility.rs` also checks two distinct SVG IDs and repeated renderer use.
 - **A renderer change:** `pnpm -C tools/port port:geometry <type>` renders the fixtures and probes with both in Chromium and compares the geometry; `--filter <text>` narrows the fixtures and `--images <dir>` writes side-by-side PNGs.
-- **Swimlane layout corpus:** `pnpm -C tools/port exec tsx crates/swimlane/replay-corpus.ts` replays recorded inputs against the pinned reference; it checks the final output and selected stages, not fresh browser measurements or post-processing reports.
 - **Flowchart routing:** `pnpm -C tools/port port:geometry-flowchart` checks Mermaid-compatible output. Run it again with `--routing adaptive` to compare the adaptive default against the reference with the same attachment policy ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Both runs are CI gates.
 - **A change to shared code** (text, the unified renderer, configuration) must not move the output of other types: run the snapshots, and `tools/snapshots/diff.sh` shows which renders moved.
 - **A change that moves the output on purpose** rewrites the snapshots in the same commit:
@@ -178,7 +177,7 @@ covered separately by the unchanged corpus and animation snapshots.
 From `tools/port`, run `node --import tsx text/registered-fonts.ts` to compare real embedded
 TrueType, CFF, variable default-instance, mixed-design and fallback-only metrics with Chromium.
 It checks advances, ink extents and line metrics and writes `target/geometry/registered-fonts`.
-Run `pnpm run test:custom-font-renderers` for all 22 custom renderers with two supplied primary
+Run `pnpm run test:custom-font-renderers` for the custom renderers (sequence, gantt, XY chart, quadrant chart) with two supplied primary
 files; it checks loaded, computed font families and design roles and writes
 `target/custom-font-renderers/computed-fonts.json`. Both commands use explicit local fixtures,
 including licensed test-only OTF and variable fonts; they do not fetch fonts.

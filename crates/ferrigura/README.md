@@ -84,7 +84,7 @@ describes fallback, variation defaults, supported roles and viewer coverage limi
 
 ## Choosing the diagram types
 
-Every diagram type is a plugin of the renderer. `Renderer::new` registers all 33; a builder registers only the types a program draws, and the parsers, renderers and layout engines of the other types are then not linked into it, since nothing refers to them. A program that draws sequence diagrams alone is about half the size of one that draws every type.
+Every diagram type is a plugin of the renderer. `Renderer::new` registers all ten; a builder registers only the types a program draws, and the parsers, renderers and layout engines of the other types are then not linked into it, since nothing refers to them.
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -115,7 +115,7 @@ The constructors of `ferrigura::diagrams` are named after the types (`flowchart`
 | `now`          | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                  |
 | `compat`       | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                          |
 | `design`       | `bool`                | `true` draws flowcharts in the design mode: ferrigura's own look, with hairline outlines, color by a node's role, rounded corners and soft shadows, and with roomier nodes, spacing and group padding. Other diagram types and the combination with `compat` return an option error.            |
-| `animation`    | `Option<Animation>`   | Optional draw animation for flowchart, Gantt, Git graph, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error.                          |
+| `animation`    | `Option<Animation>`   | Optional draw animation for flowchart, Gantt, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error.                          |
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -164,8 +164,8 @@ Each connection, bar, or sector eases in and out independently within its durati
 
 The output embeds CSS and masks without JavaScript. Nodes fade in over 80 ms;
 subgraph frames and the title stay visible. The complete drawing is shown when
-the viewer requests reduced motion. Flowchart, Gantt, Git graph, mind map, pie
-(including donut), and XY chart support this option. For charts, `Flow` starts
+the viewer requests reduced motion. Flowchart, Gantt, mind map, pie (including
+donut), and XY chart support this option. For charts, `Flow` starts
 independent elements together. See [draw animation](../../docs/animation.md)
 for the behavior of each type.
 
@@ -274,7 +274,7 @@ Other projects render Mermaid's syntax too. Which one fits depends on where the 
 
 ## Licenses
 
-The crates are MIT-licensed, as Mermaid is: ferrigura ports Mermaid 12.2.0, and the license text is the `LICENSE` file of the repository. `ferrigura-elk`, which ports ELK, is licensed under EPL-2.0. Some crates port code or bundle fonts under the licenses of their sources, which their `NOTICE.md` files list: `ferrigura-cose`, `ferrigura-elk`, `ferrigura-jsmath`, `ferrigura-path`, `ferrigura-render` (marked), `ferrigura-swimlane`, `ferrigura-text` and `ferrigura-venn`.
+The crates are MIT-licensed, as Mermaid is: ferrigura ports Mermaid 12.2.0, and the license text is the `LICENSE` file of the repository. `ferrigura-elk`, which ports ELK, is licensed under EPL-2.0. Some crates port code or bundle fonts under the licenses of their sources, which their `NOTICE.md` files list: `ferrigura-cose`, `ferrigura-elk`, `ferrigura-jsmath`, `ferrigura-path`, `ferrigura-render` (marked) and `ferrigura-text`.
 
 The bundled fonts are under the SIL Open Font License 1.1: Lexica Ultralegible, Atkinson Hyperlegible Mono, Noto Sans Math (the arrows) and Noto Sans Symbols 2. The emoji font is a cut of Twemoji Mozilla 0.7.0, whose code is under Apache-2.0. Its art is under the Creative Commons Attribution 4.0 license. The emoji art comes from Twemoji (<https://twitter.github.io/twemoji>), used and redistributed under that license. The font holds only the 1,185 emoji with emoji presentation that the source covers, and its hinting is dropped. The file `crates/ferrigura-text/NOTICE.md` has the details.
 
