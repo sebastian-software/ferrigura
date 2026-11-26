@@ -234,16 +234,21 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         .expect("xlink:href");
     assert_eq!(href, "https://example.org/a\tb");
 
-    // Encoded delimiters revealed during sink decoding stop decoding before the query payload.
-    let encoded_query = render(
-        "stateDiagram-v2\n  s1\n  click s1 href \"item%3Fq=A%2525252525252525252541\"\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(
-        encoded_query.contains("xlink:href=\"item%3Fq=A%2525252525252525252541\""),
-        "{encoded_query}"
-    );
+    // Encoded delimiters revealed during sink decoding stop decoding before the query or fragment.
+    for encoded_rel in [
+        "item%3Fq=A%2525252525252525252541",
+        "item%23section%2525252525252525252541",
+    ] {
+        let rendered = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{encoded_rel}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            rendered.contains(&format!("xlink:href=\"{encoded_rel}\"")),
+            "url={encoded_rel:?}: {rendered}"
+        );
+    }
 
     let opaque_cid = render(
         "stateDiagram-v2\n  s1\n  click s1 href \"cid:asset%2525252525252525252541@example.com\"\n",

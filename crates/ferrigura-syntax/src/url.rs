@@ -352,37 +352,64 @@ fn needs_another_sink_pass(text: &str) -> bool {
         })
 }
 
-/// Truncates `text` at the first literal `/`, `?`, or `:` delimiter, since nothing after any of
-/// these delimiters can participate in a URI scheme.
+/// Whether `before` (the slice immediately preceding `#`) could still end with `&` after
+/// obfuscation decoding, allowing `#` to become part of a numeric character reference.
+fn before_hash_could_end_with_amp(before: &str) -> bool {
+    let trimmed = before.trim_end_matches(is_ctrl);
+    trimmed.ends_with(['&', ';']) || trimmed.contains("&#") || trimmed.contains(['%', '\\'])
+}
+
+/// Truncates `text` at the first literal `/`, `?`, or `:` delimiter, or at a literal `#`
+/// fragment delimiter that cannot form a numeric character reference with its surroundings, since
+/// nothing after such a delimiter can participate in a URI scheme.
 fn truncate_at_scheme_delimiter(text: &str) -> &str {
-    match text.find(['/', '?', ':']) {
+    let text = match text.find(['/', '?', ':']) {
         Some(pos) => &text[..=pos],
         None => text,
+    };
+    for (idx, byte) in text.bytes().enumerate() {
+        if byte != b'#' {
+            continue;
+        }
+        let before = &text[..idx];
+        let after = &text[idx + 1..];
+        if !starts_with_sink_entity_body(after) || !before_hash_could_end_with_amp(before) {
+            return &text[..=idx];
+        }
     }
+    text
 }
 
 /// Runs [`decode_sink_step`] on a sink scheme prefix until it reaches a fixpoint (catching
 /// nested percent escapes such as `notes%25253Adoc`, malformed trailing percent escapes such as
 /// `notes%3Afoo%FF`, and nested HTML entities) or exceeds `max_passes`, returning `None`
-/// (fail-closed) if it does not stabilize in time. Re-truncates at any newly decoded `/`, `?`, or
-/// `:` delimiter after each step so suffixes past a decoded delimiter cannot exhaust the budget.
+/// (fail-closed) if it does not stabilize within `max_passes` modifying passes. Re-truncates at
+/// any newly decoded `/`, `?`, `:`, or non-entity `#` delimiter after each step so suffixes past
+/// a decoded delimiter cannot exhaust the budget.
 fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
-    let mut decoded = truncate_at_scheme_delimiter(&decode_uri_lossy(js_trim(url))).to_owned();
-    for _ in 0..max_passes {
+    let trimmed = js_trim(url);
+    let initial = decode_uri_lossy(trimmed);
+    let mut passes_used = usize::from(initial != trimmed);
+    let mut decoded = truncate_at_scheme_delimiter(&initial).to_owned();
+    while passes_used < max_passes {
         let next = truncate_at_scheme_delimiter(&decode_sink_step(&decoded)).to_owned();
-        let stable = next == decoded && !needs_another_sink_pass(&next);
-        decoded = next;
-        if stable {
+        if next == decoded && !needs_another_sink_pass(&next) {
             return Some(decoded);
         }
+        if next == decoded {
+            return None;
+        }
+        decoded = next;
+        passes_used += 1;
     }
-    None
+    let check = truncate_at_scheme_delimiter(&decode_sink_step(&decoded)).to_owned();
+    (check == decoded && !needs_another_sink_pass(&decoded)).then_some(decoded)
 }
 
 /// Runs the [`sanitize_url`] fixpoint loop up to `max_passes` times (counting the initial
 /// `decodeURI` pass when it modifies the input), returning `None` (fail-closed) when nested
-/// obfuscations—including percent-only nesting—exceed `max_passes`. For ordinary URLs within
-/// budget, returns the exact `@braintree/sanitize-url` decoded spelling.
+/// obfuscations—including percent-only or mixed percent/entity nesting—exceed `max_passes`. For
+/// ordinary URLs within budget, returns the exact `@braintree/sanitize-url` decoded spelling.
 fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<String> {
     let trimmed = js_trim(url);
     let mut decoded = decode_uri(trimmed);
@@ -397,14 +424,18 @@ fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<Strin
         if !needs_another_pass(&decoded) {
             let mut probe = decoded.clone();
             while passes_used < max_passes {
-                let next_probe = decode_uri(&probe);
-                if next_probe == probe {
+                let next_probe = decode_obfuscation_step(&probe);
+                if next_probe == probe && !needs_another_pass(&probe) {
                     return Some(decoded);
+                }
+                if next_probe == probe {
+                    return None;
                 }
                 probe = next_probe;
                 passes_used += 1;
             }
-            return (decode_uri(&probe) == probe).then_some(decoded);
+            return (decode_obfuscation_step(&probe) == probe && !needs_another_pass(&probe))
+                .then_some(decoded);
         }
         if !changed {
             return None;
@@ -1575,6 +1606,8 @@ mod tests {
             "R&D#A%2525252525252525252541",
             "my%20notes#A%2525252525252525252541",
             "item%3Fq=A%2525252525252525252541",
+            "item%23section%2525252525252525252541",
+            "item%23123%2525252525252525252541",
             "/images/logo.png",
             "./relative:path.png",
         ] {
@@ -1613,6 +1646,16 @@ mod tests {
             sanitize_url("https://example.com/files?q=A%252526B"),
             "https://example.com/files?q=A%26B"
         );
+        // Mixed percent-then-entity nesting past 8 passes also fails closed on the parser path.
+        let mixed_over_budget = format!("%252526{}#65;", "#38;".repeat(9));
+        assert_eq!(sanitize_url(&mixed_over_budget), "about:blank");
+
+        // Exact 8-pass boundary on the sink path for nested entities: 8 layers (`&` encoded 7
+        // times around `&#65;`) pass, while 9 layers (`&` encoded 8 times) fail closed.
+        let eight_entity_layers = format!("&{}#65;", "#38;".repeat(7));
+        let nine_entity_layers = format!("&{}#65;", "#38;".repeat(8));
+        assert_eq!(guard_url(&eight_entity_layers, false), eight_entity_layers);
+        assert_eq!(guard_url(&nine_entity_layers, false), "about:blank");
 
         let query_nested = format!("https://example.com/?q={deeply_nested}");
         assert_eq!(guard_url(&query_nested, false), query_nested);
