@@ -54,7 +54,6 @@ pub mod timeline;
 pub mod tree_view;
 pub mod treemap;
 pub mod use_case;
-pub mod venn;
 pub mod wardley;
 pub mod xychart;
 pub mod yaml;
@@ -88,7 +87,6 @@ use ferrigura_model::timeline::TimelineDiagram;
 use ferrigura_model::tree_view::TreeViewDiagram;
 use ferrigura_model::treemap::TreemapDiagram;
 use ferrigura_model::use_case::UseCaseDiagram;
-use ferrigura_model::venn::VennDiagram;
 use ferrigura_model::wardley::WardleyDiagram;
 use ferrigura_model::xychart::XyChartDiagram;
 
@@ -160,8 +158,6 @@ pub enum DiagramType {
     TreeView,
     /// The use case diagram, written `usecase-beta`.
     UseCase,
-    /// The venn diagram, written `venn-beta`.
-    Venn,
     /// The wardley map, written `wardley-beta`, in any letter case.
     Wardley,
 }
@@ -218,7 +214,6 @@ impl DiagramType {
             Self::Railroad => "railroad",
             Self::TreeView => "tree view",
             Self::UseCase => "use case",
-            Self::Venn => "venn",
             Self::Wardley => "wardley",
         }
     }
@@ -257,7 +252,6 @@ impl DiagramType {
             Self::Railroad => "railroad",
             Self::TreeView => "treeView",
             Self::UseCase => "usecase",
-            Self::Venn => "venn",
             Self::Wardley => "wardley-beta",
         }
     }
@@ -326,8 +320,6 @@ pub enum Diagram {
     TreeView(TreeViewDiagram),
     /// A use case diagram.
     UseCase(UseCaseDiagram),
-    /// A venn diagram.
-    Venn(VennDiagram),
     /// A wardley map.
     Wardley(WardleyDiagram),
 }
@@ -419,8 +411,6 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Treemap)
     } else if is_railroad_header(rest) {
         Some(DiagramType::Railroad)
-    } else if rest.starts_with("venn-beta") {
-        Some(DiagramType::Venn)
     } else if starts_with_ignore_ascii_case(rest, "wardley-beta") {
         Some(DiagramType::Wardley)
     } else if cynefin_header(rest) {
@@ -593,7 +583,6 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         DiagramType::Railroad => railroad::parse(text).map(Diagram::Railroad),
         DiagramType::TreeView => tree_view::parse(text).map(Diagram::TreeView),
         DiagramType::UseCase => use_case::parse(text).map(Diagram::UseCase),
-        DiagramType::Venn => venn::parse(text).map(Diagram::Venn),
         DiagramType::Wardley => wardley::parse(text).map(Diagram::Wardley),
     }
 }

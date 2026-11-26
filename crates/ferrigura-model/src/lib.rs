@@ -42,7 +42,6 @@ pub mod tree_view;
 pub mod treemap;
 pub mod use_case;
 pub mod value;
-pub mod venn;
 pub mod wardley;
 pub mod xychart;
 

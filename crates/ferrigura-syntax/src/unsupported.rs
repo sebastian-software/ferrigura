@@ -19,6 +19,8 @@ const HEADERS: &[Header] = &[
     ("swimlane", |rest| {
         has_keyword_at_word_boundary(rest, "swimlane-beta")
     }),
+    // `venn/vennDetector.ts`: `/^\s*venn-beta/`.
+    ("venn", |rest| rest.starts_with("venn-beta")),
 ];
 
 /// The name of the type that ferrigura does not draw whose header starts `rest`, the text from the

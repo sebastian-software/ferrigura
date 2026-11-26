@@ -204,7 +204,6 @@ fn detects_every_header_of_the_p3_types() {
         ("Railroad-Peg-Beta\n  rule", DiagramType::Railroad),
         ("treeView-beta\n  root", DiagramType::TreeView),
         ("usecase-beta\n  actor A", DiagramType::UseCase),
-        ("venn-beta\n  set A", DiagramType::Venn),
         ("wardley-beta\n  title T", DiagramType::Wardley),
         ("WARDLEY-BETA\n  title T", DiagramType::Wardley),
     ];
@@ -258,7 +257,7 @@ fn the_radar_treeview_venn_and_railroad_headers_take_any_suffix() {
     // Their reference detectors are plain prefixes, with no `\b`.
     assert_eq!(detect("radar-betaX\n"), Some(DiagramType::Radar));
     assert_eq!(detect("treeView-betaX\n"), Some(DiagramType::TreeView));
-    assert_eq!(detect("venn-betaX\n"), Some(DiagramType::Venn));
+    assert_eq!(detect_unsupported("venn-betaX\n"), Some("venn"));
     assert_eq!(detect("railroad-betaX\n"), Some(DiagramType::Railroad));
     assert_eq!(detect("railroad-ebnf-betax\n"), Some(DiagramType::Railroad));
 }
@@ -332,5 +331,14 @@ fn the_swimlanes_headers_name_a_type_that_ferrigura_does_not_draw() {
     for text in texts {
         assert_eq!(detect(text), None, "{text:?}");
         assert_eq!(detect_unsupported(text), Some("swimlane"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_venn_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["venn-beta\n  set A"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("venn"), "{text:?}");
     }
 }

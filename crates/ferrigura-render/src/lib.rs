@@ -47,7 +47,6 @@ pub mod unified;
 pub mod use_case;
 #[cfg(test)]
 mod variables;
-pub mod venn;
 pub mod wardley;
 pub mod xychart;
 

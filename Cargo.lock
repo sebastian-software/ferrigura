@@ -232,7 +232,6 @@ dependencies = [
  "ferrigura-path",
  "ferrigura-syntax",
  "ferrigura-text",
- "ferrigura-venn",
  "ferroni",
  "memchr",
  "serde",
@@ -262,14 +261,6 @@ dependencies = [
  "skera",
  "unicode-segmentation",
  "write-fonts",
-]
-
-[[package]]
-name = "ferrigura-venn"
-version = "0.9.0"
-dependencies = [
- "ferrigura-jsmath",
- "serde_json",
 ]
 
 [[package]]
