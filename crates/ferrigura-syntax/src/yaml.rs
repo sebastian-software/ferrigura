@@ -498,10 +498,13 @@ impl State {
     }
 
     fn alloc_mapping(&mut self) -> usize {
+        self.alloc_mapping_at((self.line + 1, self.position.saturating_sub(self.line_start)))
+    }
+
+    fn alloc_mapping_at(&mut self, span: Span) -> usize {
         let id = self.mappings.len();
         self.mappings.push(Vec::new());
-        self.mapping_spans
-            .push((self.line + 1, self.position.saturating_sub(self.line_start)));
+        self.mapping_spans.push(span);
         id
     }
 
@@ -1452,7 +1455,7 @@ impl State {
                             value_node = Node::Null;
                         }
                         detected = true;
-                        pairs.get_or_insert_with(|| self.alloc_mapping());
+                        pairs.get_or_insert_with(|| self.alloc_mapping_at(composed_span));
                         at_explicit_key = false;
                         allow_compact = false;
                         key_node = self.result;
