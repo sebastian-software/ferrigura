@@ -17,7 +17,7 @@ use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
 use crate::common::{Element, decode_entities};
 use crate::context::Context;
-use crate::svg::{entity_markup, font_faces};
+use crate::svg::entity_markup;
 use builder::interfaces::{
     Drawable, HorizontalPos, PathElem, PlotData, RectElem, TextElem, VerticalPos,
 };
@@ -230,11 +230,6 @@ pub fn render_with_animation(
         &families,
         "",
     );
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(input.id, &families)
-    };
 
     let title = decode_entities(&diagram.acc_title);
     let description = decode_entities(&diagram.acc_descr);
@@ -271,7 +266,7 @@ pub fn render_with_animation(
                 .raw_text(markup(&description)),
         );
     }
-    root.push_child(Element::new("style").raw_text(format!("{style}{faces}")));
+    root.push_child(Element::new("style").raw_text(style));
     // The empty group `mermaidAPI` appends before the renderer draws (`mermaidAPI.ts:419`).
     root.push_child(Element::new("g"));
     let mut main_element = Element::new("g").with("class", "main");
