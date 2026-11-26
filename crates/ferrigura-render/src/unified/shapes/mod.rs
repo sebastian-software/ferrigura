@@ -814,5 +814,16 @@ mod tests {
             !image_svg.contains("href=\"javascript:alert(1)\""),
             "{image_svg}"
         );
+
+        // Decoded quotes in `stroke-width` are XML-escaped on stacked rectangles (`st-rect`).
+        let mut stacked = node("st-rect", "neo");
+        stacked.dom_id = "flowchart-STACK-0".to_owned();
+        stacked.css_styles = vec!["stroke-width:2ﬂ°quot¶ßx".to_owned()];
+        let stacked_shape = draw_box(&stacked, &LabelLayout::of_box(BBox::default()));
+        let stacked_svg = node_svg(&stacked, &stacked_shape, "svg-id", LinkForm::Flowchart);
+        assert!(
+            stacked_svg.contains("stroke-width=\"2&quot;x\""),
+            "{stacked_svg}"
+        );
     }
 }

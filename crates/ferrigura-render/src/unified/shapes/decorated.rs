@@ -39,8 +39,9 @@ fn merged_path(outline: &Outline, style: &str, stroke_width: &str) -> String {
         .map(rough::data)
         .collect();
     format!(
-        "<g><path d=\"{}\" stroke-width=\"{stroke_width}\" stroke-dasharray=\"0 0\"{}/></g>",
+        "<g><path d=\"{}\" stroke-width=\"{}\" stroke-dasharray=\"0 0\"{}/></g>",
         data.join(" "),
+        crate::svg::escape(stroke_width),
         attribute("style", style),
     )
 }

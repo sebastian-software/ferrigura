@@ -136,7 +136,7 @@ fn is_xml_reference(reference: &str) -> bool {
 }
 
 /// Whether XML 1.0 allows the character in a document.
-fn is_xml_char(c: char) -> bool {
+pub(crate) fn is_xml_char(c: char) -> bool {
     matches!(c, '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..)
 }
 

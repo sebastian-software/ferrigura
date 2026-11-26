@@ -416,4 +416,95 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .filter(|id| id.starts_with("graph-Order-Item"))
         .collect();
     assert_eq!(req_ids, vec!["graph-Order-Item", "graph-Order-Item-1"]);
+
+    // Renderer-owned SVG IDs (e.g. `{svg_id}-drop-shadow`) are reserved before assigning diagram
+    // element IDs so a requirement named `drop#45;shadow` cannot duplicate the drop-shadow filter.
+    let shadow_collide = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "requirementDiagram\n  requirement \"drop#45;shadow\" {\n    id: 1\n  }\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let shadow_doc = roxmltree::Document::parse(&shadow_collide).expect("well-formed SVG XML");
+    let shadow_filter_ids: Vec<&str> = shadow_doc
+        .descendants()
+        .filter(|node| node.has_tag_name("filter"))
+        .filter_map(|node| node.attribute("id"))
+        .collect();
+    assert!(shadow_filter_ids.contains(&"graph-drop-shadow"));
+    let shadow_node_ids: Vec<&str> = shadow_doc
+        .descendants()
+        .filter(|node| node.has_tag_name("g"))
+        .filter_map(|node| node.attribute("id"))
+        .filter(|id| id.starts_with("graph-drop-shadow"))
+        .collect();
+    assert_eq!(shadow_node_ids, vec!["graph-drop-shadow-1"]);
+
+    // Distinct control-character entities (`#1;`, `#2;`) that both serialize as U+FFFD are
+    // disambiguated after XML character replacement so IDs and fragment links remain unique.
+    let ctrl_collide = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Part#1;A`\n  class `Part#2;A`\n  click `Part#1;A` href \"#graph-classId-Part#1;A\"\n  click `Part#2;A` href \"#graph-classId-Part#2;A\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let ctrl_doc = roxmltree::Document::parse(&ctrl_collide).expect("well-formed SVG XML");
+    let ctrl_ids: Vec<&str> = ctrl_doc
+        .descendants()
+        .filter_map(|node| node.attribute("id"))
+        .filter(|id| id.starts_with("graph-classId-Part"))
+        .collect();
+    assert_eq!(
+        ctrl_ids,
+        vec![
+            "graph-classId-Part\u{fffd}A",
+            "graph-classId-Part\u{fffd}A-1"
+        ]
+    );
+    let ctrl_hrefs: Vec<&str> = ctrl_doc
+        .descendants()
+        .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(
+        ctrl_hrefs,
+        vec![
+            "#graph-classId-Part\u{fffd}A",
+            "#graph-classId-Part\u{fffd}A-1"
+        ]
+    );
+
+    // In `loose` mode, a literal tab in a backtick-quoted class name normalizes to a space in
+    // the XML `id` attribute, so a matching click fragment link is remapped to the same canonical
+    // target while unrelated links stay verbatim.
+    let loose_config = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let literal_tab = ferrigura::Renderer::new(&loose_config)
+        .render_with(
+            "classDiagram\n  class `Tab\tClass`\n  class Other\n  click `Tab\tClass` href \"#graph-classId-Tab\tClass\"\n  click Other href \"https://example.com/\tkeep\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let literal_tab_doc = roxmltree::Document::parse(&literal_tab).expect("well-formed SVG XML");
+    assert!(
+        literal_tab_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Tab Class")),
+        "{literal_tab}"
+    );
+    let literal_tab_hrefs: Vec<&str> = literal_tab_doc
+        .descendants()
+        .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(
+        literal_tab_hrefs,
+        vec!["#graph-classId-Tab Class", "https://example.com/\tkeep"]
+    );
 }
