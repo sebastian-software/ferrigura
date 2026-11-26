@@ -49,7 +49,7 @@ mod util;
 mod wave;
 
 use ferrigura_syntax::sanitize::sanitize_text;
-use ferrigura_syntax::url::format_url;
+use ferrigura_syntax::url::guard_url;
 
 use super::Config;
 use super::clusters;
@@ -312,7 +312,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
     node_svg_with_security(node, shape, svg_id, links, false)
 }
 
-/// [`node_svg`], routing the node's link through `formatUrl` (`loose` is
+/// [`node_svg`], validating the node's link with [`guard_url`] (`loose` is
 /// `securityLevel === 'loose'`).
 #[must_use]
 pub fn node_svg_with_security(
@@ -363,11 +363,8 @@ pub fn node_svg_with_security(
         .as_deref()
         .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
 
-    let link = node
-        .link
-        .as_deref()
-        .and_then(|link| format_url(link, loose));
-    match link.as_deref() {
+    let link = node.link.as_deref().map(|link| guard_url(link, loose));
+    match link {
         // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
         // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.
         Some(link) if links == LinkForm::PostRender => {
@@ -755,6 +752,16 @@ mod tests {
                     "form={form:?} url={unsafe_url:?}: {svg}"
                 );
             }
+
+            let mut encoded_node = node("f-circ", "neo");
+            encoded_node.dom_id = "flowchart-A-0".to_owned();
+            encoded_node.link = Some("https://example.com/files?q=A%26B".to_owned());
+            let encoded_shape = draw_box(&encoded_node, &LabelLayout::of_box(BBox::default()));
+            let encoded_svg = node_svg(&encoded_node, &encoded_shape, "svg-id", form);
+            assert!(
+                encoded_svg.contains("xlink:href=\"https://example.com/files?q=A%26B\""),
+                "form={form:?}: {encoded_svg}"
+            );
 
             let mut loose_node = node("f-circ", "neo");
             loose_node.dom_id = "flowchart-A-0".to_owned();

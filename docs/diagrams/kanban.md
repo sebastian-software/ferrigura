@@ -55,7 +55,7 @@ The shapes are `unified/shapes/kanban_section.rs` and `kanban_item.rs`, ports of
 
 - **Labels are SVG text** ([0009](../decisions/0009-svg-text-labels.md)). The reference's default for kanban is HTML labels (its `htmlLabels = false` assignment is made on a copy of the configuration and has no effect); the harness forces `htmlLabels: false`, which is the path ferrigura compares.
 - **`look: handDrawn`** is excluded by the harness, and ferrigura draws the classic geometry.
-- **The ticket link's URL** is written as configured; the reference's output goes through its sanitizer, which may change an unsafe URL. Not probed.
+- **The ticket link's URL** is validated at render time against `securityLevel`: unless `securityLevel` is `loose`, disallowed schemes (such as `javascript:`, `vbscript:`, and `data:`, including encoded or control-character obfuscations) are replaced with `about:blank`, while accepted URLs are written verbatim (in Mermaid, `kanbanItem` writes the substituted URL directly and relies on post-render `DOMPurify.sanitize`; see [0014](../decisions/0014-upstream-reference-at-a-pin.md)). Under `securityLevel: loose`, the substituted URL is written unchanged.
 - **Sanitizing reads no configuration**: the reference's `sanitizeText` reads `dompurifyConfig`, and ferrigura's takes none. No input in the differential sets it.
 - **Colors** are custom properties with presentation attributes ([0011](../decisions/0011-themes-as-css-variables.md)).
 

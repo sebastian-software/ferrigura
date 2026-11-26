@@ -448,7 +448,8 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         );
     }
 
-    // Valid https URLs continue to work.
+    // Valid https URLs continue to work, without double-decoding click URLs or decoding
+    // percent-encoded delimiters in image URLs.
     let valid_click = render(
         "flowchart TD\nA[x]\nclick A \"https://example.com/docs\"\n",
         &Value::empty_object(),
@@ -458,6 +459,15 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         valid_click.contains("xlink:href=\"https://example.com/docs\""),
         "{valid_click}"
     );
+    let encoded_click = render(
+        "flowchart TD\nA[x]\nclick A \"https://example.com/files?q=A%252526B\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        encoded_click.contains("xlink:href=\"https://example.com/files?q=A%26B\""),
+        "{encoded_click}"
+    );
     let valid_image = render(
         "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",
         &Value::empty_object(),
@@ -466,6 +476,15 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
     assert!(
         valid_image.contains("<image href=\"https://example.com/logo.png\""),
         "{valid_image}"
+    );
+    let encoded_image = render(
+        "flowchart TD\nA@{ img: \"https://example.com/A%23B.png\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        encoded_image.contains("<image href=\"https://example.com/A%23B.png\""),
+        "{encoded_image}"
     );
 
     // Untrusted front matter cannot bypass default strict securityLevel.
@@ -533,6 +552,16 @@ fn kanban_ticket_links_are_sanitized_under_default_security_level() {
     assert!(
         valid.contains("xlink:href=\"https://tickets.example.com/browse/MC-42\""),
         "{valid}"
+    );
+
+    let encoded = render(
+        "%%{init: {\"kanban\": {\"ticketBaseUrl\": \"https://tickets.example.com/browse/#TICKET#\"}}}%%\nkanban\n  Todo\n    Task@{ ticket: 'A%23B' }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        encoded.contains("xlink:href=\"https://tickets.example.com/browse/A%23B\""),
+        "{encoded}"
     );
 
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));

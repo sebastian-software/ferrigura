@@ -122,13 +122,23 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
     }
 
     let valid = render(
-        "stateDiagram-v2\n  s1\n  click s1 href \"https://example.com/state\"\n",
+        "stateDiagram-v2\n  s1\n  click s1 href \"https://google.com\"\n",
         &Value::empty_object(),
     )
     .expect("renders");
     assert!(
-        valid.contains("xlink:href=\"https://example.com/state\""),
+        valid.contains("xlink:href=\"https://google.com\""),
         "{valid}"
+    );
+
+    let encoded = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https://example.com/A%23B\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        encoded.contains("xlink:href=\"https://example.com/A%23B\""),
+        "{encoded}"
     );
 
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));

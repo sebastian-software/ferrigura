@@ -67,6 +67,25 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
     }
 }
 
+/// Validates `url` at an SVG rendering sink without altering accepted URLs.
+///
+/// When `loose` is `true` (`securityLevel === 'loose'`), `url` is returned unchanged. Otherwise
+/// [`sanitize_url`] checks the scheme; if it rejects `url` (producing `about:blank`),
+/// `"about:blank"` is returned. Accepted URLs are returned verbatim so already-sanitized parser
+/// links are not decoded a second time and percent-encoded delimiters (such as `%23` or `%26`) in
+/// image or link URLs are preserved.
+#[must_use]
+pub fn guard_url(url: &str, loose: bool) -> &str {
+    if loose {
+        return url;
+    }
+    if sanitize_url(url) == BLANK_URL {
+        BLANK_URL
+    } else {
+        url
+    }
+}
+
 /// `sanitizeUrl` of `@braintree/sanitize-url` 7.1.2.
 ///
 /// The URL is decoded until no escape, entity, control character or whitespace escape is left. It
@@ -467,7 +486,7 @@ fn escaped_byte(bytes: &[u8], index: usize) -> Option<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{decode_uri, format_url, sanitize_url, word_to_uint16};
+    use super::{decode_uri, format_url, guard_url, sanitize_url, word_to_uint16};
 
     // The expected values are the output of the reference in node 24, which runs `index.js` of
     // @braintree/sanitize-url 7.1.2. Each surrogate code unit in an expected value is written as
@@ -1131,5 +1150,43 @@ mod tests {
         // The reference joins the pair into U+1F600. A Rust string cannot hold the two halves,
         // so each one is a replacement character here (see `from_char_code`).
         assert_eq!(sanitize_url("&#55357;&#56832;"), "\u{FFFD}\u{FFFD}");
+    }
+
+    #[test]
+    fn guard_url_blocks_unsafe_schemes_without_rewriting_accepted_urls() {
+        for unsafe_url in [
+            "javascript:alert(1)",
+            "JAVASCRIPT:alert(1)",
+            "vbscript:msgbox(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "&#106;avascript:alert(1)",
+            "javascript&colon;alert(1)",
+            "%6aavascript:alert(1)",
+            "java\tscript:alert(1)",
+            "java\\tscript:alert(1)",
+        ] {
+            assert_eq!(
+                guard_url(unsafe_url, false),
+                "about:blank",
+                "{unsafe_url:?}"
+            );
+            assert_eq!(guard_url(unsafe_url, true), unsafe_url, "{unsafe_url:?}");
+        }
+
+        for safe_url in [
+            "https://google.com",
+            "https://example.com/A%23B.png",
+            "https://example.com/files?q=A%26B",
+            "https://tickets.example.com/browse/A%2526B",
+            "#section",
+            "/images/logo.png",
+        ] {
+            assert_eq!(guard_url(safe_url, false), safe_url, "{safe_url:?}");
+            assert_eq!(
+                guard_url(guard_url(safe_url, false), false),
+                safe_url,
+                "idempotent {safe_url:?}"
+            );
+        }
     }
 }

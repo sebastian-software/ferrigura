@@ -7,7 +7,7 @@ mod notes;
 pub mod style;
 
 use ferrigura_model::state::{Link, StateDiagram};
-use ferrigura_syntax::url::format_url;
+use ferrigura_syntax::url::guard_url;
 use ferrigura_text::{
     FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
 };
@@ -236,7 +236,7 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
 
 /// The links of the clicked states (`stateRenderer-v3-unified.ts` 80-133): each link wraps the node of
 /// its state, if that node is a state and not a composite. The quotes around an address and a tooltip
-/// are removed, as the reference removes them, and the address is routed through `formatUrl`.
+/// are removed, as the reference removes them, and the address is validated with [`guard_url`].
 fn apply_links(data: &mut LayoutData, links: &[Link], security_level: &str) {
     let loose = security_level == "loose";
     for link in links {
@@ -246,7 +246,8 @@ fn apply_links(data: &mut LayoutData, links: &[Link], security_level: &str) {
         if node.is_group {
             continue;
         }
-        node.link = format_url(&unquote(&link.url), loose);
+        let cleaned = unquote(&link.url);
+        node.link = Some(guard_url(&cleaned, loose).to_owned());
         let tooltip = unquote(&link.tooltip);
         node.tooltip = (!tooltip.is_empty()).then_some(tooltip);
     }

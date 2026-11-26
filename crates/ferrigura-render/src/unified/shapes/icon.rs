@@ -20,7 +20,7 @@
 //! ferrigura does not check that, so it draws an image whose sizes it was given.
 
 use ferrigura_model::value::Value;
-use ferrigura_syntax::url::{format_url, sanitize_url};
+use ferrigura_syntax::url::guard_url;
 
 use super::rough::{self, Outline};
 use super::util::{self, Part, Styles, label_helper, styles2string};
@@ -522,7 +522,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
     let mut after_label = outline_group(&outer, &stroke_width);
     if let Some(img) = node.img.as_deref().filter(|img| !img.is_empty()) {
         let loose = input.config.globals.security_level == "loose";
-        let href = format_url(img, loose).unwrap_or_else(|| sanitize_url(img));
+        let href = guard_url(img, loose);
         let image_y = if top {
             outer_height / 2.0 - image_height
         } else {
@@ -530,7 +530,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         };
         after_label.push_str(&format!(
             "<image href=\"{}\" width=\"{}\" height=\"{}\" preserveAspectRatio=\"none\" transform=\"translate({}, {})\"/>",
-            escape(&href),
+            escape(href),
             number(image_width),
             number(image_height),
             number(-image_width / 2.0),
@@ -699,6 +699,19 @@ mod tests {
                 .contains("<image href=\"https://example.com/logo.png\""),
             "{}",
             valid_shape.after_label
+        );
+
+        let mut encoded = node("imageSquare", "neo");
+        encoded.img = Some("https://example.com/A%23B.png".to_owned());
+        encoded.asset_width = Some(48.0);
+        encoded.asset_height = Some(48.0);
+        let encoded_shape = draw_box(&encoded, &label);
+        assert!(
+            encoded_shape
+                .after_label
+                .contains("<image href=\"https://example.com/A%23B.png\""),
+            "{}",
+            encoded_shape.after_label
         );
 
         let loose_config = MermaidConfig {

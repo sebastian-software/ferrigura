@@ -18,7 +18,7 @@ use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::kanban::KanbanDiagram;
 use ferrigura_model::value::Value;
 use ferrigura_syntax::sanitize::sanitize_text;
-use ferrigura_syntax::url::format_url;
+use ferrigura_syntax::url::guard_url;
 use ferrigura_text::{EmbeddedFamily, Run, embed_runs};
 
 use crate::RenderError;
@@ -360,14 +360,15 @@ fn layout_label(
 }
 
 /// The link of an item's ticket (`kanbanItem.ts` 46-47): the ticket base URL with the first
-/// `#TICKET#` replaced by the ticket, routed through `formatUrl`. The item needs a ticket and the
+/// `#TICKET#` replaced by the ticket, validated with [`guard_url`]. The item needs a ticket and the
 /// configuration a base URL.
 fn ticket_link(item: &DataNode, base_url: &str, loose: bool) -> Option<String> {
     let ticket = item.ticket.as_deref().filter(|ticket| !ticket.is_empty())?;
     if base_url.is_empty() {
         return None;
     }
-    format_url(&replace_first(base_url, "#TICKET#", ticket), loose)
+    let raw = replace_first(base_url, "#TICKET#", ticket);
+    Some(guard_url(&raw, loose).to_owned())
 }
 
 /// `String.prototype.replace` with a string pattern: the first occurrence is replaced, and the

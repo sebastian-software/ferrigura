@@ -13,7 +13,7 @@
 //! `data-look`, as `insertNode` writes it from the look of the node, which the item does not have.
 
 use ferrigura_model::value::Value;
-use ferrigura_syntax::url::format_url;
+use ferrigura_syntax::url::guard_url;
 
 use crate::svg::{escape, number};
 use crate::unified::geom::BBox;
@@ -93,7 +93,7 @@ pub fn kanban_item(item: &KanbanItem<'_>) -> KanbanItemShape {
     kanban_item_with_security(item, false)
 }
 
-/// Draws an item (`kanbanItem`), routing any ticket link through `formatUrl` (`loose` is
+/// Draws an item (`kanbanItem`), validating any ticket link with [`guard_url`] (`loose` is
 /// `securityLevel === 'loose'`).
 #[must_use]
 pub fn kanban_item_with_security(item: &KanbanItem<'_>, loose: bool) -> KanbanItemShape {
@@ -138,12 +138,12 @@ pub fn kanban_item_with_security(item: &KanbanItem<'_>, loose: bool) -> KanbanIt
     // inserted before the title (`kanbanItem.ts` 46-53), and the ticket's label goes into it.
     let mut inner = String::new();
     inner.push_str(&rectangle(item, rect_x, rect_y, total_width, total_height));
-    match item.ticket_link.and_then(|link| format_url(link, loose)) {
+    match item.ticket_link.map(|link| guard_url(link, loose)) {
         Some(link) => {
             // `target` is not in the markup: the sanitizer of the reference's output drops it.
             inner.push_str(&format!(
                 "<a class=\"kanban-ticket-link\" xlink:href=\"{}\">{}</a>",
-                escape(&link),
+                escape(link),
                 label_group(item.ticket, ticket_at, item),
             ));
             inner.push_str(&label_group(item.title, title_at, item));
@@ -303,6 +303,12 @@ mod tests {
         assert!(
             valid.contains("xlink:href=\"https://tickets.example.com/browse/MC-1\""),
             "{valid}"
+        );
+
+        let encoded = draw_with_link(Some("https://tickets.example.com/browse/A%23B"), false);
+        assert!(
+            encoded.contains("xlink:href=\"https://tickets.example.com/browse/A%23B\""),
+            "{encoded}"
         );
 
         let loose = draw_with_link(Some("javascript:alert(1)"), true);

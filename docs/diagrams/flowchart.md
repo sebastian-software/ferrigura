@@ -296,6 +296,7 @@ Terminal labels, `slideTerminalLabelsOffFrames` and the like are in `terminal.rs
 - **Layout.** ELK Layered only: `layout: dagre`, the other `elk.*` algorithms and a container's `algorithm` other than layered are laid out with Layered, with a warning ([0012](../decisions/0012-layout-engines-ported-exactly.md)).
 - **Inherited shape names** such as `constructor` are rejected. Unpatched Mermaid accepts them, so the reference carries a patch that rejects them too ([0014](../decisions/0014-upstream-reference-at-a-pin.md)).
 - **Error messages** from the grammar are ferrigura's own ([0007](../decisions/0007-hand-written-parsers.md)).
+- **Image URLs** (`imageSquare` `href`) are validated at render time against `securityLevel`: unless `securityLevel` is `loose`, disallowed schemes are replaced with `about:blank` while accepted URLs stay verbatim; Mermaid leaves `imageSquare`'s `href` to its post-render `DOMPurify.sanitize` pass ([0014](../decisions/0014-upstream-reference-at-a-pin.md)).
 - **Callbacks** of `click` are not run: the SVG is static ([0006](../decisions/0006-rust-only-no-browser.md)).
 
 ## Known gaps

@@ -10,6 +10,8 @@ The intentional flowchart default is recorded in [0019](./0019-adaptive-flowchar
 
 The rendering facade rejects raw input above the host `maxTextSize`, including comments and front matter, instead of using Mermaid’s replacement or comment-stripping fallback. It also rejects invalid host limits and keeps both limits under host control even if `secure` is customized. These defensive differences apply before diagram parsing.
 
+Because ferrigura renders SVG strings in Rust without Mermaid’s post-render browser `DOMPurify.sanitize` pass ([0006](./0006-rust-only-no-browser.md)), rendering sinks that Mermaid leaves to DOMPurify (`state` click links, `kanban` ticket links, `imageSquare` `href`, and unified node anchors) validate URLs against `securityLevel` and replace disallowed schemes (such as `javascript:`, `vbscript:`, and `data:`) with `about:blank` unless `securityLevel` is `loose`, while preserving accepted URLs verbatim so safe links and images match the reference.
+
 The optional draw animation is recorded in [0021](./0021-optional-svg-draw-animation.md).
 It leaves the static render unchanged. Its final geometry and pixels are checked
 against that render, while ordinary geometry runs compare static output with
