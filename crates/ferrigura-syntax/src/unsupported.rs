@@ -33,6 +33,32 @@ const HEADERS: &[Header] = &[
     }),
     // `venn/vennDetector.ts`: `/^\s*venn-beta/`.
     ("venn", |rest| rest.starts_with("venn-beta")),
+    // `treeView/detector.ts`: `/^\s*treeView-beta/`.
+    ("tree view", |rest| rest.starts_with("treeView-beta")),
+    // `ishikawa/ishikawaDetector.ts`: `/^\s*ishikawa(-beta)?\b/i`.
+    ("ishikawa", is_ishikawa_header),
+    // `git/gitGraphDetector.ts`: `/^\s*gitGraph/`.
+    ("Git graph", |rest| rest.starts_with("gitGraph")),
+    // `c4/c4Detector.ts`: `/^\s*C4Context|C4Container|C4Component|C4Dynamic|C4Deployment/`.
+    ("C4", is_c4_header),
+    // `architecture/architectureDetector.ts`: `/^\s*architecture/`.
+    ("architecture", |rest| rest.starts_with("architecture")),
+    // `cynefin/cynefinDetector.ts`: `/^\s*cynefin-beta(?:[\s:]|$)/`.
+    ("cynefin", cynefin_header),
+    // `eventmodeling/detector.ts`: `/^\s*eventmodeling/`.
+    ("event modeling", |rest| rest.starts_with("eventmodeling")),
+    // The four railroad detectors: `/^\s*railroad-beta/i` and its EBNF, ABNF and PEG forms.
+    ("railroad", is_railroad_header),
+    // `wardley/wardleyDetector.ts`: `/^\s*wardley-beta/i`.
+    ("wardley", |rest| {
+        starts_with_ignore_ascii_case(rest, "wardley-beta")
+    }),
+    // `timeline/detector.ts`: `/^\s*timeline/`.
+    ("timeline", |rest| rest.starts_with("timeline")),
+    // `user-journey/journeyDetector.ts`: `/^\s*journey/`.
+    ("user journey", |rest| rest.starts_with("journey")),
+    // `kanban/detector.ts`: `/^\s*kanban/`.
+    ("kanban", |rest| rest.starts_with("kanban")),
 ];
 
 /// The name of the type that ferrigura does not draw whose header starts `rest`, the text from the
@@ -45,7 +71,7 @@ pub(crate) fn name(rest: &str) -> Option<&'static str> {
 }
 
 /// `^\s*(?:C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)`, the detector of `c4`.
-pub(crate) fn is_c4_header(text: &str) -> bool {
+fn is_c4_header(text: &str) -> bool {
     [
         "C4Context",
         "C4Container",
@@ -60,7 +86,7 @@ pub(crate) fn is_c4_header(text: &str) -> bool {
 /// `^\s*ishikawa(-beta)?\b` with the `i` flag, the detector of `ishikawa`. The optional `-beta` does
 /// not change the outcome: the match ends at a word boundary after `ishikawa`, and a hyphen or the end
 /// of the text always gives one. The `i` flag folds ASCII letters only, as it does without `u`.
-pub(crate) fn is_ishikawa_header(text: &str) -> bool {
+fn is_ishikawa_header(text: &str) -> bool {
     text.get(..8)
         .is_some_and(|keyword| keyword.eq_ignore_ascii_case("ishikawa"))
         && !matches!(text.as_bytes().get(8), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_')
@@ -69,7 +95,7 @@ pub(crate) fn is_ishikawa_header(text: &str) -> bool {
 /// `^\s*<keyword>\b`, the header test of the agentflow and swimlane detectors: the keyword ends at a
 /// word boundary, so an ASCII letter, a digit or `_` after it is not taken, while a hyphen, a space
 /// or a non-ASCII character is.
-pub(crate) fn has_keyword_at_word_boundary(text: &str, keyword: &str) -> bool {
+fn has_keyword_at_word_boundary(text: &str, keyword: &str) -> bool {
     text.strip_prefix(keyword).is_some_and(|after| {
         !matches!(after.as_bytes().first(), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_')
     })
@@ -77,14 +103,14 @@ pub(crate) fn has_keyword_at_word_boundary(text: &str, keyword: &str) -> bool {
 
 /// `^\s*<keyword>` with the `i` flag, for the detectors that fold case (`railroad`, `wardley`). The
 /// fold covers ASCII letters only, as it does without the `u` flag.
-pub(crate) fn starts_with_ignore_ascii_case(text: &str, keyword: &str) -> bool {
+fn starts_with_ignore_ascii_case(text: &str, keyword: &str) -> bool {
     text.get(..keyword.len())
         .is_some_and(|head| head.eq_ignore_ascii_case(keyword))
 }
 
 /// The four railroad headers: `railroad-beta`, `railroad-ebnf-beta`, `railroad-abnf-beta` and
 /// `railroad-peg-beta`, with the `i` flag. None of them is a prefix of another.
-pub(crate) fn is_railroad_header(text: &str) -> bool {
+fn is_railroad_header(text: &str) -> bool {
     [
         "railroad-beta",
         "railroad-ebnf-beta",
@@ -99,7 +125,7 @@ pub(crate) fn is_railroad_header(text: &str) -> bool {
 /// (`diagram-api/detectType.ts`, `diagram-api/regexes.ts`). That function replaces a `%%` comment
 /// that ends in a line break with a line break, so `cynefin-beta%%note` followed by a line is the
 /// header too, and the same comment without a line break after it is not.
-pub(crate) fn cynefin_header(text: &str) -> bool {
+fn cynefin_header(text: &str) -> bool {
     if keyword_followed_by(text, "cynefin-beta", |c| text::is_js_space(c) || c == ':') {
         return true;
     }
@@ -110,11 +136,7 @@ pub(crate) fn cynefin_header(text: &str) -> bool {
 
 /// Whether `text` starts with `keyword`, and the character after it is absent or accepted by
 /// `follows`: `^\s*<keyword>(?:[\s:]|$)` for cynefin and `^\s*<keyword>(?:\s|$)` for use case.
-pub(crate) fn keyword_followed_by(
-    text: &str,
-    keyword: &str,
-    follows: impl Fn(char) -> bool,
-) -> bool {
+fn keyword_followed_by(text: &str, keyword: &str, follows: impl Fn(char) -> bool) -> bool {
     text.strip_prefix(keyword)
         .is_some_and(|after| match after.chars().next() {
             None => true,

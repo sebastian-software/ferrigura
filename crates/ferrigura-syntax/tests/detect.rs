@@ -28,31 +28,12 @@ fn detects_pie_info_and_flowchart_at_the_first_content_line() {
 fn detects_every_header_of_the_p2_types() {
     let cases = [
         ("mindmap\n  root", DiagramType::Mindmap),
-        (
-            "architecture\n  service db(database)[DB]",
-            DiagramType::Architecture,
-        ),
-        (
-            "architecture-beta\n  service db(database)[DB]",
-            DiagramType::Architecture,
-        ),
-        ("C4Context\n  title T", DiagramType::C4),
-        ("C4Container\n  title T", DiagramType::C4),
-        ("C4Component\n  title T", DiagramType::C4),
-        ("C4Dynamic\n  title T", DiagramType::C4),
-        ("C4Deployment\n  title T", DiagramType::C4),
-        ("kanban\n  Todo", DiagramType::Kanban),
         ("quadrantChart\n  title T", DiagramType::QuadrantChart),
         ("sankey\n  a,b,8", DiagramType::Sankey),
         ("packet\n  0-15: \"Header\"", DiagramType::Packet),
         ("xychart\n  x-axis [a, b]", DiagramType::XyChart),
-        ("eventmodeling\n  tf 01 cmd", DiagramType::EventModeling),
         ("treemap\n  \"Root\"", DiagramType::Treemap),
         ("treemap-beta\n  \"Root\"", DiagramType::Treemap),
-        ("ishikawa\n  Cause", DiagramType::Ishikawa),
-        ("ishikawa-beta\n  Cause", DiagramType::Ishikawa),
-        ("ISHIKAWA\n  Cause", DiagramType::Ishikawa),
-        ("Ishikawa-Beta\n  Cause", DiagramType::Ishikawa),
     ];
     for (text, expected) in cases {
         assert_eq!(detect(text), Some(expected), "{text:?}");
@@ -109,7 +90,7 @@ fn the_p2_headers_are_case_sensitive_except_ishikawa() {
 #[test]
 fn the_p2_detectors_without_a_word_boundary_take_any_suffix() {
     // The reference's detectors for these types are plain prefixes, with no `\b`.
-    assert_eq!(detect("kanbanboard\n  Todo"), Some(DiagramType::Kanban));
+    assert_eq!(detect_unsupported("kanbanboard\n  Todo"), Some("kanban"));
     assert_eq!(detect("mindmapper\n  root"), Some(DiagramType::Mindmap));
     assert_eq!(detect("treemapX\n  \"Root\""), Some(DiagramType::Treemap));
 }
@@ -185,20 +166,7 @@ fn front_matter_after_blank_lines_or_comments_is_skipped_as_the_reference_does()
 /// `usecase/usecaseDetector` `/^\s*usecase-beta(?:\s|$)/`.
 #[test]
 fn detects_every_header_of_the_p3_types() {
-    let cases = [
-        ("cynefin-beta\n  title T", DiagramType::Cynefin),
-        ("cynefin-beta:\n  title T", DiagramType::Cynefin),
-        ("radar-beta\n  axis a", DiagramType::Radar),
-        ("railroad-beta\n  rule", DiagramType::Railroad),
-        ("railroad-ebnf-beta\n  rule", DiagramType::Railroad),
-        ("railroad-abnf-beta\n  rule", DiagramType::Railroad),
-        ("railroad-peg-beta\n  rule", DiagramType::Railroad),
-        ("RAILROAD-BETA\n  rule", DiagramType::Railroad),
-        ("Railroad-Peg-Beta\n  rule", DiagramType::Railroad),
-        ("treeView-beta\n  root", DiagramType::TreeView),
-        ("wardley-beta\n  title T", DiagramType::Wardley),
-        ("WARDLEY-BETA\n  title T", DiagramType::Wardley),
-    ];
+    let cases = [("radar-beta\n  axis a", DiagramType::Radar)];
     for (text, expected) in cases {
         assert_eq!(detect(text), Some(expected), "{text:?}");
     }
@@ -226,15 +194,15 @@ fn the_word_boundary_headers_reject_a_word_character_after_the_keyword() {
 #[test]
 fn the_cynefin_and_use_case_headers_need_a_space_or_the_end_after_the_keyword() {
     // `cynefin-beta(?:[\s:]|$)` takes a colon, `usecase-beta(?:\s|$)` does not; neither takes a hyphen.
-    assert_eq!(detect("cynefin-beta:x\n"), Some(DiagramType::Cynefin));
-    assert_eq!(detect("cynefin-beta\tx\n"), Some(DiagramType::Cynefin));
-    assert_eq!(detect("cynefin-beta"), Some(DiagramType::Cynefin));
+    assert_eq!(detect_unsupported("cynefin-beta:x\n"), Some("cynefin"));
+    assert_eq!(detect_unsupported("cynefin-beta\tx\n"), Some("cynefin"));
+    assert_eq!(detect_unsupported("cynefin-beta"), Some("cynefin"));
     assert_eq!(detect("cynefin-beta-x\n"), None);
     assert_eq!(detect("cynefin-betax\n"), None);
     // `detectType` strips the comment first: a comment that ends a line is a boundary, one that does not is not.
     assert_eq!(
-        detect("cynefin-beta%%note\ncomplex \"A\"\n"),
-        Some(DiagramType::Cynefin)
+        detect_unsupported("cynefin-beta%%note\ncomplex \"A\"\n"),
+        Some("cynefin")
     );
     assert_eq!(detect("cynefin-beta%%note"), None);
     assert_eq!(detect_unsupported("usecase-beta\n"), Some("use case"));
@@ -251,10 +219,13 @@ fn the_cynefin_and_use_case_headers_need_a_space_or_the_end_after_the_keyword() 
 fn the_radar_treeview_venn_and_railroad_headers_take_any_suffix() {
     // Their reference detectors are plain prefixes, with no `\b`.
     assert_eq!(detect("radar-betaX\n"), Some(DiagramType::Radar));
-    assert_eq!(detect("treeView-betaX\n"), Some(DiagramType::TreeView));
+    assert_eq!(detect_unsupported("treeView-betaX\n"), Some("tree view"));
     assert_eq!(detect_unsupported("venn-betaX\n"), Some("venn"));
-    assert_eq!(detect("railroad-betaX\n"), Some(DiagramType::Railroad));
-    assert_eq!(detect("railroad-ebnf-betax\n"), Some(DiagramType::Railroad));
+    assert_eq!(detect_unsupported("railroad-betaX\n"), Some("railroad"));
+    assert_eq!(
+        detect_unsupported("railroad-ebnf-betax\n"),
+        Some("railroad")
+    );
 }
 
 #[test]
@@ -298,8 +269,8 @@ fn the_p3_headers_are_taken_only_at_the_start_of_the_text() {
         Some(DiagramType::Sequence)
     );
     assert_eq!(
-        detect("timeline\n  railroad-beta"),
-        Some(DiagramType::Timeline)
+        detect_unsupported("timeline\n  railroad-beta"),
+        Some("timeline")
     );
 }
 
@@ -313,7 +284,7 @@ fn the_four_railroad_headers_are_each_taken_and_none_is_a_prefix_of_another() {
         "railroad-abnf-beta\n",
         "railroad-peg-beta\n",
     ] {
-        assert_eq!(detect(text), Some(DiagramType::Railroad), "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("railroad"), "{text:?}");
     }
     assert_eq!(detect("railroad\n  rule"), None);
     assert_eq!(detect("railroad-ebnf\n  rule"), None);
@@ -371,5 +342,107 @@ fn the_agentflow_headers_name_a_type_that_ferrigura_does_not_draw() {
     for text in texts {
         assert_eq!(detect(text), None, "{text:?}");
         assert_eq!(detect_unsupported(text), Some("agentflow"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_tree_view_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["treeView-beta\n  root"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("tree view"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_ishikawa_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = [
+        "ishikawa\n  Cause",
+        "ishikawa-beta\n  Cause",
+        "ISHIKAWA\n  Cause",
+        "Ishikawa-Beta\n  Cause",
+    ];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("ishikawa"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_c4_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = [
+        "C4Context\n  title T",
+        "C4Container\n  title T",
+        "C4Component\n  title T",
+        "C4Dynamic\n  title T",
+        "C4Deployment\n  title T",
+    ];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("C4"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_architecture_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = [
+        "architecture\n  service db(database)[DB]",
+        "architecture-beta\n  service db(database)[DB]",
+    ];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("architecture"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_cynefin_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["cynefin-beta\n  title T", "cynefin-beta:\n  title T"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("cynefin"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_event_modeling_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["eventmodeling\n  tf 01 cmd"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("event modeling"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_railroad_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = [
+        "railroad-beta\n  rule",
+        "railroad-ebnf-beta\n  rule",
+        "railroad-abnf-beta\n  rule",
+        "railroad-peg-beta\n  rule",
+        "RAILROAD-BETA\n  rule",
+        "Railroad-Peg-Beta\n  rule",
+    ];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("railroad"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_wardley_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["wardley-beta\n  title T", "WARDLEY-BETA\n  title T"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("wardley"), "{text:?}");
+    }
+}
+
+#[test]
+fn the_kanban_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["kanban\n  Todo"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("kanban"), "{text:?}");
     }
 }

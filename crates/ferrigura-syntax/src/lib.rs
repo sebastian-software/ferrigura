@@ -18,7 +18,6 @@ mod entities;
 mod error;
 pub mod flowchart;
 pub mod gantt;
-pub mod git_graph;
 mod lexer;
 pub mod preprocess;
 mod scan;
@@ -26,64 +25,38 @@ mod text;
 mod unsupported;
 pub mod url;
 
-pub mod architecture;
-pub mod c4;
 pub mod class;
 pub mod config;
-pub mod cynefin;
 pub mod er;
-pub mod event_modeling;
 pub mod info;
-pub mod ishikawa;
-pub mod journey;
-pub mod kanban;
 pub mod mindmap;
 pub mod packet;
 pub mod pie;
 pub mod quadrant_chart;
 pub mod radar;
-pub mod railroad;
 pub mod sanitize;
 pub mod sankey;
 pub mod sequence;
 pub mod state;
-pub mod timeline;
-pub mod tree_view;
 pub mod treemap;
-pub mod wardley;
 pub mod xychart;
 pub mod yaml;
 
-use ferrigura_model::architecture::ArchitectureDiagram;
-use ferrigura_model::c4::C4Diagram;
 use ferrigura_model::class::ClassDiagram;
-use ferrigura_model::cynefin::CynefinDiagram;
 use ferrigura_model::er::ErDiagram;
-use ferrigura_model::event_modeling::EventModelingDiagram;
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::gantt::GanttDiagram;
-use ferrigura_model::git_graph::GitGraphDiagram;
 use ferrigura_model::info::InfoDiagram;
-use ferrigura_model::ishikawa::IshikawaDiagram;
-use ferrigura_model::journey::JourneyDiagram;
-use ferrigura_model::kanban::KanbanDiagram;
 use ferrigura_model::mindmap::MindmapDiagram;
 use ferrigura_model::packet::PacketDiagram;
 use ferrigura_model::pie::PieDiagram;
 use ferrigura_model::quadrant_chart::QuadrantChartDiagram;
 use ferrigura_model::radar::RadarDiagram;
-use ferrigura_model::railroad::RailroadDiagram;
 use ferrigura_model::sankey::SankeyDiagram;
 use ferrigura_model::sequence::SequenceDiagram;
 use ferrigura_model::state::StateDiagram;
-use ferrigura_model::timeline::TimelineDiagram;
-use ferrigura_model::tree_view::TreeViewDiagram;
 use ferrigura_model::treemap::TreemapDiagram;
-use ferrigura_model::wardley::WardleyDiagram;
 use ferrigura_model::xychart::XyChartDiagram;
-
-use unsupported::starts_with_ignore_ascii_case;
-use unsupported::{cynefin_header, is_c4_header, is_ishikawa_header, is_railroad_header};
 
 pub use error::ParseError;
 pub use preprocess::decode_entities;
@@ -97,12 +70,6 @@ pub enum DiagramType {
     Info,
     /// The flowchart, written `flowchart` or `graph`.
     Flowchart,
-    /// The timeline.
-    Timeline,
-    /// The user journey, written `journey`.
-    Journey,
-    /// The gitGraph diagram.
-    GitGraph,
     /// The ER diagram, written `erDiagram`.
     Er,
     /// The class diagram, written `classDiagram` or `classDiagram-v2`.
@@ -123,30 +90,10 @@ pub enum DiagramType {
     Sankey,
     /// The quadrant chart, written `quadrantChart`.
     QuadrantChart,
-    /// The C4 diagram, written with one of its five headers: `C4Context`, `C4Container`,
-    /// `C4Component`, `C4Dynamic` or `C4Deployment`.
-    C4,
-    /// The kanban board, written `kanban`.
-    Kanban,
-    /// The architecture diagram, written `architecture` or `architecture-beta`.
-    Architecture,
     /// The treemap, written `treemap` or `treemap-beta`.
     Treemap,
-    /// The ishikawa diagram, written `ishikawa` or `ishikawa-beta`, in any letter case.
-    Ishikawa,
-    /// The event modeling diagram, written `eventmodeling`.
-    EventModeling,
-    /// The cynefin diagram, written `cynefin-beta`.
-    Cynefin,
     /// The radar, written `radar-beta`.
     Radar,
-    /// The railroad diagram, written `railroad-beta`, `railroad-ebnf-beta`, `railroad-abnf-beta` or
-    /// `railroad-peg-beta`, in any letter case.
-    Railroad,
-    /// The tree view, written `treeView-beta`.
-    TreeView,
-    /// The wardley map, written `wardley-beta`, in any letter case.
-    Wardley,
 }
 
 impl DiagramType {
@@ -174,9 +121,6 @@ impl DiagramType {
             Self::Pie => "pie",
             Self::Info => "info",
             Self::Flowchart => "flowchart",
-            Self::Timeline => "timeline",
-            Self::Journey => "user journey",
-            Self::GitGraph => "Git graph",
             Self::Er => "ER",
             Self::Class => "class",
             Self::Sequence => "sequence",
@@ -187,17 +131,8 @@ impl DiagramType {
             Self::XyChart => "XY chart",
             Self::Sankey => "sankey",
             Self::QuadrantChart => "quadrant chart",
-            Self::C4 => "C4",
-            Self::Kanban => "kanban",
-            Self::Architecture => "architecture",
             Self::Treemap => "treemap",
-            Self::Ishikawa => "ishikawa",
-            Self::EventModeling => "event modeling",
-            Self::Cynefin => "cynefin",
             Self::Radar => "radar",
-            Self::Railroad => "railroad",
-            Self::TreeView => "tree view",
-            Self::Wardley => "wardley",
         }
     }
 
@@ -208,9 +143,6 @@ impl DiagramType {
             Self::Pie => "pie",
             Self::Info => "info",
             Self::Flowchart => "flowchart",
-            Self::Timeline => "timeline",
-            Self::Journey => "journey",
-            Self::GitGraph => "gitGraph",
             Self::Er => "er",
             Self::Class => "class",
             Self::Sequence => "sequence",
@@ -221,17 +153,8 @@ impl DiagramType {
             Self::XyChart => "xyChart",
             Self::Sankey => "sankey",
             Self::QuadrantChart => "quadrantChart",
-            Self::C4 => "c4",
-            Self::Kanban => "kanban",
-            Self::Architecture => "architecture",
             Self::Treemap => "treemap",
-            Self::Ishikawa => "ishikawa",
-            Self::EventModeling => "eventmodeling",
-            Self::Cynefin => "cynefin",
             Self::Radar => "radar",
-            Self::Railroad => "railroad",
-            Self::TreeView => "treeView",
-            Self::Wardley => "wardley-beta",
         }
     }
 }
@@ -245,12 +168,6 @@ pub enum Diagram {
     Info(InfoDiagram),
     /// A flowchart.
     Flowchart(FlowchartDiagram),
-    /// A timeline.
-    Timeline(TimelineDiagram),
-    /// A user journey.
-    Journey(JourneyDiagram),
-    /// A gitGraph.
-    GitGraph(GitGraphDiagram),
     /// An ER diagram.
     Er(ErDiagram),
     /// A class diagram.
@@ -271,28 +188,10 @@ pub enum Diagram {
     Sankey(SankeyDiagram),
     /// A quadrant chart.
     QuadrantChart(QuadrantChartDiagram),
-    /// A C4 diagram.
-    C4(C4Diagram),
-    /// A kanban board.
-    Kanban(KanbanDiagram),
-    /// An architecture diagram.
-    Architecture(ArchitectureDiagram),
     /// A treemap.
     Treemap(TreemapDiagram),
-    /// An ishikawa diagram.
-    Ishikawa(IshikawaDiagram),
-    /// An event modeling diagram.
-    EventModeling(EventModelingDiagram),
-    /// A cynefin diagram.
-    Cynefin(CynefinDiagram),
     /// A radar.
     Radar(RadarDiagram),
-    /// A railroad diagram.
-    Railroad(RailroadDiagram),
-    /// A tree view.
-    TreeView(TreeViewDiagram),
-    /// A wardley map.
-    Wardley(WardleyDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -328,12 +227,6 @@ fn with_header<T>(prepared: &preprocess::Prepared, read: impl FnOnce(&str) -> T)
 fn detect_header(rest: &str) -> Option<DiagramType> {
     if rest.starts_with("mindmap") {
         Some(DiagramType::Mindmap)
-    } else if rest.starts_with("architecture") {
-        Some(DiagramType::Architecture)
-    } else if is_c4_header(rest) {
-        Some(DiagramType::C4)
-    } else if rest.starts_with("kanban") {
-        Some(DiagramType::Kanban)
     } else if rest.starts_with("classDiagram") {
         Some(DiagramType::Class)
     } else if rest.starts_with("erDiagram") {
@@ -348,14 +241,8 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Sequence)
     } else if rest.starts_with("graph") || rest.starts_with("flowchart") {
         Some(DiagramType::Flowchart)
-    } else if rest.starts_with("timeline") {
-        Some(DiagramType::Timeline)
-    } else if rest.starts_with("gitGraph") {
-        Some(DiagramType::GitGraph)
     } else if rest.starts_with("stateDiagram") {
         Some(DiagramType::State)
-    } else if rest.starts_with("journey") {
-        Some(DiagramType::Journey)
     } else if rest.starts_with("quadrantChart") {
         Some(DiagramType::QuadrantChart)
     } else if has_keyword_alone(rest, "sankey") {
@@ -364,22 +251,10 @@ fn detect_header(rest: &str) -> Option<DiagramType> {
         Some(DiagramType::Packet)
     } else if has_keyword_alone(rest, "xychart") {
         Some(DiagramType::XyChart)
-    } else if rest.starts_with("eventmodeling") {
-        Some(DiagramType::EventModeling)
-    } else if rest.starts_with("treeView-beta") {
-        Some(DiagramType::TreeView)
     } else if rest.starts_with("radar-beta") {
         Some(DiagramType::Radar)
-    } else if is_ishikawa_header(rest) {
-        Some(DiagramType::Ishikawa)
     } else if rest.starts_with("treemap") {
         Some(DiagramType::Treemap)
-    } else if is_railroad_header(rest) {
-        Some(DiagramType::Railroad)
-    } else if starts_with_ignore_ascii_case(rest, "wardley-beta") {
-        Some(DiagramType::Wardley)
-    } else if cynefin_header(rest) {
-        Some(DiagramType::Cynefin)
     } else {
         None
     }
@@ -446,9 +321,6 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         DiagramType::Flowchart => flowchart::parse(text)
             .map(Diagram::Flowchart)
             .map_err(|flowchart::FlowchartError::Syntax(error)| error),
-        DiagramType::Timeline => timeline::parse(text).map(Diagram::Timeline),
-        DiagramType::Journey => journey::parse(text).map(Diagram::Journey),
-        DiagramType::GitGraph => git_graph::parse(text).map(Diagram::GitGraph),
         DiagramType::Class => class::parse(text).map(Diagram::Class),
         DiagramType::Sequence => sequence::parse(text).map(Diagram::Sequence),
         DiagramType::State => state::parse(text).map(Diagram::State),
@@ -458,17 +330,8 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         DiagramType::XyChart => xychart::parse(text).map(Diagram::XyChart),
         DiagramType::Sankey => sankey::parse(text).map(Diagram::Sankey),
         DiagramType::QuadrantChart => quadrant_chart::parse(text).map(Diagram::QuadrantChart),
-        DiagramType::C4 => c4::parse(text).map(Diagram::C4),
-        DiagramType::Kanban => kanban::parse(text).map(Diagram::Kanban),
-        DiagramType::Architecture => architecture::parse(text).map(Diagram::Architecture),
         DiagramType::Treemap => treemap::parse(text).map(Diagram::Treemap),
-        DiagramType::Ishikawa => ishikawa::parse(text).map(Diagram::Ishikawa),
-        DiagramType::EventModeling => event_modeling::parse(text).map(Diagram::EventModeling),
-        DiagramType::Cynefin => cynefin::parse(text).map(Diagram::Cynefin),
         DiagramType::Radar => radar::parse(text).map(Diagram::Radar),
-        DiagramType::Railroad => railroad::parse(text).map(Diagram::Railroad),
-        DiagramType::TreeView => tree_view::parse(text).map(Diagram::TreeView),
-        DiagramType::Wardley => wardley::parse(text).map(Diagram::Wardley),
     }
 }
 

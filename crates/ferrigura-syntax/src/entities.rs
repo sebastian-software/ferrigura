@@ -1,6 +1,6 @@
 //! The named character references of HTML5, as the browser reads them in text and attributes.
 //!
-//! Generated for the journey and sanitizing ports from two packages of the reference's dependency
+//! Generated for the sanitizing port from two packages of the reference's dependency
 //! tree: `character-entities@2.0.2` (every name, written without its `;`, sorted) and
 //! `character-entities-legacy@1.1.4` (the names a browser also reads without a `;`). A name
 //! with two code points, such as `NotEqualTilde`, has both in its value. The table is sorted by

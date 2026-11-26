@@ -33,9 +33,8 @@ const generated = [
   '**/pnpm-lock.yaml',
   // Generated from elkjs output
   'crates/ferrigura-elk/tests/corpus/**',
-  // Generated from Chromium captures of Mermaid 12.2.0's cose-bilkent and fcose layouts
+  // Generated from Chromium captures of Mermaid 12.2.0's cose-bilkent layout
   'crates/ferrigura-cose/tests/corpus/**',
-  'crates/ferrigura-cose/tests/fcose-corpus/**',
   // Generated from Chromium's getBBox() by tools/port/path-bounds.ts
   'crates/ferrigura-path/tests/corpus/**',
   // Generated from reference captures by the M5 port tools (tools/port/)
