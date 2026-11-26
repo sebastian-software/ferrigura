@@ -485,4 +485,35 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
             && parse_err.contains("YAML alias expansion exceeded size limit"),
         "expected line 6 size limit error from parse, got {parse_err}"
     );
+
+    // Value spans, flow-sequence pair spans, and non-BMP character columns stay exact.
+    let multiline_value_cycle = "---\nx: &x\n  self:\n    *x\n---\nflowchart LR\nA --> B\n";
+    let value_err = renderer
+        .render(multiline_value_cycle)
+        .expect_err("multiline mapping value cycle must fail")
+        .to_string();
+    assert!(
+        value_err.starts_with("line 4, column 5:"),
+        "expected line 4, column 5 for multiline value cycle, got {value_err}"
+    );
+
+    let flow_pair_cycle = "---\nx: &x [key: *x\n]\n---\nflowchart LR\nA --> B\n";
+    let flow_err = renderer
+        .render(flow_pair_cycle)
+        .expect_err("flow pair cycle must fail")
+        .to_string();
+    assert!(
+        flow_err.starts_with("line 2, column 13:"),
+        "expected line 2, column 13 for flow pair cycle, got {flow_err}"
+    );
+
+    let emoji_cycle = "---\nemoji: &x [\"😀\", *x]\n---\nflowchart LR\nA --> B\n";
+    let emoji_err = renderer
+        .render(emoji_cycle)
+        .expect_err("emoji cyclic front matter must fail")
+        .to_string();
+    assert!(
+        emoji_err.starts_with("line 2, column 17:"),
+        "expected line 2, column 17 for emoji cycle, got {emoji_err}"
+    );
 }

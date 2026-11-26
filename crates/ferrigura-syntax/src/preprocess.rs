@@ -69,23 +69,44 @@ fn front_matter_fields(
         Ok(Some(Yaml::Mapping(pairs))) => Ok(pairs),
         Ok(_) => Ok(Vec::new()),
         Err(error) => {
+            let line_index = error.line.saturating_sub(1);
+            let char_column = body
+                .split('\n')
+                .nth(line_index)
+                .map_or(error.column, |line| {
+                    utf16_offset_to_chars(line, error.column)
+                });
             let indent_offset = if !indent.is_empty()
                 && raw_body
                     .split('\n')
-                    .nth(error.line.saturating_sub(1))
+                    .nth(line_index)
                     .is_some_and(|line| line.starts_with(indent))
             {
-                indent.encode_utf16().count()
+                indent.chars().count()
             } else {
                 0
             };
             Err(ParseError {
                 line: error.line + body_line_offset,
-                column: error.column + indent_offset + 1,
+                column: char_column + indent_offset + 1,
                 message: format!("invalid front matter: {}", error.message),
             })
         }
     }
+}
+
+/// Converts a 0-based UTF-16 code-unit offset on `line` into a 0-based Unicode scalar count.
+fn utf16_offset_to_chars(line: &str, utf16_offset: usize) -> usize {
+    let mut units = 0usize;
+    let mut chars = 0usize;
+    for ch in line.chars() {
+        if units >= utf16_offset {
+            break;
+        }
+        units += ch.len_utf16();
+        chars += 1;
+    }
+    chars
 }
 
 /// Removes the captured indent from the start of each line that has it, as `extractFrontMatter`

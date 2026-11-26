@@ -390,7 +390,14 @@ fn find_type(tag: &str, kind: Option<Kind>) -> Option<TypeId> {
 
 type Span = (usize, usize);
 type SequenceItem = (Node, Span);
-type MappingEntry = (usize, Node, Span);
+
+#[derive(Clone, Copy)]
+struct MappingEntry {
+    key: usize,
+    value: Node,
+    key_span: Span,
+    value_span: Span,
+}
 
 /// The state of `js-yaml`'s reader: the input in UTF-16 code units (so that columns and
 /// indentation count as they do in JavaScript), and the position, the line and the node being read.
@@ -420,6 +427,7 @@ struct State {
     anchor: Option<String>,
     kind: Option<Kind>,
     result: Node,
+    last_node_span: Span,
 }
 
 /// The reader's state, saved and restored by `js-yaml` when it reads a node twice.
@@ -434,6 +442,7 @@ struct Snapshot {
     anchor: Option<String>,
     kind: Option<Kind>,
     result: Node,
+    last_node_span: Span,
 }
 
 type Res<T> = Result<T, YamlError>;
@@ -469,6 +478,7 @@ impl State {
             anchor: None,
             kind: None,
             result: Node::Null,
+            last_node_span: (1, 0),
         }
     }
 
@@ -622,15 +632,16 @@ impl State {
                 path.push(collection);
                 let pairs = &self.mappings[id];
                 let mut converted = Vec::with_capacity(pairs.len().min(budget.remaining_nodes));
-                for &(key_id, value, entry_span) in pairs {
-                    let item_span = entry_span.max(next_span);
-                    let key = &self.strings[key_id];
+                for entry in pairs {
+                    let key_span = entry.key_span.max(next_span);
+                    let value_span = entry.value_span.max(next_span);
+                    let key = &self.strings[entry.key];
                     budget
                         .take_bytes(key.len())
-                        .map_err(|msg| err(msg, item_span))?;
+                        .map_err(|msg| err(msg, key_span))?;
                     converted.push((
                         key.clone(),
-                        self.to_yaml_on(value, item_span, path, budget)?,
+                        self.to_yaml_on(entry.value, value_span, path, budget)?,
                     ));
                 }
                 path.pop();
@@ -673,6 +684,7 @@ impl State {
             anchor: self.anchor.clone(),
             kind: self.kind,
             result: self.result,
+            last_node_span: self.last_node_span,
         }
     }
 
@@ -686,6 +698,7 @@ impl State {
         self.anchor = snapshot.anchor;
         self.kind = snapshot.kind;
         self.result = snapshot.result;
+        self.last_node_span = snapshot.last_node_span;
     }
 
     /// `storeAnchor`: the first store in a transaction records what the name held before it.
@@ -1024,6 +1037,7 @@ impl State {
         }
 
         let mut plain_resolved = false;
+        let node_span = (self.line + 1, self.position.saturating_sub(self.line_start));
         if indent_status == 1 || context == Context::BlockOut {
             let flow_indent = if matches!(context, Context::FlowIn | Context::FlowOut) {
                 parent_indent
@@ -1121,6 +1135,7 @@ impl State {
             }
         }
 
+        self.last_node_span = node_span;
         self.depth -= 1;
         Ok(self.tag.is_some() || self.anchor.is_some() || has_content)
     }
@@ -1335,7 +1350,7 @@ impl State {
             let line = self.line;
             self.compose_node(node_indent, Context::BlockIn, false, true)?;
             let item = std::mem::replace(&mut self.result, Node::Null);
-            self.sequences[items_id].push((item, item_span));
+            self.sequences[items_id].push((item, self.last_node_span.max(item_span)));
             self.skip_separation_space(true);
             ch = self.ch();
 
@@ -1393,7 +1408,7 @@ impl State {
                 if ch == unit(b'?') {
                     if at_explicit_key {
                         let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
-                        self.store_pair(pairs_id, key_node, Node::Null, key_span)?;
+                        self.store_pair(pairs_id, key_node, Node::Null, key_span, key_span)?;
                         key_node = Node::Null;
                         value_node = Node::Null;
                     }
@@ -1416,6 +1431,7 @@ impl State {
                 if !self.compose_node(flow_indent, Context::FlowOut, false, true)? {
                     break;
                 }
+                let composed_span = self.last_node_span;
                 if self.line == line {
                     ch = self.ch();
                     while is_whitespace(ch) {
@@ -1432,7 +1448,7 @@ impl State {
                         }
                         if at_explicit_key {
                             let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
-                            self.store_pair(pairs_id, key_node, Node::Null, key_span)?;
+                            self.store_pair(pairs_id, key_node, Node::Null, key_span, key_span)?;
                             value_node = Node::Null;
                         }
                         detected = true;
@@ -1440,7 +1456,7 @@ impl State {
                         at_explicit_key = false;
                         allow_compact = false;
                         key_node = self.result;
-                        key_span = entry_start;
+                        key_span = composed_span;
                     } else if detected {
                         return Err(
                             self.error("can not read an implicit mapping pair; a colon is missed")
@@ -1463,17 +1479,20 @@ impl State {
             }
 
             if self.line == line || self.line_indent > node_indent {
+                let mut value_span = key_span;
                 if self.compose_node(node_indent, Context::BlockOut, true, allow_compact)? {
                     let node = std::mem::replace(&mut self.result, Node::Null);
                     if at_explicit_key {
                         key_node = node;
+                        key_span = self.last_node_span;
                     } else {
                         value_node = node;
+                        value_span = self.last_node_span;
                     }
                 }
                 if !at_explicit_key {
                     let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
-                    self.store_pair(pairs_id, key_node, value_node, key_span)?;
+                    self.store_pair(pairs_id, key_node, value_node, key_span, value_span)?;
                     key_node = Node::Null;
                     value_node = Node::Null;
                 }
@@ -1490,7 +1509,7 @@ impl State {
 
         if at_explicit_key {
             let pairs_id = *pairs.get_or_insert_with(|| self.alloc_mapping());
-            self.store_pair(pairs_id, key_node, Node::Null, key_span)?;
+            self.store_pair(pairs_id, key_node, Node::Null, key_span, key_span)?;
         }
         if detected {
             let pairs_id = pairs.unwrap_or_else(|| self.alloc_mapping());
@@ -1508,7 +1527,8 @@ impl State {
         pairs: usize,
         key: Node,
         value: Node,
-        entry_span: (usize, usize),
+        key_span: Span,
+        value_span: Span,
     ) -> Res<()> {
         let key_id = match key {
             // Reusing an existing arena handle allocates and copies zero bytes; retained keys are
@@ -1537,9 +1557,9 @@ impl State {
                 )
                 .map_err(|message| {
                     let (line, column) = if let Node::Sequence(seq_id) = other {
-                        self.sequence_spans[seq_id]
+                        self.sequence_spans[seq_id].max(key_span)
                     } else {
-                        entry_span
+                        key_span
                     };
                     YamlError {
                         line,
@@ -1558,11 +1578,16 @@ impl State {
         let key_text = &self.strings[key_id];
         if self.mappings[pairs]
             .iter()
-            .any(|&(existing, _, _)| self.strings[existing] == *key_text)
+            .any(|entry| self.strings[entry.key] == *key_text)
         {
             return Err(self.error("duplicated mapping key"));
         }
-        self.mappings[pairs].push((key_id, value, entry_span));
+        self.mappings[pairs].push(MappingEntry {
+            key: key_id,
+            value,
+            key_span,
+            value_span,
+        });
         Ok(())
     }
 
@@ -1627,33 +1652,36 @@ impl State {
             }
 
             let line = self.line;
-            let entry_span = (self.line + 1, self.position.saturating_sub(self.line_start));
             self.compose_node(node_indent, Context::FlowIn, false, true)?;
+            let key_span = self.last_node_span;
             let key_node = std::mem::replace(&mut self.result, Node::Null);
             self.skip_separation_space(true);
             ch = self.ch();
 
             let mut value_node = Node::Null;
+            let mut value_span = key_span;
             if (is_explicit_pair || self.line == line) && ch == unit(b':') {
                 is_pair = true;
                 self.position += 1;
                 self.skip_separation_space(true);
                 self.compose_node(node_indent, Context::FlowIn, false, true)?;
+                value_span = self.last_node_span;
                 value_node = std::mem::replace(&mut self.result, Node::Null);
             }
 
             match collection {
                 CollectionId::Mapping(pairs) => {
-                    self.store_pair(pairs, key_node, value_node, entry_span)?;
+                    self.store_pair(pairs, key_node, value_node, key_span, value_span)?;
                 }
                 CollectionId::Sequence(items) if is_pair => {
                     // A pair in a sequence is a mapping of its own.
                     let single = self.alloc_mapping();
-                    self.store_pair(single, key_node, value_node, entry_span)?;
-                    self.sequences[items].push((Node::Mapping(single), entry_span));
+                    self.mapping_spans[single] = key_span;
+                    self.store_pair(single, key_node, value_node, key_span, value_span)?;
+                    self.sequences[items].push((Node::Mapping(single), key_span));
                 }
                 CollectionId::Sequence(items) => {
-                    self.sequences[items].push((key_node, entry_span));
+                    self.sequences[items].push((key_node, key_span));
                 }
             }
 
