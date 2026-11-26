@@ -462,4 +462,27 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
         indented_err.starts_with("line 3, column 9:"),
         "expected line 3, column 9 for indented cyclic front matter, got {indented_err}"
     );
+
+    // A later mapping entry that crosses the byte budget blames that entry's line (line 6), not
+    // the leading `title:` line (line 2), across both `Renderer::render` and `ferrigura_syntax::parse`.
+    let titled_bomb = format!(
+        "---\ntitle: Demo\ns: &s \"{payload}\"\na: &a [*s, *s, *s, *s]\nb: &b [*a, *a, *a, *a]\nc: [*b, *b, *b, *b]\n---\nflowchart LR\nA --> B\n"
+    );
+    let render_err = renderer
+        .render(&titled_bomb)
+        .expect_err("titled string bomb must fail in render")
+        .to_string();
+    assert!(
+        render_err.starts_with("line 6,")
+            && render_err.contains("YAML alias expansion exceeded size limit"),
+        "expected line 6 size limit error from render, got {render_err}"
+    );
+    let parse_err = ferrigura_syntax::parse(&titled_bomb)
+        .expect_err("titled string bomb must fail in syntax::parse")
+        .to_string();
+    assert!(
+        parse_err.starts_with("line 6,")
+            && parse_err.contains("YAML alias expansion exceeded size limit"),
+        "expected line 6 size limit error from parse, got {parse_err}"
+    );
 }
