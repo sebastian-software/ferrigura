@@ -312,6 +312,28 @@ fn an_even_bundle_moves_so_that_its_straight_edge_leaves_from_the_middle() {
 }
 
 #[test]
+fn a_node_stands_in_the_middle_of_an_even_fan_of_equals() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // `B` has a child of its own and `A` none: the two are still equals under `P`.
+    let text = "flowchart TD\n  P --> A\n  P --> B\n  B --> C\n  Q --> R\n  R --> S\n  R --> T\n  S --> U\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let x = |id: &str| node_middle(&designed, id).0;
+    assert!((x("P") - (x("A") + x("B")) / 2.0).abs() <= 1.0);
+    // A chain with a branch beside it is no fan: the chain runs straight on.
+    for edge in ["L_Q_R_0", "L_R_S_0", "L_S_U_0"] {
+        assert!(runs_straight_down(&designed, edge), "{edge} bends");
+    }
+    assert!(!runs_straight_down(&designed, "L_R_T_0"));
+    // A class diagram: each parent stands in the middle of its two children.
+    let text = "classDiagram\n  class Shape { <<interface>> +area() double }\n  class Polygon { <<abstract>> #List~Point~ vertices }\n  class Triangle { +area() double }\n  class Rectangle { -double width +area() double }\n  class Circle { -double radius }\n  Shape <|.. Circle\n  Shape <|.. Polygon\n  Polygon <|-- Triangle\n  Polygon <|-- Rectangle\n  Rectangle <|-- Square\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let x = |name: &str| class_middle(&designed, name).0;
+    assert!((x("Polygon") - (x("Triangle") + x("Rectangle")) / 2.0).abs() <= 1.0);
+    assert!((x("Shape") - (x("Circle") + x("Polygon")) / 2.0).abs() <= 1.0);
+    assert!((x("Square") - x("Rectangle")).abs() <= 1.0);
+}
+
+#[test]
 fn the_mode_sets_a_diagram_with_more_room() {
     let renderer = Renderer::new(&Value::empty_object());
     let plain = renderer.render_with(FLOW, &default(None)).unwrap();
