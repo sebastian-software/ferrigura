@@ -506,6 +506,15 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         raster_data_image.contains("<image href=\"data:image/png;base64,iVBORw0KGgo=\""),
         "{raster_data_image}"
     );
+    let apng_data_image = render(
+        "flowchart TD\nA@{ img: \"data:image/apng;base64,iVBORw0KGgo=\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        apng_data_image.contains("<image href=\"data:image/apng;base64,iVBORw0KGgo=\""),
+        "{apng_data_image}"
+    );
     let svg_data_image = render(
         "flowchart TD\nA@{ img: \"data:image/svg+xml,<svg onload=alert(1)>\", w: 48, h: 48 }\n",
         &Value::empty_object(),

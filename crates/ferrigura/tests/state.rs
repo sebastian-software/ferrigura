@@ -151,15 +151,17 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         "{relative_colon}"
     );
 
-    let unsupported_scheme = render(
-        "stateDiagram-v2\n  s1\n  click s1 href \"notes://do-your-thing/id\"\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(
-        unsupported_scheme.contains("xlink:href=\"about:blank\""),
-        "{unsupported_scheme}"
-    );
+    for unsupported in ["notes://do-your-thing/id", "notes%25253Adoc"] {
+        let unsupported_scheme = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{unsupported}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            unsupported_scheme.contains("xlink:href=\"about:blank\""),
+            "url={unsupported:?}: {unsupported_scheme}"
+        );
+    }
 
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
     let loose = render(

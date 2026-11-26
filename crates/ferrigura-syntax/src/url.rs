@@ -59,6 +59,7 @@ const ALLOWED_SINK_SCHEMES: &[&str] = &[
 /// Excludes active formats such as `svg+xml`.
 const SAFE_DATA_IMAGE_SUBTYPES: &[&str] = &[
     "png",
+    "apng",
     "jpeg",
     "jpg",
     "gif",
@@ -69,10 +70,11 @@ const SAFE_DATA_IMAGE_SUBTYPES: &[&str] = &[
     "vnd.microsoft.icon",
 ];
 
-/// Maximum obfuscation-decoding passes permitted when validating a URL prefix at an SVG sink.
-/// Legitimate URLs stabilize in at most a couple of passes; inputs still carrying nested escapes
-/// past this bound fail closed to `about:blank` to prevent quadratic decoding work.
-const MAX_SINK_DECODE_PASSES: usize = 8;
+/// Maximum obfuscation-decoding passes permitted in [`sanitize_url`] (parser path) and
+/// [`guard_url`] (render-sink prefix check). Legitimate URLs stabilize in at most a couple of
+/// passes; inputs still carrying nested escapes past this bound fail closed to `about:blank` to
+/// prevent quadratic decoding work.
+const MAX_DECODE_PASSES: usize = 8;
 
 /// `formatUrl` of the reference.
 ///
@@ -109,7 +111,7 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
         return BLANK_URL;
     }
     let prefix = scheme_prefix(url);
-    match decode_url_obfuscations_bounded(prefix, MAX_SINK_DECODE_PASSES) {
+    match decode_sink_prefix_bounded(prefix, MAX_DECODE_PASSES) {
         Some(decoded) if is_allowed_sink_candidate(&decoded) => url,
         _ => BLANK_URL,
     }
@@ -118,8 +120,9 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
 /// Validates an image URL at an SVG `<image href>` sink without altering accepted URLs.
 ///
 /// Permits everything [`guard_url`] permits, plus embedded raster `data:image/...` URIs (`png`,
-/// `jpeg`, `jpg`, `gif`, `webp`, `avif`, `bmp`, `x-icon`, `vnd.microsoft.icon`). Active `data:`
-/// payloads such as `data:image/svg+xml` and `data:text/html` are rejected to `"about:blank"`.
+/// `apng`, `jpeg`, `jpg`, `gif`, `webp`, `avif`, `bmp`, `x-icon`, `vnd.microsoft.icon`). Active
+/// `data:` payloads such as `data:image/svg+xml` and `data:text/html` are rejected to
+/// `"about:blank"`.
 #[must_use]
 pub fn guard_image_url(url: &str, loose: bool) -> &str {
     if loose || is_safe_raster_data_image_url(url) {
@@ -164,16 +167,38 @@ fn scheme_prefix(url: &str) -> &str {
     url
 }
 
-/// Runs the [`sanitize_url`] obfuscation-decoding loop up to `max_passes` times.
-/// Returns `None` if obfuscations remain after `max_passes` (fail-closed).
+/// Runs one obfuscation-decoding step of `sanitizeUrl`: HTML character references, control
+/// entities, control characters, whitespace escapes, and `decodeURI`.
+fn decode_obfuscation_step(text: &str) -> String {
+    let entities = decode_html_characters(text);
+    let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
+    let without_controls = remove_ctrl(&without_newlines);
+    let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
+    decode_uri(js_trim(&without_escapes))
+}
+
+/// Runs [`decode_obfuscation_step`] on a sink scheme prefix until it reaches a fixpoint (catching
+/// nested percent escapes such as `notes%25253Adoc` as well as nested HTML entities) or exceeds
+/// `max_passes`, returning `None` (fail-closed) if it does not stabilize in time.
+fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
+    let mut decoded = decode_uri(js_trim(url));
+    for _ in 0..max_passes {
+        let next = decode_obfuscation_step(&decoded);
+        let stable = next == decoded && !needs_another_pass(&next);
+        decoded = next;
+        if stable {
+            return Some(decoded);
+        }
+    }
+    None
+}
+
+/// Runs the [`sanitize_url`] fixpoint loop up to `max_passes` times, returning `None`
+/// (fail-closed) when nested obfuscations exceed the pass budget.
 fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<String> {
     let mut decoded = decode_uri(js_trim(url));
     for _ in 0..max_passes {
-        let entities = decode_html_characters(&decoded);
-        let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
-        let without_controls = remove_ctrl(&without_newlines);
-        let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
-        decoded = decode_uri(js_trim(&without_escapes));
+        decoded = decode_obfuscation_step(&decoded);
         if !needs_another_pass(&decoded) {
             return Some(decoded);
         }
@@ -224,37 +249,23 @@ fn is_allowed_sink_candidate(candidate: &str) -> bool {
     }
 }
 
-/// Decodes percent-escapes, numeric HTML entities, `&newline;`/`&tab;`, control characters, and
-/// whitespace escapes in the same fixpoint loop as [`sanitize_url`].
-fn decode_url_obfuscations(url: &str) -> String {
-    let mut decoded = decode_uri(js_trim(url));
-    loop {
-        let entities = decode_html_characters(&decoded);
-        let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
-        let without_controls = remove_ctrl(&without_newlines);
-        let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
-        decoded = decode_uri(js_trim(&without_escapes));
-        if !needs_another_pass(&decoded) {
-            break;
-        }
-    }
-    decoded
-}
-
 /// `sanitizeUrl` of `@braintree/sanitize-url` 7.1.2.
 ///
-/// The URL is decoded until no escape, entity, control character or whitespace escape is left. It
-/// comes back as it is when it starts with `.` or `/`, and when it has no scheme. A scheme of
-/// `mailto:`, or one that contains `://`, comes back with backslashes turned into slashes. An
-/// `http:` or `https:` scheme gives the WHATWG serialization of the URL. An empty URL, a
-/// `javascript`, `data` or `vbscript` scheme, and an `http(s)` URL that does not parse give
-/// `about:blank`.
+/// The URL is decoded until no escape, entity, control character or whitespace escape is left,
+/// bounded to prevent quadratic decoding work on adversarial nested entities (which fail closed to
+/// `about:blank`). It comes back as it is when it starts with `.` or `/`, and when it has no
+/// scheme. A scheme of `mailto:`, or one that contains `://`, comes back with backslashes turned
+/// into slashes. An `http:` or `https:` scheme gives the WHATWG serialization of the URL. An
+/// empty URL, a `javascript`, `data` or `vbscript` scheme, and an `http(s)` URL that does not
+/// parse give `about:blank`.
 #[must_use]
 pub fn sanitize_url(url: &str) -> String {
     if url.is_empty() {
         return BLANK_URL.to_owned();
     }
-    let decoded = decode_url_obfuscations(url);
+    let Some(decoded) = decode_url_obfuscations_bounded(url, MAX_DECODE_PASSES) else {
+        return BLANK_URL.to_owned();
+    };
 
     if decoded.is_empty() {
         return BLANK_URL.to_owned();
@@ -1311,6 +1322,7 @@ mod tests {
             "custom:thing",
             "a:b",
             "a%3Ab",
+            "notes%25253Adoc",
             "&#106;avascript:alert(1)",
             "javascript&colon;alert(1)",
             "%6aavascript:alert(1)",
@@ -1356,6 +1368,7 @@ mod tests {
             deeply_nested = deeply_nested.replace('&', "&#38;");
         }
         assert_eq!(guard_url(&deeply_nested, false), "about:blank");
+        assert_eq!(sanitize_url(&deeply_nested), "about:blank");
 
         let query_nested = format!("https://example.com/?q={deeply_nested}");
         assert_eq!(guard_url(&query_nested, false), query_nested);
@@ -1365,6 +1378,7 @@ mod tests {
     fn guard_image_url_allows_safe_raster_data_uris_but_blocks_active_payloads() {
         for safe_data_url in [
             "data:image/png;base64,iVBORw0KGgo=",
+            "data:image/apng;base64,iVBORw0KGgo=",
             "DATA:IMAGE/PNG;base64,iVBORw0KGgo=",
             "data:image/jpeg;base64,/9j/4AAQ",
             "data:image/gif;base64,R0lGODlh",
