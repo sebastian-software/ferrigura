@@ -39,6 +39,34 @@ pub fn escape_into(out: &mut String, text: &str) {
     out.push_str(&text[start..]);
 }
 
+/// Escapes a URL for an XML attribute (`href` / `xlink:href`), additionally encoding tab, line
+/// feed, and carriage return as numeric character references so XML 1.0 attribute-value
+/// normalization does not turn them into spaces.
+#[must_use]
+pub(crate) fn escape_url_attr(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut start = 0;
+    for (at, c) in text.char_indices() {
+        let replacement = match c {
+            '&' => "&amp;",
+            '<' => "&lt;",
+            '>' => "&gt;",
+            '"' => "&quot;",
+            '\'' => "&#39;",
+            '\t' => "&#9;",
+            '\n' => "&#10;",
+            '\r' => "&#13;",
+            other if !is_xml_char(other) => "\u{fffd}",
+            _ => continue,
+        };
+        out.push_str(&text[start..at]);
+        out.push_str(replacement);
+        start = at + c.len_utf8();
+    }
+    out.push_str(&text[start..]);
+    out
+}
+
 /// The markup of a text as the reference's final pass leaves it, for an XML parser: the text
 /// escaped, then the placeholders of `encodeEntities` decoded on the markup (`decodeEntities`,
 /// `mermaidAPI.ts` 359), then the references that XML does not define rewritten

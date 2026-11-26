@@ -352,14 +352,24 @@ fn needs_another_sink_pass(text: &str) -> bool {
         })
 }
 
+/// Truncates `text` at the first literal `/`, `?`, or `:` delimiter, since nothing after any of
+/// these delimiters can participate in a URI scheme.
+fn truncate_at_scheme_delimiter(text: &str) -> &str {
+    match text.find(['/', '?', ':']) {
+        Some(pos) => &text[..=pos],
+        None => text,
+    }
+}
+
 /// Runs [`decode_sink_step`] on a sink scheme prefix until it reaches a fixpoint (catching
 /// nested percent escapes such as `notes%25253Adoc`, malformed trailing percent escapes such as
 /// `notes%3Afoo%FF`, and nested HTML entities) or exceeds `max_passes`, returning `None`
-/// (fail-closed) if it does not stabilize in time.
+/// (fail-closed) if it does not stabilize in time. Re-truncates at any newly decoded `/`, `?`, or
+/// `:` delimiter after each step so suffixes past a decoded delimiter cannot exhaust the budget.
 fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
-    let mut decoded = decode_uri_lossy(js_trim(url));
+    let mut decoded = truncate_at_scheme_delimiter(&decode_uri_lossy(js_trim(url))).to_owned();
     for _ in 0..max_passes {
-        let next = decode_sink_step(&decoded);
+        let next = truncate_at_scheme_delimiter(&decode_sink_step(&decoded)).to_owned();
         let stable = next == decoded && !needs_another_sink_pass(&next);
         decoded = next;
         if stable {
@@ -369,24 +379,34 @@ fn decode_sink_prefix_bounded(url: &str, max_passes: usize) -> Option<String> {
     None
 }
 
-/// Runs the [`sanitize_url`] fixpoint loop up to `max_passes` times, returning `None`
-/// (fail-closed) when nested obfuscations—including percent-only nesting—exceed the pass budget.
-/// For ordinary URLs within budget, returns the exact `@braintree/sanitize-url` decoded spelling.
+/// Runs the [`sanitize_url`] fixpoint loop up to `max_passes` times (counting the initial
+/// `decodeURI` pass when it modifies the input), returning `None` (fail-closed) when nested
+/// obfuscations—including percent-only nesting—exceed `max_passes`. For ordinary URLs within
+/// budget, returns the exact `@braintree/sanitize-url` decoded spelling.
 fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<String> {
-    let mut decoded = decode_uri(js_trim(url));
-    let mut passes_used = 0usize;
-    for _ in 0..max_passes {
-        decoded = decode_obfuscation_step(&decoded);
-        passes_used += 1;
+    let trimmed = js_trim(url);
+    let mut decoded = decode_uri(trimmed);
+    let mut passes_used = usize::from(decoded != trimmed);
+    while passes_used < max_passes {
+        let next = decode_obfuscation_step(&decoded);
+        let changed = next != decoded;
+        if changed {
+            passes_used += 1;
+        }
+        decoded = next;
         if !needs_another_pass(&decoded) {
             let mut probe = decoded.clone();
-            for _ in passes_used..=max_passes {
-                let next = decode_uri(&probe);
-                if next == probe {
+            while passes_used < max_passes {
+                let next_probe = decode_uri(&probe);
+                if next_probe == probe {
                     return Some(decoded);
                 }
-                probe = next;
+                probe = next_probe;
+                passes_used += 1;
             }
+            return (decode_uri(&probe) == probe).then_some(decoded);
+        }
+        if !changed {
             return None;
         }
     }
@@ -1554,6 +1574,7 @@ mod tests {
             "R&#section:1",
             "R&D#A%2525252525252525252541",
             "my%20notes#A%2525252525252525252541",
+            "item%3Fq=A%2525252525252525252541",
             "/images/logo.png",
             "./relative:path.png",
         ] {
@@ -1573,8 +1594,17 @@ mod tests {
         }
         assert_eq!(guard_url(&deeply_nested, false), "about:blank");
         assert_eq!(sanitize_url(&deeply_nested), "about:blank");
-        // Percent-only nesting past the pass budget also fails closed on the parser path,
-        // while ordinary multi-encoded URLs within budget keep exact sanitizeUrl parity.
+        // Percent-only nesting enforces the exact 8-pass boundary on the parser path:
+        // 8 layers (%25 repeated 7 times + 41) stay accepted with sanitizeUrl parity,
+        // while 9 layers (%25 repeated 8 times + 41) fail closed to about:blank.
+        assert_eq!(
+            sanitize_url("https://example.com/a%2525252525252541"),
+            "https://example.com/a%252525252541"
+        );
+        assert_eq!(
+            sanitize_url("https://example.com/a%252525252525252541"),
+            "about:blank"
+        );
         assert_eq!(
             sanitize_url("https://example.com/a%25252525252525252541"),
             "about:blank"

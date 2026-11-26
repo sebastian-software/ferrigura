@@ -15,7 +15,7 @@
 use ferrigura_model::value::Value;
 use ferrigura_syntax::url::guard_url;
 
-use crate::svg::{escape, number};
+use crate::svg::{escape, escape_url_attr, number};
 use crate::unified::geom::BBox;
 use crate::unified::label::LabelLayout;
 
@@ -146,7 +146,7 @@ pub fn kanban_item_with_security(item: &KanbanItem<'_>, loose: bool) -> KanbanIt
             // `target` is not in the markup: the sanitizer of the reference's output drops it.
             inner.push_str(&format!(
                 "<a class=\"kanban-ticket-link\" xlink:href=\"{}\">{}</a>",
-                escape(link),
+                escape_url_attr(link),
                 label_group(item.ticket, ticket_at, item),
             ));
             inner.push_str(&label_group(item.title, title_at, item));

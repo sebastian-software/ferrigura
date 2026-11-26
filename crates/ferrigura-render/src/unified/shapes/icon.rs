@@ -26,7 +26,7 @@ use super::rough::{self, Outline};
 use super::util::{self, Part, Styles, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::RenderError;
-use crate::svg::{escape, number};
+use crate::svg::{escape_url_attr, number};
 use crate::unified::data::Node;
 use crate::unified::geom::{BBox, Point};
 use crate::unified::label::LabelLayout;
@@ -531,7 +531,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         };
         after_label.push_str(&format!(
             "<image href=\"{}\" width=\"{}\" height=\"{}\" preserveAspectRatio=\"none\" transform=\"translate({}, {})\"/>",
-            escape(href),
+            escape_url_attr(href),
             number(image_width),
             number(image_height),
             number(-image_width / 2.0),

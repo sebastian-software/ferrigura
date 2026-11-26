@@ -217,6 +217,34 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
     );
     assert!(!attr_entity.contains("¬ebook_1;"), "{attr_entity}");
 
+    // Decoded tab/newline/CR characters in URLs are serialized as numeric XML references so XML
+    // attribute normalization preserves them rather than turning them into spaces.
+    let tab_svg = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https://example.org/a#9;b\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let tab_doc = roxmltree::Document::parse(&tab_svg).expect("well-formed SVG XML");
+    let anchor = tab_doc
+        .descendants()
+        .find(|n| n.has_tag_name("a"))
+        .expect("anchor");
+    let href = anchor
+        .attribute(("http://www.w3.org/1999/xlink", "href"))
+        .expect("xlink:href");
+    assert_eq!(href, "https://example.org/a\tb");
+
+    // Encoded delimiters revealed during sink decoding stop decoding before the query payload.
+    let encoded_query = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"item%3Fq=A%2525252525252525252541\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        encoded_query.contains("xlink:href=\"item%3Fq=A%2525252525252525252541\""),
+        "{encoded_query}"
+    );
+
     let opaque_cid = render(
         "stateDiagram-v2\n  s1\n  click s1 href \"cid:asset%2525252525252525252541@example.com\"\n",
         &Value::empty_object(),

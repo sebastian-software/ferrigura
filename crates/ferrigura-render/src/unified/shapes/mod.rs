@@ -59,7 +59,7 @@ use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::RenderError;
 use crate::common::decode_entities;
 use crate::design::{Role, Roles};
-use crate::svg::{escape, number};
+use crate::svg::{escape, escape_url_attr, number};
 use registry::Kind;
 pub(crate) use util::styles_from_array;
 
@@ -381,7 +381,7 @@ pub fn node_svg_with_security(
                 .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
             format!(
                 "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{tooltip}>{shape_svg}{label_svg}{after_label}</g></a>",
-                escape(link),
+                escape_url_attr(link),
                 escape(&class),
                 escape(&id),
             )
@@ -394,7 +394,7 @@ pub fn node_svg_with_security(
                 .map_or_else(String::new, |target| util::attribute("target", target));
             format!(
                 "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{colour_slot}{group_attributes}{title}>{shape_svg}{label_svg}{after_label}</g></a>",
-                escape(link),
+                escape_url_attr(link),
                 escape(&class),
                 escape(&id),
             )
