@@ -20,6 +20,8 @@ export interface PortException {
   kind: 'pending' | 'unsupported';
   /** The issue that tracks a pending entry, as `#123` or its URL. */
   issue?: string;
+  /** Optional substring of ferrigura's expected error when the reference accepts the input. */
+  expectedError?: string;
 }
 
 export const exceptions: Record<string, PortException[]> = {
@@ -67,6 +69,7 @@ export const exceptions: Record<string, PortException[]> = {
       kind: 'unsupported',
       reason:
         'ferrigura bounds YAML alias expansion to prevent Billion Laughs memory exhaustion; js-yaml shares JS object references without materializing the tree',
+      expectedError: 'YAML alias expansion exceeded size limit',
     },
   ],
 };

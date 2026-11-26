@@ -509,6 +509,21 @@ impl State {
         }
     }
 
+    /// Resolves a plain scalar's text against the implicit JSON schema types without interning it
+    /// into the string arena when it becomes `null`, a boolean, or a number.
+    fn resolve_plain_text(text: &str) -> Option<(TypeId, Node)> {
+        if resolve_null(text) {
+            return Some((TypeId::Null, Node::Null));
+        }
+        if let Some(flag) = resolve_bool(text) {
+            return Some((TypeId::Bool, Node::Bool(flag)));
+        }
+        if let Some(number) = resolve_integer(text) {
+            return Some((TypeId::Int, Node::Number(number)));
+        }
+        resolve_float(text).map(|number| (TypeId::Float, Node::Number(number)))
+    }
+
     /// The implicit types of a plain scalar that has no tag, in the order of the schema: the first
     /// one that resolves the data gives the value and its tag.
     fn implicit_resolve(&mut self, data: Node) -> Option<(TypeId, Node)> {
@@ -964,6 +979,7 @@ impl State {
             allow_block_collections = at_new_line || allow_compact;
         }
 
+        let mut plain_resolved = false;
         if indent_status == 1 || context == Context::BlockOut {
             let flow_indent = if matches!(context, Context::FlowIn | Context::FlowOut) {
                 parent_indent
@@ -998,10 +1014,21 @@ impl State {
                         if self.tag.is_some() || self.anchor.is_some() {
                             return Err(self.error("alias node should not have any properties"));
                         }
-                    } else if self.read_plain_scalar(flow_indent, context == Context::FlowIn)? {
+                    } else if let Some(text) =
+                        self.read_plain_scalar(flow_indent, context == Context::FlowIn)?
+                    {
                         has_content = true;
                         if self.tag.is_none() {
-                            self.tag = Some("?".to_owned());
+                            if let Some((t, value)) = Self::resolve_plain_text(&text) {
+                                self.result = value;
+                                self.tag = Some(t.tag().to_owned());
+                            } else {
+                                self.result = self.intern_string(text);
+                                self.tag = Some("?".to_owned());
+                            }
+                            plain_resolved = true;
+                        } else {
+                            self.result = self.intern_string(text);
                         }
                     }
                     self.store_current_anchor();
@@ -1012,40 +1039,41 @@ impl State {
             }
         }
 
-        match self.tag.clone() {
-            None => self.store_current_anchor(),
-            Some(tag) if tag == "?" => {
-                // The non-specific tag of a plain scalar: only a scalar can take it.
-                if !self.result.is_null() && self.kind != Some(Kind::Scalar) {
-                    return Err(
-                        self.error("unacceptable node kind for !<?> tag; it should be \"scalar\"")
-                    );
+        if !plain_resolved {
+            match self.tag.clone() {
+                None => self.store_current_anchor(),
+                Some(tag) if tag == "?" => {
+                    // The non-specific tag of a plain scalar: only a scalar can take it.
+                    if !self.result.is_null() && self.kind != Some(Kind::Scalar) {
+                        return Err(self.error(
+                            "unacceptable node kind for !<?> tag; it should be \"scalar\"",
+                        ));
+                    }
+                    if let Some((t, value)) = self.implicit_resolve(self.result) {
+                        self.result = value;
+                        self.tag = Some(t.tag().to_owned());
+                        self.store_current_anchor();
+                    }
                 }
-                if let Some((t, value)) = self.implicit_resolve(self.result) {
+                // The non-specific tag `!` leaves the node as it is.
+                Some(tag) if tag == "!" => {}
+                Some(tag) => {
+                    let Some(t) = find_type(&tag, self.kind) else {
+                        return Err(self.error(&format!("unknown tag !<{tag}>")));
+                    };
+                    if !self.result.is_null() && Some(t.kind()) != self.kind {
+                        return Err(self.error(&format!(
+                            "unacceptable node kind for !<{tag}> tag; it should be \"{:?}\"",
+                            t.kind()
+                        )));
+                    }
+                    let Some(value) = self.construct(t, self.result) else {
+                        return Err(self
+                            .error(&format!("cannot resolve a node with !<{tag}> explicit tag")));
+                    };
                     self.result = value;
-                    self.tag = Some(t.tag().to_owned());
                     self.store_current_anchor();
                 }
-            }
-            // The non-specific tag `!` leaves the node as it is.
-            Some(tag) if tag == "!" => {}
-            Some(tag) => {
-                let Some(t) = find_type(&tag, self.kind) else {
-                    return Err(self.error(&format!("unknown tag !<{tag}>")));
-                };
-                if !self.result.is_null() && Some(t.kind()) != self.kind {
-                    return Err(self.error(&format!(
-                        "unacceptable node kind for !<{tag}> tag; it should be \"{:?}\"",
-                        t.kind()
-                    )));
-                }
-                let Some(value) = self.construct(t, self.result) else {
-                    return Err(
-                        self.error(&format!("cannot resolve a node with !<{tag}> explicit tag"))
-                    );
-                };
-                self.result = value;
-                self.store_current_anchor();
             }
         }
 
@@ -1813,7 +1841,7 @@ impl State {
     }
 
     /// `readPlainScalar`: a scalar that may run over several lines, as far as its indentation goes.
-    fn read_plain_scalar(&mut self, node_indent: isize, within_flow: bool) -> Res<bool> {
+    fn read_plain_scalar(&mut self, node_indent: isize, within_flow: bool) -> Res<Option<String>> {
         let saved_kind = self.kind;
         let saved_result = self.result;
         let mut ch = self.ch();
@@ -1825,12 +1853,12 @@ impl State {
                 0x23 | 0x26 | 0x2A | 0x21 | 0x7C | 0x3E | 0x27 | 0x22 | 0x25 | 0x40 | 0x60
             )
         {
-            return Ok(false);
+            return Ok(None);
         }
         if ch == unit(b'?') || ch == unit(b'-') {
             let following = self.at(self.position + 1);
             if is_ws_or_eol(following) || (within_flow && is_flow_indicator(following)) {
-                return Ok(false);
+                return Ok(None);
             }
         }
 
@@ -1897,13 +1925,11 @@ impl State {
 
         self.capture(&mut out, capture_start, capture_end, false)?;
         if !out.is_empty() {
-            let text = self.text(&out);
-            self.result = self.intern_string(text);
-            return Ok(true);
+            return Ok(Some(self.text(&out)));
         }
         self.kind = saved_kind;
         self.result = saved_result;
-        Ok(false)
+        Ok(None)
     }
 }
 

@@ -164,7 +164,7 @@ const rs = JSON.parse(await readFile(rsPath, 'utf8')) as YamlOutput[];
 const jsById = new Map(js.map((output) => [output.id, output]));
 const rsById = new Map(rs.map((output) => [output.id, output]));
 
-const named = new Map((exceptions.yaml ?? []).map((entry) => [entry.text, entry.reason]));
+const named = new Map((exceptions.yaml ?? []).map((entry) => [entry.text, entry]));
 const seenExceptions = new Set<string>();
 let accepted = 0;
 let differences = 0;
@@ -178,22 +178,33 @@ for (const input of numbered) {
     differences += 1;
     console.log(`\n✗ ${input.source}`);
     console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
-    console.log(`  js: ${JSON.stringify(jsOutput).slice(0, 600)}`);
-    console.log(`  rs: ${JSON.stringify(rsOutput).slice(0, 600)}`);
+    console.log(`  js: ${(JSON.stringify(jsOutput) ?? 'missing').slice(0, 600)}`);
+    console.log(`  rs: ${(JSON.stringify(rsOutput) ?? 'missing').slice(0, 600)}`);
     continue;
   }
   const agree =
     jsOutput.ok === rsOutput.ok &&
     (!jsOutput.ok || same(wellFormed(jsOutput.value), rsOutput.value));
-  if (named.has(input.text)) {
+  const exception = named.get(input.text);
+  if (exception !== undefined) {
     seenExceptions.add(input.text);
     if (agree) {
       stale += 1;
       console.log(`\n✗ ${input.source}`);
       console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
-      console.log(`  stale exception, now agrees: ${named.get(input.text)}`);
-    } else {
+      console.log(`  stale exception, now agrees: ${exception.reason}`);
+    } else if (
+      exception.expectedError === undefined ||
+      (jsOutput.ok && !rsOutput.ok && (rsOutput.error?.includes(exception.expectedError) ?? false))
+    ) {
       excepted += 1;
+    } else {
+      differences += 1;
+      console.log(`\n✗ ${input.source}`);
+      console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
+      console.log(`  expected rejection containing: ${JSON.stringify(exception.expectedError)}`);
+      console.log(`  js: ${JSON.stringify(jsOutput).slice(0, 600)}`);
+      console.log(`  rs: ${JSON.stringify(rsOutput).slice(0, 600)}`);
     }
     continue;
   }
@@ -204,12 +215,12 @@ for (const input of numbered) {
   console.log(`  js: ${JSON.stringify(jsOutput).slice(0, 600)}`);
   console.log(`  rs: ${JSON.stringify(rsOutput).slice(0, 600)}`);
 }
-for (const [text, reason] of named) {
+for (const [text, exception] of named) {
   if (!seenExceptions.has(text)) {
     stale += 1;
     console.log(`\n✗ yaml exception has no matching input`);
     console.log(`  input: ${JSON.stringify(text.slice(0, 300))}`);
-    console.log(`  unused exception: ${reason}`);
+    console.log(`  unused exception: ${exception.reason}`);
   }
 }
 
