@@ -485,3 +485,37 @@ fn edge_labels_mask_their_lines_across_diagram_types_and_render_modes() {
         }
     }
 }
+
+#[test]
+fn xychart_embeds_each_font_face_once() {
+    let source = "\
+xychart-beta
+    title \"Sales Revenue\"
+    x-axis [jan, feb, mar]
+    y-axis \"Revenue (in $)\" 0 --> 100
+    bar [30, 60, 90]
+    line [20, 50, 80]
+";
+    let svg = ferrigura::render(source, &Value::empty_object()).expect("renders");
+    let doc = roxmltree::Document::parse(&svg).expect("valid SVG");
+    let style = doc
+        .descendants()
+        .find(|node| node.has_tag_name("style"))
+        .and_then(|node| node.text())
+        .expect("style element");
+    let rules: Vec<&str> = style
+        .match_indices("@font-face{")
+        .map(|(start, _)| {
+            let rest = &style[start..];
+            let end = rest.find('}').expect("closing brace") + 1;
+            &rest[..end]
+        })
+        .collect();
+    assert!(!rules.is_empty(), "expected embedded @font-face rule");
+    let unique: std::collections::BTreeSet<&str> = rules.iter().copied().collect();
+    assert_eq!(
+        rules.len(),
+        unique.len(),
+        "duplicate @font-face rules in xychart <style>: {rules:?}"
+    );
+}
