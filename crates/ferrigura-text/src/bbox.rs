@@ -13,11 +13,11 @@
 //! style. Chromium's canvas ink bounds give the same glyph boxes as the outlines read here.
 
 use read_fonts::types::GlyphId;
-use read_fonts::{FontRef, TableProvider};
+use read_fonts::{FontData, FontRead, FontRef, TableProvider};
 
 use crate::error::TextError;
-use crate::fonts::Face;
-use crate::measure::{Run, fallback_runs, layout_width, shape_face};
+use crate::fonts::{Face, OutlineTable};
+use crate::measure::{Run, for_each_fallback_run, layout_width, shape_face};
 
 /// The horizontal extent of a line, relative to the start of its first run: the left edge and the
 /// right edge in pixels, as `getBBox` reports them (`x` and `x + width`).
@@ -75,7 +75,7 @@ pub fn measure_line_metrics(runs: &[Run<'_, '_>], size: f64) -> Result<(f64, Ext
         // back to (`fallback_runs`): the stretches' advances are summed unsnapped, and the glyphs of
         // a later stretch start where the earlier ones end.
         let mut offset = 0.0_f64;
-        for stretch in fallback_runs(*run) {
+        for_each_fallback_run(*run, |stretch| {
             let font = stretch.face.font()?;
             let units_per_em = f64::from(font.units_per_em());
             let shaped = shape_face(stretch.face, stretch.text)?;
@@ -93,7 +93,8 @@ pub fn measure_line_metrics(runs: &[Run<'_, '_>], size: f64) -> Result<(f64, Ext
                 }
             }
             offset += shaped.advance as f64 * size / units_per_em;
-        }
+            Ok(())
+        })?;
         let advance = layout_width(offset);
         extent.right = extent.right.max(start + advance);
         start += advance;
@@ -112,14 +113,38 @@ enum Outlines<'a> {
 
 impl<'a> Outlines<'a> {
     fn of(face: &'a Face) -> Result<Self, TextError> {
-        let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
-        if let (Ok(loca), Ok(glyf)) = (font.loca(None), font.glyf()) {
-            return Ok(Self::TrueType { loca, glyf });
+        let meta = face.meta()?;
+        match &meta.outlines {
+            OutlineTable::TrueType {
+                loca_range,
+                glyf_range,
+                is_long,
+            } => {
+                let data = face.data();
+                let loca_bytes = data.get(loca_range.clone()).ok_or(TextError::InvalidFont)?;
+                let glyf_bytes = data.get(glyf_range.clone()).ok_or(TextError::InvalidFont)?;
+                let loca = read_fonts::tables::loca::Loca::read_with_args(
+                    FontData::new(loca_bytes),
+                    *is_long,
+                )
+                .map_err(|_| TextError::InvalidFont)?;
+                let glyf = read_fonts::tables::glyf::Glyf::read(FontData::new(glyf_bytes))
+                    .map_err(|_| TextError::InvalidFont)?;
+                Ok(Self::TrueType { loca, glyf })
+            }
+            OutlineTable::PostScript => Ok(Self::PostScript(face.font()?.glyph_metrics())),
+            OutlineTable::FallbackFontRef => {
+                let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
+                if let (Ok(loca), Ok(glyf)) = (font.loca(None), font.glyf()) {
+                    return Ok(Self::TrueType { loca, glyf });
+                }
+                if font.cff().is_ok() || font.cff2().is_ok() {
+                    return Ok(Self::PostScript(face.font()?.glyph_metrics()));
+                }
+                Err(TextError::InvalidFont)
+            }
+            OutlineTable::Invalid => Err(TextError::InvalidFont),
         }
-        if font.cff().is_ok() || font.cff2().is_ok() {
-            return Ok(Self::PostScript(face.font()?.glyph_metrics()));
-        }
-        Err(TextError::InvalidFont)
     }
 
     /// Horizontal bounds in font units, or None for an empty outline.

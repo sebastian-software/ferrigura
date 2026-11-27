@@ -8,19 +8,21 @@
 //! `text-anchor` start (decisions 0009 and 0010). See
 //! `docs/diagrams/flowchart.md#labels`.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_text::{
-    Face, FontStyle, FontWeight, Run, TextError, Word, fit_line, fit_line_keeping_words,
-    layout_width, measure, measure_line_metrics, text_box,
+    Face, FontStyle, FontWeight, Run, TextError, Word, layout_width, measure, measure_line_metrics,
+    split_line_keeping_words, split_line_to_fit_width, text_box,
 };
 
 use super::geom::{BBox, Point};
 use super::markdown::{MarkdownWordType, br_tag_length, markdown_to_lines, non_markdown_to_lines};
 use crate::RenderError;
 use crate::common::decode_entities;
+use crate::fonts::FontFace;
 use crate::svg::{escape, number};
 
 /// The line height of labels, in ems: `lh` in `createFormattedText`.
@@ -408,96 +410,204 @@ fn layout_with(
             |family| spec.fonts.with_family(family),
         );
     let normal = fonts.face(inherited.unwrap_or(FontWeight::Normal), style)?;
-    let strong = fonts.face(inherited.unwrap_or(FontWeight::Bold), style)?;
-    let emphasis = fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Italic)?;
-    let mut wrapped: Vec<Vec<Word>> = Vec::new();
-    for line in &lines {
-        let words: Vec<Word> = line
-            .iter()
-            .map(|word| Word {
-                text: word.content.clone(),
-                face: match word.kind {
-                    MarkdownWordType::Strong => &strong,
-                    MarkdownWordType::Em => &emphasis,
-                    MarkdownWordType::Normal => &normal,
-                },
-            })
-            .collect();
-        // Cache only original words. Wrapping also tries transient prefixes and
-        // suffixes of oversized words; retaining those could use quadratic space.
-        let mut advances: HashMap<*const Face, HashMap<String, [Option<f64>; 2]>> = HashMap::new();
-        for word in &words {
-            advances
-                .entry(std::ptr::from_ref(word.face))
-                .or_default()
-                .entry(word.text.clone())
-                .or_insert([None; 2]);
-        }
-        let mut measured_width = |line: &[Word]| -> Result<f64, TextError> {
-            let mut total = 0.0;
-            for (index, word) in line.iter().enumerate() {
-                let variant = usize::from(index != 0);
-                let cached = advances
-                    .get_mut(&std::ptr::from_ref(word.face))
-                    .and_then(|words| words.get_mut(word.text.as_str()));
-                let advance = if let Some(value) = cached.as_ref().and_then(|entry| entry[variant])
-                {
-                    value
-                } else {
-                    let shown = decode_html_entities(&word.text);
-                    let text = if variant == 0 {
-                        shown
-                    } else {
-                        format!(" {shown}")
-                    };
-                    let value = layout_width(measure(word.face, &text, wrap_size)?);
-                    if let Some(entry) = cached {
-                        entry[variant] = Some(value);
-                    }
-                    value
-                };
-                total += advance;
+    let (has_strong, has_em) = if spec.label_type == LabelType::Markdown {
+        let mut has_strong = false;
+        let mut has_em = false;
+        for word in lines.iter().flat_map(|line| line.iter()) {
+            match word.kind {
+                MarkdownWordType::Strong => has_strong = true,
+                MarkdownWordType::Em => has_em = true,
+                MarkdownWordType::Normal => {}
             }
-            Ok(total)
-        };
-        if keep_words {
-            // The mode's rule: a word wider than the wrapping width stays one line, up to a bound.
-            let limit = width * crate::design::WHOLE_WORD_LIMIT;
-            let measured = std::cell::RefCell::new(measured_width);
-            wrapped.extend(fit_line_keeping_words(
-                &words,
-                |line| Ok((measured.borrow_mut())(line)? <= width),
-                |line| Ok((measured.borrow_mut())(line)? <= limit),
-            )?);
-        } else {
-            wrapped.extend(fit_line(&words, |line| Ok(measured_width(line)? <= width))?);
+            if has_strong && has_em {
+                break;
+            }
         }
-    }
+        (has_strong, has_em)
+    } else {
+        (false, false)
+    };
+    let strong = if has_strong {
+        Some(fonts.face(inherited.unwrap_or(FontWeight::Bold), style)?)
+    } else {
+        None
+    };
+    let emphasis = if has_em {
+        Some(fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Italic)?)
+    } else {
+        None
+    };
 
-    let pieces: Vec<Vec<(String, &Face)>> = wrapped
-        .iter()
-        .map(|line| {
-            line.iter()
-                .enumerate()
-                .map(|(index, word)| {
-                    let shown = decode_html_entities(&word.text);
-                    // Every word after the first is drawn with its leading space.
-                    let text = if index == 0 {
-                        shown
-                    } else {
-                        format!(" {shown}")
-                    };
-                    (text, word.face)
+    let face_for_kind = |kind: MarkdownWordType| -> &FontFace {
+        match kind {
+            MarkdownWordType::Strong => strong.as_ref().unwrap_or(&normal),
+            MarkdownWordType::Em => emphasis.as_ref().unwrap_or(&normal),
+            MarkdownWordType::Normal => &normal,
+        }
+    };
+    let font_face_for = |face: &Face| -> &FontFace {
+        if std::ptr::eq(face, &*normal) {
+            &normal
+        } else if let Some(ref strong) = strong
+            && std::ptr::eq(face, &**strong)
+        {
+            strong
+        } else if let Some(ref emphasis) = emphasis
+            && std::ptr::eq(face, &**emphasis)
+        {
+            emphasis
+        } else {
+            &normal
+        }
+    };
+
+    let pieces: Vec<Vec<(String, &FontFace)>> = if width == f64::INFINITY && wrap_size.is_finite() {
+        lines
+            .iter()
+            .map(|line| {
+                line.iter()
+                    .enumerate()
+                    .map(|(index, word)| {
+                        (
+                            rendered_word(&word.content, index != 0),
+                            face_for_kind(word.kind),
+                        )
+                    })
+                    .collect()
+            })
+            .collect()
+    } else {
+        let mut pieces: Vec<Vec<(String, &FontFace)>> = Vec::with_capacity(lines.len());
+        for line in &lines {
+            if line.is_empty() && width >= 0.0 {
+                pieces.push(Vec::new());
+                continue;
+            }
+            let words: Vec<Word> = line
+                .iter()
+                .map(|word| Word {
+                    text: word.content.clone(),
+                    face: face_for_kind(word.kind),
                 })
-                .collect()
-        })
-        .collect();
+                .collect();
+            let mut first_pass = Vec::with_capacity(words.len());
+            let mut whole_width = 0.0;
+            for (index, word) in words.iter().enumerate() {
+                let advance = measure_word(word, index != 0, wrap_size)?;
+                first_pass.push(advance);
+                whole_width += advance;
+            }
+            if whole_width <= width {
+                pieces.push(
+                    words
+                        .iter()
+                        .enumerate()
+                        .map(|(index, word)| {
+                            (
+                                rendered_word(&word.text, index != 0),
+                                font_face_for(word.face),
+                            )
+                        })
+                        .collect(),
+                );
+                continue;
+            }
+            let wrapped_lines = if words.len() == 1 {
+                let is_original = |line: &[Word]| {
+                    line.len() == 1
+                        && std::ptr::eq(line[0].face, words[0].face)
+                        && line[0].text == words[0].text
+                };
+                let mut fits = |line: &[Word]| -> Result<bool, TextError> {
+                    if is_original(line) {
+                        return Ok(false);
+                    }
+                    Ok(measure_line_uncached(line, wrap_size)? <= width)
+                };
+                if keep_words {
+                    let limit = width * crate::design::WHOLE_WORD_LIMIT;
+                    let mut whole = |line: &[Word]| -> Result<bool, TextError> {
+                        if is_original(line) {
+                            return Ok(whole_width <= limit);
+                        }
+                        Ok(measure_line_uncached(line, wrap_size)? <= limit)
+                    };
+                    split_line_keeping_words(&words, &mut fits, Some(&mut whole))?
+                } else {
+                    split_line_to_fit_width(&words, &mut fits)?
+                }
+            } else {
+                // Cache only original words. Wrapping also tries transient prefixes and
+                // suffixes of oversized words; retaining those could use quadratic space.
+                let mut advances: HashMap<*const Face, HashMap<&str, [Option<f64>; 2]>> =
+                    HashMap::new();
+                for (index, word) in words.iter().enumerate() {
+                    let entry = advances
+                        .entry(std::ptr::from_ref(word.face))
+                        .or_default()
+                        .entry(word.text.as_str())
+                        .or_insert([None; 2]);
+                    entry[usize::from(index != 0)] = Some(first_pass[index]);
+                }
+                let mut measured_width = |line: &[Word]| -> Result<f64, TextError> {
+                    let mut total = 0.0;
+                    for (index, word) in line.iter().enumerate() {
+                        let variant = usize::from(index != 0);
+                        let cached = advances
+                            .get_mut(&std::ptr::from_ref(word.face))
+                            .and_then(|words| words.get_mut(word.text.as_str()));
+                        let advance =
+                            if let Some(value) = cached.as_ref().and_then(|entry| entry[variant]) {
+                                value
+                            } else {
+                                let value = measure_word(word, variant != 0, wrap_size)?;
+                                if let Some(entry) = cached {
+                                    entry[variant] = Some(value);
+                                }
+                                value
+                            };
+                        total += advance;
+                    }
+                    Ok(total)
+                };
+                if keep_words {
+                    // The mode's rule: a word wider than the wrapping width stays one line, up to a bound.
+                    let limit = width * crate::design::WHOLE_WORD_LIMIT;
+                    let measured = std::cell::RefCell::new(measured_width);
+                    let mut fits = |line: &[Word]| Ok((measured.borrow_mut())(line)? <= width);
+                    let mut whole = |line: &[Word]| Ok((measured.borrow_mut())(line)? <= limit);
+                    split_line_keeping_words(&words, &mut fits, Some(&mut whole))?
+                } else {
+                    split_line_to_fit_width(&words, &mut |line| Ok(measured_width(line)? <= width))?
+                }
+            };
+            for wrapped_line in wrapped_lines {
+                pieces.push(
+                    wrapped_line
+                        .iter()
+                        .enumerate()
+                        .map(|(index, word)| {
+                            (
+                                rendered_word(&word.text, index != 0),
+                                font_face_for(word.face),
+                            )
+                        })
+                        .collect(),
+                );
+            }
+        }
+        pieces
+    };
 
     let (lines, bbox) = place(&pieces, font_size, spec.anchor)?;
     let background = if spec.add_background && !spec.text.is_empty() {
         // The reference measures the background before the label style is applied to the text,
         // so the rectangle is the box of the unstyled text.
-        let (_, unstyled) = place(&pieces, spec.font_size, spec.anchor)?;
+        let unstyled = if font_size == spec.font_size {
+            bbox
+        } else {
+            place_bbox(&pieces, spec.font_size, spec.anchor)?
+        };
         Some(BBox::new(
             unstyled.x - BACKGROUND_PADDING,
             unstyled.y - BACKGROUND_PADDING,
@@ -517,6 +627,38 @@ fn layout_with(
     })
 }
 
+fn rendered_word(raw: &str, leading_space: bool) -> String {
+    let shown = decode_html_entities(raw);
+    if leading_space {
+        let mut out = String::with_capacity(shown.len() + 1);
+        out.push(' ');
+        out.push_str(&shown);
+        out
+    } else {
+        shown.into_owned()
+    }
+}
+
+fn measure_word(word: &Word<'_>, leading_space: bool, size: f64) -> Result<f64, TextError> {
+    let shown = decode_html_entities(&word.text);
+    if leading_space {
+        let mut text = String::with_capacity(shown.len() + 1);
+        text.push(' ');
+        text.push_str(&shown);
+        Ok(layout_width(measure(word.face, &text, size)?))
+    } else {
+        Ok(layout_width(measure(word.face, &shown, size)?))
+    }
+}
+
+fn measure_line_uncached(line: &[Word<'_>], size: f64) -> Result<f64, TextError> {
+    let mut total = 0.0;
+    for (index, word) in line.iter().enumerate() {
+        total += measure_word(word, index != 0, size)?;
+    }
+    Ok(total)
+}
+
 /// Places the lines at `size` pixels, anchored on `x = 0` as `anchor` says, and returns them with the
 /// box of their text. Each run is as wide as Chromium lays it out ([`layout_width`]), so every run
 /// starts on the 1/64 px grid where the run before it ends, and a line's width is the sum of its
@@ -525,7 +667,7 @@ fn layout_with(
 /// [`ferrigura_text::measure_box`] (the advance, and the glyph outlines where they reach past it), as `getBBox` takes
 /// it; a line without words has no box, so an empty line adds no height.
 fn place(
-    pieces: &[Vec<(String, &Face)>],
+    pieces: &[Vec<(String, &FontFace)>],
     size: f64,
     anchor: Anchor,
 ) -> Result<(Vec<LabelLine>, BBox), TextError> {
@@ -558,7 +700,7 @@ fn place(
                 bbox = Some(bbox.map_or(run_box, |so_far| so_far.union(run_box)));
             }
             runs.push(LabelRun {
-                face: crate::fonts::FontFace::retain(face),
+                face: (*face).clone(),
                 text: text.clone(),
                 weight: face.weight(),
                 style: face.style(),
@@ -574,6 +716,42 @@ fn place(
         });
     }
     Ok((lines, bbox.unwrap_or_default()))
+}
+
+/// Computes the exact bounding box of [`place`] without constructing [`LabelLine`] runs.
+fn place_bbox(
+    pieces: &[Vec<(String, &FontFace)>],
+    size: f64,
+    anchor: Anchor,
+) -> Result<BBox, TextError> {
+    let mut bbox: Option<BBox> = None;
+    for (index, line) in pieces.iter().enumerate() {
+        let baseline = size * (1.0 + LINE_HEIGHT * index as f64);
+        let mut widths = Vec::with_capacity(line.len());
+        for (text, face) in line {
+            widths.push(measure_line_metrics(&[Run { text, face }], size)?);
+        }
+        let width: f64 = widths.iter().map(|(width, _)| *width).sum();
+        let mut x = match anchor {
+            Anchor::Middle => -width / 2.0,
+            Anchor::Start | Anchor::Origin => 0.0,
+        };
+        let blank = line.iter().all(|(text, _)| text.chars().all(|c| c == ' '));
+        for ((_, face), (run_width, ink)) in line.iter().zip(widths) {
+            let metrics = text_box(face, size)?;
+            let run_box = BBox::new(
+                x + ink.left,
+                baseline - metrics.ascent,
+                ink.width(),
+                metrics.height,
+            );
+            if !blank {
+                bbox = Some(bbox.map_or(run_box, |so_far| so_far.union(run_box)));
+            }
+            x += run_width;
+        }
+    }
+    Ok(bbox.unwrap_or_default())
 }
 
 /// The last `font-size` declaration of a style, in pixels. Only `px` is read; other units leave the
@@ -602,7 +780,10 @@ fn strip_suffix_ignore_case<'a>(text: &'a str, suffix: &str) -> Option<&'a str> 
 }
 
 /// `text.replace(/<br\s*\/?>/g, '<br/>')`: every `<br>` tag becomes `<br/>`, in lower case only.
-fn normalize_breaks(text: &str) -> String {
+fn normalize_breaks(text: &str) -> Cow<'_, str> {
+    if !text.contains("<br") {
+        return Cow::Borrowed(text);
+    }
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while !rest.is_empty() {
@@ -614,12 +795,15 @@ fn normalize_breaks(text: &str) -> String {
             rest = &rest[character.len_utf8()..];
         }
     }
-    out
+    Cow::Owned(out)
 }
 
 /// `decodeHTMLEntities` in `createText.ts`: `&amp;`, `&lt;` and `&gt;` become their characters,
 /// in one pass, and nothing else is decoded.
-fn decode_html_entities(text: &str) -> String {
+fn decode_html_entities(text: &str) -> Cow<'_, str> {
+    if !text.contains('&') {
+        return Cow::Borrowed(text);
+    }
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(position) = rest.find('&') {
@@ -640,7 +824,7 @@ fn decode_html_entities(text: &str) -> String {
         }
     }
     out.push_str(rest);
-    out
+    Cow::Owned(out)
 }
 
 #[cfg(test)]
@@ -856,5 +1040,43 @@ mod tests {
         let lines = line_texts(&layout_keeping_words(&label).expect("lays out"));
         assert!(lines.len() > 1, "a word past the bound still breaks");
         assert_eq!(lines, line_texts(&layout(&label).expect("lays out")));
+    }
+
+    #[test]
+    fn matching_background_font_size_reuses_bbox_and_infinity_width_skips_wrapping() {
+        let styles = [];
+        let mut label = spec("Alpha Beta Gamma", LabelType::Text, &styles);
+        label.add_background = true;
+        label.width = f64::INFINITY;
+        let laid_out = layout(&label).expect("lays out");
+        let bg = laid_out.background.expect("background present");
+        assert_eq!(bg.x, laid_out.bbox.x - BACKGROUND_PADDING);
+        assert_eq!(bg.y, laid_out.bbox.y - BACKGROUND_PADDING);
+        assert_eq!(bg.width, laid_out.bbox.width + 2.0 * BACKGROUND_PADDING);
+        assert_eq!(bg.height, laid_out.bbox.height + 2.0 * BACKGROUND_PADDING);
+        assert_eq!(line_texts(&laid_out), vec!["Alpha Beta Gamma".to_owned()]);
+    }
+
+    #[test]
+    fn registered_label_runs_share_resolved_face_arc() {
+        use ferrigura_text::{FontFamily, FontRegistry, face};
+        use std::sync::Arc;
+
+        let mut registry = FontRegistry::new();
+        let data = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
+            .data()
+            .to_vec();
+        registry
+            .register("SharedSans", data, FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let registry = Arc::new(registry);
+        let styles = [];
+        let mut label = spec("One Two Three", LabelType::Text, &styles);
+        label.fonts = crate::fonts::FontContext::new(Some(&registry), "SharedSans");
+        let laid_out = layout(&label).expect("lays out");
+        let runs = &laid_out.lines[0].runs;
+        assert_eq!(runs.len(), 3);
+        assert!(std::ptr::eq(&*runs[0].face, &*runs[1].face));
+        assert!(std::ptr::eq(&*runs[1].face, &*runs[2].face));
     }
 }

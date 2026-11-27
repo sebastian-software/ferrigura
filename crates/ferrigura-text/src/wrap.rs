@@ -83,38 +83,31 @@ pub fn split_word_to_fit_width<'a, F>(
 where
     F: FnMut(&[Word]) -> Result<bool, TextError>,
 {
-    let characters = split_text_to_chars(&word.text);
-    let mut used = String::new();
-    let mut index = 0;
-    while index < characters.len() {
-        let candidate = format!("{used}{}", characters[index]);
-        let single = [Word {
-            text: candidate.clone(),
-            face: word.face,
-        }];
-        if fits(&single)? {
-            used = candidate;
-            index += 1;
+    let mut used = Word {
+        text: String::with_capacity(word.text.len()),
+        face: word.face,
+    };
+    let mut rest_offset = 0;
+    for grapheme in word.text.graphemes(true) {
+        let prev_len = used.text.len();
+        used.text.push_str(grapheme);
+        if fits(std::slice::from_ref(&used))? {
+            rest_offset = used.text.len();
             continue;
         }
-        if used.is_empty() {
+        if prev_len == 0 {
             // The first grapheme does not fit, but it is kept: a line holds at least one.
-            used.push_str(characters[index]);
-            index += 1;
+            rest_offset = used.text.len();
+        } else {
+            used.text.truncate(prev_len);
         }
         break;
     }
-    let rest: String = characters[index..].concat();
-    Ok((
-        Word {
-            text: used,
-            face: word.face,
-        },
-        Word {
-            text: rest,
-            face: word.face,
-        },
-    ))
+    let rest = Word {
+        text: word.text[rest_offset..].to_owned(),
+        face: word.face,
+    };
+    Ok((used, rest))
 }
 
 /// `splitLineToFitWidth` in `splitText.ts`: packs the words of a line greedily into lines that
@@ -172,14 +165,19 @@ where
             (None, first)
         };
 
-        let mut with_next = new_line.clone();
+        let has_joiner = joiner.is_some();
         if let Some(joiner) = joiner {
-            with_next.push(joiner);
+            new_line.push(joiner);
         }
-        with_next.push(next.clone());
-        if fits(&with_next)? {
-            new_line = with_next;
+        new_line.push(next);
+        if fits(&new_line)? {
             continue;
+        }
+        let Some(next) = new_line.pop() else {
+            continue;
+        };
+        if has_joiner {
+            new_line.pop();
         }
 
         if !new_line.is_empty() {
@@ -282,4 +280,76 @@ pub fn wrap_line(
                 .join(" ")
         })
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+
+    fn word(text: &str) -> Word<'static> {
+        Word {
+            text: text.to_owned(),
+            face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+        }
+    }
+
+    #[test]
+    fn split_word_in_place_handles_graphemes_empty_and_single_grapheme_overflow() {
+        // Empty word stays empty.
+        let (first, rest) =
+            split_word_to_fit_width(&word(""), &mut |w| Ok(w[0].text.chars().count() <= 3))
+                .unwrap();
+        assert_eq!((first.text.as_str(), rest.text.as_str()), ("", ""));
+
+        // Multi-codepoint grapheme clusters are never split mid-cluster, and an oversized first
+        // grapheme still makes progress.
+        let (first, rest) =
+            split_word_to_fit_width(&word("👍🏽e\u{301}z"), &mut |_| Ok(false)).unwrap();
+        assert_eq!(
+            (first.text.as_str(), rest.text.as_str()),
+            ("👍🏽", "e\u{301}z")
+        );
+
+        let (first, rest) = split_word_to_fit_width(&word("👍🏽e\u{301}z"), &mut |w| {
+            Ok(w[0].text.graphemes(true).count() <= 2)
+        })
+        .unwrap();
+        assert_eq!(
+            (first.text.as_str(), rest.text.as_str()),
+            ("👍🏽e\u{301}", "z")
+        );
+    }
+
+    #[test]
+    fn split_line_push_pop_drops_joiners_on_break_and_preserves_order() {
+        let line = vec![
+            word("alpha"),
+            word(" "),
+            word("beta"),
+            word(" "),
+            word("gamma"),
+            word(" "),
+            word("superlongword"),
+        ];
+        let wrapped = split_line_to_fit_width(&line, &mut |words| {
+            let chars: usize = words.iter().map(|w| w.text.chars().count()).sum();
+            Ok(chars <= 10)
+        })
+        .unwrap();
+        let texts: Vec<String> = wrapped
+            .iter()
+            .map(|l| l.iter().map(|w| w.text.as_str()).collect())
+            .collect();
+        assert_eq!(texts, vec!["alpha beta", "gamma", "superlongw", "ord"]);
+    }
+
+    #[test]
+    fn split_line_rejects_embedded_newline() {
+        let line = vec![word("ok"), word("bad\nword")];
+        assert!(matches!(
+            split_line_to_fit_width(&line, &mut |_| Ok(true)),
+            Err(TextError::NewlineInLine)
+        ));
+    }
 }

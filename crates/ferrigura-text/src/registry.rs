@@ -3,22 +3,120 @@
 //! A resolved face owns its font bytes and fallback faces through [`Arc`]. Borrowing that face for
 //! a [`crate::Run`] or [`crate::Word`] does not require a static font or keep the registry alive.
 
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::path::Path;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, OnceLock, PoisonError, RwLock};
 
 use read_fonts::FontRef;
 use read_fonts::types::Tag;
 
-use crate::fonts::FontData;
+use crate::embed::{EmbeddedSubset, Fnv1a};
+use crate::fonts::{FaceMeta, FontData, SharedFaceMeta};
 use crate::measure::ShapePlans;
 use crate::{Face, FontFamily, FontStyle, FontWeight, TextError};
+
+const MAX_RESOLVED_CACHE_ENTRIES: usize = 256;
+
+trait ResolveKeyRef {
+    fn parts(&self) -> (&str, u16, FontStyle);
+}
+
+impl PartialEq for dyn ResolveKeyRef + '_ {
+    fn eq(&self, other: &Self) -> bool {
+        self.parts() == other.parts()
+    }
+}
+
+impl Eq for dyn ResolveKeyRef + '_ {}
+
+impl Hash for dyn ResolveKeyRef + '_ {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let (families, weight, style) = self.parts();
+        families.hash(state);
+        weight.hash(state);
+        style.hash(state);
+    }
+}
+
+struct ResolveKey {
+    families: String,
+    weight: u16,
+    style: FontStyle,
+}
+
+impl ResolveKeyRef for ResolveKey {
+    fn parts(&self) -> (&str, u16, FontStyle) {
+        (&self.families, self.weight, self.style)
+    }
+}
+
+impl PartialEq for ResolveKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.parts() == other.parts()
+    }
+}
+
+impl Eq for ResolveKey {}
+
+impl Hash for ResolveKey {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let (families, weight, style) = self.parts();
+        families.hash(state);
+        weight.hash(state);
+        style.hash(state);
+    }
+}
+
+impl<'a> Borrow<dyn ResolveKeyRef + 'a> for ResolveKey {
+    fn borrow(&self) -> &(dyn ResolveKeyRef + 'a) {
+        self
+    }
+}
+
+struct ResolveLookup<'a> {
+    families: &'a str,
+    weight: u16,
+    style: FontStyle,
+}
+
+impl ResolveKeyRef for ResolveLookup<'_> {
+    fn parts(&self) -> (&str, u16, FontStyle) {
+        (self.families, self.weight, self.style)
+    }
+}
+
+#[derive(Default)]
+struct ResolveCache(RwLock<HashMap<ResolveKey, Arc<Face>>>);
+
+impl ResolveCache {
+    fn clear(&self) {
+        self.0
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clear();
+    }
+}
+
+impl Clone for ResolveCache {
+    fn clone(&self) -> Self {
+        Self::default()
+    }
+}
+
+impl std::fmt::Debug for ResolveCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ResolveCache").finish_non_exhaustive()
+    }
+}
 
 /// An explicit set of local fonts and fallback family names. An empty registry has no defaults.
 #[derive(Debug, Clone, Default)]
 pub struct FontRegistry {
     faces: Vec<Arc<Face>>,
     fallbacks: Vec<String>,
+    resolved_cache: ResolveCache,
 }
 
 impl FontRegistry {
@@ -65,8 +163,8 @@ impl FontRegistry {
                 "font weight must be between 1 and 1000".into(),
             ));
         }
-        let data = data.into();
-        let font = FontRef::new(&data).map_err(|_| TextError::InvalidFont)?;
+        let data = Arc::new(data.into());
+        let font = FontRef::new(data.as_slice()).map_err(|_| TextError::InvalidFont)?;
         if font.table_data(Tag::new(b"SVG ")).is_some() {
             return Err(TextError::Registration(
                 "OpenType-SVG fonts are not supported".into(),
@@ -74,8 +172,16 @@ impl FontRegistry {
         }
         crate::kern::validate(&font)?;
         let embed_whole = crate::embed::requires_whole_font(&font);
-        let data_fingerprint = crate::embed::fnv1a(&data);
-        let face = Face {
+        let whole_embed = embed_whole.then(|| {
+            Arc::new(EmbeddedSubset::new(
+                Arc::clone(&data),
+                weight.css_value(),
+                style,
+            ))
+        });
+        let data_fingerprint = crate::embed::fnv1a(data.as_slice());
+        let data_len = data.len();
+        let mut face = Face {
             family: FontFamily::Registered,
             family_name: Cow::Owned(family),
             weight,
@@ -83,16 +189,22 @@ impl FontRegistry {
             file_name: Cow::Borrowed(""),
             font: OnceLock::new(),
             plans: ShapePlans::new(),
+            meta: SharedFaceMeta::new(),
             data: FontData::Registered {
-                bytes: data.into(),
+                bytes: Arc::clone(&data),
                 embed_whole,
+                whole_embed,
             },
             fallbacks: Vec::new(),
             variable: OnceLock::new(),
             data_fingerprint: Some(data_fingerprint),
         };
-        // Validate the shaper too, before replacing a usable face.
-        face.font()?;
+        // Validate the shaper too, before replacing a usable face, and cache parsed table metadata.
+        let meta = {
+            let shaped_font = face.font()?;
+            FaceMeta::from_font_ref(&font, data_len, Some(shaped_font))
+        };
+        face.meta = SharedFaceMeta::with_meta(meta);
         self.faces.retain(|previous| {
             !(previous
                 .family_name()
@@ -101,6 +213,7 @@ impl FontRegistry {
                 && previous.style() == style)
         });
         self.faces.push(Arc::new(face));
+        self.resolved_cache.clear();
         Ok(())
     }
 
@@ -131,6 +244,7 @@ impl FontRegistry {
     /// may choose a system fallback for these characters.
     pub fn set_fallbacks(&mut self, families: impl IntoIterator<Item = impl Into<String>>) {
         self.fallbacks = families.into_iter().map(Into::into).collect();
+        self.resolved_cache.clear();
     }
 
     /// Resolves the first registered family in a CSS family list, then the nearest weight in the
@@ -149,20 +263,40 @@ impl FontRegistry {
         weight: FontWeight,
         style: FontStyle,
     ) -> Result<Arc<Face>, TextError> {
+        let weight_value = weight.css_value();
+        let lookup = ResolveLookup {
+            families,
+            weight: weight_value,
+            style,
+        };
+        if let Some(hit) = self
+            .resolved_cache
+            .0
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(&lookup as &dyn ResolveKeyRef)
+            .cloned()
+        {
+            return Ok(hit);
+        }
         let requested = family_names(families);
-        let mut candidates = requested
+        let mut requested_faces = requested
             .iter()
-            .chain(&self.fallbacks)
             .filter_map(|name| self.resolve_family(name, weight, style));
         // Explicit fallbacks do not silently satisfy an unregistered primary family list.
-        let primary = requested.iter().find_map(|name| self.resolve_family(name, weight, style))
-            .ok_or_else(|| TextError::Registration(format!(
+        let primary = requested_faces.next().ok_or_else(|| {
+            TextError::Registration(format!(
                 "no registered font matches {families:?}; register a font with FontRegistry::register or register_file"
-            )))?;
+            ))
+        })?;
         let mut resolved = (*primary).clone();
         resolved.variable = OnceLock::new();
         resolved.fallbacks = Vec::new();
-        for candidate in &mut candidates {
+        for candidate in requested_faces.chain(
+            self.fallbacks
+                .iter()
+                .filter_map(|name| self.resolve_family(name, weight, style)),
+        ) {
             if !candidate
                 .family_name()
                 .eq_ignore_ascii_case(primary.family_name())
@@ -175,7 +309,23 @@ impl FontRegistry {
                 resolved.fallbacks.push(candidate);
             }
         }
-        Ok(Arc::new(resolved))
+        let _ = resolved.css_variable();
+        let resolved = Arc::new(resolved);
+        let mut cache = self
+            .resolved_cache
+            .0
+            .write()
+            .unwrap_or_else(PoisonError::into_inner);
+        if cache.len() < MAX_RESOLVED_CACHE_ENTRIES {
+            cache
+                .entry(ResolveKey {
+                    families: families.to_owned(),
+                    weight: weight_value,
+                    style,
+                })
+                .or_insert_with(|| Arc::clone(&resolved));
+        }
+        Ok(resolved)
     }
 
     fn resolve_family(
@@ -184,21 +334,36 @@ impl FontRegistry {
         weight: FontWeight,
         style: FontStyle,
     ) -> Option<Arc<Face>> {
-        let faces: Vec<_> = self
-            .faces
-            .iter()
-            .filter(|face| face.family_name().eq_ignore_ascii_case(name))
-            .collect();
-        let selected_style = if faces.iter().any(|face| face.style() == style) {
+        let mut has_any = false;
+        let mut has_requested = false;
+        let mut has_normal = false;
+        for face in &self.faces {
+            if face.family_name().eq_ignore_ascii_case(name) {
+                has_any = true;
+                if face.style() == style {
+                    has_requested = true;
+                    break;
+                }
+                if face.style() == FontStyle::Normal {
+                    has_normal = true;
+                }
+            }
+        }
+        if !has_any {
+            return None;
+        }
+        let selected_style = if has_requested {
             style
-        } else if faces.iter().any(|face| face.style() == FontStyle::Normal) {
+        } else if has_normal {
             FontStyle::Normal
         } else {
             FontStyle::Italic
         };
-        faces
-            .into_iter()
-            .filter(|face| face.style() == selected_style)
+        self.faces
+            .iter()
+            .filter(|face| {
+                face.family_name().eq_ignore_ascii_case(name) && face.style() == selected_style
+            })
             .min_by_key(|face| {
                 (
                     face.weight().css_value().abs_diff(weight.css_value()),
@@ -213,12 +378,7 @@ impl FontRegistry {
     /// This is an identity for render caches and SVG ids, not a cryptographic digest.
     #[must_use]
     pub fn fingerprint(&self) -> u64 {
-        fn add(hash: &mut u64, bytes: &[u8]) {
-            for byte in bytes {
-                *hash = (*hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
-            }
-        }
-        let mut hash = 0xcbf2_9ce4_8422_2325;
+        let mut hash = Fnv1a::new();
         let mut faces: Vec<_> = self.faces.iter().collect();
         faces.sort_by_key(|face| {
             (
@@ -228,18 +388,18 @@ impl FontRegistry {
             )
         });
         for face in faces {
-            add(&mut hash, &(face.family_name().len() as u64).to_le_bytes());
-            add(&mut hash, face.family_name().as_bytes());
-            add(&mut hash, &face.weight().css_value().to_le_bytes());
-            add(&mut hash, face.style().css_keyword().as_bytes());
-            add(&mut hash, &(face.data().len() as u64).to_le_bytes());
-            add(&mut hash, face.data());
+            hash.update(&(face.family_name().len() as u64).to_le_bytes());
+            hash.update(face.family_name().as_bytes());
+            hash.update(&face.weight().css_value().to_le_bytes());
+            hash.update(face.style().css_keyword().as_bytes());
+            hash.update(&(face.data().len() as u64).to_le_bytes());
+            hash.update(face.data());
         }
         for family in &self.fallbacks {
-            add(&mut hash, &(family.len() as u64).to_le_bytes());
-            add(&mut hash, family.as_bytes());
+            hash.update(&(family.len() as u64).to_le_bytes());
+            hash.update(family.as_bytes());
         }
-        hash
+        hash.finish()
     }
 
     /// Reports each uncovered character once, in text order, with the primary family name.
@@ -328,4 +488,60 @@ fn family_names(list: &str) -> Vec<String> {
         names.push(name.trim().to_owned());
     }
     names
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{FontFamily, face};
+
+    #[test]
+    fn resolve_caches_hits_and_invalidates_on_registry_mutations() {
+        let mut registry = FontRegistry::new();
+        let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
+            .data()
+            .to_vec();
+        let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
+            .data()
+            .to_vec();
+        let arrows = face(FontFamily::Arrows, FontWeight::Normal, FontStyle::Normal)
+            .data()
+            .to_vec();
+        registry
+            .register(
+                "AppSans",
+                sans.clone(),
+                FontWeight::Normal,
+                FontStyle::Normal,
+            )
+            .unwrap();
+        registry
+            .register("AppArrows", arrows, FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+
+        let first = registry
+            .resolve("AppSans", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let second = registry
+            .resolve("AppSans", FontWeight::Number(400), FontStyle::Normal)
+            .unwrap();
+        assert!(Arc::ptr_eq(&first, &second));
+        assert!(first.css_variable().is_some());
+
+        registry.set_fallbacks(["AppArrows"]);
+        let with_fallback = registry
+            .resolve("AppSans", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        assert!(!Arc::ptr_eq(&first, &with_fallback));
+        assert_eq!(with_fallback.registered_fallbacks().len(), 1);
+
+        registry
+            .register("AppSans", bold, FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let replaced = registry
+            .resolve("AppSans", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        assert!(!Arc::ptr_eq(&with_fallback, &replaced));
+        assert_ne!(first.data_fingerprint(), replaced.data_fingerprint());
+    }
 }

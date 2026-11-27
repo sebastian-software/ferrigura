@@ -97,52 +97,73 @@ pub fn checked_fallback_runs<'a, 'f>(
 /// in the face they were measured in.
 #[must_use]
 pub fn fallback_runs<'a, 'f>(run: Run<'a, 'f>) -> Vec<Run<'a, 'f>> {
+    let mut stretches = Vec::with_capacity(1);
+    let _ = for_each_fallback_run::<std::convert::Infallible>(run, |stretch| {
+        stretches.push(stretch);
+        Ok(())
+    });
+    stretches
+}
+
+/// Visits each fallback stretch of `run` in order without allocating when all characters stay in
+/// `run.face` (or when falling back to registered/bundled faces).
+pub(crate) fn for_each_fallback_run<'a, 'f, E>(
+    run: Run<'a, 'f>,
+    mut visit: impl FnMut(Run<'a, 'f>) -> Result<(), E>,
+) -> Result<(), E> {
     if run.text.is_empty()
         || !matches!(
             run.face.family(),
             FontFamily::Sans | FontFamily::Mono | FontFamily::Registered
         )
+        || (run.face.family() == FontFamily::Registered
+            && run.face.registered_fallbacks().is_empty())
     {
-        return vec![run];
+        return visit(run);
     }
-    let fallbacks: Vec<&Face> = if run.face.family() == FontFamily::Registered {
-        run.face
-            .registered_fallbacks()
-            .iter()
-            .map(AsRef::as_ref)
-            .collect()
-    } else {
-        fallback_faces().into_iter().collect()
-    };
-    let mut stretches = Vec::new();
+    let primary_charmap = run.face.font().ok().map(|font| font.charmap());
     let mut start = 0;
     let mut current: &Face = run.face;
     for (index, character) in run.text.char_indices() {
-        let chosen = if run.face.covers(character) {
+        let covered = primary_charmap
+            .as_ref()
+            .is_some_and(|charmap| charmap.map_unicode(character).is_some());
+        let chosen = if covered {
             run.face
         } else {
-            fallbacks
-                .iter()
-                .copied()
-                .find(|fallback| fallback.covers(character))
-                .unwrap_or(run.face)
+            find_fallback(run.face, character)
         };
         if !std::ptr::eq(chosen, current) {
             if index > start {
-                stretches.push(Run {
+                visit(Run {
                     text: &run.text[start..index],
                     face: current,
-                });
+                })?;
             }
             start = index;
             current = chosen;
         }
     }
-    stretches.push(Run {
+    visit(Run {
         text: &run.text[start..],
         face: current,
-    });
-    stretches
+    })
+}
+
+fn find_fallback(primary: &Face, character: char) -> &Face {
+    if primary.family() == FontFamily::Registered {
+        primary
+            .registered_fallbacks()
+            .iter()
+            .map(AsRef::as_ref)
+            .find(|fallback| fallback.covers(character))
+            .unwrap_or(primary)
+    } else {
+        fallback_faces()
+            .into_iter()
+            .find(|fallback| fallback.covers(character))
+            .unwrap_or(primary)
+    }
 }
 
 /// The width of a text run as Chromium lays it out, in pixels: its advance, rounded up to a
@@ -168,11 +189,12 @@ pub fn layout_width(advance: f64) -> f64 {
 /// Returns an error if the font cannot be parsed or the shaper rejects the text.
 pub fn measure(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
     let mut total = 0.0;
-    for stretch in fallback_runs(Run { text, face }) {
+    for_each_fallback_run(Run { text, face }, |stretch| {
         let font = stretch.face.font()?;
         let shaped = shape_face(stretch.face, stretch.text)?;
         total += shaped.advance as f64 * size / f64::from(font.units_per_em());
-    }
+        Ok(())
+    })?;
     Ok(total)
 }
 
@@ -392,6 +414,12 @@ impl Clone for ShapePlans {
     }
 }
 
+const MAX_REUSED_BUFFER_BYTES: usize = 4096;
+
+thread_local! {
+    static SHAPE_BUFFER: RefCell<Option<Buffer>> = const { RefCell::new(None) };
+}
+
 /// Shapes `text` with the font's default features, and reports where each glyph is drawn. `plans`
 /// are the shape plans of the face `font` belongs to; without them the plan is built for this run.
 pub(crate) fn shape_run(
@@ -400,7 +428,10 @@ pub(crate) fn shape_run(
     text: &str,
 ) -> Result<ShapedRun, TextError> {
     let shaper = ShaperFont::new(font);
-    let mut buffer = Buffer::new();
+    let mut buffer = SHAPE_BUFFER
+        .with(|slot| slot.borrow_mut().take())
+        .unwrap_or_default();
+    buffer.clear();
     buffer.push_str(text);
     buffer.guess_segment_properties();
     let plan = plans.and_then(|plans| plans.plan(font, &buffer));
@@ -419,6 +450,10 @@ pub(crate) fn shape_run(
             x: pen + i64::from(position.x_offset),
         });
         pen += i64::from(position.x_advance);
+    }
+    if text.len() <= MAX_REUSED_BUFFER_BYTES {
+        buffer.clear();
+        SHAPE_BUFFER.with(|slot| *slot.borrow_mut() = Some(buffer));
     }
     Ok(ShapedRun {
         glyphs,
@@ -662,5 +697,106 @@ mod tests {
         // Float noise just above a grid point is still on it; a clear excess is rounded up.
         assert_eq!(layout_width(10.015_625_5), 10.015625);
         assert_eq!(layout_width(10.02), 10.03125);
+    }
+
+    #[test]
+    fn fallback_fast_path_and_mixed_stretches_match() {
+        use super::{Run, fallback_runs, for_each_fallback_run};
+        use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+        use crate::registry::FontRegistry;
+
+        let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+        for text in ["", "Hello, World!", "AV To Wa", "a→b", "→", "a→b😀c♥d"] {
+            let mut visited = Vec::new();
+            let _ = for_each_fallback_run::<std::convert::Infallible>(
+                Run { text, face: sans },
+                |stretch| {
+                    visited.push((stretch.text, std::ptr::from_ref(stretch.face)));
+                    Ok(())
+                },
+            );
+            let expected: Vec<_> = fallback_runs(Run { text, face: sans })
+                .into_iter()
+                .map(|stretch| (stretch.text, std::ptr::from_ref(stretch.face)))
+                .collect();
+            assert_eq!(visited, expected, "text={text:?}");
+        }
+
+        // Registered face without fallbacks stays a single stretch even for uncovered characters.
+        let mut registry = FontRegistry::new();
+        registry
+            .register(
+                "only",
+                sans.data().to_vec(),
+                FontWeight::Normal,
+                FontStyle::Normal,
+            )
+            .unwrap();
+        let registered = registry
+            .resolve("only", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let stretches = fallback_runs(Run {
+            text: "a→b😀",
+            face: &registered,
+        });
+        assert_eq!(stretches.len(), 1);
+        assert_eq!(stretches[0].text, "a→b😀");
+        assert!(std::ptr::eq(stretches[0].face, &*registered));
+    }
+
+    #[test]
+    fn reused_shape_buffer_resets_segment_properties_deterministically() {
+        use super::shape_run;
+        use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+
+        let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+        let font = sans.font().unwrap();
+        // Verify Buffer::clear() restores default segment properties identical to Buffer::new().
+        {
+            let fresh = super::Buffer::new();
+            let mut reused = super::Buffer::new();
+            reused.push_str("שלום עולם");
+            reused.guess_segment_properties();
+            assert_ne!(reused.direction(), fresh.direction());
+            reused.clear();
+            assert_eq!(reused.direction(), fresh.direction());
+            assert_eq!(reused.script(), fresh.script());
+            assert_eq!(reused.language(), fresh.language());
+        }
+        // Alternate RTL, LTR, empty, emoji, combining marks, and kerning pairs to prove the
+        // thread-local buffer resets direction/script/language cleanly between runs.
+        let sequence = [
+            "שלום עולם",
+            "Hello, World!",
+            "مرحبا بالعالم",
+            "",
+            "AV To Wa ffi fl Ty",
+            "漢字とかな",
+            "😀👍🏽 🇩🇪 ❤️",
+            "x\u{301}y\u{200D}z",
+            "שלום",
+            "Hello, World!",
+        ];
+        for text in sequence {
+            let actual = shape_run(font, Some(&sans.plans), text).unwrap();
+            let raw = raw_shape(font, None, text);
+            let expected_glyphs: Vec<_> = {
+                let mut pen = 0_i64;
+                raw.iter()
+                    .map(|&(glyph, cluster, x_adv, _, x_off, _)| {
+                        let placed = super::PlacedGlyph {
+                            glyph,
+                            cluster,
+                            x: pen + i64::from(x_off),
+                        };
+                        pen += i64::from(x_adv);
+                        placed
+                    })
+                    .collect()
+            };
+            let expected_advance: i64 = raw.iter().map(|r| i64::from(r.2)).sum();
+            assert_eq!(actual.glyphs, expected_glyphs, "text={text:?}");
+            assert_eq!(actual.advance, expected_advance, "text={text:?}");
+        }
     }
 }

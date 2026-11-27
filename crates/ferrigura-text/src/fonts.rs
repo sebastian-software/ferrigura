@@ -5,11 +5,15 @@
 
 use std::borrow::Cow;
 use std::fmt;
+use std::ops::Range;
 use std::sync::Arc;
 use std::sync::OnceLock;
 
 use harfrust::font::Font;
+use read_fonts::types::Tag;
+use read_fonts::{FontRef, TableProvider};
 
+use crate::embed::{EmbeddedSubset, Fnv1a, parse_variation_defaults};
 use crate::error::TextError;
 use crate::measure::ShapePlans;
 
@@ -100,7 +104,119 @@ pub(crate) enum FontData {
     Registered {
         bytes: Arc<Vec<u8>>,
         embed_whole: bool,
+        whole_embed: Option<Arc<EmbeddedSubset>>,
     },
+}
+
+/// Cached outline table location inside a face's bytes, avoiding repeated `FontRef::new` parsing.
+pub(crate) enum OutlineTable {
+    TrueType {
+        loca_range: Range<usize>,
+        glyf_range: Range<usize>,
+        is_long: bool,
+    },
+    PostScript,
+    FallbackFontRef,
+    Invalid,
+}
+
+/// Cached `read-fonts` and line-metrics metadata derived once from a face's bytes.
+pub(crate) struct FaceMeta {
+    pub(crate) has_valid_font: bool,
+    pub(crate) is_cff: bool,
+    pub(crate) h_line: Option<(f64, f64, f64, f64)>,
+    pub(crate) variation_defaults: Option<String>,
+    pub(crate) outlines: OutlineTable,
+}
+
+impl FaceMeta {
+    pub(crate) fn from_font_ref(
+        font: &FontRef<'_>,
+        data_len: usize,
+        shaped_font: Option<&Font>,
+    ) -> Self {
+        let has_valid_font = shaped_font.is_some();
+        let is_cff = font.cff().is_ok() || font.cff2().is_ok();
+        let h_line = shaped_font.and_then(|sf| {
+            let metrics = sf.metrics();
+            metrics.h_line().map(|line| {
+                (
+                    line.ascender.to_f64(),
+                    -line.descender.to_f64(),
+                    line.line_gap.to_f64(),
+                    f64::from(metrics.units_per_em),
+                )
+            })
+        });
+        let variation_defaults = parse_variation_defaults(font);
+        let outlines = if let (Ok(loca), Ok(_glyf)) = (font.loca(None), font.glyf()) {
+            if let (Some(loca_range), Some(glyf_range)) = (
+                table_range(font, Tag::new(b"loca"), data_len),
+                table_range(font, Tag::new(b"glyf"), data_len),
+            ) {
+                let is_long = matches!(loca, read_fonts::tables::loca::Loca::Long(_));
+                OutlineTable::TrueType {
+                    loca_range,
+                    glyf_range,
+                    is_long,
+                }
+            } else {
+                OutlineTable::FallbackFontRef
+            }
+        } else if is_cff {
+            OutlineTable::PostScript
+        } else {
+            OutlineTable::Invalid
+        };
+        Self {
+            has_valid_font,
+            is_cff,
+            h_line,
+            variation_defaults,
+            outlines,
+        }
+    }
+
+    fn parse(data: &[u8], shaped_font: Option<&Font>) -> Option<Self> {
+        let font = FontRef::new(data).ok()?;
+        Some(Self::from_font_ref(&font, data.len(), shaped_font))
+    }
+}
+
+fn table_range(font: &FontRef<'_>, tag: Tag, data_len: usize) -> Option<Range<usize>> {
+    let record = font
+        .table_directory
+        .table_records()
+        .iter()
+        .find(|record| record.tag() == tag)?;
+    let start = usize::try_from(record.offset()).ok()?;
+    let len = usize::try_from(record.length()).ok()?;
+    let end = start.checked_add(len)?;
+    (end <= data_len).then_some(start..end)
+}
+
+/// Shared lazy metadata for a [`Face`], const-constructible for bundled static faces and shared
+/// across clones of registered faces.
+pub(crate) struct SharedFaceMeta(OnceLock<Arc<OnceLock<Option<FaceMeta>>>>);
+
+impl SharedFaceMeta {
+    pub(crate) const fn new() -> Self {
+        Self(OnceLock::new())
+    }
+
+    pub(crate) fn with_meta(meta: FaceMeta) -> Self {
+        Self(OnceLock::from(Arc::new(OnceLock::from(Some(meta)))))
+    }
+
+    fn shared(&self) -> &Arc<OnceLock<Option<FaceMeta>>> {
+        self.0.get_or_init(|| Arc::new(OnceLock::new()))
+    }
+}
+
+impl Clone for SharedFaceMeta {
+    fn clone(&self) -> Self {
+        Self(OnceLock::from(Arc::clone(self.shared())))
+    }
 }
 
 /// One font file and the choice it answers to.
@@ -118,6 +234,8 @@ pub struct Face {
     pub(crate) font: OnceLock<Option<Font>>,
     /// Built on first use for each script a run of this face is written in.
     pub(crate) plans: ShapePlans,
+    /// Parsed table and line-metric metadata, shared across clones of this face.
+    pub(crate) meta: SharedFaceMeta,
     pub(crate) data: FontData,
 }
 
@@ -159,24 +277,19 @@ impl Face {
         Some(
             self.variable
                 .get_or_init(|| {
-                    let mut hash = 0xcbf2_9ce4_8422_2325_u64;
-                    let mut add = |bytes: &[u8]| {
-                        for byte in bytes {
-                            hash = (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
-                        }
-                    };
-                    add(&(self.family_name().len() as u64).to_le_bytes());
-                    add(self.family_name().as_bytes());
-                    add(&self.weight().css_value().to_le_bytes());
-                    add(self.style().css_keyword().as_bytes());
-                    add(&(self.data().len() as u64).to_le_bytes());
-                    add(&self.data_fingerprint.unwrap_or_default().to_le_bytes());
+                    let mut hash = Fnv1a::new();
+                    hash.update(&(self.family_name().len() as u64).to_le_bytes());
+                    hash.update(self.family_name().as_bytes());
+                    hash.update(&self.weight().css_value().to_le_bytes());
+                    hash.update(self.style().css_keyword().as_bytes());
+                    hash.update(&(self.data().len() as u64).to_le_bytes());
+                    hash.update(&self.data_fingerprint.unwrap_or_default().to_le_bytes());
                     for fallback in &self.fallbacks {
                         if let Some(variable) = fallback.css_variable() {
-                            add(variable.as_bytes());
+                            hash.update(variable.as_bytes());
                         }
                     }
-                    format!("--fg-font-{hash:016x}")
+                    format!("--fg-font-{:016x}", hash.finish())
                 })
                 .as_str(),
         )
@@ -185,6 +298,15 @@ impl Face {
     /// The explicit fallback chain of a registered face.
     pub(crate) fn registered_fallbacks(&self) -> &[Arc<Face>] {
         &self.fallbacks
+    }
+
+    /// Cached table and vertical-metrics metadata, parsed once from the font bytes.
+    pub(crate) fn meta(&self) -> Result<&FaceMeta, TextError> {
+        self.meta
+            .shared()
+            .get_or_init(|| FaceMeta::parse(self.data(), self.font().ok()))
+            .as_ref()
+            .ok_or(TextError::InvalidFont)
     }
 
     /// The parsed font, read from the data on first use.
@@ -255,6 +377,7 @@ static UNRESOLVED_REGISTERED: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(&[]),
 };
 
@@ -269,6 +392,7 @@ static LEXICA_REGULAR: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Regular.ttf")),
 };
 
@@ -283,6 +407,7 @@ static LEXICA_ITALIC: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Italic.ttf")),
 };
 
@@ -297,6 +422,7 @@ static LEXICA_BOLD: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Bold.ttf")),
 };
 
@@ -311,6 +437,7 @@ static LEXICA_BOLD_ITALIC: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-BoldItalic.ttf")),
 };
 
@@ -325,6 +452,7 @@ static ATKINSON_MONO_REGULAR: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-Regular.ttf"
     )),
@@ -341,6 +469,7 @@ static ATKINSON_MONO_ITALIC: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-Italic.ttf"
     )),
@@ -357,6 +486,7 @@ static ATKINSON_MONO_BOLD: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!("../fonts/AtkinsonHyperlegibleMono-Bold.ttf")),
 };
 
@@ -371,6 +501,7 @@ static ATKINSON_MONO_BOLD_ITALIC: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-BoldItalic.ttf"
     )),
@@ -390,6 +521,7 @@ static NOTO_MATH_ARROWS: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!("../fonts/NotoSansMath-Regular-Arrows.ttf")),
 };
 
@@ -406,6 +538,7 @@ static NOTO_SANS_SYMBOLS2_TEXT: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/NotoSansSymbols2-Regular-TextSymbols.ttf"
     )),
@@ -424,6 +557,7 @@ static TWEMOJI_EMOJI: Face = Face {
     data_fingerprint: None,
     font: OnceLock::new(),
     plans: ShapePlans::new(),
+    meta: SharedFaceMeta::new(),
     data: FontData::Bundled(include_bytes!("../fonts/TwemojiMozilla-COLRv0-Emoji.ttf")),
 };
 

@@ -7,8 +7,6 @@
 //! These are empirical Chromium/macOS compatibility rules, verified by the retained fixtures;
 //! other SVG viewers can use different line metrics.
 
-use read_fonts::{FontRef, TableProvider};
-
 use crate::error::TextError;
 use crate::fonts::Face;
 
@@ -46,14 +44,16 @@ pub struct TextBox {
 ///
 /// Returns an error if the font cannot be parsed or has no line metrics.
 pub fn font_metrics(face: &Face, size: f64) -> Result<FontMetrics, TextError> {
-    let font = face.font()?;
-    let metrics = font.metrics();
-    let line = metrics.h_line().ok_or(TextError::MissingLineMetrics)?;
-    let units_per_em = f64::from(metrics.units_per_em);
+    let meta = face.meta()?;
+    if !meta.has_valid_font {
+        return Err(TextError::InvalidFont);
+    }
+    let (ascender, neg_descender, line_gap, units_per_em) =
+        meta.h_line.ok_or(TextError::MissingLineMetrics)?;
     Ok(FontMetrics {
-        ascent: line.ascender.to_f64() * size / units_per_em,
-        descent: -line.descender.to_f64() * size / units_per_em,
-        line_gap: line.line_gap.to_f64() * size / units_per_em,
+        ascent: ascender * size / units_per_em,
+        descent: neg_descender * size / units_per_em,
+        line_gap: line_gap * size / units_per_em,
     })
 }
 
@@ -69,9 +69,15 @@ pub fn font_metrics(face: &Face, size: f64) -> Result<FontMetrics, TextError> {
 /// Returns an error if the font cannot be parsed or has no line metrics.
 pub fn text_box(face: &Face, size: f64) -> Result<TextBox, TextError> {
     let size = f64::from(laid_out_size(size) as f32);
-    let metrics = font_metrics(face, 1.0)?;
-    let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
-    let is_cff = font.cff().is_ok() || font.cff2().is_ok();
+    let meta = face.meta()?;
+    if !meta.has_valid_font {
+        return Err(TextError::InvalidFont);
+    }
+    let (ascender, neg_descender, _, units_per_em) =
+        meta.h_line.ok_or(TextError::MissingLineMetrics)?;
+    let ascent_unit = ascender * 1.0 / units_per_em;
+    let descent_unit = neg_descender * 1.0 / units_per_em;
+    let is_cff = meta.is_cff;
     let normalize = |metric: f64| {
         if is_cff {
             metric
@@ -79,8 +85,8 @@ pub fn text_box(face: &Face, size: f64) -> Result<TextBox, TextError> {
             (metric * 65536.0).trunc() / 65536.0
         }
     };
-    let ascent = f64::from((normalize(metrics.ascent) * size) as f32).round();
-    let descent = f64::from((normalize(metrics.descent) * size) as f32).round();
+    let ascent = f64::from((normalize(ascent_unit) * size) as f32).round();
+    let descent = f64::from((normalize(descent_unit) * size) as f32).round();
     Ok(TextBox {
         ascent,
         descent,
