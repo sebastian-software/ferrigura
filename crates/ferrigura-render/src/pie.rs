@@ -10,6 +10,7 @@
 //! diagrams or the page around it.
 
 use std::f64::consts::PI;
+use std::fmt::Write as _;
 
 use ferrigura_jsmath::{cos, sin};
 use ferrigura_model::config::PieDiagramConfig;
@@ -22,7 +23,9 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::context::{Context, ThemeView};
-use crate::svg::{arc_path, css_text_into, css_text_owned, escape, font_faces, number};
+use crate::svg::{
+    arc_path, escape, escape_css_tail_in_place, font_faces_capacity, font_faces_css_into, number,
+};
 
 const MARGIN: f64 = 40.0;
 const LEGEND_RECT_SIZE: f64 = 18.0;
@@ -429,12 +432,16 @@ fn attribute(name: &str, token: &Token) -> String {
         .unwrap_or_default()
 }
 
-/// The CSS custom property declarations of the color tokens of a set of tokens.
-fn declarations(tokens: &ThemeTokens) -> String {
-    color_tokens(tokens)
-        .iter()
-        .filter_map(|(name, token)| token.text().map(|colour| format!("--{name}: {colour};")))
-        .collect()
+/// Room for the pie rules besides its font faces and `<style>` tags: about 3 KiB.
+const STYLE_RULES_CAPACITY: usize = 4 * 1024;
+
+/// Appends the CSS custom property declarations of the color tokens of a set of tokens.
+fn write_declarations(out: &mut String, tokens: &ThemeTokens) {
+    for (name, token) in color_tokens(tokens) {
+        if let Some(color) = token.text() {
+            let _ = write!(out, "--{name}: {color};");
+        }
+    }
 }
 
 /// Every color token with its name: the five text and stroke colors, and the twelve slice colors.
@@ -462,13 +469,6 @@ fn style_element(
     families: &[EmbeddedFamily],
 ) -> String {
     let tokens = theme.light;
-    let declared = match theme.dark {
-        None => format!("#{id}{{{}}}", declarations(tokens)),
-        Some(dark) => crate::scheme::both(
-            &format!("#{id}{{{}}}", declarations(tokens)),
-            &format!("#{id}{{{}}}", declarations(dark)),
-        ),
-    };
     let stroke_width = tokens.pie_stroke_width.text().unwrap_or_default();
     let opacity = tokens.pie_opacity.text().unwrap_or_default();
     let outer_stroke_width = tokens.pie_outer_stroke_width.text().unwrap_or_default();
@@ -482,17 +482,31 @@ fn style_element(
     let section_size = crate::svg::css_declaration_value(&section_size, "");
     let legend_size = crate::svg::css_declaration_value(&legend_size, "");
     let family = crate::svg::css_declaration_value(family, "sans-serif");
-    let slots: String = (0..SLICE_COLORS)
-        .map(|slot| {
-            format!(
-                "#{id} .pieCircle.pie-slot-{slot}{{fill: var(--pie{});}}#{id} .legend rect.pie-slot-{slot}{{fill: var(--pie{}); stroke: var(--pie{});}}",
-                slot + 1,
-                slot + 1,
-                slot + 1
-            )
-        })
-        .collect();
-    let rules = format!(
+
+    let mut out = String::with_capacity(
+        "<style></style>".len() + font_faces_capacity(id, families) + STYLE_RULES_CAPACITY,
+    );
+    out.push_str("<style>");
+    font_faces_css_into(&mut out, id, families);
+    let rules_start = out.len();
+    match theme.dark {
+        None => {
+            let _ = write!(out, "#{id}{{");
+            write_declarations(&mut out, tokens);
+            out.push('}');
+        }
+        Some(dark) => {
+            let mut light_block = format!("#{id}{{");
+            write_declarations(&mut light_block, tokens);
+            light_block.push('}');
+            let mut dark_block = format!("#{id}{{");
+            write_declarations(&mut dark_block, dark);
+            dark_block.push('}');
+            out.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
+    }
+    let _ = write!(
+        out,
         "#{id} .pieCircle{{stroke: var(--pieStrokeColor);stroke-width: {stroke_width};opacity: {opacity};}}\
 #{id} .pieCircle.highlighted{{scale: 1.05;opacity: 1;}}\
 #{id} .pieCircle.highlightedOnHover:hover{{transition-duration: 250ms;scale: 1.05;opacity: 1;}}\
@@ -502,13 +516,14 @@ fn style_element(
 #{id} .legend text{{fill: var(--pieLegendTextColor);font-family: {family};font-size: {legend_size};}}\
 #{id} text{{white-space: pre;}}"
     );
-    let mut out = String::from("<style>");
-    if !families.is_empty() {
-        out.push_str(&css_text_owned(font_faces(id, families)));
+    for slot in 0..SLICE_COLORS {
+        let pie = slot + 1;
+        let _ = write!(
+            out,
+            "#{id} .pieCircle.pie-slot-{slot}{{fill: var(--pie{pie});}}#{id} .legend rect.pie-slot-{slot}{{fill: var(--pie{pie}); stroke: var(--pie{pie});}}"
+        );
     }
-    css_text_into(&mut out, &declared);
-    css_text_into(&mut out, &rules);
-    css_text_into(&mut out, &slots);
+    escape_css_tail_in_place(&mut out, rules_start);
     out.push_str("</style>");
     out
 }

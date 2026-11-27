@@ -184,31 +184,32 @@ pub fn css_text(css: &str) -> String {
 /// Appends the style text to `out`, escaped as [`css_text`] escapes it. The runs between the
 /// characters that need a replacement are copied whole.
 pub(crate) fn css_text_into(out: &mut String, css: &str) {
-    let mut start = 0;
-    for (at, byte) in css.bytes().enumerate() {
-        let replacement = match byte {
+    let mut rest = css;
+    while let Some(at) = memchr::memchr3(b'&', b'<', b'>', rest.as_bytes()) {
+        out.push_str(&rest[..at]);
+        let replacement = match rest.as_bytes()[at] {
             b'&' => "&amp;",
             b'<' => "&lt;",
             b'>' => "&gt;",
-            _ => continue,
+            _ => unreachable!(),
         };
-        out.push_str(&css[start..at]);
         out.push_str(replacement);
-        start = at + 1;
+        rest = &rest[at + 1..];
     }
-    out.push_str(&css[start..]);
+    out.push_str(rest);
 }
 
-/// Escape owned style text, retaining its allocation when no XML escaping is needed.
-pub(crate) fn css_text_owned(css: String) -> String {
-    if let Some(first) = memchr::memchr3(b'&', b'<', b'>', css.as_bytes()) {
-        let mut out = String::with_capacity(css.len() + 8);
-        out.push_str(&css[..first]);
-        css_text_into(&mut out, &css[first..]);
-        out
-    } else {
-        css
-    }
+/// Escapes `out[from..]` for an XML `<style>` element in place, without scanning or copying
+/// `out[..from]` (for example, already-written `@font-face` blocks). When `out[from..]` holds none
+/// of `&`, `<`, or `>`, this is a single scan with no allocation.
+pub(crate) fn escape_css_tail_in_place(out: &mut String, from: usize) {
+    let Some(first) = memchr::memchr3(b'&', b'<', b'>', &out.as_bytes()[from..]) else {
+        return;
+    };
+    let split = from + first;
+    let tail = out.split_off(split);
+    out.reserve(tail.len() + 8);
+    css_text_into(out, &tail);
 }
 
 /// A number as the reference writes it in an attribute: JavaScript's `String(number)`, written by
@@ -218,16 +219,31 @@ pub fn number(value: f64) -> String {
     ferrigura_model::value::number_text(value)
 }
 
+/// Exact byte length of [`font_faces`] for `id` and `families`, used to pre-size a stylesheet
+/// buffer before writing `@font-face` rules and the diagram's own rules into one allocation.
+pub(crate) fn font_faces_capacity(id: &str, families: &[EmbeddedFamily]) -> usize {
+    let faces = families
+        .iter()
+        .map(|family| family.css.len())
+        .sum::<usize>()
+        + families.len().saturating_sub(1);
+    let mut variables_len = 0usize;
+    let mut has_variables = false;
+    for (name, value) in families.iter().flat_map(|family| &family.variables) {
+        has_variables = true;
+        variables_len += name.len() + value.len() + 2;
+    }
+    if has_variables {
+        faces + 1 + id.len() + "{font-synthesis:none;}".len() + variables_len
+    } else {
+        faces
+    }
+}
+
 /// The `@font-face` rules of the embedded families, in the order given.
 #[must_use]
 pub fn font_faces(id: &str, families: &[EmbeddedFamily]) -> String {
-    let mut css = String::new();
-    font_faces_into(&mut css, id, families);
-    css
-}
-
-/// Appends the `@font-face` rules of [`font_faces`] to `css`.
-pub(crate) fn font_faces_into(css: &mut String, id: &str, families: &[EmbeddedFamily]) {
+    let mut css = String::with_capacity(font_faces_capacity(id, families));
     for (index, family) in families.iter().enumerate() {
         if index > 0 {
             css.push('\n');
@@ -244,6 +260,66 @@ pub(crate) fn font_faces_into(css: &mut String, id: &str, families: &[EmbeddedFa
             let _ = write!(css, "{name}:{value};");
         }
         css.push('}');
+    }
+    css
+}
+
+/// Combines embedded `@font-face` rules with already-built CSS `rules` in one exact-sized buffer
+/// so the font payload is never reallocated or copied while `rules` grows.
+pub(crate) fn assemble_stylesheet(
+    svg_id: &str,
+    families: &[EmbeddedFamily],
+    mut rules: String,
+    wrap_style_tag: bool,
+) -> String {
+    escape_css_tail_in_place(&mut rules, 0);
+    if families.is_empty() && !wrap_style_tag {
+        return rules;
+    }
+    let tag_len = if wrap_style_tag {
+        "<style></style>".len()
+    } else {
+        0
+    };
+    let mut out =
+        String::with_capacity(tag_len + font_faces_capacity(svg_id, families) + rules.len());
+    if wrap_style_tag {
+        out.push_str("<style>");
+    }
+    font_faces_css_into(&mut out, svg_id, families);
+    out.push_str(&rules);
+    if wrap_style_tag {
+        out.push_str("</style>");
+    }
+    out
+}
+
+/// Appends the `@font-face` rules and font-variable declarations of `families` to `out`, escaped
+/// for an XML `<style>` element. Each `family.css` is written directly into `out` without
+/// intermediate copies, while still escaping any `&`, `<`, or `>` in `family.css`, `id`, or
+/// variable declarations.
+pub(crate) fn font_faces_css_into(out: &mut String, id: &str, families: &[EmbeddedFamily]) {
+    for (index, family) in families.iter().enumerate() {
+        if index > 0 {
+            out.push('\n');
+        }
+        css_text_into(out, &family.css);
+    }
+    let mut variables = families
+        .iter()
+        .flat_map(|family| &family.variables)
+        .peekable();
+    if variables.peek().is_some() {
+        out.push('#');
+        css_text_into(out, id);
+        out.push_str("{font-synthesis:none;");
+        for (name, value) in variables {
+            css_text_into(out, name);
+            out.push(':');
+            css_text_into(out, value);
+            out.push(';');
+        }
+        out.push('}');
     }
 }
 
@@ -340,13 +416,53 @@ mod tests {
     use super::*;
 
     #[test]
-    fn owned_css_escapes_xml_and_reuses_safe_text() {
-        let safe = String::from("a{content:\"é\"}");
+    fn escape_css_tail_escapes_xml_and_reuses_buffer_when_safe() {
+        let mut safe =
+            String::from("@font-face{src:url(data:font/ttf;base64,AA==)}a{content:\"é\"}");
         let ptr = safe.as_ptr();
-        let escaped = css_text_owned(safe);
-        assert_eq!(escaped.as_ptr(), ptr);
-        assert_eq!(escaped, "a{content:\"é\"}");
-        assert_eq!(css_text_owned("&<>é".into()), "&amp;&lt;&gt;é");
+        escape_css_tail_in_place(&mut safe, 46);
+        assert_eq!(safe.as_ptr(), ptr);
+        assert_eq!(
+            safe,
+            "@font-face{src:url(data:font/ttf;base64,AA==)}a{content:\"é\"}"
+        );
+
+        let mut with_specials = String::with_capacity(128);
+        with_specials.push_str("@font-face{src:url(data:font/ttf;base64,AA==)}");
+        let prefix_len = with_specials.len();
+        let ptr = with_specials.as_ptr();
+        with_specials.push_str("a>b{content:\"&<é\"}");
+        escape_css_tail_in_place(&mut with_specials, prefix_len);
+        assert_eq!(with_specials.as_ptr(), ptr);
+        assert_eq!(
+            with_specials,
+            "@font-face{src:url(data:font/ttf;base64,AA==)}a&gt;b{content:\"&amp;&lt;é\"}"
+        );
+    }
+
+    #[test]
+    fn font_faces_css_into_escapes_special_characters_and_matches_capacity() {
+        let family = EmbeddedFamily {
+            family: ferrigura_text::FontFamily::Sans,
+            source_name: "Test".to_owned(),
+            weight: None,
+            style: None,
+            data_fingerprint: None,
+            name: "fg-0123456789abcdef-sans".to_owned(),
+            css_family: "\"fg-0123456789abcdef-sans\"".to_owned(),
+            css: "@font-face{font-family:\"fg-0123456789abcdef-sans\";src:url(data:font/ttf;base64,AA==)}".to_owned(),
+            variables: vec![("--fg-font-0".to_owned(), "\"fg-0123456789abcdef-sans\"".to_owned())],
+        };
+        let families = std::slice::from_ref(&family);
+        assert_eq!(
+            font_faces_capacity("diag", families),
+            font_faces("diag", families).len()
+        );
+
+        let mut escaped = String::new();
+        font_faces_css_into(&mut escaped, "id</style><script>", families);
+        assert!(!escaped.contains("</style><script>"));
+        assert!(escaped.contains("#id&lt;/style&gt;&lt;script&gt;{font-synthesis:none;"));
     }
 
     #[test]

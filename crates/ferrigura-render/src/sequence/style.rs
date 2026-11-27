@@ -3,12 +3,18 @@
 //! properties declared on the id (decision 0011), and the rules refer to them with
 //! `var(…)`; the elements carry the same colors as presentation attributes where they have them.
 
+use std::borrow::Cow;
+use std::fmt::Write as _;
+
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::common::style::base_style_sheet;
+use crate::common::style::base_style_sheet_with_capacity;
 use crate::context::ThemeView;
-use crate::svg::css_text;
+use crate::svg::escape_css_tail_in_place;
+
+/// Room for the sequence diagram's own rules appended after the base style sheet: about 3 KiB.
+const SEQUENCE_RULES_CAPACITY: usize = 4 * 1024;
 
 /// The color tokens of the sequence rules, each declared on the diagram's id, per scheme, in the
 /// order the sheet declares them.
@@ -33,19 +39,16 @@ fn color_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 16] {
     ]
 }
 
-/// The declarations of the tokens of one set of variables, as custom properties.
-fn declarations(tokens: &ThemeTokens) -> String {
-    color_tokens(tokens)
-        .iter()
-        .map(|(name, token)| {
-            let value = token.text().unwrap_or_else(|| "none".to_owned());
-            format!("--{name}:{value};")
-        })
-        .collect()
+/// Appends the declarations of the tokens of one set of variables, as custom properties.
+fn write_declarations(css: &mut String, tokens: &ThemeTokens) {
+    for (name, token) in color_tokens(tokens) {
+        let value = token.text().unwrap_or_else(|| "none".to_owned());
+        let _ = write!(css, "--{name}:{value};");
+    }
 }
 
 /// The `<style>` text of a sequence diagram with the id `svg_id`, escaped for XML. The base rules
-/// come first, from [`base_style_sheet`], then the diagram's own.
+/// come first, from [`crate::common::style::base_style_sheet`], then the diagram's own.
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
@@ -55,23 +58,46 @@ pub fn style_sheet(
     families: &[EmbeddedFamily],
     look_neo: bool,
 ) -> String {
-    let base = base_style_sheet(svg_id, theme, font_family, font_size, families, "");
+    let mut css = base_style_sheet_with_capacity(
+        svg_id,
+        theme,
+        font_family,
+        font_size,
+        families,
+        "",
+        SEQUENCE_RULES_CAPACITY,
+    );
+    let seq_start = css.len();
     let id = format!("#{svg_id}");
-    let shadow = if look_neo {
-        format!("url(#{svg_id}-drop-shadow)")
+    let shadow: Cow<'_, str> = if look_neo {
+        Cow::Owned(format!("url(#{svg_id}-drop-shadow)"))
     } else {
-        "none".to_owned()
+        Cow::Borrowed("none")
     };
-    let scoped = match theme.dark {
-        None => format!("{id}{{{}}}", declarations(theme.light)),
-        Some(dark) => crate::scheme::both(
-            &format!("{id}{{{}}}", declarations(theme.light)),
-            &format!("{id}{{{}}}", declarations(dark)),
-        ),
-    };
-    let rules = format!(
-        "{scoped}\
-{id} .actor{{stroke:var(--actorBorder);fill:var(--actorBkg);stroke-width:1;}}\
+    match theme.dark {
+        None => {
+            css.push_str(&id);
+            css.push('{');
+            write_declarations(&mut css, theme.light);
+            css.push('}');
+        }
+        Some(dark) => {
+            let mut light_block = String::new();
+            light_block.push_str(&id);
+            light_block.push('{');
+            write_declarations(&mut light_block, theme.light);
+            light_block.push('}');
+            let mut dark_block = String::new();
+            dark_block.push_str(&id);
+            dark_block.push('{');
+            write_declarations(&mut dark_block, dark);
+            dark_block.push('}');
+            css.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
+    }
+    let _ = write!(
+        css,
+        "{id} .actor{{stroke:var(--actorBorder);fill:var(--actorBkg);stroke-width:1;}}\
 {id} rect.actor.outer-path[data-look=\"neo\"],{id} rect.note[data-look=\"neo\"]{{filter:{shadow};}}\
 {id} text.actor>tspan{{fill:var(--actorTextColor);stroke:none;}}\
 {id} .actor-line{{stroke:var(--actorLineColor);}}\
@@ -96,5 +122,6 @@ pub fn style_sheet(
 {id} .actor-man circle,{id} line{{fill:var(--actorBkg);stroke-width:2px;}}\
 {id} g rect.rect{{filter:{shadow};stroke:var(--nodeBorder);}}"
     );
-    format!("{base}{}", css_text(&rules))
+    escape_css_tail_in_place(&mut css, seq_start);
+    css
 }

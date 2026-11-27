@@ -8,9 +8,13 @@
 use std::fmt::Write as _;
 
 use ferrigura_model::theme::{ThemeTokens, Token};
+use ferrigura_text::EmbeddedFamily;
 
 use crate::context::ThemeView;
-use crate::svg::css_text_into;
+use crate::svg::assemble_stylesheet;
+
+/// Room for the gantt rules besides its font faces and `extra`: about 4 KiB.
+const STYLE_RULES_CAPACITY: usize = 5 * 1024;
 
 /// The color tokens of the gantt theme (`styles.js`): every color a rule names, with its name, in
 /// the order the sheet declares them.
@@ -187,16 +191,9 @@ pub(crate) fn style_element(
     id: &str,
     theme: ThemeView<'_>,
     family: &str,
-    faces: &str,
+    families: &[EmbeddedFamily],
     extra: &str,
 ) -> String {
-    let tokens = match theme.dark {
-        None => format!("#{id}{{{}}}", declarations(theme.light)),
-        Some(dark) => crate::scheme::both(
-            &format!("#{id}{{{}}}", declarations(theme.light)),
-            &format!("#{id}{{{}}}", declarations(dark)),
-        ),
-    };
     // `family` is the quoted `font-family` list of the embedded faces, or empty.
     let font = if family.is_empty() {
         "sans-serif"
@@ -210,33 +207,48 @@ pub(crate) fn style_element(
         .text()
         .unwrap_or_else(|| "16px".to_owned());
     let size = crate::svg::css_declaration_value(&size, "16px");
-    let root = format!("#{id}{{font-family: {font};font-size: {size};fill: var(--textColor);}}");
-    let mut scoped_rules = String::new();
+
+    let mut out = String::with_capacity(extra.len() + STYLE_RULES_CAPACITY);
+    match theme.dark {
+        None => {
+            let _ = write!(out, "#{id}{{");
+            write_declarations(&mut out, theme.light);
+            out.push('}');
+        }
+        Some(dark) => {
+            let mut light_block = format!("#{id}{{");
+            write_declarations(&mut light_block, theme.light);
+            light_block.push('}');
+            let mut dark_block = format!("#{id}{{");
+            write_declarations(&mut dark_block, dark);
+            dark_block.push('}');
+            out.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
+    }
+    let _ = write!(
+        out,
+        "#{id}{{font-family: {font};font-size: {size};fill: var(--textColor);}}"
+    );
     for (selectors, body) in rules(font) {
         for (index, selector) in selectors.split(',').enumerate() {
             if index > 0 {
-                scoped_rules.push_str(", ");
+                out.push_str(", ");
             }
-            let _ = write!(scoped_rules, "#{id} {}", selector.trim());
+            let _ = write!(out, "#{id} {}", selector.trim());
         }
-        let _ = write!(scoped_rules, "{{{body}}}");
+        let _ = write!(out, "{{{body}}}");
     }
-    let mut out = String::from("<style>");
-    css_text_into(&mut out, faces);
-    css_text_into(&mut out, &tokens);
-    css_text_into(&mut out, &root);
-    css_text_into(&mut out, &scoped_rules);
-    css_text_into(&mut out, extra);
-    out.push_str("</style>");
-    out
+    out.push_str(extra);
+    assemble_stylesheet(id, families, out, true)
 }
 
-/// The custom property declarations of the color tokens a set gives.
-fn declarations(tokens: &ThemeTokens) -> String {
-    color_tokens(tokens)
-        .into_iter()
-        .filter_map(|(name, token)| token.text().map(|colour| format!("--{name}: {colour};")))
-        .collect()
+/// Appends the custom property declarations of the color tokens a set gives.
+fn write_declarations(out: &mut String, tokens: &ThemeTokens) {
+    for (name, token) in color_tokens(tokens) {
+        if let Some(color) = token.text() {
+            let _ = write!(out, "--{name}: {color};");
+        }
+    }
 }
 
 /// The `styles.js` rules in their order: each selector list, and its declarations. The colors are

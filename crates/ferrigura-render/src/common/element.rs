@@ -4,6 +4,8 @@
 //! had and takes the new value. Attribute order does not change the geometry, but the shared helpers
 //! keep it, so the markup reads as the reference's does and the tests can compare it.
 
+use std::borrow::Cow;
+
 use crate::svg::{escape_into, escape_url_attr_into};
 
 /// What an element holds between its tags.
@@ -21,7 +23,7 @@ enum Content {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Element {
     tag: &'static str,
-    attributes: Vec<(String, String)>,
+    attributes: Vec<(Cow<'static, str>, String)>,
     content: Content,
     children: Vec<Element>,
 }
@@ -40,23 +42,28 @@ impl Element {
 
     /// Sets an attribute, as a builder: see [`Element::set`].
     #[must_use]
-    pub fn with(mut self, name: &str, value: impl Into<String>) -> Self {
+    pub fn with(mut self, name: impl Into<Cow<'static, str>>, value: impl Into<String>) -> Self {
         self.set(name, value);
         self
     }
 
     /// Sets an attribute. A name that is already set keeps its place and takes the new value.
-    pub fn set(&mut self, name: &str, value: impl Into<String>) {
+    pub fn set(&mut self, name: impl Into<Cow<'static, str>>, value: impl Into<String>) {
+        let name = name.into();
         let value = value.into();
-        match self.attributes.iter_mut().find(|(key, _)| key == name) {
+        match self
+            .attributes
+            .iter_mut()
+            .find(|(key, _)| key.as_ref() == name.as_ref())
+        {
             Some(entry) => entry.1 = value,
-            None => self.attributes.push((name.to_owned(), value)),
+            None => self.attributes.push((name, value)),
         }
     }
 
     /// Removes an attribute, as d3 does when it is given `undefined`.
     pub fn remove(&mut self, name: &str) {
-        self.attributes.retain(|(key, _)| key != name);
+        self.attributes.retain(|(key, _)| key.as_ref() != name);
     }
 
     /// The value of an attribute, if it is set.
@@ -64,7 +71,7 @@ impl Element {
     pub fn get(&self, name: &str) -> Option<&str> {
         self.attributes
             .iter()
-            .find(|(key, _)| key == name)
+            .find(|(key, _)| key.as_ref() == name)
             .map(|(_, value)| value.as_str())
     }
 
@@ -149,7 +156,7 @@ impl Element {
             out.push(' ');
             out.push_str(name);
             out.push_str("=\"");
-            if matches!(name.as_str(), "xlink:href" | "href") {
+            if matches!(name.as_ref(), "xlink:href" | "href") {
                 escape_url_attr_into(out, value);
             } else {
                 escape_into(out, value);
@@ -187,6 +194,20 @@ mod tests {
             .with("x", "2")
             .with("y", "3");
         assert_eq!(element.render(), "<rect x=\"2\" fill=\"red\" y=\"3\"/>");
+    }
+
+    #[test]
+    fn static_keys_stay_borrowed_and_dynamic_keys_work() {
+        let dynamic = format!("data-{}", "id");
+        let element = Element::new("rect")
+            .with("x", "1")
+            .with(dynamic, "abc")
+            .with("x".to_owned(), "2");
+        assert!(matches!(element.attributes[0].0, Cow::Borrowed("x")));
+        assert!(matches!(element.attributes[1].0, Cow::Owned(_)));
+        assert_eq!(element.get("x"), Some("2"));
+        assert_eq!(element.get("data-id"), Some("abc"));
+        assert_eq!(element.render(), "<rect x=\"2\" data-id=\"abc\"/>");
     }
 
     #[test]
