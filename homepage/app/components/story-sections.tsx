@@ -147,7 +147,7 @@ export function Design() {
     <MonoSection
       id="design-mode"
       title="A diagram that looks designed."
-      standfirst="Ferrigura draws a diagram the way Mermaid does, so that nothing moves when you switch. For flowcharts, state diagrams and class diagrams, one option draws it Ferrigura’s own way: calm, with room, and with color that means something."
+      standfirst="Matching Mermaid is where Ferrigura starts, so that nothing moves when you switch. For flowcharts, state diagrams and class diagrams, one option goes further and draws the diagram Ferrigura’s own way: calm, with room, and with color that means something."
     >
       <MonoPassage
         note={{

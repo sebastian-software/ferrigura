@@ -12,6 +12,7 @@ import {
 import { displayName, WORKSHOP } from 'ferramenta-family/registry';
 
 import { Alternatives, Checked, Family, Runtimes } from '../components/feature-sections';
+import { Focus } from '../components/focus-section';
 import { grouped, tool } from '../components/homepage-data';
 import { Design, Explainer, Modes, Schemes, Text } from '../components/story-sections';
 import coverage from '../data/coverage.json';
@@ -23,7 +24,7 @@ export const meta: ArdoMetaFunction = () => [
   {
     name: 'description',
     content:
-      'Ferrigura renders Mermaid diagram text to standalone SVG in Rust, without a browser: bundled fonts, labels that stay text, and every diagram type checked against Mermaid. For Rust, Node.js and the command line.',
+      'Ferrigura renders Mermaid diagram text to standalone SVG in Rust, without a browser: ten diagram types, each drawn completely and checked against Mermaid, with bundled fonts, labels that stay text and a design mode. For Rust, Node.js and the command line.',
   },
 ];
 // oxlint-disable-next-line react/only-export-components -- Ardo reads the route layout.
@@ -55,7 +56,7 @@ function Opening() {
         kicker={`${displayName(tool)} ${releaseLine}, ${tool.what.toLowerCase()} for Rust, Node.js and the command line`}
         title="Mermaid diagrams, drawn without a browser."
         subtitle="Fonts included, labels still text."
-        standfirst={`Ferrigura turns Mermaid diagram text into standalone SVG files for documentation sites, build tools and servers. It is a port of Mermaid ${coverage.mermaid} to Rust: no browser starts, the fonts the labels were measured with travel inside the file, and every label stays real text.`}
+        standfirst={`Ferrigura turns Mermaid diagram text into standalone SVG files for documentation sites, build tools and servers. It draws the ten diagram types nearly every Mermaid diagram is written in, each ported whole from Mermaid ${coverage.mermaid} to Rust: no browser starts, the fonts the labels were measured with travel inside the file, and every label stays real text.`}
         actions={<Actions />}
         facts={[
           {
@@ -84,6 +85,7 @@ function Opening() {
 // Keys are written out: minified builds do not keep function names.
 const chapters = [
   { key: 'explainer', Chapter: Explainer },
+  { key: 'focus', Chapter: Focus },
   { key: 'design', Chapter: Design },
   { key: 'text', Chapter: Text },
   { key: 'modes', Chapter: Modes },
