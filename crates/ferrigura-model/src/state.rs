@@ -92,6 +92,41 @@ pub struct StateStmt {
     pub start: Option<bool>,
 }
 
+impl Drop for StateStmt {
+    fn drop(&mut self) {
+        let Some(mut stack) = self.doc.take() else {
+            return;
+        };
+        while let Some(statement) = stack.pop() {
+            match statement {
+                Statement::State(mut state) => {
+                    if let Some(mut doc) = state.doc.take() {
+                        stack.append(&mut doc);
+                    }
+                }
+                Statement::Relation(mut relation) => {
+                    if let Some(mut doc) = relation.state1.doc.take() {
+                        stack.append(&mut doc);
+                    }
+                    if let Some(mut doc) = relation.state2.doc.take() {
+                        stack.append(&mut doc);
+                    }
+                }
+                Statement::Click(mut click) => {
+                    if let Some(mut doc) = click.id.doc.take() {
+                        stack.append(&mut doc);
+                    }
+                }
+                Statement::Dir(_)
+                | Statement::ClassDef(_)
+                | Statement::Style(_)
+                | Statement::ApplyClass(_)
+                | Statement::Text(_) => {}
+            }
+        }
+    }
+}
+
 /// A description as the grammar gives it: a single string, or the two parts of an aliased state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]

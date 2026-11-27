@@ -46,11 +46,15 @@ pub(crate) fn trim_colon(text: &str) -> String {
     }
 }
 
+/// The deepest composite state nesting that the state parser allows.
+const MAX_DEPTH: usize = 128;
+
 /// The recursive-descent parser over the tokens of one diagram.
 pub(crate) struct Parser<'a> {
     source: Source<'a>,
     tokens: Vec<Token>,
     pos: usize,
+    depth: usize,
     divider_count: usize,
     acc_title: String,
     acc_descr: String,
@@ -62,6 +66,7 @@ impl<'a> Parser<'a> {
             source,
             tokens,
             pos: 0,
+            depth: 0,
             divider_count: 0,
             acc_title: String::new(),
             acc_descr: String::new(),
@@ -117,6 +122,23 @@ impl<'a> Parser<'a> {
         } else {
             Err(self.error_here(expected))
         }
+    }
+
+    fn descend<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        if self.depth >= MAX_DEPTH {
+            let offset = self.token().start;
+            return Err(self.source.error(
+                offset,
+                format!("the nesting is deeper than the {MAX_DEPTH} levels the parser allows"),
+            ));
+        }
+        self.depth += 1;
+        let result = parse(self);
+        self.depth -= 1;
+        result
     }
 
     /// `document: document line`, where `line` is a statement or a line break. A string `nl`
@@ -283,7 +305,7 @@ impl<'a> Parser<'a> {
             return Ok(Statement::Text(name.value));
         }
         self.bump();
-        let document = self.document(true)?;
+        let document = self.descend(|parser| parser.document(true))?;
         self.expect(Kind::StructStop, "'}' to end the composite state")?;
         let mut state = StateStmt::new(name.value, Some("default"));
         state.description = Some(Description::Text(String::new()));
@@ -299,7 +321,7 @@ impl<'a> Parser<'a> {
         let id = self.expect(Kind::Id, "the state id after 'as'")?;
         if self.kind() == Kind::StructStart {
             self.bump();
-            let document = self.document(true)?;
+            let document = self.descend(|parser| parser.document(true))?;
             self.expect(Kind::StructStop, "'}' to end the composite state")?;
             let mut state = StateStmt::new(id.value, Some("default"));
             state.description = Some(Description::Text(description.value));

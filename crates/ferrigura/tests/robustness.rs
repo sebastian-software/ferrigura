@@ -491,3 +491,163 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
         "expected line 2, column 9 for BOM cycle, got {bom_err}"
     );
 }
+
+#[test]
+fn deeply_nested_html_sanitizer_does_not_overflow() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let deep_html = "<b>".repeat(16_000);
+    let sanitized = ferrigura_syntax::sanitize::sanitize_text(&deep_html);
+    assert!(sanitized.starts_with("<b>"));
+    assert!(sanitized.ends_with("</b>"));
+    let flow_html = format!("flowchart LR\nA[\"{}\"]\n", "<b>".repeat(4_000));
+    let svg = renderer
+        .render(&flow_html)
+        .expect("deeply nested HTML label renders");
+    finite_geometry(&svg, &flow_html, "deep HTML label");
+}
+
+#[test]
+fn deeply_nested_state_ast_drop_does_not_overflow() {
+    use ferrigura_model::state::{StateStmt, Statement};
+
+    // Programmatic deep AST trees drop iteratively without overflowing the stack.
+    let mut state_stmt = StateStmt::new("leaf", Some("default"));
+    for i in 0..10_000 {
+        let mut parent = StateStmt::new(format!("s{i}"), Some("default"));
+        parent.doc = Some(vec![Statement::State(state_stmt)]);
+        state_stmt = parent;
+    }
+    drop(state_stmt);
+}
+
+#[test]
+fn deeply_nested_diagram_parsers_return_clean_errors() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let depth = 500;
+    let mut flowchart = String::from("flowchart TD\n");
+    let mut sequence = String::from("sequenceDiagram\n");
+    let mut class = String::from("classDiagram\n");
+    let mut state = String::from("stateDiagram-v2\n");
+    let mut state_described = String::from("stateDiagram-v2\n");
+    let mut er = String::from("erDiagram\n");
+    for n in 0..depth {
+        flowchart.push_str(&format!("subgraph g{n}\n"));
+        sequence.push_str(&format!("loop l{n}\n"));
+        class.push_str(&format!("namespace n{n} {{\n"));
+        state.push_str(&format!("state s{n} {{\n"));
+        state_described.push_str(&format!("state \"d{n}\" as s{n} {{\n"));
+        er.push_str(&format!("subgraph g{n}\n"));
+    }
+    flowchart.push_str("A --> B\n");
+    sequence.push_str("Alice->>Bob: hi\n");
+    class.push_str("class Leaf\n");
+    state.push_str("[*] --> Ready\n");
+    state_described.push_str("[*] --> Ready\n");
+    er.push_str("USER ||--o{ ORDER : places\n");
+    for _ in 0..depth {
+        flowchart.push_str("end\n");
+        sequence.push_str("end\n");
+        class.push_str("}\n");
+        state.push_str("}\n");
+        state_described.push_str("}\n");
+        er.push_str("end\n");
+    }
+    for (name, source) in [
+        ("flowchart", flowchart),
+        ("sequence", sequence),
+        ("class", class),
+        ("state", state),
+        ("state described", state_described),
+        ("er", er),
+    ] {
+        assert!(
+            renderer.render(&source).is_err(),
+            "{name} should fail cleanly"
+        );
+    }
+}
+
+#[test]
+fn deeply_nested_markdown_does_not_overflow() {
+    let renderer = Renderer::new(&Value::empty_object());
+
+    let markdown_cases = [
+        format!("flowchart LR\nA[\"`{}hi`\"]\n", "> ".repeat(2_000)),
+        format!("flowchart LR\nA[\"`{}hi`\"]\n", "- ".repeat(1_000)),
+        format!(
+            "flowchart LR\nA[\"`{}x{}`\"]\n",
+            "*".repeat(1_000),
+            "*".repeat(1_000)
+        ),
+        format!(
+            "flowchart LR\nA[\"`{}x{}`\"]\n",
+            "~~".repeat(500),
+            "~~".repeat(500)
+        ),
+        format!(
+            "flowchart LR\nA[\"`{}Grüße 🦀 日本語{}`\"]\n",
+            "*".repeat(100),
+            "*".repeat(100)
+        ),
+    ];
+    for (index, source) in markdown_cases.iter().enumerate() {
+        let svg = renderer
+            .render(source)
+            .unwrap_or_else(|error| panic!("markdown case {index} failed: {error}"));
+        finite_geometry(&svg, source, &format!("markdown case {index}"));
+    }
+}
+
+#[test]
+fn deep_elk_chain_does_not_overflow() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let mut elk_chain = String::from("---\nconfig:\n  layout: elk\n---\nflowchart TD\n");
+    for n in 0..200 {
+        elk_chain.push_str(&format!("n{n} --> n{}\n", n + 1));
+    }
+    let elk_svg = renderer
+        .render(&elk_chain)
+        .expect("deep ELK chain renders cleanly");
+    finite_geometry(&elk_svg, &elk_chain, "deep ELK chain");
+}
+
+#[test]
+fn deeply_nested_config_value_does_not_overflow() {
+    use std::collections::BTreeMap;
+
+    use ferrigura_model::config::{assign_with_depth, deep_merge, effective};
+
+    let renderer = Renderer::new(&Value::empty_object());
+    let control = renderer.render(CONTROL).expect("control renders");
+
+    let mut deep_obj = Value::String("forest".to_owned());
+    let mut deep_arr = Value::String("leaf".to_owned());
+    for _ in 0..5_000 {
+        let mut map = BTreeMap::new();
+        map.insert("flowchart".to_owned(), deep_obj);
+        deep_obj = Value::Object(map);
+        deep_arr = Value::Array(vec![deep_arr]);
+    }
+    let _ = effective(Some(&deep_obj), Some("flowchart"), &deep_obj);
+    let _ = effective(Some(&deep_arr), None, &deep_arr);
+    let mut merged = Value::empty_object();
+    deep_merge(&mut merged, &deep_obj);
+    assign_with_depth(&mut merged, &deep_arr, 2);
+    let deep_renderer = Renderer::new(&deep_obj);
+    let deep_control = deep_renderer
+        .render(CONTROL)
+        .expect("control renders with deep config");
+    finite_geometry(&deep_control, CONTROL, "deep config control");
+    let deep_flow = deep_renderer
+        .render("flowchart LR\nA --> B\n")
+        .expect("flowchart renders with deep config");
+    finite_geometry(
+        &deep_flow,
+        "flowchart LR\nA --> B\n",
+        "deep config flowchart",
+    );
+    let shorthand_control =
+        ferrigura::render(CONTROL, &deep_obj).expect("shorthand render handles deep config");
+    finite_geometry(&shorthand_control, CONTROL, "deep config shorthand");
+    assert_eq!(renderer.render(CONTROL).unwrap(), control);
+}

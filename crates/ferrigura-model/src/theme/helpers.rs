@@ -264,15 +264,15 @@ pub(crate) fn mk_border(value: &Js, dark: bool) -> Res<Js> {
 
 /// `applyOverride(generated, override)` of `theme-helpers.js`. An object keeps every key the theme
 /// generated and takes the override's keys on top; any other override is the value.
-pub(crate) fn apply_override(generated: Js, value: &Value) -> Value {
-    match (generated, value) {
-        (Some(Value::Object(mut merged)), Value::Object(overrides)) => {
+pub(crate) fn apply_override(mut generated: Js, value: &Value) -> Value {
+    match (&mut generated, value) {
+        (Some(Value::Object(merged)), Value::Object(overrides)) => {
             merged.extend(
                 overrides
                     .iter()
                     .map(|(key, value)| (key.clone(), value.clone())),
             );
-            Value::Object(merged)
+            Value::Object(std::mem::take(merged))
         }
         _ => value.clone(),
     }

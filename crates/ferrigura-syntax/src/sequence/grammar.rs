@@ -107,12 +107,16 @@ pub(crate) struct Parsed {
     pub(crate) acc_descr: Option<String>,
 }
 
+/// The deepest block nesting that the sequence parser allows.
+const MAX_DEPTH: usize = 128;
+
 /// Parses the tokens of a prepared text into the items of the DB.
 pub(crate) fn parse(source: Source<'_>, tokens: Vec<Spanned>) -> Result<Parsed, ParseError> {
     let mut parser = Parser {
         source,
         tokens,
         at: 0,
+        depth: 0,
         parsed: Parsed::default(),
     };
     parser.start()?;
@@ -123,6 +127,7 @@ struct Parser<'a> {
     source: Source<'a>,
     tokens: Vec<Spanned>,
     at: usize,
+    depth: usize,
     parsed: Parsed,
 }
 
@@ -144,6 +149,21 @@ impl<'a> Parser<'a> {
 
     fn error(&self, message: &str) -> ParseError {
         self.source.error(self.offset(), message)
+    }
+
+    fn descend<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        if self.depth >= MAX_DEPTH {
+            return Err(self.error(&format!(
+                "the nesting is deeper than the {MAX_DEPTH} levels the parser allows"
+            )));
+        }
+        self.depth += 1;
+        let result = parse(self);
+        self.depth -= 1;
+        result
     }
 
     fn push(&mut self, offset: usize, item: Item) {
@@ -675,6 +695,10 @@ impl<'a> Parser<'a> {
 
     /// `loop`, `rect`, `opt`, `alt`, `par`, `par_over`, `critical` and `break` (lines 191-242).
     fn block(&mut self, start: usize, keyword: &Tok) -> Result<(), ParseError> {
+        self.descend(|parser| parser.block_body(start, keyword))
+    }
+
+    fn block_body(&mut self, start: usize, keyword: &Tok) -> Result<(), ParseError> {
         self.at += 1;
         let text = self.rest_of_line()?;
         match keyword {

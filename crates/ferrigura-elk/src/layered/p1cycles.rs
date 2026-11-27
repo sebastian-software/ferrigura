@@ -248,25 +248,63 @@ struct Search<'a> {
 }
 
 impl Search<'_> {
-    fn visit(&mut self, node: usize) {
-        let id = self.position[node];
-        if self.visited[id] {
+    fn visit(&mut self, start: usize) {
+        struct Frame {
+            node: usize,
+            id: usize,
+            port_idx: usize,
+            edge_idx: usize,
+        }
+
+        let start_id = self.position[start];
+        if self.visited[start_id] {
             return;
         }
-        self.visited[id] = true;
-        self.active[id] = true;
-        for edge in outgoing_edges(self.graph, node) {
+        self.visited[start_id] = true;
+        self.active[start_id] = true;
+        let mut stack = vec![Frame {
+            node: start,
+            id: start_id,
+            port_idx: 0,
+            edge_idx: 0,
+        }];
+        while let Some(frame) = stack.last_mut() {
+            let ports = &self.graph.nodes[frame.node].ports;
+            let mut next_edge = None;
+            while frame.port_idx < ports.len() {
+                let port = ports[frame.port_idx];
+                let outgoing = &self.graph.ports[port].outgoing;
+                if frame.edge_idx < outgoing.len() {
+                    next_edge = Some(outgoing[frame.edge_idx]);
+                    frame.edge_idx += 1;
+                    break;
+                }
+                frame.port_idx += 1;
+                frame.edge_idx = 0;
+            }
+            let Some(edge) = next_edge else {
+                self.active[frame.id] = false;
+                stack.pop();
+                continue;
+            };
             if is_self_loop(self.graph, edge) {
                 continue;
             }
             let target = self.graph.ports[self.graph.edges[edge].target].node;
-            if self.active[self.position[target]] {
+            let target_id = self.position[target];
+            if self.active[target_id] {
                 self.to_reverse.push(edge);
-            } else {
-                self.visit(target);
+            } else if !self.visited[target_id] {
+                self.visited[target_id] = true;
+                self.active[target_id] = true;
+                stack.push(Frame {
+                    node: target,
+                    id: target_id,
+                    port_idx: 0,
+                    edge_idx: 0,
+                });
             }
         }
-        self.active[id] = false;
     }
 }
 
@@ -435,5 +473,16 @@ mod tests {
         assert!(!graph.edges[1].reversed);
         assert_eq!(graph.ports[graph.edges[1].source].node, 1);
         assert_eq!(graph.ports[graph.edges[1].target].node, 0);
+    }
+
+    #[test]
+    fn deep_cycle_runs_iteratively_without_stack_overflow() {
+        let count = 10_000;
+        let edges: Vec<(usize, usize)> = (0..count).map(|i| (i, (i + 1) % count)).collect();
+        let mut graph = graph_with(count, &edges);
+        break_cycles(&mut graph);
+        assert!(graph.cyclic);
+        assert_eq!(graph.edges.iter().filter(|edge| edge.reversed).count(), 1);
+        assert!(graph.edges[count - 1].reversed);
     }
 }

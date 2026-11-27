@@ -82,6 +82,21 @@ struct Element {
     children: Vec<Node>,
 }
 
+impl Drop for Element {
+    fn drop(&mut self) {
+        let mut stack = std::mem::take(&mut self.children);
+        while let Some(node) = stack.pop() {
+            if let Node::Element(mut child) = node {
+                stack.append(&mut child.children);
+            }
+        }
+    }
+}
+
+/// The deepest element nesting the HTML tree builder keeps open; deeper start tags flatten by
+/// closing the innermost open element so sanitization, serialization and drop stay bounded.
+const MAX_DEPTH: usize = 256;
+
 /// The element a node is put into, for the namespace check.
 #[derive(Debug, Clone, Copy)]
 struct Parent<'a> {
@@ -421,6 +436,9 @@ impl Parser<'_> {
             }
             self.insert(element);
         } else {
+            if self.open.len() >= MAX_DEPTH {
+                self.close_innermost();
+            }
             self.open.push(element);
         }
     }
@@ -765,7 +783,7 @@ fn numeric_character(value: u32) -> char {
 fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>, forbid_style: bool) -> Vec<Node> {
     let mut kept = Vec::with_capacity(nodes.len());
     for node in nodes {
-        let element = match node {
+        let mut element = match node {
             Node::Text(text) => {
                 kept.push(Node::Text(text));
                 continue;
@@ -776,20 +794,25 @@ fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>, forbid_style: bool) -
         if forbidden || !is_allowed_element(&element.name) {
             // `_sanitizeDisallowedNode`: the children move up unless the content is forbidden.
             if !FORBID_CONTENTS.contains(&element.name.as_str()) {
-                kept.extend(sanitize_children(element.children, parent, forbid_style));
+                kept.extend(sanitize_children(
+                    std::mem::take(&mut element.children),
+                    parent,
+                    forbid_style,
+                ));
             }
             continue;
         }
         if !namespace_allowed(element.namespace, &element.name, parent) {
             continue;
         }
+        let attributes = std::mem::take(&mut element.attributes);
         let attributes = if element.namespace == Namespace::Html && element.name == "a" {
-            sanitize_anchor_attributes(element.attributes)
+            sanitize_anchor_attributes(attributes)
         } else {
-            sanitize_attributes(&element.name, element.attributes)
+            sanitize_attributes(&element.name, attributes)
         };
         let children = sanitize_children(
-            element.children,
+            std::mem::take(&mut element.children),
             Parent {
                 namespace: element.namespace,
                 name: &element.name,
@@ -797,7 +820,7 @@ fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>, forbid_style: bool) -
             forbid_style,
         );
         kept.push(Node::Element(Element {
-            name: element.name,
+            name: std::mem::take(&mut element.name),
             namespace: element.namespace,
             attributes,
             children,

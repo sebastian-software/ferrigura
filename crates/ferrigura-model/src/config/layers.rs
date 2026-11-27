@@ -15,6 +15,9 @@ use crate::value::Value;
 /// The settings a diagram section may set for its own diagram type.
 const APPEARANCE_KEYS: [&str; 3] = ["theme", "look", "layout"];
 
+/// The deepest configuration value nesting that merge and sanitization walks descend into.
+const MAX_DEPTH: usize = 128;
+
 /// The themes of the reference, `themes/index.js`.
 const THEMES: [&str; 11] = [
     "base",
@@ -363,6 +366,13 @@ fn add_font_family_variable(directive: &mut Value) {
 /// arrays take the new items that they lack, and a value of another type never replaces an object
 /// below the depth limit. See the reference's `assignWithDepth` for the cases.
 pub fn assign_with_depth(dst: &mut Value, src: &Value, depth: i32) {
+    assign_with_depth_inner(dst, src, depth, 0);
+}
+
+fn assign_with_depth_inner(dst: &mut Value, src: &Value, depth: i32, recursion: usize) {
+    if recursion >= MAX_DEPTH {
+        return;
+    }
     if let Value::Array(items) = src {
         if let Value::Array(target) = dst {
             for item in items {
@@ -372,7 +382,7 @@ pub fn assign_with_depth(dst: &mut Value, src: &Value, depth: i32) {
             }
         } else {
             for item in items {
-                assign_with_depth(dst, item, depth);
+                assign_with_depth_inner(dst, item, depth, recursion + 1);
             }
         }
         return;
@@ -407,7 +417,7 @@ pub fn assign_with_depth(dst: &mut Value, src: &Value, depth: i32) {
                 }
             });
             if child.is_object() || child.is_array() || child.is_null() {
-                assign_with_depth(child, src_value, depth - 1);
+                assign_with_depth_inner(child, src_value, depth - 1, recursion + 1);
             }
         } else {
             match target.get(key) {
@@ -444,7 +454,7 @@ fn assign_selected_with_depth(
                 }
             });
             if child.is_object() || child.is_array() || child.is_null() {
-                assign_with_depth(child, src_value, depth - 1);
+                assign_with_depth_inner(child, src_value, depth - 1, 1);
             }
         } else {
             match target.get(key) {
@@ -461,6 +471,13 @@ fn assign_selected_with_depth(
 /// Deep merge of two configuration values, as the `merge` of es-toolkit that `cleanAndMerge`
 /// uses. Objects merge key by key, arrays by index, and any other value replaces the target's.
 pub fn deep_merge(target: &mut Value, source: &Value) {
+    deep_merge_inner(target, source, 0);
+}
+
+fn deep_merge_inner(target: &mut Value, source: &Value, depth: usize) {
+    if depth >= MAX_DEPTH {
+        return;
+    }
     match (target, source) {
         (Value::Object(target), Value::Object(source)) => {
             for (key, value) in source {
@@ -469,7 +486,7 @@ pub fn deep_merge(target: &mut Value, source: &Value) {
                         if (existing.is_object() && value.is_object())
                             || (existing.is_array() && value.is_array()) =>
                     {
-                        deep_merge(existing, value);
+                        deep_merge_inner(existing, value, depth + 1);
                     }
                     _ => {
                         target.insert(key.clone(), value.clone());
@@ -480,7 +497,7 @@ pub fn deep_merge(target: &mut Value, source: &Value) {
         (Value::Array(target), Value::Array(source)) => {
             for (index, value) in source.iter().enumerate() {
                 if index < target.len() {
-                    deep_merge(&mut target[index], value);
+                    deep_merge_inner(&mut target[index], value, depth + 1);
                 } else {
                     target.push(value.clone());
                 }
@@ -494,10 +511,22 @@ pub fn deep_merge(target: &mut Value, source: &Value) {
 /// keys, prototype keys, `null` values, unbalanced CSS in `themeCSS` and `fontFamily`, and
 /// `themeVariables` values with characters that no color or font name uses.
 pub fn sanitize_directive(args: &mut Value) {
+    sanitize_directive_inner(args, 0);
+}
+
+fn sanitize_directive_inner(args: &mut Value, depth: usize) {
+    if depth >= MAX_DEPTH {
+        match args {
+            Value::Array(items) => items.clear(),
+            Value::Object(map) => map.clear(),
+            _ => {}
+        }
+        return;
+    }
     match args {
         Value::Array(items) => {
             for item in items {
-                sanitize_directive(item);
+                sanitize_directive_inner(item, depth + 1);
             }
         }
         Value::Object(map) => {
@@ -521,7 +550,7 @@ pub fn sanitize_directive(args: &mut Value) {
                 if value.is_object() {
                     match dictionary_pattern(&key) {
                         Some(pattern) => sanitize_dictionary(value, pattern),
-                        None => sanitize_directive(value),
+                        None => sanitize_directive_inner(value, depth + 1),
                     }
                     continue;
                 }
@@ -542,7 +571,7 @@ pub fn sanitize_directive(args: &mut Value) {
                 }
             }
             if let Some(variables) = map.get_mut("themeVariables") {
-                sanitize_theme_variables(variables);
+                sanitize_theme_variables(variables, depth + 1);
             }
         }
         _ => {}
@@ -551,17 +580,26 @@ pub fn sanitize_directive(args: &mut Value) {
 
 /// Recursively sanitizes `themeVariables` values, including arrays of override objects that
 /// `assign_with_depth` would otherwise unpack into the theme map.
-fn sanitize_theme_variables(value: &mut Value) {
+fn sanitize_theme_variables(value: &mut Value, depth: usize) {
+    if depth >= MAX_DEPTH {
+        match value {
+            Value::Array(items) => items.clear(),
+            Value::Object(map) => map.clear(),
+            Value::String(text) => text.clear(),
+            _ => {}
+        }
+        return;
+    }
     match value {
         Value::Object(variables) => {
             variables.retain(|key, _| !key.contains("proto") && !key.contains("constr"));
             for entry in variables.values_mut() {
-                sanitize_theme_variables(entry);
+                sanitize_theme_variables(entry, depth + 1);
             }
         }
         Value::Array(items) => {
             for item in items {
-                sanitize_theme_variables(item);
+                sanitize_theme_variables(item, depth + 1);
             }
         }
         Value::String(text) if !theme_value_pattern().is_match(text) => {
@@ -574,9 +612,17 @@ fn sanitize_theme_variables(value: &mut Value) {
 /// Removes what a diagram may not take from the text, as `sanitize` in `config.ts` does: the
 /// secure keys, prototype keys, and strings with markup or `url(data:`, at every depth.
 fn sanitize(options: &mut Value, secure: &[String]) {
+    sanitize_inner(options, secure, 0);
+}
+
+fn sanitize_inner(options: &mut Value, secure: &[String], depth: usize) {
     let Value::Object(map) = options else {
         return;
     };
+    if depth >= MAX_DEPTH {
+        map.clear();
+        return;
+    }
     map.remove("secure");
     for key in secure {
         map.remove(key);
@@ -592,7 +638,7 @@ fn sanitize(options: &mut Value, secure: &[String]) {
         if markup {
             map.remove(&key);
         } else if let Some(child @ Value::Object(_)) = map.get_mut(&key) {
-            sanitize(child, secure);
+            sanitize_inner(child, secure, depth + 1);
         }
     }
 }
@@ -945,5 +991,23 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn sanitize_directive_bounds_deeply_nested_theme_variables() {
+        let mut nested = json!({ "primaryColor": "red;}</style><script>alert(1)</script>" });
+        for _ in 0..512 {
+            nested = Value::Array(vec![nested]);
+        }
+        let mut directive = Value::Object(Map::from([("themeVariables".to_owned(), nested)]));
+        sanitize_directive(&mut directive);
+        let mut cursor = directive.get("themeVariables");
+        let mut depth = 0;
+        while let Some(Value::Array(items)) = cursor {
+            depth += 1;
+            cursor = items.first();
+        }
+        assert!(depth <= MAX_DEPTH);
+        assert!(cursor.is_none());
     }
 }

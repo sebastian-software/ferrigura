@@ -328,9 +328,9 @@ mod tests {
     /// The colors of a tone by name: its theme variables and its role properties.
     fn colours(tone: Tone) -> std::collections::BTreeMap<String, String> {
         let mut colours = std::collections::BTreeMap::new();
-        if let Value::Object(map) = theme_variables(tone) {
+        if let Value::Object(map) = &theme_variables(tone) {
             for (name, value) in map {
-                colours.insert(name, value.as_str().unwrap().to_owned());
+                colours.insert(name.clone(), value.as_str().unwrap().to_owned());
             }
         }
         for declaration in declarations(tone)
@@ -418,7 +418,7 @@ mod tests {
 
     #[test]
     fn the_theme_variables_of_both_tones_name_the_same_variables() {
-        let names = |tone| match theme_variables(tone) {
+        let names = |tone| match &theme_variables(tone) {
             Value::Object(map) => map.keys().cloned().collect::<Vec<_>>(),
             _ => Vec::new(),
         };

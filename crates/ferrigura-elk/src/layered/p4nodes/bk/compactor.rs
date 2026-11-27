@@ -131,57 +131,87 @@ fn place_block(
     spacing_node_node: f64,
     cached_spacings: &Spacings,
 ) {
+    struct BlockFrame {
+        root: usize,
+        is_initial_assignment: bool,
+        current_node: usize,
+        thresh: f64,
+        pending_neighbor: Option<(usize, usize, usize)>,
+    }
+
     if bal.y[root].is_some() {
         return;
     }
 
-    // The initial position is 0, and the first neighbor sets it outright. Without that, a minimum
-    // with 0 would be wrong: the inside shift can make the positions negative for a bottom-up layout.
-    let mut is_initial_assignment = true;
-    bal.y[root] = Some(0.0);
-
-    let mut current_node = root;
-    let mut thresh = if bal.vdir == Some(VDirection::Down) {
+    let initial_thresh = if bal.vdir == Some(VDirection::Down) {
         f64::NEG_INFINITY
     } else {
         f64::INFINITY
     };
-    loop {
-        let current_index = ni.node_index[current_node];
+
+    // The initial position is 0, and the first neighbor sets it outright. Without that, a minimum
+    // with 0 would be wrong: the inside shift can make the positions negative for a bottom-up layout.
+    bal.y[root] = Some(0.0);
+    let mut stack = vec![BlockFrame {
+        root,
+        is_initial_assignment: true,
+        current_node: root,
+        thresh: initial_thresh,
+        pending_neighbor: None,
+    }];
+
+    while let Some(frame) = stack.last_mut() {
+        let root = frame.root;
+        let current_node = frame.current_node;
         let current = lnode(graph, ni, current_node);
-        let layer_nodes = &graph.layers[current.layer.expect("a placed node has a layer")];
-        let current_layer_size = layer_nodes.len();
 
-        // The top (or bottom) node of its layer is placed safely: it is the first one there.
-        let has_neighbor = (bal.vdir == Some(VDirection::Down) && current_index > 0)
-            || (bal.vdir == Some(VDirection::Up) && current_index + 1 < current_layer_size);
+        let neighbor_info = if let Some(info) = frame.pending_neighbor.take() {
+            Some(info)
+        } else {
+            let current_index = ni.node_index[current_node];
+            let layer_nodes = &graph.layers[current.layer.expect("a placed node has a layer")];
+            let current_layer_size = layer_nodes.len();
 
-        if has_neighbor {
-            // The node above (or below) the current one, and the root of its block.
-            let neighbor_arena = if bal.vdir == Some(VDirection::Up) {
-                layer_nodes[current_index + 1]
+            // The top (or bottom) node of its layer is placed safely: it is the first one there.
+            let has_neighbor = (bal.vdir == Some(VDirection::Down) && current_index > 0)
+                || (bal.vdir == Some(VDirection::Up) && current_index + 1 < current_layer_size);
+
+            if has_neighbor {
+                // The node above (or below) the current one, and the root of its block.
+                let neighbor_arena = if bal.vdir == Some(VDirection::Up) {
+                    layer_nodes[current_index + 1]
+                } else {
+                    layer_nodes[current_index - 1]
+                };
+                let neighbor = graph.nodes[neighbor_arena].placement_id;
+                let neighbor_root = bal.root_of(neighbor);
+
+                // Make sure the neighbor's block is placed first.
+                if bal.y[neighbor_root].is_none() {
+                    frame.pending_neighbor = Some((neighbor_arena, neighbor, neighbor_root));
+                    bal.y[neighbor_root] = Some(0.0);
+                    stack.push(BlockFrame {
+                        root: neighbor_root,
+                        is_initial_assignment: true,
+                        current_node: neighbor_root,
+                        thresh: initial_thresh,
+                        pending_neighbor: None,
+                    });
+                    continue;
+                }
+                Some((neighbor_arena, neighbor, neighbor_root))
             } else {
-                layer_nodes[current_index - 1]
-            };
-            let neighbor_node = &graph.nodes[neighbor_arena];
-            let neighbor = neighbor_node.placement_id;
-            let neighbor_root = bal.root_of(neighbor);
+                None
+            }
+        };
 
-            // Make sure the neighbor's block is placed.
-            place_block(
-                graph,
-                ni,
-                bal,
-                threshold,
-                classes,
-                neighbor_root,
-                spacing_node_node,
-                cached_spacings,
-            );
+        if let Some((neighbor_arena, neighbor, neighbor_root)) = neighbor_info {
+            let neighbor_node = &graph.nodes[neighbor_arena];
 
             // The threshold has to be calculated after the neighbor is placed, or the order of the
             // postponed blocks would be wrong.
-            thresh = threshold.calculate_threshold(graph, ni, bal, thresh, root, current_node);
+            frame.thresh =
+                threshold.calculate_threshold(graph, ni, bal, frame.thresh, root, current_node);
 
             // The root and the neighbor's root form a class, unless the root already has a sink.
             if bal.sink[root] == root {
@@ -201,13 +231,13 @@ fn place_block(
                         - current.size.y
                         - bal.inner_shift[current_node];
 
-                    if is_initial_assignment {
-                        is_initial_assignment = false;
-                        bal.y[root] = Some(java_min(new_position, thresh));
+                    if frame.is_initial_assignment {
+                        frame.is_initial_assignment = false;
+                        bal.y[root] = Some(java_min(new_position, frame.thresh));
                     } else {
                         bal.y[root] = Some(java_min(
                             current_block_position,
-                            java_min(new_position, thresh),
+                            java_min(new_position, frame.thresh),
                         ));
                     }
                 } else {
@@ -221,13 +251,13 @@ fn place_block(
                         + current.margin.top
                         - bal.inner_shift[current_node];
 
-                    if is_initial_assignment {
-                        is_initial_assignment = false;
-                        bal.y[root] = Some(java_max(new_position, thresh));
+                    if frame.is_initial_assignment {
+                        frame.is_initial_assignment = false;
+                        bal.y[root] = Some(java_max(new_position, frame.thresh));
                     } else {
                         bal.y[root] = Some(java_max(
                             current_block_position,
-                            java_max(new_position, thresh),
+                            java_max(new_position, frame.thresh),
                         ));
                     }
                 }
@@ -262,17 +292,17 @@ fn place_block(
                 }
             }
         } else {
-            thresh = threshold.calculate_threshold(graph, ni, bal, thresh, root, current_node);
+            frame.thresh =
+                threshold.calculate_threshold(graph, ni, bal, frame.thresh, root, current_node);
         }
 
         // The next node of the block, until the ring is closed.
-        current_node = bal.align[current_node];
-        if current_node == root {
-            break;
+        frame.current_node = bal.align[current_node];
+        if frame.current_node == root {
+            threshold.finish_block(root);
+            stack.pop();
         }
     }
-
-    threshold.finish_block(root);
 }
 
 /// `ClassNode`s of the class graph, by sink, in the order they were first seen.

@@ -13,6 +13,9 @@ use super::lexer::{Kind, Token, tokenize};
 use crate::error::{ParseError, Source};
 use crate::text::js_trim;
 
+/// The deepest namespace nesting that the class parser allows.
+const MAX_DEPTH: usize = 128;
+
 /// Parses the prepared text of a class diagram into the DB's state, and returns the model.
 pub(crate) fn parse(
     text: &str,
@@ -25,6 +28,7 @@ pub(crate) fn parse(
         source,
         tokens,
         pos: 0,
+        depth: 0,
         db,
     };
     parser.graph_config()?;
@@ -36,6 +40,7 @@ struct Parser<'a> {
     source: Source<'a>,
     tokens: Vec<Token>,
     pos: usize,
+    depth: usize,
     db: ClassDb,
 }
 
@@ -72,6 +77,21 @@ impl Parser<'_> {
 
     fn db_error(&self, error: DbError) -> ParseError {
         self.source.error(self.offset(), error.0)
+    }
+
+    fn descend<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        if self.depth >= MAX_DEPTH {
+            return Err(self.error(&format!(
+                "the nesting is deeper than the {MAX_DEPTH} levels the parser allows"
+            )));
+        }
+        self.depth += 1;
+        let result = parse(self);
+        self.depth -= 1;
+        result
     }
 
     /// Consumes a token of `kind` or fails.
@@ -290,6 +310,10 @@ impl Parser<'_> {
 
     /// `namespaceStatement`: the identifier, its braces and the classes and notes inside.
     fn namespace_statement(&mut self) -> Result<(), ParseError> {
+        self.descend(|parser| parser.namespace_statement_body())
+    }
+
+    fn namespace_statement_body(&mut self) -> Result<(), ParseError> {
         self.advance();
         let name = self.name_chain(false)?;
         let label = if self.kind() == Kind::Sqs {

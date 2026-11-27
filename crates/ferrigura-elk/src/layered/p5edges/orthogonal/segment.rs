@@ -303,33 +303,49 @@ pub fn add_port_positions(
     port: usize,
     map: &mut HashMap<usize, usize>,
 ) {
-    map.insert(port, segment);
-    arena.segments[segment].ports.push(port);
-    let port_position = direction::port_position_on_hyper_node(graph, port);
+    fn record_port(
+        arena: &mut Arena,
+        graph: &LGraph,
+        segment: usize,
+        port: usize,
+        map: &mut HashMap<usize, usize>,
+    ) {
+        map.insert(port, segment);
+        arena.segments[segment].ports.push(port);
+        let port_position = direction::port_position_on_hyper_node(graph, port);
 
-    // The routing strategy's source side is east: those connections are incoming.
-    if graph.ports[port].side == direction::SOURCE_PORT_SIDE {
-        insert_sorted(&mut arena.segments[segment].incoming, port_position);
-    } else {
-        insert_sorted(&mut arena.segments[segment].outgoing, port_position);
+        // The routing strategy's source side is east: those connections are incoming.
+        if graph.ports[port].side == direction::SOURCE_PORT_SIDE {
+            insert_sorted(&mut arena.segments[segment].incoming, port_position);
+        } else {
+            insert_sorted(&mut arena.segments[segment].outgoing, port_position);
+        }
+        recompute_extent(&mut arena.segments[segment]);
     }
-    recompute_extent(&mut arena.segments[segment]);
 
-    for other in connected_ports(graph, port) {
-        if !map.contains_key(&other) {
-            add_port_positions(arena, graph, segment, other, map);
+    record_port(arena, graph, segment, port, map);
+    let mut stack = vec![(port, 0usize)];
+    while let Some((current, next_k)) = stack.last_mut() {
+        let current = *current;
+        let current_port = &graph.ports[current];
+        let in_len = current_port.incoming.len();
+        let total = in_len + current_port.outgoing.len();
+        if *next_k < total {
+            let k = *next_k;
+            *next_k += 1;
+            let other = if k < in_len {
+                graph.edges[current_port.incoming[k]].source
+            } else {
+                graph.edges[current_port.outgoing[k - in_len]].target
+            };
+            if !map.contains_key(&other) {
+                record_port(arena, graph, segment, other, map);
+                stack.push((other, 0));
+            }
+        } else {
+            stack.pop();
         }
     }
-}
-
-/// `LPort.getConnectedPorts()`: the sources of the incoming edges, then the targets of the
-/// outgoing edges.
-fn connected_ports(graph: &LGraph, port: usize) -> impl Iterator<Item = usize> + '_ {
-    let port = &graph.ports[port];
-    port.incoming
-        .iter()
-        .map(|&edge| graph.edges[edge].source)
-        .chain(port.outgoing.iter().map(|&edge| graph.edges[edge].target))
 }
 
 /// `Math.min` for doubles: NaN wins, and -0.0 is less than 0.0.
@@ -393,5 +409,44 @@ mod tests {
         arena.remove_dependency(dependency);
         assert!(arena.segments[a].incoming_deps.is_empty());
         assert!(arena.segments[b].outgoing_deps.is_empty());
+    }
+
+    #[test]
+    fn add_port_positions_handles_deep_port_chain_iteratively() {
+        use crate::core::data::enums::PortSide;
+        use crate::layered::lgraph::{LEdge, LNode, LPort};
+
+        let count = 10_000;
+        let mut graph = LGraph::default();
+        graph.nodes.push(LNode::default());
+        for i in 0..count {
+            let side = if i % 2 == 0 {
+                PortSide::EAST
+            } else {
+                PortSide::WEST
+            };
+            let mut port = LPort::new(0, side);
+            port.position.y = i as f64;
+            graph.ports.push(port);
+        }
+        for i in 0..count - 1 {
+            let edge = graph.edges.len();
+            graph.edges.push(LEdge {
+                source: i,
+                target: i + 1,
+                ..LEdge::default()
+            });
+            graph.ports[i].outgoing.push(edge);
+            graph.ports[i + 1].incoming.push(edge);
+        }
+
+        let mut arena = Arena::default();
+        let segment = arena.new_segment();
+        let mut map = HashMap::new();
+        add_port_positions(&mut arena, &graph, segment, 0, &mut map);
+        assert_eq!(map.len(), count);
+        assert_eq!(arena.segments[segment].ports.len(), count);
+        assert_eq!(arena.segments[segment].ports[0], 0);
+        assert_eq!(arena.segments[segment].ports[count - 1], count - 1);
     }
 }

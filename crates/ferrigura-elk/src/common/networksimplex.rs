@@ -307,15 +307,27 @@ impl NGraph {
     }
 
     /// Java `dfs(node, mark)`.
-    fn dfs(&self, node: usize, mark: &mut [bool]) {
-        let id = self.nodes[node].internal_id;
-        if mark[id] {
+    fn dfs(&self, start: usize, mark: &mut [bool]) {
+        let start_id = self.nodes[start].internal_id;
+        if mark[start_id] {
             return;
         }
-        mark[id] = true;
-        for edge in self.connected_edges(node) {
-            let other = self.edges[edge].other(node);
-            self.dfs(other, mark);
+        mark[start_id] = true;
+        let mut stack = vec![(start, 0usize)];
+        while let Some((node, next_k)) = stack.last_mut() {
+            let node = *node;
+            if *next_k < self.connected_len(node) {
+                let edge = self.connected_at(node, *next_k);
+                *next_k += 1;
+                let other = self.edges[edge].other(node);
+                let other_id = self.nodes[other].internal_id;
+                if !mark[other_id] {
+                    mark[other_id] = true;
+                    stack.push((other, 0));
+                }
+            } else {
+                stack.pop();
+            }
         }
     }
 
@@ -754,26 +766,37 @@ impl<'a> NetworkSimplex<'a> {
     }
 
     /// Java `tightTreeDFS(node)`: the number of nodes reached from `node` over tight edges.
-    fn tight_tree_dfs(&mut self, node: usize) -> usize {
+    fn tight_tree_dfs(&mut self, start: usize) -> usize {
         let mut node_count = 1;
-        self.graph.nodes[node].tree_node = true;
-        for k in 0..self.graph.connected_len(node) {
-            let edge = self.graph.connected_at(node, k);
-            let id = self.graph.edges[edge].internal_id;
-            if !self.edge_visited[id] {
-                self.edge_visited[id] = true;
-                let opposite = self.graph.edges[edge].other(node);
-                if self.graph.edges[edge].tree_edge {
-                    // edge is a tree edge already: follow this path
-                    node_count += self.tight_tree_dfs(opposite);
-                } else if !self.graph.nodes[opposite].tree_node
-                    && self.graph.edges[edge].delta == self.span(edge)
-                {
-                    // edge is a tight non-tree edge
-                    self.graph.edges[edge].tree_edge = true;
-                    self.tree_edges.insert(id);
-                    node_count += self.tight_tree_dfs(opposite);
+        self.graph.nodes[start].tree_node = true;
+        let mut stack = vec![(start, 0usize)];
+        while let Some((node, next_k)) = stack.last_mut() {
+            let node = *node;
+            if *next_k < self.graph.connected_len(node) {
+                let edge = self.graph.connected_at(node, *next_k);
+                *next_k += 1;
+                let id = self.graph.edges[edge].internal_id;
+                if !self.edge_visited[id] {
+                    self.edge_visited[id] = true;
+                    let opposite = self.graph.edges[edge].other(node);
+                    if self.graph.edges[edge].tree_edge {
+                        // edge is a tree edge already: follow this path
+                        node_count += 1;
+                        self.graph.nodes[opposite].tree_node = true;
+                        stack.push((opposite, 0));
+                    } else if !self.graph.nodes[opposite].tree_node
+                        && self.graph.edges[edge].delta == self.span(edge)
+                    {
+                        // edge is a tight non-tree edge
+                        self.graph.edges[edge].tree_edge = true;
+                        self.tree_edges.insert(id);
+                        node_count += 1;
+                        self.graph.nodes[opposite].tree_node = true;
+                        stack.push((opposite, 0));
+                    }
                 }
+            } else {
+                stack.pop();
             }
         }
         node_count
@@ -801,22 +824,36 @@ impl<'a> NetworkSimplex<'a> {
 
     /// Java `postorderTraversal(node)`: numbers the tree in postorder and returns the lowest
     /// number reachable below `node`.
-    fn postorder_traversal(&mut self, node: usize) -> i32 {
-        let mut lowest = i32::MAX;
-        for k in 0..self.graph.connected_len(node) {
-            let edge = self.graph.connected_at(node, k);
-            let id = self.graph.edges[edge].internal_id;
-            if self.graph.edges[edge].tree_edge && !self.edge_visited[id] {
-                self.edge_visited[id] = true;
-                let other = self.graph.edges[edge].other(node);
-                lowest = lowest.min(self.postorder_traversal(other));
+    fn postorder_traversal(&mut self, start: usize) -> i32 {
+        let mut stack = vec![(start, 0usize, i32::MAX)];
+        let mut result = i32::MAX;
+        while let Some((node, next_k, lowest)) = stack.last_mut() {
+            let node = *node;
+            if *next_k < self.graph.connected_len(node) {
+                let edge = self.graph.connected_at(node, *next_k);
+                *next_k += 1;
+                let id = self.graph.edges[edge].internal_id;
+                if self.graph.edges[edge].tree_edge && !self.edge_visited[id] {
+                    self.edge_visited[id] = true;
+                    let other = self.graph.edges[edge].other(node);
+                    stack.push((other, 0, i32::MAX));
+                }
+            } else {
+                let lowest = *lowest;
+                stack.pop();
+                let node_id = self.graph.nodes[node].internal_id;
+                self.po_id[node_id] = self.post_order;
+                self.lowest_po_id[node_id] = lowest.min(self.post_order);
+                self.post_order = self.post_order.wrapping_add(1);
+                let child_lowest = self.lowest_po_id[node_id];
+                if let Some(parent) = stack.last_mut() {
+                    parent.2 = parent.2.min(child_lowest);
+                } else {
+                    result = child_lowest;
+                }
             }
         }
-        let node_id = self.graph.nodes[node].internal_id;
-        self.po_id[node_id] = self.post_order;
-        self.lowest_po_id[node_id] = lowest.min(self.post_order);
-        self.post_order = self.post_order.wrapping_add(1);
-        self.lowest_po_id[node_id]
+        result
     }
 
     /// Java `isInHead(node, edge)`: whether `node` is in the head component of `edge`, the
@@ -1370,5 +1407,25 @@ mod tests {
         assert_eq!(order(&set), Vec::<usize>::new());
         set.insert(3);
         assert_eq!(order(&set), vec![3]);
+    }
+
+    #[test]
+    fn deep_graph_without_leaves_runs_iteratively() {
+        // A 5,000-node two-rail DAG has no degree-1 leaves, so remove_subtrees leaves every node
+        // in place and dfs, tight_tree_dfs, and postorder_traversal traverse the full depth.
+        let mut graph = NGraph::new();
+        let n = 2_500;
+        let top: Vec<usize> = (0..n).map(|_| graph.add_node(NNode::new())).collect();
+        let bottom: Vec<usize> = (0..n).map(|_| graph.add_node(NNode::new())).collect();
+        for i in 0..n - 1 {
+            add_edge(&mut graph, top[i], top[i + 1], 1, 1.0);
+            add_edge(&mut graph, bottom[i], bottom[i + 1], 1, 1.0);
+        }
+        add_edge(&mut graph, top[0], bottom[0], 1, 1.0);
+        add_edge(&mut graph, top[n - 1], bottom[n - 1], 1, 1.0);
+
+        assert_eq!(graph.make_connected(), None);
+        NetworkSimplex::for_graph(&mut graph).execute();
+        assert_feasible(&graph);
     }
 }

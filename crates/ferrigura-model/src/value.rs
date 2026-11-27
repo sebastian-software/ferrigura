@@ -17,7 +17,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// A configuration value. Objects are sorted by key, as JSON written by `serde_json` is without
 /// its `preserve_order` feature.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Default)]
 pub enum Value {
     /// `null`.
     #[default]
@@ -32,6 +32,133 @@ pub enum Value {
     Array(Vec<Value>),
     /// An object.
     Object(BTreeMap<String, Value>),
+}
+
+impl Drop for Value {
+    fn drop(&mut self) {
+        let mut stack = Vec::new();
+        match self {
+            Self::Array(items) => stack.append(items),
+            Self::Object(map) => stack.extend(std::mem::take(map).into_values()),
+            _ => return,
+        }
+        while let Some(mut value) = stack.pop() {
+            match &mut value {
+                Self::Array(items) => stack.append(items),
+                Self::Object(map) => stack.extend(std::mem::take(map).into_values()),
+                _ => {}
+            }
+        }
+    }
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        let mut stack = vec![(self, other)];
+        while let Some((left, right)) = stack.pop() {
+            match (left, right) {
+                (Self::Null, Self::Null) => {}
+                (Self::Bool(a), Self::Bool(b)) if a == b => {}
+                (Self::Number(a), Self::Number(b)) if a == b => {}
+                (Self::String(a), Self::String(b)) if a == b => {}
+                (Self::Array(a), Self::Array(b)) if a.len() == b.len() => {
+                    stack.extend(a.iter().zip(b.iter()));
+                }
+                (Self::Object(a), Self::Object(b)) if a.len() == b.len() => {
+                    for ((ka, va), (kb, vb)) in a.iter().zip(b.iter()) {
+                        if ka != kb {
+                            return false;
+                        }
+                        stack.push((va, vb));
+                    }
+                }
+                _ => return false,
+            }
+        }
+        true
+    }
+}
+
+impl Clone for Value {
+    fn clone(&self) -> Self {
+        enum Frame<'a> {
+            Array {
+                src: &'a [Value],
+                index: usize,
+                out: Vec<Value>,
+            },
+            Object {
+                iter: btree_map::Iter<'a, String, Value>,
+                pending_key: Option<String>,
+                out: BTreeMap<String, Value>,
+            },
+        }
+
+        let mut stack: Vec<Frame<'_>> = Vec::new();
+        let mut next: Option<&Value> = Some(self);
+        let mut ready: Option<Value> = None;
+
+        loop {
+            if let Some(value) = next.take() {
+                match value {
+                    Self::Null => ready = Some(Self::Null),
+                    Self::Bool(flag) => ready = Some(Self::Bool(*flag)),
+                    Self::Number(number) => ready = Some(Self::Number(*number)),
+                    Self::String(text) => ready = Some(Self::String(text.clone())),
+                    Self::Array(items) => {
+                        stack.push(Frame::Array {
+                            src: items,
+                            index: 0,
+                            out: Vec::with_capacity(items.len()),
+                        });
+                    }
+                    Self::Object(map) => {
+                        stack.push(Frame::Object {
+                            iter: map.iter(),
+                            pending_key: None,
+                            out: BTreeMap::new(),
+                        });
+                    }
+                }
+            }
+
+            if let Some(value) = ready.take() {
+                match stack.last_mut() {
+                    Some(Frame::Array { out, .. }) => out.push(value),
+                    Some(Frame::Object {
+                        pending_key, out, ..
+                    }) => {
+                        if let Some(key) = pending_key.take() {
+                            out.insert(key, value);
+                        }
+                    }
+                    None => return value,
+                }
+            }
+
+            match stack.last_mut() {
+                Some(Frame::Array { src, index, .. }) => {
+                    if *index < src.len() {
+                        next = Some(&src[*index]);
+                        *index += 1;
+                    } else if let Some(Frame::Array { out, .. }) = stack.pop() {
+                        ready = Some(Self::Array(out));
+                    }
+                }
+                Some(Frame::Object {
+                    iter, pending_key, ..
+                }) => {
+                    if let Some((key, value)) = iter.next() {
+                        *pending_key = Some(key.clone());
+                        next = Some(value);
+                    } else if let Some(Frame::Object { out, .. }) = stack.pop() {
+                        ready = Some(Self::Object(out));
+                    }
+                }
+                None => unreachable!("clone always finishes with a ready value"),
+            }
+        }
+    }
 }
 
 impl Value {
@@ -186,16 +313,67 @@ impl From<serde_json::Value> for Value {
     }
 }
 
+/// The deepest nesting that [`Value`]'s serde `Serialize` and `Deserializer` walks descend into.
+const MAX_SERDE_DEPTH: usize = 128;
+
+struct BoundedSerialize<'a> {
+    value: &'a Value,
+    depth: usize,
+}
+
+impl Serialize for BoundedSerialize<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::{Error, SerializeMap, SerializeSeq};
+
+        match self.value {
+            Value::Null => serializer.serialize_unit(),
+            Value::Bool(flag) => serializer.serialize_bool(*flag),
+            Value::Number(number) => serializer.serialize_f64(*number),
+            Value::String(text) => serializer.serialize_str(text),
+            Value::Array(items) => {
+                if self.depth >= MAX_SERDE_DEPTH {
+                    return Err(S::Error::custom(format!(
+                        "configuration value nesting exceeds {MAX_SERDE_DEPTH} levels"
+                    )));
+                }
+                let mut seq = serializer.serialize_seq(Some(items.len()))?;
+                for item in items {
+                    seq.serialize_element(&BoundedSerialize {
+                        value: item,
+                        depth: self.depth + 1,
+                    })?;
+                }
+                seq.end()
+            }
+            Value::Object(map) => {
+                if self.depth >= MAX_SERDE_DEPTH {
+                    return Err(S::Error::custom(format!(
+                        "configuration value nesting exceeds {MAX_SERDE_DEPTH} levels"
+                    )));
+                }
+                let mut entries = serializer.serialize_map(Some(map.len()))?;
+                for (key, value) in map {
+                    entries.serialize_entry(
+                        key,
+                        &BoundedSerialize {
+                            value,
+                            depth: self.depth + 1,
+                        },
+                    )?;
+                }
+                entries.end()
+            }
+        }
+    }
+}
+
 impl Serialize for Value {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Null => serializer.serialize_unit(),
-            Self::Bool(flag) => serializer.serialize_bool(*flag),
-            Self::Number(number) => serializer.serialize_f64(*number),
-            Self::String(text) => serializer.serialize_str(text),
-            Self::Array(items) => items.serialize(serializer),
-            Self::Object(map) => map.serialize(serializer),
+        BoundedSerialize {
+            value: self,
+            depth: 0,
         }
+        .serialize(serializer)
     }
 }
 
@@ -273,42 +451,103 @@ impl<'de> Deserializer<'de> for Value {
     type Error = serde_json::Error;
 
     fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        match self {
-            Self::Null => visitor.visit_unit(),
-            Self::Bool(flag) => visitor.visit_bool(flag),
-            Self::Number(number) => {
+        BoundedValue {
+            value: self,
+            depth: 0,
+        }
+        .deserialize_any(visitor)
+    }
+
+    fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        BoundedValue {
+            value: self,
+            depth: 0,
+        }
+        .deserialize_option(visitor)
+    }
+
+    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        drop(self);
+        visitor.visit_unit()
+    }
+
+    serde::forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes byte_buf
+        unit unit_struct newtype_struct seq tuple tuple_struct map struct enum identifier
+    }
+}
+
+struct BoundedValue {
+    value: Value,
+    depth: usize,
+}
+
+impl<'de> Deserializer<'de> for BoundedValue {
+    type Error = serde_json::Error;
+
+    fn deserialize_any<V: Visitor<'de>>(mut self, visitor: V) -> Result<V::Value, Self::Error> {
+        match &mut self.value {
+            Value::Null => visitor.visit_unit(),
+            Value::Bool(flag) => visitor.visit_bool(*flag),
+            Value::Number(number) => {
+                let number = *number;
                 if number.is_finite() && number.fract() == 0.0 && number.abs() < 9.0e15 {
                     visitor.visit_i64(number as i64)
                 } else {
                     visitor.visit_f64(number)
                 }
             }
-            Self::String(text) => visitor.visit_string(text),
-            Self::Array(items) => visitor.visit_seq(Items {
-                items: items.into_iter(),
-            }),
-            Self::Object(map) => visitor.visit_map(Entries {
-                entries: map.into_iter(),
-                value: None,
-            }),
+            Value::String(text) => visitor.visit_string(std::mem::take(text)),
+            Value::Array(items) => {
+                if self.depth >= MAX_SERDE_DEPTH {
+                    return Err(de::Error::custom(format!(
+                        "configuration value nesting exceeds {MAX_SERDE_DEPTH} levels"
+                    )));
+                }
+                visitor.visit_seq(Items {
+                    items: std::mem::take(items).into_iter(),
+                    depth: self.depth + 1,
+                })
+            }
+            Value::Object(map) => {
+                if self.depth >= MAX_SERDE_DEPTH {
+                    return Err(de::Error::custom(format!(
+                        "configuration value nesting exceeds {MAX_SERDE_DEPTH} levels"
+                    )));
+                }
+                visitor.visit_map(Entries {
+                    entries: std::mem::take(map).into_iter(),
+                    value: None,
+                    depth: self.depth + 1,
+                })
+            }
         }
     }
 
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        match self {
-            Self::Null => visitor.visit_none(),
-            other => visitor.visit_some(other),
+        match self.value {
+            Value::Null => visitor.visit_none(),
+            other => visitor.visit_some(BoundedValue {
+                value: other,
+                depth: self.depth,
+            }),
         }
+    }
+
+    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        drop(self);
+        visitor.visit_unit()
     }
 
     serde::forward_to_deserialize_any! {
         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes byte_buf
-        unit unit_struct newtype_struct seq tuple tuple_struct map struct enum identifier ignored_any
+        unit unit_struct newtype_struct seq tuple tuple_struct map struct enum identifier
     }
 }
 
 struct Items {
     items: vec::IntoIter<Value>,
+    depth: usize,
 }
 
 impl<'de> SeqAccess<'de> for Items {
@@ -319,7 +558,12 @@ impl<'de> SeqAccess<'de> for Items {
         seed: T,
     ) -> Result<Option<T::Value>, Self::Error> {
         match self.items.next() {
-            Some(item) => seed.deserialize(item).map(Some),
+            Some(item) => seed
+                .deserialize(BoundedValue {
+                    value: item,
+                    depth: self.depth,
+                })
+                .map(Some),
             None => Ok(None),
         }
     }
@@ -328,6 +572,7 @@ impl<'de> SeqAccess<'de> for Items {
 struct Entries {
     entries: btree_map::IntoIter<String, Value>,
     value: Option<Value>,
+    depth: usize,
 }
 
 impl<'de> MapAccess<'de> for Entries {
@@ -352,7 +597,10 @@ impl<'de> MapAccess<'de> for Entries {
         seed: V,
     ) -> Result<V::Value, Self::Error> {
         match self.value.take() {
-            Some(value) => seed.deserialize(value),
+            Some(value) => seed.deserialize(BoundedValue {
+                value,
+                depth: self.depth,
+            }),
             None => Err(de::Error::custom("a map value is missing its key")),
         }
     }

@@ -913,6 +913,9 @@ fn inherit_font_roles(
     let Value::Object(properties) = value else {
         return;
     };
+    if path.len() >= 128 {
+        return;
+    }
     for (key, child) in properties {
         path.push(key.clone());
         if path.len() > 1
@@ -1195,22 +1198,28 @@ fn kept(
 /// Whether two configurations are the same value, number by number: `0` and `-0` are not, as the
 /// derived id tells them apart, and a `NaN` is the same `NaN`.
 fn identical(a: &Value, b: &Value) -> bool {
-    match (a, b) {
-        (Value::Null, Value::Null) => true,
-        (Value::Bool(a), Value::Bool(b)) => a == b,
-        (Value::Number(a), Value::Number(b)) => a.to_bits() == b.to_bits(),
-        (Value::String(a), Value::String(b)) => a == b,
-        (Value::Array(a), Value::Array(b)) => {
-            a.len() == b.len() && a.iter().zip(b).all(|(a, b)| identical(a, b))
+    let mut stack = vec![(a, b)];
+    while let Some((left, right)) = stack.pop() {
+        match (left, right) {
+            (Value::Null, Value::Null) => {}
+            (Value::Bool(a), Value::Bool(b)) if a == b => {}
+            (Value::Number(a), Value::Number(b)) if a.to_bits() == b.to_bits() => {}
+            (Value::String(a), Value::String(b)) if a == b => {}
+            (Value::Array(a), Value::Array(b)) if a.len() == b.len() => {
+                stack.extend(a.iter().zip(b.iter()));
+            }
+            (Value::Object(a), Value::Object(b)) if a.len() == b.len() => {
+                for ((key_a, a), (key_b, b)) in a.iter().zip(b.iter()) {
+                    if key_a != key_b {
+                        return false;
+                    }
+                    stack.push((a, b));
+                }
+            }
+            _ => return false,
         }
-        (Value::Object(a), Value::Object(b)) => {
-            a.len() == b.len()
-                && a.iter()
-                    .zip(b)
-                    .all(|((key_a, a), (key_b, b))| key_a == key_b && identical(a, b))
-        }
-        _ => false,
     }
+    true
 }
 
 /// The guard of a cache. A panic in another render does not keep it shut: the caches hold nothing a

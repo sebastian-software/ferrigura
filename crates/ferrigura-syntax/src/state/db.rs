@@ -47,69 +47,113 @@ pub fn sanitize_state_id(id: &str) -> String {
     out
 }
 
+enum TranslateTask<'a> {
+    Statement {
+        parent: String,
+        node: &'a mut Statement,
+        first: bool,
+    },
+    State {
+        parent: String,
+        state: &'a mut StateStmt,
+        first: bool,
+    },
+}
+
 /// `docTranslator` for the root document, whose parent is `root`. `regions` counts the trailing
 /// regions the translation has created, over both passes of the parse.
 pub(crate) fn translate_root(document: &mut [Statement], regions: &mut usize) {
-    for node in document {
-        translate_statement("root", node, true, regions);
-    }
-}
+    let mut stack: Vec<TranslateTask<'_>> = document
+        .iter_mut()
+        .rev()
+        .map(|node| TranslateTask::Statement {
+            parent: "root".to_owned(),
+            node,
+            first: true,
+        })
+        .collect();
+    while let Some(task) = stack.pop() {
+        match task {
+            TranslateTask::Statement {
+                parent,
+                node,
+                first,
+            } => match node {
+                Statement::Relation(relation) => {
+                    stack.push(TranslateTask::State {
+                        parent: parent.clone(),
+                        state: &mut relation.state2,
+                        first: false,
+                    });
+                    stack.push(TranslateTask::State {
+                        parent,
+                        state: &mut relation.state1,
+                        first: true,
+                    });
+                }
+                Statement::State(state) => {
+                    stack.push(TranslateTask::State {
+                        parent,
+                        state,
+                        first,
+                    });
+                }
+                _ => {}
+            },
+            TranslateTask::State {
+                parent,
+                state,
+                first,
+            } => {
+                if state.id == "[*]" {
+                    state.id = format!("{parent}{}", if first { "_start" } else { "_end" });
+                    state.start = Some(first);
+                } else {
+                    state.id = js_trim(&state.id).to_owned();
+                }
+                let Some(document) = state.doc.take() else {
+                    continue;
+                };
 
-/// `docTranslator` for one statement: a relation translates its two states, a state its id and
-/// its document.
-fn translate_statement(parent: &str, node: &mut Statement, first: bool, regions: &mut usize) {
-    match node {
-        Statement::Relation(relation) => {
-            translate_state(parent, &mut relation.state1, true, regions);
-            translate_state(parent, &mut relation.state2, false, regions);
-        }
-        Statement::State(state) => translate_state(parent, state, first, regions),
-        _ => {}
-    }
-}
+                // Each divider takes the statements before it; the statements after the last one
+                // become a trailing region. Without a divider, or with an empty trailing list, the
+                // document stays.
+                let mut split = Vec::new();
+                let mut current = Vec::new();
+                for statement in &document {
+                    match statement {
+                        Statement::State(divider) if divider.kind.as_deref() == Some("divider") => {
+                            let mut split_divider = divider.clone();
+                            split_divider.doc = Some(current.clone());
+                            split.push(Statement::State(split_divider));
+                            current.clear();
+                        }
+                        other => current.push(other.clone()),
+                    }
+                }
+                let document = if !split.is_empty() && !current.is_empty() {
+                    let mut trailing = StateStmt::new(generated_id(*regions + 1), Some("divider"));
+                    *regions += 1;
+                    trailing.doc = Some(current);
+                    split.push(Statement::State(trailing));
+                    split
+                } else {
+                    document
+                };
 
-/// `docTranslator` for a state: `[*]` becomes `<parent>_start` or `<parent>_end`, other ids are
-/// trimmed, and a document is split at its dividers.
-fn translate_state(parent: &str, state: &mut StateStmt, first: bool, regions: &mut usize) {
-    if state.id == "[*]" {
-        state.id = format!("{parent}{}", if first { "_start" } else { "_end" });
-        state.start = Some(first);
-    } else {
-        state.id = js_trim(&state.id).to_owned();
-    }
-    let Some(document) = state.doc.take() else {
-        return;
-    };
-
-    // Each divider takes the statements before it; the statements after the last one become a
-    // trailing region. Without a divider, or with an empty trailing list, the document stays.
-    let mut split = Vec::new();
-    let mut current = Vec::new();
-    for statement in &document {
-        match statement {
-            Statement::State(divider) if divider.kind.as_deref() == Some("divider") => {
-                let mut split_divider = divider.clone();
-                split_divider.doc = Some(current.clone());
-                split.push(Statement::State(split_divider));
-                current.clear();
+                state.doc = Some(document);
+                let id = state.id.clone();
+                if let Some(children) = &mut state.doc {
+                    for child in children.iter_mut().rev() {
+                        stack.push(TranslateTask::Statement {
+                            parent: id.clone(),
+                            node: child,
+                            first: true,
+                        });
+                    }
+                }
             }
-            other => current.push(other.clone()),
         }
-    }
-    let document = if !split.is_empty() && !current.is_empty() {
-        let mut trailing = StateStmt::new(generated_id(*regions + 1), Some("divider"));
-        *regions += 1;
-        trailing.doc = Some(current);
-        split.push(Statement::State(trailing));
-        split
-    } else {
-        document
-    };
-
-    state.doc = Some(document);
-    let id = state.id.clone();
-    for child in state.doc.iter_mut().flatten() {
-        translate_statement(&id, child, true, regions);
     }
 }
 
@@ -403,25 +447,36 @@ struct Fetch {
 
 impl Fetch {
     fn visit_document(&mut self, document: &[Statement]) {
-        for item in document {
-            match item {
-                Statement::State(state) => self.visit_state(state),
-                Statement::Relation(relation) => {
-                    self.visit_state(&relation.state1);
-                    self.visit_state(&relation.state2);
-                }
-                _ => {}
-            }
+        enum VisitTask<'a> {
+            Statement(&'a Statement),
+            State(&'a StateStmt),
         }
-    }
 
-    /// `dataFetcher`: a state named `root` is not a node, but its document is still visited.
-    fn visit_state(&mut self, state: &StateStmt) {
-        if state.id != "root" {
-            self.visit_node(state);
-        }
-        if let Some(document) = &state.doc {
-            self.visit_document(document);
+        let mut stack: Vec<VisitTask<'_>> =
+            document.iter().rev().map(VisitTask::Statement).collect();
+        while let Some(task) = stack.pop() {
+            match task {
+                VisitTask::Statement(Statement::State(state)) => {
+                    stack.push(VisitTask::State(state));
+                }
+                VisitTask::Statement(Statement::Relation(relation)) => {
+                    stack.push(VisitTask::State(&relation.state2));
+                    stack.push(VisitTask::State(&relation.state1));
+                }
+                VisitTask::Statement(_) => {}
+                VisitTask::State(state) => {
+                    // `dataFetcher`: a state named `root` is not a node, but its document is still
+                    // visited.
+                    if state.id != "root" {
+                        self.visit_node(state);
+                    }
+                    if let Some(document) = &state.doc {
+                        for item in document.iter().rev() {
+                            stack.push(VisitTask::Statement(item));
+                        }
+                    }
+                }
+            }
         }
     }
 
