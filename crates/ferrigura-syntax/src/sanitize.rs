@@ -93,8 +93,9 @@ impl Drop for Element {
     }
 }
 
-/// The deepest element nesting the HTML tree builder keeps open; deeper start tags flatten by
-/// closing the innermost open element so sanitization, serialization and drop stay bounded.
+/// The deepest element nesting the HTML tree builder keeps in its DOM tree; deeper start tags are
+/// tracked on an explicit overflow stack so sanitization, serialization and drop stay bounded
+/// while forbidden-content subtrees (such as `noscript`) remain discarded.
 const MAX_DEPTH: usize = 256;
 
 /// The element a node is put into, for the namespace check.
@@ -130,7 +131,7 @@ fn dompurify(text: &str, forbid_style: bool) -> String {
         .replace('\r', "\n")
         .chars()
         .collect();
-    let body = parse(&normalized);
+    let body = parse(&normalized, forbid_style);
     let kept = sanitize_children(body, BODY, forbid_style);
     let mut out = String::with_capacity(text.len());
     serialize(&kept, false, &mut out);
@@ -168,7 +169,7 @@ const HEAD_VOID: &[&str] = &["base", "basefont", "bgsound", "link", "meta"];
 const HEAD_RAW: &[&str] = &["noframes", "script", "style", "template", "title"];
 
 /// The HTML parser's tree for `chars`: the body's children, before any sanitizing.
-fn parse(chars: &[char]) -> Vec<Node> {
+fn parse(chars: &[char], forbid_style: bool) -> Vec<Node> {
     // The whitespace that starts the text is kept whatever it precedes, as DOMPurify puts it back
     // in front of the body (`leadingWhitespace` in `_initDocument`).
     let lead = chars
@@ -179,6 +180,9 @@ fn parse(chars: &[char]) -> Vec<Node> {
         chars: &chars[lead..],
         position: 0,
         open: Vec::new(),
+        overflow: Vec::new(),
+        overflow_discards: 0,
+        forbid_style,
         root: Vec::new(),
         in_head: true,
     };
@@ -191,12 +195,25 @@ fn parse(chars: &[char]) -> Vec<Node> {
     parser.finish()
 }
 
+/// An open element beyond [`MAX_DEPTH`] tracked without deepening the DOM tree.
+struct OverflowTag {
+    name: String,
+    namespace: Namespace,
+    /// Whether this tag's subtree must be discarded (forbidden contents, forbidden `style`, or an
+    /// allowed element in an invalid namespace).
+    discards: bool,
+}
+
 /// The state of the tree builder: the open elements, innermost last, and the children of the
 /// body so far.
 struct Parser<'a> {
     chars: &'a [char],
     position: usize,
     open: Vec<Element>,
+    overflow: Vec<OverflowTag>,
+    /// Number of entries currently on `overflow` whose subtree is discarded.
+    overflow_discards: usize,
+    forbid_style: bool,
     root: Vec<Node>,
     /// Whether the parser is still before the body: only head elements, whitespace and comments
     /// have come so far.
@@ -212,6 +229,8 @@ struct StartTag {
 
 impl Parser<'_> {
     fn finish(mut self) -> Vec<Node> {
+        self.overflow.clear();
+        self.overflow_discards = 0;
         while !self.open.is_empty() {
             self.close_innermost();
         }
@@ -219,9 +238,36 @@ impl Parser<'_> {
     }
 
     fn current_namespace(&self) -> Namespace {
+        if let Some(tag) = self.overflow.last() {
+            return tag.namespace;
+        }
         self.open
             .last()
             .map_or(Namespace::Html, |element| element.namespace)
+    }
+
+    fn current_parent(&self) -> Parent<'_> {
+        if let Some(tag) = self.overflow.last() {
+            return Parent {
+                namespace: tag.namespace,
+                name: &tag.name,
+            };
+        }
+        match self.open.last() {
+            Some(element) => Parent {
+                namespace: element.namespace,
+                name: &element.name,
+            },
+            None => BODY,
+        }
+    }
+
+    fn pop_overflow(&mut self) {
+        if let Some(tag) = self.overflow.pop()
+            && tag.discards
+        {
+            self.overflow_discards = self.overflow_discards.saturating_sub(1);
+        }
     }
 
     fn children(&mut self) -> &mut Vec<Node> {
@@ -238,12 +284,15 @@ impl Parser<'_> {
     }
 
     fn insert(&mut self, element: Element) {
+        if self.overflow_discards > 0 {
+            return;
+        }
         self.children().push(Node::Element(element));
     }
 
     /// Adds text to the innermost open element, merging it with the text before.
     fn text(&mut self, text: &str) {
-        if text.is_empty() {
+        if text.is_empty() || self.overflow_discards > 0 {
             return;
         }
         let children = self.children();
@@ -379,11 +428,20 @@ impl Parser<'_> {
             // The parser closes the foreign elements open above the HTML one, and reads the tag
             // in HTML (the integration points are not reproduced).
             while self
-                .open
+                .overflow
                 .last()
-                .is_some_and(|element| element.namespace != Namespace::Html)
+                .is_some_and(|tag| tag.namespace != Namespace::Html)
             {
-                self.close_innermost();
+                self.pop_overflow();
+            }
+            if self.overflow.is_empty() {
+                while self
+                    .open
+                    .last()
+                    .is_some_and(|element| element.namespace != Namespace::Html)
+                {
+                    self.close_innermost();
+                }
             }
             namespace = Namespace::Html;
         }
@@ -435,10 +493,21 @@ impl Parser<'_> {
                 element.children.push(Node::Text(content));
             }
             self.insert(element);
-        } else {
-            if self.open.len() >= MAX_DEPTH {
-                self.close_innermost();
+        } else if self.open.len() >= MAX_DEPTH || !self.overflow.is_empty() {
+            let parent = self.current_parent();
+            let discards = FORBID_CONTENTS.contains(&element.name.as_str())
+                || (self.forbid_style && element.name == "style")
+                || (is_allowed_element(&element.name)
+                    && !namespace_allowed(element.namespace, &element.name, parent));
+            if discards {
+                self.overflow_discards += 1;
             }
+            self.overflow.push(OverflowTag {
+                name: std::mem::take(&mut element.name),
+                namespace: element.namespace,
+                discards,
+            });
+        } else {
             self.open.push(element);
         }
     }
@@ -502,7 +571,15 @@ impl Parser<'_> {
         if self.in_head || matches!(name.as_str(), "html" | "head" | "body") {
             return;
         }
+        if let Some(index) = self.overflow.iter().rposition(|tag| tag.name == name) {
+            while self.overflow.len() > index {
+                self.pop_overflow();
+            }
+            return;
+        }
         if let Some(index) = self.open.iter().rposition(|element| element.name == name) {
+            self.overflow.clear();
+            self.overflow_discards = 0;
             while self.open.len() > index {
                 self.close_innermost();
             }

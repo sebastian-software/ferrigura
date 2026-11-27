@@ -86,7 +86,7 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
 
     let mut arena: Vec<Work> = Vec::new();
     let mut index: HashMap<String, usize> = HashMap::new();
-    let root_children = add_vertices(data, None, section, &mut arena, &mut index);
+    let root_children = add_vertices(data, None, section, &mut arena, &mut index, 0);
     let mut edges = add_edges(data);
     configure_subgraph_nodes(
         data,
@@ -923,7 +923,11 @@ fn add_vertices(
     section: &Section<'_>,
     arena: &mut Vec<Work>,
     index: &mut HashMap<String, usize>,
+    depth: usize,
 ) -> Vec<usize> {
+    if depth > super::pipeline::MAX_HIERARCHY_DEPTH {
+        return Vec::new();
+    }
     let mut added = Vec::new();
     for node in data
         .nodes
@@ -948,7 +952,7 @@ fn add_vertices(
         index.insert(node.id.clone(), position);
         added.push(position);
         if node.is_group {
-            let children = add_vertices(data, Some(&node.id), section, arena, index);
+            let children = add_vertices(data, Some(&node.id), section, arena, index, depth + 1);
             arena[position].children = children;
         }
     }

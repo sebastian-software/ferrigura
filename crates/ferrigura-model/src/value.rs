@@ -34,20 +34,22 @@ pub enum Value {
     Object(BTreeMap<String, Value>),
 }
 
-impl Drop for Value {
-    fn drop(&mut self) {
-        let mut stack = Vec::new();
-        match self {
-            Self::Array(items) => stack.append(items),
-            Self::Object(map) => stack.extend(std::mem::take(map).into_values()),
-            _ => return,
-        }
-        while let Some(mut value) = stack.pop() {
-            match &mut value {
-                Self::Array(items) => stack.append(items),
-                Self::Object(map) => stack.extend(std::mem::take(map).into_values()),
-                _ => {}
-            }
+/// Drops a [`Value`] iteratively so deep caller-constructed trees cannot overflow the call stack.
+///
+/// [`Value`] intentionally does not implement [`Drop`] so downstream callers can destructure its
+/// variants by value.
+pub fn drop_iterative(value: Value) {
+    let mut stack = Vec::new();
+    match value {
+        Value::Array(items) => stack.extend(items),
+        Value::Object(map) => stack.extend(map.into_values()),
+        _ => return,
+    }
+    while let Some(current) = stack.pop() {
+        match current {
+            Value::Array(items) => stack.extend(items),
+            Value::Object(map) => stack.extend(map.into_values()),
+            _ => {}
         }
     }
 }
@@ -162,6 +164,95 @@ impl Clone for Value {
 }
 
 impl Value {
+    /// Clones this value iteratively, replacing any nested array or object beyond `max_depth`
+    /// containers with an empty one so the returned value is always safe to drop recursively.
+    #[must_use]
+    pub fn clone_bounded(&self, max_depth: usize) -> Self {
+        enum Frame<'a> {
+            Array {
+                src: &'a [Value],
+                index: usize,
+                out: Vec<Value>,
+            },
+            Object {
+                iter: btree_map::Iter<'a, String, Value>,
+                pending_key: Option<String>,
+                out: BTreeMap<String, Value>,
+            },
+        }
+
+        let mut stack: Vec<Frame<'_>> = Vec::new();
+        let mut next: Option<&Value> = Some(self);
+        let mut ready: Option<Value> = None;
+
+        loop {
+            if let Some(value) = next.take() {
+                match value {
+                    Self::Null => ready = Some(Self::Null),
+                    Self::Bool(flag) => ready = Some(Self::Bool(*flag)),
+                    Self::Number(number) => ready = Some(Self::Number(*number)),
+                    Self::String(text) => ready = Some(Self::String(text.clone())),
+                    Self::Array(_) if stack.len() >= max_depth => {
+                        ready = Some(Self::Array(Vec::new()));
+                    }
+                    Self::Object(_) if stack.len() >= max_depth => {
+                        ready = Some(Self::Object(BTreeMap::new()));
+                    }
+                    Self::Array(items) => {
+                        stack.push(Frame::Array {
+                            src: items,
+                            index: 0,
+                            out: Vec::with_capacity(items.len()),
+                        });
+                    }
+                    Self::Object(map) => {
+                        stack.push(Frame::Object {
+                            iter: map.iter(),
+                            pending_key: None,
+                            out: BTreeMap::new(),
+                        });
+                    }
+                }
+            }
+
+            if let Some(value) = ready.take() {
+                match stack.last_mut() {
+                    Some(Frame::Array { out, .. }) => out.push(value),
+                    Some(Frame::Object {
+                        pending_key, out, ..
+                    }) => {
+                        if let Some(key) = pending_key.take() {
+                            out.insert(key, value);
+                        }
+                    }
+                    None => return value,
+                }
+            }
+
+            match stack.last_mut() {
+                Some(Frame::Array { src, index, .. }) => {
+                    if *index < src.len() {
+                        next = Some(&src[*index]);
+                        *index += 1;
+                    } else if let Some(Frame::Array { out, .. }) = stack.pop() {
+                        ready = Some(Self::Array(out));
+                    }
+                }
+                Some(Frame::Object {
+                    iter, pending_key, ..
+                }) => {
+                    if let Some((key, value)) = iter.next() {
+                        *pending_key = Some(key.clone());
+                        next = Some(value);
+                    } else if let Some(Frame::Object { out, .. }) = stack.pop() {
+                        ready = Some(Self::Object(out));
+                    }
+                }
+                None => unreachable!("bounded clone always finishes with a ready value"),
+            }
+        }
+    }
+
     /// An empty object.
     #[must_use]
     pub fn empty_object() -> Self {
@@ -296,19 +387,82 @@ impl From<String> for Value {
 
 impl From<serde_json::Value> for Value {
     fn from(value: serde_json::Value) -> Self {
-        match value {
-            serde_json::Value::Null => Self::Null,
-            serde_json::Value::Bool(flag) => Self::Bool(flag),
-            serde_json::Value::Number(number) => Self::Number(number.as_f64().unwrap_or(f64::NAN)),
-            serde_json::Value::String(text) => Self::String(text),
-            serde_json::Value::Array(items) => {
-                Self::Array(items.into_iter().map(Self::from).collect())
+        enum Frame {
+            Array {
+                src: vec::IntoIter<serde_json::Value>,
+                out: Vec<Value>,
+            },
+            Object {
+                src: serde_json::map::IntoIter,
+                pending_key: Option<String>,
+                out: BTreeMap<String, Value>,
+            },
+        }
+
+        let mut stack: Vec<Frame> = Vec::new();
+        let mut next: Option<serde_json::Value> = Some(value);
+        let mut ready: Option<Value> = None;
+
+        loop {
+            if let Some(current) = next.take() {
+                match current {
+                    serde_json::Value::Null => ready = Some(Self::Null),
+                    serde_json::Value::Bool(flag) => ready = Some(Self::Bool(flag)),
+                    serde_json::Value::Number(number) => {
+                        ready = Some(Self::Number(number.as_f64().unwrap_or(f64::NAN)));
+                    }
+                    serde_json::Value::String(text) => ready = Some(Self::String(text)),
+                    serde_json::Value::Array(items) => {
+                        let capacity = items.len();
+                        stack.push(Frame::Array {
+                            src: items.into_iter(),
+                            out: Vec::with_capacity(capacity),
+                        });
+                    }
+                    serde_json::Value::Object(map) => {
+                        stack.push(Frame::Object {
+                            src: map.into_iter(),
+                            pending_key: None,
+                            out: BTreeMap::new(),
+                        });
+                    }
+                }
             }
-            serde_json::Value::Object(map) => Self::Object(
-                map.into_iter()
-                    .map(|(key, value)| (key, Self::from(value)))
-                    .collect(),
-            ),
+
+            if let Some(converted) = ready.take() {
+                match stack.last_mut() {
+                    Some(Frame::Array { out, .. }) => out.push(converted),
+                    Some(Frame::Object {
+                        pending_key, out, ..
+                    }) => {
+                        if let Some(key) = pending_key.take() {
+                            out.insert(key, converted);
+                        }
+                    }
+                    None => return converted,
+                }
+            }
+
+            match stack.last_mut() {
+                Some(Frame::Array { src, .. }) => {
+                    if let Some(item) = src.next() {
+                        next = Some(item);
+                    } else if let Some(Frame::Array { out, .. }) = stack.pop() {
+                        ready = Some(Self::Array(out));
+                    }
+                }
+                Some(Frame::Object {
+                    src, pending_key, ..
+                }) => {
+                    if let Some((key, entry)) = src.next() {
+                        *pending_key = Some(key);
+                        next = Some(entry);
+                    } else if let Some(Frame::Object { out, .. }) = stack.pop() {
+                        ready = Some(Self::Object(out));
+                    }
+                }
+                None => unreachable!("conversion always finishes with a ready value"),
+            }
         }
     }
 }
@@ -379,13 +533,23 @@ impl Serialize for Value {
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        deserializer.deserialize_any(ValueVisitor)
+        BoundedValueVisitor { depth: 0 }.deserialize(deserializer)
     }
 }
 
-struct ValueVisitor;
+struct BoundedValueVisitor {
+    depth: usize,
+}
 
-impl<'de> Visitor<'de> for ValueVisitor {
+impl<'de> DeserializeSeed<'de> for BoundedValueVisitor {
+    type Value = Value;
+
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_any(self)
+    }
+}
+
+impl<'de> Visitor<'de> for BoundedValueVisitor {
     type Value = Value;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -425,20 +589,37 @@ impl<'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_some<D: Deserializer<'de>>(self, deserializer: D) -> Result<Value, D::Error> {
-        Value::deserialize(deserializer)
+        self.deserialize(deserializer)
     }
 
     fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Value, A::Error> {
+        if self.depth >= MAX_SERDE_DEPTH {
+            return Err(de::Error::custom(format!(
+                "configuration value nesting exceeds {MAX_SERDE_DEPTH} levels"
+            )));
+        }
         let mut items = Vec::new();
-        while let Some(item) = seq.next_element::<Value>()? {
+        while let Some(item) = seq.next_element_seed(Self {
+            depth: self.depth + 1,
+        })? {
             items.push(item);
         }
         Ok(Value::Array(items))
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
+        if self.depth >= MAX_SERDE_DEPTH {
+            return Err(de::Error::custom(format!(
+                "configuration value nesting exceeds {MAX_SERDE_DEPTH} levels"
+            )));
+        }
         let mut entries = BTreeMap::new();
-        while let Some((key, value)) = map.next_entry::<String, Value>()? {
+        while let Some((key, value)) = map.next_entry_seed(
+            std::marker::PhantomData::<String>,
+            Self {
+                depth: self.depth + 1,
+            },
+        )? {
             entries.insert(key, value);
         }
         Ok(Value::Object(entries))
@@ -467,7 +648,7 @@ impl<'de> Deserializer<'de> for Value {
     }
 
     fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        drop(self);
+        drop_iterative(self);
         visitor.visit_unit()
     }
 
@@ -535,7 +716,7 @@ impl<'de> Deserializer<'de> for BoundedValue {
     }
 
     fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        drop(self);
+        drop_iterative(self.value);
         visitor.visit_unit()
     }
 
@@ -650,5 +831,51 @@ mod tests {
     #[test]
     fn a_string_does_not_read_as_a_number() {
         assert!(f64::deserialize(Value::String("Infinity".to_owned())).is_err());
+    }
+
+    #[test]
+    fn value_variants_can_be_destructured_by_value() {
+        let array = Value::Array(vec![Value::String("x".to_owned())]);
+        let Value::Array(mut items) = array else {
+            panic!("expected array");
+        };
+        let Value::String(text) = items.pop().expect("one item") else {
+            panic!("expected string");
+        };
+        assert_eq!(text, "x");
+
+        let object = Value::Object(BTreeMap::from([("k".to_owned(), Value::Bool(true))]));
+        let Value::Object(map) = object else {
+            panic!("expected object");
+        };
+        assert_eq!(map.get("k"), Some(&Value::Bool(true)));
+    }
+
+    #[test]
+    fn deserialize_rejects_excessive_nesting() {
+        let mut deep = Value::Null;
+        for _ in 0..200 {
+            deep = Value::Array(vec![deep]);
+        }
+        let result = Value::deserialize(deep);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn from_serde_json_handles_deep_nesting_iteratively() {
+        let mut json_val = serde_json::Value::String("leaf".to_owned());
+        for _ in 0..2_000 {
+            json_val = serde_json::Value::Array(vec![json_val]);
+        }
+        let converted = Value::from(json_val);
+        let mut depth = 0;
+        let mut cursor = &converted;
+        while let Value::Array(items) = cursor {
+            depth += 1;
+            cursor = &items[0];
+        }
+        assert_eq!(depth, 2_000);
+        assert_eq!(cursor, &Value::String("leaf".to_owned()));
+        drop_iterative(converted);
     }
 }

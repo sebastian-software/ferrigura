@@ -10,7 +10,7 @@ use ferroni::Regex;
 
 use super::{CONFIG_KEYS, cached_defaults, is_top_key};
 use crate::theme::{Theme, has_overrides};
-use crate::value::Value;
+use crate::value::{Value, drop_iterative};
 
 /// The settings a diagram section may set for its own diagram type.
 const APPEARANCE_KEYS: [&str; 3] = ["theme", "look", "layout"];
@@ -88,12 +88,31 @@ impl PartialEq for SiteConfig {
     }
 }
 
+impl Drop for SiteConfig {
+    fn drop(&mut self) {
+        drop_iterative(std::mem::take(&mut self.settings));
+        drop_iterative(std::mem::take(&mut self.first_layer));
+        if let Some(vars) = self.light_theme_variables.take()
+            && let Ok(vars) = Arc::try_unwrap(vars)
+        {
+            drop_iterative(vars);
+        }
+        if let Some(vars) = self.dark_theme_variables.take()
+            && let Ok(vars) = Arc::try_unwrap(vars)
+        {
+            drop_iterative(vars);
+        }
+    }
+}
+
 impl SiteConfig {
     /// The site configuration of the settings given to `initialize`, or of the defaults when there are
     /// none.
     #[must_use]
     pub fn new(site: Option<&Value>) -> Self {
-        let settings = site.cloned().unwrap_or_else(Value::empty_object);
+        let settings = site
+            .map(|value| value.clone_bounded(MAX_DEPTH))
+            .unwrap_or_else(Value::empty_object);
         let mut merged = Value::empty_object();
         assign_with_depth(&mut merged, cached_defaults(), 2);
         assign_with_depth(&mut merged, &settings, 2);
@@ -237,7 +256,7 @@ impl SiteConfig {
     }
 
     fn prepare_directive(&self, directive: &Value) -> (Value, Value) {
-        let mut directive = directive.clone();
+        let mut directive = directive.clone_bounded(MAX_DEPTH);
         sanitize_directive(&mut directive);
         add_font_family_variable(&mut directive);
         sanitize(&mut directive, &self.secure);
@@ -310,12 +329,12 @@ pub fn user_theme_variables(site: Option<&Value>, directive: &Value) -> Value {
 fn theme_overrides(site: Option<&Value>, directive: &Value) -> Value {
     let mut overrides = site
         .and_then(|site| site.get("themeVariables"))
-        .cloned()
+        .map(|value| value.clone_bounded(MAX_DEPTH))
         .unwrap_or_else(Value::empty_object);
     if directive.get("themeVariables").is_none() && directive.get("fontFamily").is_none() {
         return overrides;
     }
-    let mut directive = directive.clone();
+    let mut directive = directive.clone_bounded(MAX_DEPTH);
     sanitize_directive(&mut directive);
     add_font_family_variable(&mut directive);
     if let Some(directive_overrides) = directive.get("themeVariables") {
@@ -373,11 +392,12 @@ fn assign_with_depth_inner(dst: &mut Value, src: &Value, depth: i32, recursion: 
     if recursion >= MAX_DEPTH {
         return;
     }
+    let remaining = MAX_DEPTH.saturating_sub(recursion);
     if let Value::Array(items) = src {
         if let Value::Array(target) = dst {
             for item in items {
                 if !target.contains(item) {
-                    target.push(item.clone());
+                    target.push(item.clone_bounded(remaining));
                 }
             }
         } else {
@@ -392,11 +412,11 @@ fn assign_with_depth_inner(dst: &mut Value, src: &Value, depth: i32, recursion: 
         match (dst.as_object_mut(), src) {
             (Some(target), Value::Object(source)) => {
                 for (key, value) in source {
-                    target.insert(key.clone(), value.clone());
+                    target.insert(key.clone(), value.clone_bounded(remaining));
                 }
             }
             (Some(_), Value::Null) => {}
-            _ => *dst = src.clone(),
+            _ => *dst = src.clone_bounded(remaining),
         }
         return;
     }
@@ -478,6 +498,7 @@ fn deep_merge_inner(target: &mut Value, source: &Value, depth: usize) {
     if depth >= MAX_DEPTH {
         return;
     }
+    let remaining = MAX_DEPTH.saturating_sub(depth);
     match (target, source) {
         (Value::Object(target), Value::Object(source)) => {
             for (key, value) in source {
@@ -489,7 +510,7 @@ fn deep_merge_inner(target: &mut Value, source: &Value, depth: usize) {
                         deep_merge_inner(existing, value, depth + 1);
                     }
                     _ => {
-                        target.insert(key.clone(), value.clone());
+                        target.insert(key.clone(), value.clone_bounded(remaining));
                     }
                 }
             }
@@ -499,11 +520,11 @@ fn deep_merge_inner(target: &mut Value, source: &Value, depth: usize) {
                 if index < target.len() {
                     deep_merge_inner(&mut target[index], value, depth + 1);
                 } else {
-                    target.push(value.clone());
+                    target.push(value.clone_bounded(remaining));
                 }
             }
         }
-        (target, source) => *target = source.clone(),
+        (target, source) => *target = source.clone_bounded(remaining),
     }
 }
 
@@ -517,8 +538,8 @@ pub fn sanitize_directive(args: &mut Value) {
 fn sanitize_directive_inner(args: &mut Value, depth: usize) {
     if depth >= MAX_DEPTH {
         match args {
-            Value::Array(items) => items.clear(),
-            Value::Object(map) => map.clear(),
+            Value::Array(items) => drop_iterative(Value::Array(std::mem::take(items))),
+            Value::Object(map) => drop_iterative(Value::Object(std::mem::take(map))),
             _ => {}
         }
         return;
@@ -583,8 +604,8 @@ fn sanitize_directive_inner(args: &mut Value, depth: usize) {
 fn sanitize_theme_variables(value: &mut Value, depth: usize) {
     if depth >= MAX_DEPTH {
         match value {
-            Value::Array(items) => items.clear(),
-            Value::Object(map) => map.clear(),
+            Value::Array(items) => drop_iterative(Value::Array(std::mem::take(items))),
+            Value::Object(map) => drop_iterative(Value::Object(std::mem::take(map))),
             Value::String(text) => text.clear(),
             _ => {}
         }
@@ -620,7 +641,7 @@ fn sanitize_inner(options: &mut Value, secure: &[String], depth: usize) {
         return;
     };
     if depth >= MAX_DEPTH {
-        map.clear();
+        drop_iterative(Value::Object(std::mem::take(map)));
         return;
     }
     map.remove("secure");
