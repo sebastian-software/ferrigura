@@ -1,5 +1,32 @@
-Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs (including pre-assigned use-case path IDs) in the shared unified renderer, prefer existing decoded fragment targets over raw fallbacks, defer data-id placeholder rewriting until after layout/line-hops, and protect only the marked resolved DOM ID attributes from a second decodeEntities pass using a collision-free per-render token.
+Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs (including pre-assigned use-case path IDs) in the shared unified renderer, prefer existing decoded fragment targets over raw fallbacks (including post-render state click links and trimmed fragment whitespace), defer data-id placeholder rewriting until after layout/line-hops, and protect only the marked resolved DOM ID attributes from a second decodeEntities pass using a collision-free per-render token.
 
+diff --git a/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts b/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
+index ea730b3..f826dce 100644
+--- a/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
++++ b/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
+@@ -2,7 +2,11 @@ import { getConfig } from '../../diagram-api/diagramAPI.js';
+ import type { DiagramStyleClassDef } from '../../diagram-api/types.js';
+ import { log } from '../../logger.js';
+ import { getDiagramElement } from '../../rendering-util/insertElementsForSize.js';
+-import { getRegisteredLayoutAlgorithm, render } from '../../rendering-util/render.js';
++import {
++  getRegisteredLayoutAlgorithm,
++  remapFragmentForSvg,
++  render,
++} from '../../rendering-util/render.js';
+ import { setupViewPortForSVG } from '../../rendering-util/setupViewPortForSVG.js';
+ import type { LayoutData } from '../../rendering-util/types.js';
+ import utils from '../../utils.js';
+@@ -115,7 +119,8 @@ export const draw = async function (text: string, id: string, _version: string,
+ 
+       const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+       const cleanedUrl = linkInfo.url.replace(/^"+|"+$/g, ''); // remove leading/trailing quotes
+-      a.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', cleanedUrl);
++      const finalUrl = remapFragmentForSvg(svg.node() as Element | null, cleanedUrl);
++      a.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', finalUrl);
+       a.setAttribute('target', '_blank');
+       if (linkInfo.tooltip) {
+         const tooltip = linkInfo.tooltip.replace(/^"+|"+$/g, '');
 diff --git a/packages/mermaid/src/diagrams/usecase/usecaseRenderer.ts b/packages/mermaid/src/diagrams/usecase/usecaseRenderer.ts
 index c02a201..8457734 100644
 --- a/packages/mermaid/src/diagrams/usecase/usecaseRenderer.ts
@@ -87,7 +114,7 @@ index 685688e..a8e1e42 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..d2ea69c 100644
+index 49145b2..189b3a2 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -98,7 +125,7 @@ index 49145b2..d2ea69c 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,184 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,195 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -164,6 +191,15 @@ index 49145b2..d2ea69c 100644
 +const canonicalAttrId = (raw: string): string => canonicalXmlAttr(resolvePlaceholdersAttr(raw));
 +
 +const protectedAttrsBySvgRoot = new WeakMap<Element, Map<Element, { id?: string; dataId?: string }>>();
++const fragmentRemapperBySvgRoot = new WeakMap<Element, (rawLink: string) => string>();
++
++export const remapFragmentForSvg = (svgRoot: Element | null, rawLink: string): string => {
++  if (!svgRoot) {
++    return rawLink;
++  }
++  const remap = fragmentRemapperBySvgRoot.get(svgRoot);
++  return remap ? remap(rawLink) : rawLink;
++};
 +
 +const xmlEscapeAttr = (value: string): string =>
 +  value
@@ -200,6 +236,7 @@ index 49145b2..d2ea69c 100644
 +    }
 +  }
 +  protectedAttrsBySvgRoot.delete(svgRoot);
++  fragmentRemapperBySvgRoot.delete(svgRoot);
 +  return tokens;
 +};
 +
@@ -209,7 +246,7 @@ index 49145b2..d2ea69c 100644
 +  }
 +  let out = svg;
 +  for (const [token, original] of tokens) {
-+    out = out.replaceAll(token, original);
++    out = out.replaceAll(token, () => original);
 +  }
 +  return out;
 +};
@@ -218,15 +255,16 @@ index 49145b2..d2ea69c 100644
 +  value.includes('ﬂ°') || value.includes('¶ß');
 +
 +const stripFragmentMarker = (rawLink: string): string | undefined => {
-+  if (rawLink.startsWith('#')) {
-+    return rawLink.slice(1);
++  const trimmed = rawLink.replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, '');
++  if (trimmed.startsWith('#')) {
++    return trimmed.slice(1);
 +  }
-+  if (rawLink.startsWith('ﬂ°')) {
-+    const close = rawLink.indexOf('¶ß');
++  if (trimmed.startsWith('ﬂ°')) {
++    const close = trimmed.indexOf('¶ß');
 +    if (close !== -1) {
 +      const end = close + 2;
-+      if (resolvePlaceholdersAttr(rawLink.slice(0, end)) === '#') {
-+        return rawLink.slice(end);
++      if (resolvePlaceholdersAttr(trimmed.slice(0, end)) === '#') {
++        return trimmed.slice(end);
 +      }
 +    }
 +  }
@@ -283,7 +321,7 @@ index 49145b2..d2ea69c 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +284,260 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +295,266 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -353,7 +391,7 @@ index 49145b2..d2ea69c 100644
 +        elementOwned.add(p.canonicalFull);
 +        nodeClaimed[i] = true;
 +      }
-+    }
+     }
 +    const edgeClaimed = edgePlans.map(() => false);
 +    for (let i = 0; i < edgePlans.length; i++) {
 +      const p = edgePlans[i];
@@ -420,7 +458,7 @@ index 49145b2..d2ea69c 100644
 +      } else {
 +        p.node.domId = `${svgId}-${p.originalDomId}`;
 +      }
-     }
++    }
 +
 +    for (let i = 0; i < edgePlans.length; i++) {
 +      const p = edgePlans[i];
@@ -472,28 +510,31 @@ index 49145b2..d2ea69c 100644
 +      }
 +    }
 +
-+    for (const node of data4Layout.nodes) {
-+      if (typeof node.link === 'string') {
-+        const fragment = stripFragmentMarker(node.link);
-+        if (fragment !== undefined) {
-+          let target: string | undefined;
-+          if (fragment.includes('%')) {
-+            const decoded = percentDecodeFragment(fragment);
-+            if (decoded !== undefined) {
-+              target = remapped.get(`#${decoded}`);
-+              if (target === undefined) {
-+                const resolvedTarget = canonicalAttrId(decoded);
-+                if (elementOwned.has(resolvedTarget)) {
-+                  target = formatFragmentUrl(resolvedTarget);
-+                }
-+              }
++    const remapFragment = (rawLink: string): string => {
++      const fragment = stripFragmentMarker(rawLink);
++      if (fragment === undefined) {
++        return rawLink;
++      }
++      let target: string | undefined;
++      if (fragment.includes('%')) {
++        const decoded = percentDecodeFragment(fragment);
++        if (decoded !== undefined) {
++          target = remapped.get(`#${decoded}`);
++          if (target === undefined) {
++            const resolvedTarget = canonicalAttrId(decoded);
++            if (elementOwned.has(resolvedTarget)) {
++              target = formatFragmentUrl(resolvedTarget);
 +            }
 +          }
-+          target ??= remapped.get(`#${fragment}`);
-+          if (target !== undefined) {
-+            node.link = target;
-+          }
 +        }
++      }
++      target ??= remapped.get(`#${fragment}`);
++      return target ?? rawLink;
++    };
++
++    for (const node of data4Layout.nodes) {
++      if (typeof node.link === 'string') {
++        node.link = remapFragment(node.link);
 +      }
 +    }
 +
@@ -507,6 +548,9 @@ index 49145b2..d2ea69c 100644
 +    });
 +
 +    const svgEl = svg.node() as Element | null;
++    if (svgEl) {
++      fragmentRemapperBySvgRoot.set(svgEl, remapFragment);
++    }
 +    if (svgEl && (edgeDataIdMap.size > 0 || protectedIds.size > 0)) {
 +      let protectedMap = protectedAttrsBySvgRoot.get(svgEl);
 +      const mark = (el: Element, key: 'id' | 'dataId', value: string) => {

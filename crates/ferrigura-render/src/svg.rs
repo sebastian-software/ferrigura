@@ -45,6 +45,12 @@ pub fn escape_into(out: &mut String, text: &str) {
 #[must_use]
 pub(crate) fn escape_url_attr(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
+    escape_url_attr_into(&mut out, text);
+    out
+}
+
+/// Appends `text` to `out`, escaped as [`escape_url_attr`] escapes it.
+pub(crate) fn escape_url_attr_into(out: &mut String, text: &str) {
     let mut start = 0;
     for (at, c) in text.char_indices() {
         let replacement = match c {
@@ -64,7 +70,6 @@ pub(crate) fn escape_url_attr(text: &str) -> String {
         start = at + c.len_utf8();
     }
     out.push_str(&text[start..]);
-    out
 }
 
 /// The markup of a text as the reference's final pass leaves it, for an XML parser: the text

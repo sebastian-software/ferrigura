@@ -1128,3 +1128,74 @@ fn url_entity_placeholders_and_fragment_precedence_match_reference() {
         assert!(all_ids.insert(id), "duplicate SVG id {id:?} in {anim_1}");
     }
 }
+
+#[test]
+fn gantt_sequence_url_guards_and_protected_dollar_ids() {
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+
+    // Gantt task links validate schemes after entity placeholder resolution.
+    let gantt_src = "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  Task :t1, 2024-01-01, 2d\n  click t1 href \"javascript#58;alert(1)\"\n";
+    let gantt_strict = ferrigura::render(gantt_src, &Value::empty_object()).expect("renders");
+    assert!(
+        gantt_strict.contains("xlink:href=\"about:blank\""),
+        "{gantt_strict}"
+    );
+    assert!(
+        !gantt_strict.contains("javascript:alert(1)"),
+        "{gantt_strict}"
+    );
+    let gantt_loose = ferrigura::render(gantt_src, &loose_cfg).expect("renders");
+    assert!(
+        gantt_loose.contains("xlink:href=\"javascript:alert(1)\""),
+        "{gantt_loose}"
+    );
+
+    // Sequence actor links and icons guard schemes after entity resolution and preserve XML
+    // whitespace references (such as tab -> &#9;).
+    let seq_src = "sequenceDiagram\n  participant A\n  link A: Tab @ /One#9;Two\n  link A: Bad @ javascript#58;alert(1)\n  properties A: {\"icon\": \"javascript#58;alert(1)\"}\n  A->>A: hi\n";
+    let seq_strict = ferrigura::render(seq_src, &Value::empty_object()).expect("renders");
+    assert!(
+        seq_strict.contains("xlink:href=\"/One&#9;Two\""),
+        "{seq_strict}"
+    );
+    assert!(!seq_strict.contains("javascript:alert(1)"), "{seq_strict}");
+    let seq_doc = roxmltree::Document::parse(&seq_strict).expect("well-formed SVG XML");
+    let seq_hrefs: Vec<&str> = seq_doc
+        .descendants()
+        .filter(|n| n.has_tag_name("a") || n.has_tag_name("image"))
+        .filter_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert!(seq_hrefs.contains(&"/One\tTwo"), "{seq_hrefs:?}");
+    assert!(seq_hrefs.contains(&"about:blank"), "{seq_hrefs:?}");
+    let seq_loose = ferrigura::render(seq_src, &loose_cfg).expect("renders");
+    assert!(
+        seq_loose.contains("xlink:href=\"javascript:alert(1)\""),
+        "{seq_loose}"
+    );
+
+    // Protected class IDs containing `$$` survive intact (no JS replacement-pattern corruption).
+    let dollar = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo#64258;°copy$$#182;ß`\n  click `Foo#64258;°copy$$#182;ß` href \"#graph-classId-Foo#64258;°copy$$#182;ß\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let dollar_doc = roxmltree::Document::parse(&dollar).expect("well-formed SVG XML");
+    assert!(
+        dollar_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Fooﬂ°copy$$¶ß")),
+        "{dollar}"
+    );
+    let dollar_href = dollar_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(
+        resolved_fragment_target(dollar_href),
+        "graph-classId-Fooﬂ°copy$$¶ß"
+    );
+}

@@ -722,19 +722,21 @@ fn percent_decode_fragment(fragment: &str) -> Option<String> {
     String::from_utf8(out).ok()
 }
 
-/// Strips a leading `#` fragment marker, including when the marker itself was encoded as a
-/// Mermaid entity placeholder (such as `#35;` -> `ﬂ°°35¶ß` or `#num;` -> `ﬂ°num¶ß`), returning
-/// the raw fragment body without decoding the target ID.
+/// Strips a leading `#` fragment marker (after trimming leading/trailing C0 controls and ASCII
+/// spaces, matching URL parsing), including when the marker itself was encoded as a Mermaid entity
+/// placeholder (such as `#35;` -> `ﬂ°°35¶ß` or `#num;` -> `ﬂ°num¶ß`), returning the raw fragment
+/// body without decoding the target ID.
 fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
-    if let Some(rest) = raw_link.strip_prefix('#') {
+    let trimmed = raw_link.trim_matches(|ch: char| ch <= ' ');
+    if let Some(rest) = trimmed.strip_prefix('#') {
         return Some(rest);
     }
-    if raw_link.starts_with("ﬂ°")
-        && let Some(close) = raw_link.find("¶ß")
+    if trimmed.starts_with("ﬂ°")
+        && let Some(close) = trimmed.find("¶ß")
     {
         let end = close + "¶ß".len();
-        if crate::common::resolve_entity_placeholders(&raw_link[..end]) == "#" {
-            return Some(&raw_link[end..]);
+        if crate::common::resolve_entity_placeholders(&trimmed[..end]) == "#" {
+            return Some(&trimmed[end..]);
         }
     }
     None
@@ -753,9 +755,11 @@ impl ResolvedDomIds {
     /// Looks up the remapped fragment URL for `raw_link`, matching its percent-decoded fragment
     /// target first (so `#graph-classId-A%20B#45;C` targets `A B-C` — whether `A B-C` was
     /// remapped or kept unchanged — rather than a literal `A%20B-C`), then falling back to its
-    /// raw spelling. Also recognizes entity-encoded leading `#` markers (such as `#35;`).
+    /// raw spelling. Also recognizes entity-encoded leading `#` markers (such as `#35;`) and
+    /// ignores leading/trailing URL whitespace (C0 controls and ASCII space).
     fn remap_fragment(&self, raw_link: &str) -> Option<Cow<'_, str>> {
-        let fragment = strip_fragment_marker(raw_link)?;
+        let trimmed = raw_link.trim_matches(|ch: char| ch <= ' ');
+        let fragment = strip_fragment_marker(trimmed)?;
         if fragment.contains('%')
             && let Some(decoded) = percent_decode_fragment(fragment)
         {
@@ -767,9 +771,9 @@ impl ResolvedDomIds {
                 return Some(Cow::Owned(format_fragment_url(&resolved_target)));
             }
         }
-        if raw_link.starts_with('#') {
+        if trimmed.starts_with('#') {
             self.remapped_fragments
-                .get(raw_link)
+                .get(trimmed)
                 .map(|target| Cow::Borrowed(target.as_str()))
         } else {
             self.remapped_fragments

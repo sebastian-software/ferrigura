@@ -317,4 +317,27 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         assert!(empty.contains("xmlns:xlink="), "{empty}");
         roxmltree::Document::parse(&empty).expect("well-formed SVG XML");
     }
+
+    // Leading/trailing URL whitespace in state click links still remaps to resolved node IDs.
+    let ws_fragment = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "stateDiagram-v2\n  state \"A\" as A#37;41\n  click A#37;41 href \" #graph-state-A#37;41-0\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let ws_doc = roxmltree::Document::parse(&ws_fragment).expect("well-formed SVG XML");
+    assert!(
+        ws_doc
+            .descendants()
+            .any(|n| n.attribute("id") == Some("graph-state-A%41-0")),
+        "{ws_fragment}"
+    );
+    let ws_href = ws_doc
+        .descendants()
+        .find_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("xlink:href");
+    assert_eq!(ws_href, "#graph-state-A%2541-0");
 }

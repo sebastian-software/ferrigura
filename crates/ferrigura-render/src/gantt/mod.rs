@@ -188,6 +188,8 @@ pub(super) struct Chart<'a> {
     pub(super) regular: crate::fonts::FontFace,
     /// The id of the SVG element.
     pub(super) id: &'a str,
+    /// Whether `securityLevel` is `loose`, skipping render-sink URL allowlist enforcement.
+    pub(super) loose: bool,
     /// The theme the chart draws with.
     pub(super) theme: ThemeView<'a>,
     /// The time of the render, for the today marker.
@@ -306,6 +308,7 @@ impl<'a> Chart<'a> {
                 .text_fonts()
                 .face(FontWeight::Normal, FontStyle::Normal)?,
             id: input.id,
+            loose: input.globals.security_level == "loose",
             theme: input.theme,
             now: input.section.now,
             model,

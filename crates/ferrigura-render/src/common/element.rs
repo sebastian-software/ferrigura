@@ -4,7 +4,7 @@
 //! had and takes the new value. Attribute order does not change the geometry, but the shared helpers
 //! keep it, so the markup reads as the reference's does and the tests can compare it.
 
-use crate::svg::escape_into;
+use crate::svg::{escape_into, escape_url_attr_into};
 
 /// What an element holds between its tags.
 #[derive(Debug, Clone, PartialEq)]
@@ -149,7 +149,11 @@ impl Element {
             out.push(' ');
             out.push_str(name);
             out.push_str("=\"");
-            escape_into(out, value);
+            if matches!(name.as_str(), "xlink:href" | "href") {
+                escape_url_attr_into(out, value);
+            } else {
+                escape_into(out, value);
+            }
             out.push('"');
         }
         if matches!(self.content, Content::Empty) && self.children.is_empty() {

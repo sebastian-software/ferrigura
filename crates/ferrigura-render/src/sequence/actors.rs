@@ -19,7 +19,9 @@ use super::model::Actor;
 use super::text::draw_label_by_tspan;
 use crate::RenderError;
 use crate::common::Element;
-use crate::common::draw::{RectData, draw_embedded_image, draw_image, draw_rect, get_note_rect};
+use crate::common::draw::{
+    RectData, draw_embedded_image, draw_image_with_security, draw_rect, get_note_rect,
+};
 use crate::svg::number;
 
 /// `ACTOR_TYPE_WIDTH` (`svgDraw.js:17`).
@@ -280,7 +282,7 @@ impl Renderer<'_> {
             // A `use` is not in the sanitizer's allow-list, so a sanitized diagram loses it.
             Some(_) if self.conf.sanitized => None,
             Some(id) => Some(draw_embedded_image(ix, iy, id)),
-            None => Some(draw_image(ix, iy, source)),
+            None => Some(draw_image_with_security(ix, iy, source, self.conf.loose)),
         }
     }
 
@@ -1190,9 +1192,10 @@ impl Renderer<'_> {
         for (key, value) in &actor.links {
             let target = super::model::value_text(value);
             let sanitized = ferrigura_syntax::url::sanitize_url(&target);
-            let href = crate::common::resolve_url_entity_placeholders(&sanitized);
+            let resolved = crate::common::resolve_url_entity_placeholders(&sanitized);
+            let href = ferrigura_syntax::url::guard_url(&resolved, self.conf.loose);
             let mut link = Element::new("a")
-                .with("xlink:href", href.into_owned())
+                .with("xlink:href", href)
                 .with("target", "_blank");
             for element in draw_menu_item_text(
                 key,

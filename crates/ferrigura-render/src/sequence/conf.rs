@@ -103,6 +103,8 @@ pub struct Conf {
     pub message_font: Font,
     /// `conf.theme`, the top-level theme name (the palettes are chosen by it).
     pub theme: String,
+    /// Whether `securityLevel` is `loose`, skipping render-sink URL allowlist enforcement.
+    pub loose: bool,
     /// Whether the reference's DOMPurify pass cleans the SVG: every security level but `loose` and
     /// `sandbox` (`mermaidAPI.ts:644-650`). That pass has no `use` element in its allow-list, so
     /// the icons drawn from `@name` are removed from the output.
@@ -151,6 +153,7 @@ impl Conf {
             note_font: font(section.note_font_weight.as_ref()),
             message_font: font(section.message_font_weight.as_ref()),
             theme: globals.theme.clone(),
+            loose: globals.security_level == "loose",
             sanitized: !matches!(globals.security_level.as_str(), "loose" | "sandbox"),
         }
     }

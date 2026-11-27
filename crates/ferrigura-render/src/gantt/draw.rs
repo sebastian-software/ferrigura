@@ -343,9 +343,10 @@ impl Chart<'_> {
         for (index, rect, text) in &parts {
             if let Some(url) = self.model.links.get(&self.model.tasks[*index].id) {
                 let resolved = crate::common::resolve_url_entity_placeholders(url);
+                let guarded = ferrigura_syntax::url::guard_url(&resolved, self.loose);
                 group.push_str(&format!(
                     "<a xlink:href=\"{}\" target=\"_top\">{rect}{text}</a>",
-                    crate::svg::escape_url_attr(&resolved)
+                    crate::svg::escape_url_attr(guarded)
                 ));
             }
         }

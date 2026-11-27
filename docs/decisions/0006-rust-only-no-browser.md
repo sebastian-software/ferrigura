@@ -19,7 +19,7 @@ Weighed and not chosen:
 ## Consequences
 
 - The programming interface is ferrigura's own and small: a `Renderer` made once for a configuration with `render(text)`, and `render(text, config)` as a shorthand. Mermaid's JavaScript API (`initialize`, `run`, `parse`, callbacks) does not exist.
-- Interactivity goes: links stay SVG `<a>`, tooltips become SVG `<title>`, JavaScript callbacks are dropped, and `securityLevel` controls text sanitization, parser-side link sanitization, and render-sink URL allowlist validation on the sinks that Mermaid leaves to DOMPurify (`state` click links, `kanban` ticket links, `imageSquare` `href`, and unified node anchors; see [0014](./0014-upstream-reference-at-a-pin.md)).
+- Interactivity goes: links stay SVG `<a>`, tooltips become SVG `<title>`, JavaScript callbacks are dropped, and `securityLevel` controls text sanitization, parser-side link sanitization, and render-sink URL allowlist validation on the sinks that Mermaid leaves to DOMPurify (`state` click links, `gantt` task links, `sequence` actor links and icons, `kanban` ticket links, `imageSquare` `href`, and unified node anchors; see [0014](./0014-upstream-reference-at-a-pin.md)).
 - PNG and other raster formats are out of scope; any SVG rasterizer can produce them from the output.
 
 ## Related
