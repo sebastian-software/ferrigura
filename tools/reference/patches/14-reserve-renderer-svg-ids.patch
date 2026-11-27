@@ -958,3 +958,25 @@ index 49145b2..5225ede 100644
    }
  
    const layoutDefinition = layoutAlgorithms[data4Layout.layoutAlgorithm];
+diff --git a/packages/mermaid/src/rendering-util/rendering-elements/edges.js b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
+index 1f88ca4..436d2cf 100644
+--- a/packages/mermaid/src/rendering-util/rendering-elements/edges.js
++++ b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
+@@ -834,7 +834,7 @@ export const insertEdge = function (
+ 
+     svgPath = select(svgPathNode)
+       .select('path')
+-      .attr('id', `${diagramId}-${edge.id}`)
++      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
+       .attr(
+         'class',
+         ' ' +
+@@ -857,7 +857,7 @@ export const insertEdge = function (
+     svgPath = elem
+       .append('path')
+       .attr('d', linePath)
+-      .attr('id', `${diagramId}-${edge.id}`)
++      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
+       .attr(
+         'class',
+         ' ' +
