@@ -70,7 +70,7 @@ const alternatives = [
     name: 'Mermaid',
     href: 'https://mermaid.js.org/',
     runs: 'TypeScript, in a browser',
-    fit: 'The original, and the right choice when diagrams are drawn in the reader’s browser, with click callbacks, tooltips and the newest diagram types first.',
+    fit: 'The original, and the right choice when diagrams are drawn in the reader’s browser, with click callbacks, tooltips and every diagram type, the newest first.',
     differs:
       'On a server it needs a headless browser, through mermaid-cli. Labels use the page’s fonts.',
   },
@@ -99,9 +99,10 @@ export function Alternatives() {
       standfirst="Ferrigura is one of several renderers for Mermaid’s syntax. Which one fits depends on where the diagrams are drawn and how close to Mermaid they must look."
     >
       <p>
-        Choose Ferrigura when you want Mermaid&rsquo;s own drawing without a browser, the same on
-        every machine, with its fonts inside the file: in a Rust program, on the command line or in
-        Node.js. Choose one of these when something else matters more.
+        Choose Ferrigura for the ten diagram types it draws, when you want Mermaid&rsquo;s own
+        drawing without a browser, the same on every machine and with its fonts inside the file, or
+        a drawing that looks designed: in a Rust program, on the command line or in Node.js. Choose
+        one of these when something else matters more, such as a diagram type beyond the ten.
       </p>
       <MonoWide className="fgr-gap">
         <MonoCards>
