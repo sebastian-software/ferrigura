@@ -1,6 +1,5 @@
 //! Explicit catalog download authorization. Credentials and signed URLs are never logged.
 use std::io::Read;
-use std::time::Duration;
 
 use serde_json::{Value, json};
 use url::Url;
@@ -10,14 +9,6 @@ use crate::font_catalog::verified;
 const ISSUER: &str = "https://downloads.ferrigura.dev/v1/downloads";
 const HOST: &str = "protected-assets.ferrigura.dev";
 const ISSUER_LIMIT: u64 = 64 * 1024;
-
-fn agent() -> ureq::Agent {
-    ureq::Agent::config_builder()
-        .max_redirects(0)
-        .timeout_global(Some(Duration::from_secs(30)))
-        .build()
-        .into()
-}
 
 fn read_response(
     mut response: ureq::http::Response<ureq::Body>,
@@ -139,9 +130,15 @@ where
     Ok(bytes)
 }
 
-fn issue(issuer: &str, path: &str, hash: &str, token: &str) -> Result<Value, String> {
+fn issue(
+    agent: &ureq::Agent,
+    issuer: &str,
+    path: &str,
+    hash: &str,
+    token: &str,
+) -> Result<Value, String> {
     let payload = json!({"path":path,"sha256":hash}).to_string();
-    let response = agent()
+    let response = agent
         .post(issuer)
         .header("Authorization", format!("Bearer {token}"))
         .header("Content-Type", "application/json")
@@ -151,7 +148,13 @@ fn issue(issuer: &str, path: &str, hash: &str, token: &str) -> Result<Value, Str
     serde_json::from_slice(&bytes).map_err(|_| "invalid authorization response".to_owned())
 }
 
-pub fn fetch(path: &str, hash: &str, size: Option<u64>, limit: u64) -> Result<Vec<u8>, String> {
+pub fn fetch(
+    agent: &ureq::Agent,
+    path: &str,
+    hash: &str,
+    size: Option<u64>,
+    limit: u64,
+) -> Result<Vec<u8>, String> {
     let token = std::env::var("FERRIGURA_DOWNLOAD_TOKEN").map_err(|_| {
         "FERRIGURA_DOWNLOAD_TOKEN is required for a protected cache miss".to_owned()
     })?;
@@ -161,9 +164,9 @@ pub fn fetch(path: &str, hash: &str, size: Option<u64>, limit: u64) -> Result<Ve
         size,
         limit,
         &token,
-        |path, hash, token| issue(ISSUER, path, hash, token),
+        |path, hash, token| issue(agent, ISSUER, path, hash, token),
         |url, limit| {
-            let response = agent()
+            let response = agent
                 .get(url.as_str())
                 .call()
                 .map_err(|_| "download failed".to_owned())?;
@@ -175,8 +178,10 @@ pub fn fetch(path: &str, hash: &str, size: Option<u64>, limit: u64) -> Result<Ve
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::font_catalog::http_agent;
     use sha2::{Digest, Sha256};
     use std::cell::Cell;
+    use std::time::Duration;
 
     fn hash(bytes: &[u8]) -> String {
         Sha256::digest(bytes)
@@ -226,8 +231,10 @@ mod tests {
             request
         });
         let path = "/ferrigura/fonts/test/file.ttf";
+        let agent = http_agent();
         assert_eq!(
             issue(
+                &agent,
                 &format!("http://{address}/v1/downloads"),
                 path,
                 "sha",
@@ -254,7 +261,7 @@ mod tests {
 
     #[test]
     fn issues_only_known_path_and_verifies_result() {
-        assert_eq!(agent().config().max_redirects(), 0);
+        assert_eq!(http_agent().config().max_redirects(), 0);
         let body = b"face data";
         let sha = hash(body);
         let path = format!("/ferrigura/fonts/test/{sha}.ttf");

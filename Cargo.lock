@@ -159,6 +159,7 @@ version = "0.9.0"
 dependencies = [
  "ferrigura",
  "ferrigura-model",
+ "libc",
  "mimalloc",
  "serde_json",
  "sha2",
@@ -208,7 +209,6 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
- "serde_json",
 ]
 
 [[package]]

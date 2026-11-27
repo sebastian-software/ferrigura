@@ -1,8 +1,10 @@
 //! Explicit host-side catalog fetching. Rendering only reads a verified local lock.
-use std::collections::HashSet;
+use std::cell::OnceCell;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
@@ -14,8 +16,16 @@ use url::Url;
 const BASE: &str = "https://assets.sebastian-software.com/ferrigura/";
 const HASH: &str = "33a0a2fac7f3c0f43e2b38ef79d482e3cc4c75fc3730e241c28a73bef79eeaa8";
 const MANIFEST: &str = "https://assets.sebastian-software.com/ferrigura/catalogs/fonts/1.0.0/33a0a2fac7f3c0f43e2b38ef79d482e3cc4c75fc3730e241c28a73bef79eeaa8.json";
-const LIMIT: u64 = 16 * 1024 * 1024;
+pub(crate) const LIMIT: u64 = 16 * 1024 * 1024;
 const MANIFEST_LIMIT: u64 = 2 * 1024 * 1024;
+
+pub(crate) fn http_agent() -> ureq::Agent {
+    ureq::Agent::config_builder()
+        .max_redirects(0)
+        .timeout_global(Some(Duration::from_secs(30)))
+        .build()
+        .into()
+}
 
 fn digest(bytes: &[u8]) -> String {
     Sha256::digest(bytes)
@@ -85,15 +95,45 @@ pub(crate) fn verified(bytes: &[u8], hash: &str, size: Option<u64>) -> Result<()
     }
     Ok(())
 }
-fn bounded_read(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
-    let metadata = fs::symlink_metadata(path)
-        .map_err(|e| format!("cannot inspect {}: {e}", path.display()))?;
-    if !metadata.file_type().is_file() {
+fn bounded_read_if_exists(path: &Path, limit: u64) -> Result<Option<Vec<u8>>, String> {
+    #[cfg(unix)]
+    let file = {
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut options = fs::OpenOptions::new();
+        options
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+        match options.open(path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(error) if error.raw_os_error() == Some(libc::ELOOP) => {
+                return Err(format!("{} is not a regular file", path.display()));
+            }
+            Err(error) => return Err(format!("cannot read {}: {error}", path.display())),
+        }
+    };
+    #[cfg(not(unix))]
+    let file = {
+        match fs::symlink_metadata(path) {
+            Ok(metadata) if !metadata.file_type().is_file() => {
+                return Err(format!("{} is not a regular file", path.display()));
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(format!("cannot inspect {}: {error}", path.display())),
+        }
+        match fs::File::open(path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(format!("cannot read {}: {error}", path.display())),
+        }
+    };
+    let metadata = file.metadata().map_err(|e| e.to_string())?;
+    if !metadata.is_file() {
         return Err(format!("{} is not a regular file", path.display()));
     }
-    let file = fs::File::open(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
-    if !file.metadata().map_err(|e| e.to_string())?.is_file() {
-        return Err(format!("{} is not a regular file", path.display()));
+    if metadata.len() > limit {
+        return Err(format!("{} exceeds size limit", path.display()));
     }
     let mut bytes = Vec::new();
     file.take(limit + 1)
@@ -102,7 +142,12 @@ fn bounded_read(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
     if bytes.len() as u64 > limit {
         return Err(format!("{} exceeds size limit", path.display()));
     }
-    Ok(bytes)
+    Ok(Some(bytes))
+}
+
+fn bounded_read(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
+    bounded_read_if_exists(path, limit)?
+        .ok_or_else(|| format!("cannot read {}: no such file or directory", path.display()))
 }
 
 fn write_temporary(path: &Path, bytes: &[u8]) -> Result<PathBuf, String> {
@@ -190,14 +235,9 @@ where
         return Err("invalid SHA-256".into());
     }
     let path = cache.join("sha256").join(hash);
-    match fs::symlink_metadata(&path) {
-        Ok(_) => {
-            let bytes = bounded_read(&path, limit)?;
-            verified(&bytes, hash, size)?;
-            return Ok((path, bytes));
-        }
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => return Err(format!("cannot inspect {}: {error}", path.display())),
+    if let Some(bytes) = bounded_read_if_exists(&path, limit)? {
+        verified(&bytes, hash, size)?;
+        return Ok((path, bytes));
     }
     if offline {
         return Err(format!("offline cache misses {hash}"));
@@ -210,12 +250,7 @@ where
     let winner = publish_cache(&path, &bytes, hash, size, limit)?;
     Ok((path, winner))
 }
-fn download(url: &Url, limit: u64) -> Result<Vec<u8>, String> {
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .max_redirects(0)
-        .timeout_global(Some(Duration::from_secs(30)))
-        .build()
-        .into();
+fn download(agent: &ureq::Agent, url: &Url, limit: u64) -> Result<Vec<u8>, String> {
     let mut response = agent
         .get(url.as_str())
         .call()
@@ -284,6 +319,10 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
                 }
                 aliases.push((alias.to_owned(), family.to_owned()));
             }
+            "--" => {
+                families.extend(args);
+                break;
+            }
             _ if arg.starts_with('-') => return Err(format!("unknown font fetch option {arg}")),
             _ => families.push(arg),
         }
@@ -312,11 +351,13 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
     if !base.path().ends_with('/') || !same_origin(&base, &manifest) {
         return Err("manifest and asset base must share an origin, and base must end in /".into());
     }
+    let agent = OnceCell::new();
     let (_, manifest_bytes) = cached(&cache, &hash, None, offline, MANIFEST_LIMIT, || {
+        let agent = agent.get_or_init(http_agent);
         if protected {
-            crate::protected::fetch(manifest.path(), &hash, None, MANIFEST_LIMIT)
+            crate::protected::fetch(agent, manifest.path(), &hash, None, MANIFEST_LIMIT)
         } else {
-            download(&manifest, MANIFEST_LIMIT)
+            download(agent, &manifest, MANIFEST_LIMIT)
         }
     })?;
     let document: Value = serde_json::from_slice(&manifest_bytes)
@@ -424,10 +465,11 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
     let mut selected = Vec::new();
     for (family, weight, style, asset_hash, size, url) in assets {
         let (file, _) = cached(&cache, &asset_hash, Some(size), offline, size, || {
+            let agent = agent.get_or_init(http_agent);
             if protected {
-                crate::protected::fetch(url.path(), &asset_hash, Some(size), size)
+                crate::protected::fetch(agent, url.path(), &asset_hash, Some(size), size)
             } else {
-                download(&url, size)
+                download(agent, &url, size)
             }
         })?;
         let absolute = fs::canonicalize(file).map_err(|e| e.to_string())?;
@@ -455,7 +497,7 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
     Ok(())
 }
 
-type LockedFace = (String, Vec<u8>, FontWeight, FontStyle);
+type LockedFace = (String, Arc<Vec<u8>>, FontWeight, FontStyle);
 
 pub fn read_lock(path: &Path) -> Result<(Vec<LockedFace>, Vec<String>), String> {
     let lock: Value =
@@ -475,6 +517,7 @@ pub fn read_lock(path: &Path) -> Result<(Vec<LockedFace>, Vec<String>), String> 
         return Err("font lock has no families".into());
     }
     let mut fonts = Vec::new();
+    let mut loaded: HashMap<(PathBuf, String), Arc<Vec<u8>>> = HashMap::new();
     for face in array(&lock, "faces")? {
         let family = string(face, "family")?.to_owned();
         if !families.iter().any(|name| name == &family) {
@@ -496,8 +539,20 @@ pub fn read_lock(path: &Path) -> Result<(Vec<LockedFace>, Vec<String>), String> 
             .and_then(Value::as_u64)
             .filter(|n| *n > 0 && *n <= LIMIT)
             .ok_or("invalid lock size")?;
-        let bytes = bounded_read(&path, LIMIT)?;
-        verified(&bytes, string(face, "sha256")?, Some(size))?;
+        let sha256 = string(face, "sha256")?;
+        let key = (path, sha256.to_owned());
+        let bytes = if let Some(existing) = loaded.get(&key) {
+            if existing.len() as u64 != size {
+                return Err(format!("font catalog integrity check failed for {sha256}"));
+            }
+            Arc::clone(existing)
+        } else {
+            let bytes = bounded_read(&key.0, LIMIT)?;
+            verified(&bytes, sha256, Some(size))?;
+            let shared = Arc::new(bytes);
+            loaded.insert(key, Arc::clone(&shared));
+            shared
+        };
         fonts.push((
             family,
             bytes,
@@ -618,7 +673,26 @@ mod tests {
         let (fonts, fallbacks) = read_lock(&lock).unwrap();
         assert_eq!(fonts.len(), 3);
         assert_eq!(fallbacks, ["Arrows"]);
-        assert!(fonts.iter().any(|face| face.0 == "monospace"));
+        let fixture = fonts.iter().find(|face| face.0 == "Fixture").unwrap();
+        let aliased = fonts.iter().find(|face| face.0 == "monospace").unwrap();
+        assert!(
+            Arc::ptr_eq(&fixture.1, &aliased.1),
+            "aliased lock entries must share one verified buffer"
+        );
+        // Verify a mismatched size on a cached alias entry is still caught.
+        let mut tampered_lock: Value = serde_json::from_slice(&fs::read(&lock).unwrap()).unwrap();
+        for face in tampered_lock["faces"].as_array_mut().unwrap() {
+            if face["family"].as_str() == Some("monospace") {
+                face["size"] = json!(1);
+            }
+        }
+        let tampered_path = dir.join("tampered-alias-size.json");
+        fs::write(&tampered_path, serde_json::to_vec(&tampered_lock).unwrap()).unwrap();
+        assert!(
+            read_lock(&tampered_path)
+                .unwrap_err()
+                .contains("integrity check failed")
+        );
         let mut without_fallback = args.clone();
         let index = without_fallback
             .iter()
@@ -699,6 +773,20 @@ mod tests {
         let link = dir.join("linked-lock");
         symlink(&fifo, &link).unwrap();
         assert!(read_lock(&link).unwrap_err().contains("not a regular file"));
+        let regular = dir.join("regular-file");
+        fs::write(&regular, b"{}").unwrap();
+        let regular_link = dir.join("linked-regular");
+        symlink(&regular, &regular_link).unwrap();
+        assert!(
+            bounded_read(&regular_link, MANIFEST_LIMIT)
+                .unwrap_err()
+                .contains("not a regular file")
+        );
+        assert!(
+            bounded_read(&dir, MANIFEST_LIMIT)
+                .unwrap_err()
+                .contains("not a regular file")
+        );
         fs::remove_dir_all(dir).unwrap();
     }
 

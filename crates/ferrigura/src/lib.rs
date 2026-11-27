@@ -3,6 +3,7 @@
 
 use std::collections::HashMap;
 use std::hash::Hasher;
+use std::io::Read;
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard, OnceLock, PoisonError};
 
 use ferrigura_model::config::{MermaidConfig, ResolvedThemeVariables, SiteConfig, typed_top};
@@ -528,7 +529,11 @@ impl RendererBuilder {
 
     /// Registers every diagram type, as [`Renderer::new`] does.
     #[must_use]
-    pub fn with_all(self) -> Self {
+    pub fn with_all(mut self) -> Self {
+        if self.plugins.is_empty() {
+            self.plugins = diagrams::all();
+            return self;
+        }
         diagrams::all().into_iter().fold(self, Self::with)
     }
 
@@ -548,20 +553,32 @@ impl RendererBuilder {
     /// # Errors
     /// Returns a typed text error when the font or its metadata is invalid.
     pub fn font_face(
-        mut self,
+        self,
         family: impl Into<String>,
         bytes: impl Into<Vec<u8>>,
         weight: FontWeight,
         style: FontStyle,
     ) -> Result<Self, Error> {
+        self.font_face_shared(family, Arc::new(bytes.into()), weight, style)
+    }
+
+    /// Registers one design from shared font bytes, avoiding extra copies when several families
+    /// alias the same underlying face.
+    ///
+    /// # Errors
+    /// Returns a typed text error when the font or its metadata is invalid.
+    pub fn font_face_shared(
+        mut self,
+        family: impl Into<String>,
+        bytes: Arc<Vec<u8>>,
+        weight: FontWeight,
+        style: FontStyle,
+    ) -> Result<Self, Error> {
         let family = family.into();
         let first = self.fonts.as_ref().is_none_or(FontRegistry::is_empty);
-        self.fonts.get_or_insert_with(FontRegistry::new).register(
-            family.clone(),
-            bytes,
-            weight,
-            style,
-        )?;
+        self.fonts
+            .get_or_insert_with(FontRegistry::new)
+            .register_shared(family.clone(), bytes, weight, style)?;
         if first {
             if !self.config.is_object() {
                 self.config = Value::empty_object();
@@ -616,13 +633,50 @@ impl RendererBuilder {
         weight: FontWeight,
         style: FontStyle,
     ) -> Result<Self, Error> {
+        const MAX_FONT_BYTES: u64 = 16 * 1024 * 1024;
         let path = path.as_ref();
-        let bytes = std::fs::read(path).map_err(|error| {
+        let file = std::fs::File::open(path).map_err(|error| {
             ferrigura_text::TextError::Registration(format!(
                 "cannot read font {}: {error}",
                 path.display()
             ))
         })?;
+        let metadata = file.metadata().map_err(|error| {
+            ferrigura_text::TextError::Registration(format!(
+                "cannot read font {}: {error}",
+                path.display()
+            ))
+        })?;
+        if !metadata.is_file() {
+            return Err(ferrigura_text::TextError::Registration(format!(
+                "cannot read font {}: not a regular file",
+                path.display()
+            ))
+            .into());
+        }
+        if metadata.len() > MAX_FONT_BYTES {
+            return Err(ferrigura_text::TextError::Registration(format!(
+                "cannot read font {}: exceeds size limit",
+                path.display()
+            ))
+            .into());
+        }
+        let mut bytes = Vec::new();
+        file.take(MAX_FONT_BYTES + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|error| {
+                ferrigura_text::TextError::Registration(format!(
+                    "cannot read font {}: {error}",
+                    path.display()
+                ))
+            })?;
+        if bytes.len() as u64 > MAX_FONT_BYTES {
+            return Err(ferrigura_text::TextError::Registration(format!(
+                "cannot read font {}: exceeds size limit",
+                path.display()
+            ))
+            .into());
+        }
         self.font_face(family, bytes, weight, style)
     }
 
@@ -648,12 +702,10 @@ impl RendererBuilder {
     /// it so that the configuration is not resolved again. The order of registration does not matter.
     #[must_use]
     pub fn shared(self) -> Arc<Renderer> {
-        if self.fonts.is_some() {
-            return Arc::new(self.build());
-        }
+        let font_fingerprint = self.fonts.as_ref().map(FontRegistry::fingerprint);
         let mut kinds: Vec<DiagramType> = self.plugins.iter().map(Plugin::kind).collect();
         kinds.sort_unstable_by(|a, b| a.config_key().cmp(b.config_key()));
-        if let Some(renderer) = kept(&self.config, &kinds) {
+        if let Some(renderer) = kept(&self.config, &kinds, font_fingerprint, self.fonts.as_ref()) {
             return renderer;
         }
         // Two threads that miss at once keep two equal renderers for a while; that costs memory only.
@@ -666,6 +718,7 @@ impl RendererBuilder {
         cache.push(Shared {
             config,
             kinds,
+            font_fingerprint,
             renderer: Arc::clone(&renderer),
         });
         renderer
@@ -1126,16 +1179,30 @@ struct Shared {
     config: Value,
     /// The kinds the renderer draws, sorted, so that the order of registration does not matter.
     kinds: Vec<DiagramType>,
+    /// The fingerprint of supplied fonts, or `None` when using bundled defaults.
+    font_fingerprint: Option<u64>,
     renderer: Arc<Renderer>,
 }
 
-/// The renderer that the shorthand keeps for a configuration and a set of kinds, which becomes the
-/// most recently used.
-fn kept(config: &Value, kinds: &[DiagramType]) -> Option<Arc<Renderer>> {
+/// The renderer that the shorthand keeps for a configuration, a set of kinds, and any supplied
+/// fonts, which becomes the most recently used.
+fn kept(
+    config: &Value,
+    kinds: &[DiagramType],
+    font_fingerprint: Option<u64>,
+    fonts: Option<&FontRegistry>,
+) -> Option<Arc<Renderer>> {
     let mut cache = lock(&SHORTHAND);
-    let at = cache
-        .iter()
-        .position(|entry| entry.kinds == kinds && identical(&entry.config, config))?;
+    let at = cache.iter().position(|entry| {
+        entry.font_fingerprint == font_fingerprint
+            && entry.kinds == kinds
+            && identical(&entry.config, config)
+            && match (fonts, entry.renderer.fonts.as_deref()) {
+                (None, None) => true,
+                (Some(requested), Some(cached)) => requested.same_as(cached),
+                _ => false,
+            }
+    })?;
     let entry = cache.remove(at);
     let renderer = Arc::clone(&entry.renderer);
     cache.push(entry);
@@ -1372,11 +1439,17 @@ mod font_input_tests {
             .font("Fixture", SANS.to_vec())
             .unwrap()
             .shared();
+        let first_again = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .shared();
         let second = Renderer::builder(&Value::empty_object())
             .with_all()
             .font("Fixture", MONO.to_vec())
             .unwrap()
             .shared();
+        assert!(Arc::ptr_eq(&first, &first_again));
         assert!(!Arc::ptr_eq(&first, &second));
         assert_ne!(first.configuration, second.configuration);
     }
