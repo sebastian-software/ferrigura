@@ -79,7 +79,7 @@ pub(crate) fn children_raw(base_id: &str, title: &str, description: &str) -> Str
 pub fn children(base_id: &str, title: &str, description: &str) -> String {
     let mut out = String::new();
     if !title.is_empty() {
-        let resolved = if title.contains("ﬂ°") {
+        let resolved = if title.contains("ﬂ°") || title.contains("¶ß") {
             std::borrow::Cow::Owned(crate::common::shown_text(title))
         } else {
             std::borrow::Cow::Borrowed(title)
@@ -91,7 +91,7 @@ pub fn children(base_id: &str, title: &str, description: &str) -> String {
         ));
     }
     if !description.is_empty() {
-        let resolved = if description.contains("ﬂ°") {
+        let resolved = if description.contains("ﬂ°") || description.contains("¶ß") {
             std::borrow::Cow::Owned(crate::common::shown_text(description))
         } else {
             std::borrow::Cow::Borrowed(description)

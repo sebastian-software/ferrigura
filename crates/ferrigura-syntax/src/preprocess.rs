@@ -436,10 +436,18 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
         let current: String = chars.iter().map(|&(c, _)| c).collect();
         let mut to_remove = Vec::new();
         let mut char_offset = 0usize;
+        let mut in_quotes = false;
+        let mut escaped = false;
         for segment in current.split_inclusive(JS_LINE_TERMINATORS) {
             let content = segment.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(segment);
-            if let Some(semi_byte) = color_semicolon_byte(content, word) {
+            let ended_with_terminator = content.len() < segment.len();
+            if let Some(semi_byte) =
+                color_semicolon_byte(content, word, &mut in_quotes, &mut escaped)
+            {
                 to_remove.push(char_offset + content[..semi_byte].chars().count());
+            }
+            if ended_with_terminator {
+                escaped = false;
             }
             char_offset += segment.chars().count();
         }
@@ -548,9 +556,13 @@ fn starts_with_css_property(rest: &str) -> bool {
 /// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and only drops a
 /// semicolon at end-of-line (or before a following CSS property on `classDef`) so statement
 /// separators like `style A fill:#abc,stroke-width:1px; B --> C;` stay intact.
-fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
-    let mut in_quotes = false;
-    let mut escaped = false;
+fn color_semicolon_byte(
+    line: &str,
+    word: &str,
+    in_quotes: &mut bool,
+    escaped: &mut bool,
+) -> Option<usize> {
+    let mut at_line_start = true;
     let mut stmt_start = true;
     let mut in_target_stmt = false;
     let mut seen_colon = false;
@@ -559,18 +571,27 @@ fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
     let mut chars = line.char_indices();
 
     while let Some((at, ch)) = chars.next() {
-        if in_quotes {
-            if escaped {
-                escaped = false;
+        if *in_quotes {
+            if *escaped {
+                *escaped = false;
             } else if ch == '\\' {
-                escaped = true;
+                *escaped = true;
             } else if ch == '"' {
-                in_quotes = false;
+                *in_quotes = false;
             }
             continue;
         }
+        if at_line_start {
+            if is_js_space(ch) {
+                continue;
+            }
+            at_line_start = false;
+            if line[at..].starts_with("%%") {
+                break;
+            }
+        }
         if ch == '"' {
-            in_quotes = true;
+            *in_quotes = true;
             stmt_start = false;
             if in_target_stmt {
                 seen_colon = false;
@@ -636,13 +657,19 @@ fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
 /// `<word> .*:\S*#.*;` with the color-terminating semicolon removed on each JavaScript line.
 fn drop_color_semicolons(text: &str, word: &str) -> String {
     let mut out = String::with_capacity(text.len());
+    let mut in_quotes = false;
+    let mut escaped = false;
     for line in text.split_inclusive(JS_LINE_TERMINATORS) {
         let content = line.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(line);
-        if let Some(semicolon) = color_semicolon_byte(content, word) {
+        let ended_with_terminator = content.len() < line.len();
+        if let Some(semicolon) = color_semicolon_byte(content, word, &mut in_quotes, &mut escaped) {
             out.push_str(&line[..semicolon]);
             out.push_str(&line[semicolon + 1..]);
         } else {
             out.push_str(line);
+        }
+        if ended_with_terminator {
+            escaped = false;
         }
     }
     out
@@ -671,13 +698,15 @@ enum StmtKind {
 }
 
 /// Single-pass O(n) forward tracker for whether the current `#<hex>;` sits inside an unquoted
-/// `style` or `classDef` declaration value (after `:` and a CSS token separator), resetting on
-/// every line terminator and unquoted `;` so quoted semicolons and subsequent statements on the
-/// same line are never treated as CSS.
+/// `style` or `classDef` declaration value (after `:` and a CSS token separator), resetting
+/// statement state on every line terminator and unquoted `;` while preserving quote context across
+/// multiline quoted labels.
 struct StyleStmtTracker {
     kind: StmtKind,
     seen_colon: bool,
     last_allows_hex: bool,
+    at_line_start: bool,
+    in_comment: bool,
     in_quotes: bool,
     escaped: bool,
 }
@@ -688,6 +717,8 @@ impl StyleStmtTracker {
             kind: StmtKind::Start,
             seen_colon: false,
             last_allows_hex: false,
+            at_line_start: true,
+            in_comment: false,
             in_quotes: false,
             escaped: false,
         }
@@ -701,7 +732,8 @@ impl StyleStmtTracker {
 
     fn reset_line(&mut self) {
         self.reset();
-        self.in_quotes = false;
+        self.at_line_start = true;
+        self.in_comment = false;
         self.escaped = false;
     }
 
@@ -709,16 +741,18 @@ impl StyleStmtTracker {
         if self.kind == StmtKind::Start {
             self.kind = StmtKind::Other;
         }
+        self.at_line_start = false;
         self.last_allows_hex = false;
     }
 
     fn push(&mut self, src: &str, at: usize, ch: char) {
-        if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
-            self.reset_line();
-            return;
-        }
         if self.in_quotes {
-            if self.escaped {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.escaped = false;
+                self.reset();
+                self.at_line_start = true;
+                self.in_comment = false;
+            } else if self.escaped {
                 self.escaped = false;
             } else if ch == '\\' {
                 self.escaped = true;
@@ -726,6 +760,24 @@ impl StyleStmtTracker {
                 self.in_quotes = false;
             }
             return;
+        }
+        if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+            self.reset_line();
+            return;
+        }
+        if self.in_comment {
+            return;
+        }
+        if self.at_line_start {
+            if is_js_space(ch) {
+                return;
+            }
+            self.at_line_start = false;
+            if src[at..].starts_with("%%") {
+                self.in_comment = true;
+                self.kind = StmtKind::Other;
+                return;
+            }
         }
         if ch == '"' {
             self.in_quotes = true;
@@ -764,6 +816,7 @@ impl StyleStmtTracker {
 
     fn allows_hex_color(&self, name: &str) -> bool {
         !self.in_quotes
+            && !self.in_comment
             && self.kind == StmtKind::Style
             && self.seen_colon
             && self.last_allows_hex

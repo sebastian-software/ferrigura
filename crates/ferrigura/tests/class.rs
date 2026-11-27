@@ -1559,16 +1559,108 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
 
     // Percent-encoded filenames resembling internal token prefixes are never overwritten.
     let token_lookalike = ferrigura::render(
-        "classDiagram\n  class A\n  click A href \"https://example.org/%5f_FGENT_0__/#copy;\"\n",
+        "classDiagram\n  class A\n  click A href \"https://example.org/%5f_fg00000000_0__/#copy;\"\n",
         &Value::empty_object(),
     )
     .expect("renders");
     assert!(
-        token_lookalike.contains("xlink:href=\"https://example.org/__FGENT_0__/%C2%A9\""),
+        token_lookalike.contains("xlink:href=\"https://example.org/__fg00000000_0__/%C2%A9\""),
         "{token_lookalike}"
     );
     assert!(
         !token_lookalike.contains("/%C2%A9/%C2%A9"),
         "{token_lookalike}"
     );
+
+    // Percent-encoded placeholder lookalike filenames stay intact for relative URLs and explicit-port HTTP URLs.
+    let rel_pct_filename = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"/files/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        rel_pct_filename.contains("xlink:href=\"/files/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\""),
+        "{rel_pct_filename}"
+    );
+    let port_pct_filename = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org:8080/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        port_pct_filename.contains(
+            "xlink:href=\"https://example.org:8080/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\""
+        ),
+        "{port_pct_filename}"
+    );
+
+    // Entity-spelled HTTP schemes (`https#58;`) receive the same component-aware entity encoding.
+    let entity_scheme = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https#58;//example.org/Part#63;A.pdf\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        entity_scheme.contains("xlink:href=\"https://example.org/Part%3FA.pdf\""),
+        "{entity_scheme}"
+    );
+
+    // Invalid decoded HTTP hosts are rejected even when a later colon (port or query) is present.
+    let bad_host_port = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example#32;org:8080/docs\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        bad_host_port.contains("xlink:href=\"about:blank\""),
+        "{bad_host_port}"
+    );
+    let bad_host_query = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example#32;org/?time=12:00\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        bad_host_query.contains("xlink:href=\"about:blank\""),
+        "{bad_host_query}"
+    );
+
+    // Multiline quoted labels preserve quote context so `style A fill: #169;` inside a label
+    // takes the same entity path as a single-line quoted label instead of dropping `;` as CSS.
+    let single_line_label = ferrigura::render(
+        "flowchart LR\n  A[\"style A fill: #169;\"]\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let multiline_label = ferrigura::render(
+        "flowchart LR\n  A[\"first\nstyle A fill: #169;\nlast\"]\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        single_line_label.contains("&amp;#169;"),
+        "{single_line_label}"
+    );
+    assert!(multiline_label.contains("&amp;#169;"), "{multiline_label}");
+    assert!(!multiline_label.contains("#169<"), "{multiline_label}");
+
+    // Standalone closing entity markers (`¶ß`) decode to `;` in accessibility titles/descriptions.
+    let a11y_closing = ferrigura::render(
+        "classDiagram\n  accTitle: end¶ß\n  accDescr: tail¶ß\n  class A\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let a11y_doc = roxmltree::Document::parse(&a11y_closing).expect("well-formed SVG XML");
+    let a11y_title = a11y_doc
+        .descendants()
+        .find(|n| n.has_tag_name("title"))
+        .and_then(|n| n.text())
+        .unwrap_or("");
+    let a11y_desc = a11y_doc
+        .descendants()
+        .find(|n| n.has_tag_name("desc"))
+        .and_then(|n| n.text())
+        .unwrap_or("");
+    assert_eq!(a11y_title, "end;");
+    assert_eq!(a11y_desc, "tail;");
 }

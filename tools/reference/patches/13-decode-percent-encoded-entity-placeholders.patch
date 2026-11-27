@@ -31,10 +31,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..bf15f44 100644
+index 48ac4a6..c8c4950 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,228 @@ export function interpolateToCurve(
+@@ -244,6 +244,428 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -44,10 +44,32 @@ index 48ac4a6..bf15f44 100644
 +    holder.innerHTML = `<a data-v="${ref}"></a>`;
 +    return holder.firstElementChild?.getAttribute('data-v') ?? ref;
 +  }
-+  return ref.replace(/&#(\+?\d+);/g, (_m, digits: string) => {
-+    const cp = Number.parseInt(digits, 10);
-+    return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
-+  });
++  const named: Record<string, string> = {
++    '&colon;': ':',
++    '&sol;': '/',
++    '&bsol;': '\\',
++    '&tab;': '\t',
++    '&newline;': '\n',
++    '&copy;': '\u00a9',
++    '&amp;': '&',
++    '&lt;': '<',
++    '&gt;': '>',
++    '&quot;': '"',
++    '&apos;': "'",
++  };
++  const lower = ref.toLowerCase();
++  if (lower in named) {
++    return named[lower];
++  }
++  return ref
++    .replace(/&#[xX]([0-9a-fA-F]+);/g, (_m, hex: string) => {
++      const cp = Number.parseInt(hex, 16);
++      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
++    })
++    .replace(/&#(\+?\d+);/g, (_m, digits: string) => {
++      const cp = Number.parseInt(digits, 10);
++      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
++    });
 +};
 +
 +type UrlEncodeComponent = 'userinfo' | 'path' | 'query' | 'fragment';
@@ -164,106 +186,284 @@ index 48ac4a6..bf15f44 100644
 +  );
 +};
 +
-+const tokenizePlaceholders = (segment: string, prefix: string, values: string[]): string => {
++const reencodeDecodedPlaceholders = (s: string): string => {
++  if (!s.includes('ﬂ°') && !s.includes('¶ß')) {
++    return s;
++  }
++  return s.replace(/ﬂ°/g, '%EF%AC%82%C2%B0').replace(/¶ß/g, '%C2%B6%C3%9F');
++};
++
++const collectUsedTokenIds = (s: string, used: Set<number>): void => {
++  const re = /__fg([0-9a-f]{8})_/gi;
++  let match: RegExpExecArray | null;
++  while ((match = re.exec(s)) !== null) {
++    used.add(Number.parseInt(match[1], 16));
++  }
++};
++
++const pickTokenPrefix = (...sources: string[]): string => {
++  const used = new Set<number>();
++  for (const s of sources) {
++    collectUsedTokenIds(s, used);
++  }
++  let id = 0;
++  while (used.has(id)) {
++    id += 1;
++  }
++  return `__fg${id.toString(16).padStart(8, '0')}_`;
++};
++
++const decodeMermaidPlaceholderAt = (
++  segment: string,
++  pos: number
++): [end: number, decoded: string] | null => {
++  if (segment.startsWith('ﬂ°', pos)) {
++    const numeric = segment.startsWith('ﬂ°°', pos);
++    const bodyStart = pos + (numeric ? 3 : 2);
++    let end = bodyStart;
++    while (end < segment.length && /[A-Za-z0-9_]/.test(segment[end])) {
++      end++;
++    }
++    if (end > bodyStart && segment.startsWith('¶ß', end)) {
++      const body = segment.slice(bodyStart, end);
++      const ref = numeric ? `&#${body};` : `&${body};`;
++      return [end + 2, decodeHtmlAttrRef(ref)];
++    }
++    return [bodyStart, numeric ? '&#' : '&'];
++  }
++  if (segment.startsWith('¶ß', pos)) {
++    return [pos + 2, ';'];
++  }
++  return null;
++};
++
++const isCtrlChar = (code: number): boolean => code <= 0x1f || (code >= 0x7f && code <= 0x9f);
++
++const matchHttpSchemePrefix = (
++  s: string
++): { schemeEnd: number; canonical: 'http:' | 'https:'; literal: boolean } | null => {
++  let pos = 0;
++  let decoded = '';
++  while (pos < s.length) {
++    const placeholder = decodeMermaidPlaceholderAt(s, pos);
++    if (placeholder) {
++      const [end, text] = placeholder;
++      for (const ch of text) {
++        if (!isCtrlChar(ch.codePointAt(0) ?? 0)) {
++          decoded += ch;
++        }
++      }
++      pos = end;
++    } else if (
++      s[pos] === '%' &&
++      pos + 2 < s.length &&
++      /[0-9A-Fa-f]{2}/.test(s.slice(pos + 1, pos + 3))
++    ) {
++      const byte = Number.parseInt(s.slice(pos + 1, pos + 3), 16);
++      if (byte >= 0x80) {
++        return null;
++      }
++      if (!isCtrlChar(byte)) {
++        decoded += String.fromCharCode(byte);
++      }
++      pos += 3;
++    } else if (s[pos] === '&') {
++      const sub = s.slice(pos, pos + 32);
++      const entityMatch = /^&([A-Za-z0-9#]+);/.exec(sub);
++      if (!entityMatch) {
++        return null;
++      }
++      const text = decodeHtmlAttrRef(entityMatch[0]);
++      for (const ch of text) {
++        if (!isCtrlChar(ch.codePointAt(0) ?? 0)) {
++          decoded += ch;
++        }
++      }
++      pos += entityMatch[0].length;
++    } else {
++      const code = s.charCodeAt(pos);
++      if (!isCtrlChar(code)) {
++        decoded += s[pos];
++      }
++      pos += 1;
++    }
++    if (decoded.length > 6) {
++      return null;
++    }
++    const lower = decoded.toLowerCase();
++    if (lower === 'http:' || lower === 'https:') {
++      const raw = s.slice(0, pos);
++      return {
++        schemeEnd: pos,
++        canonical: lower as 'http:' | 'https:',
++        literal: raw.toLowerCase() === lower,
++      };
++    }
++    if (!'http:'.startsWith(lower) && !'https:'.startsWith(lower)) {
++      return null;
++    }
++  }
++  return null;
++};
++
++const consumeHttpSlashes = (s: string, start: number): [end: number, count: number] => {
++  let pos = start;
++  let count = 0;
++  while (pos < s.length) {
++    if (s[pos] === '/' || s[pos] === '\\') {
++      pos += 1;
++      count += 1;
++    } else {
++      const placeholder = decodeMermaidPlaceholderAt(s, pos);
++      if (placeholder && placeholder[1].length > 0 && /^[/\\]+$/.test(placeholder[1])) {
++        count += placeholder[1].length;
++        pos = placeholder[0];
++      } else {
++        break;
++      }
++    }
++  }
++  return [pos, count];
++};
++
++const restoreRawTokens = (segment: string, prefix: string, values: string[]): string => {
 +  let out = '';
 +  let cursor = 0;
 +  while (cursor < segment.length) {
-+    const nextOpen = segment.indexOf('ﬂ°', cursor);
-+    const nextClose = segment.indexOf('¶ß', cursor);
++    const pos = segment.indexOf(prefix, cursor);
++    if (pos === -1) {
++      return out + segment.slice(cursor);
++    }
++    out += segment.slice(cursor, pos);
++    const digitsStart = pos + prefix.length;
++    let digitsEnd = digitsStart;
++    while (digitsEnd < segment.length && segment[digitsEnd] >= '0' && segment[digitsEnd] <= '9') {
++      digitsEnd++;
++    }
++    if (digitsEnd > digitsStart && segment.startsWith('__', digitsEnd)) {
++      const idx = Number.parseInt(segment.slice(digitsStart, digitsEnd), 10);
++      if (idx >= 0 && idx < values.length) {
++        out += values[idx];
++        cursor = digitsEnd + 2;
++        continue;
++      }
++    }
++    out += prefix;
++    cursor = digitsStart;
++  }
++  return out;
++};
++
++const tokenizePlaceholders = (
++  segment: string,
++  prefix: string,
++  values: string[],
++  decodeValues: boolean
++): string => {
++  let out = '';
++  let cursor = 0;
++  let nextOpen = segment.indexOf('ﬂ°', 0);
++  let nextClose = segment.indexOf('¶ß', 0);
++  while (cursor < segment.length) {
++    if (nextOpen !== -1 && nextOpen < cursor) {
++      nextOpen = segment.indexOf('ﬂ°', cursor);
++    }
++    if (nextClose !== -1 && nextClose < cursor) {
++      nextClose = segment.indexOf('¶ß', cursor);
++    }
 +    if (nextOpen === -1 && nextClose === -1) {
 +      return out + segment.slice(cursor);
 +    }
-+    const isOpen = nextOpen !== -1 && (nextClose === -1 || nextOpen <= nextClose);
-+    const pos = isOpen ? nextOpen : nextClose;
++    const pos =
++      nextOpen !== -1 && (nextClose === -1 || nextOpen <= nextClose) ? nextOpen : nextClose;
 +    out += segment.slice(cursor, pos);
-+    if (isOpen) {
-+      const numeric = segment.startsWith('ﬂ°°', pos);
-+      const bodyStart = pos + (numeric ? 3 : 2);
-+      let end = bodyStart;
-+      while (end < segment.length && /[A-Za-z0-9_]/.test(segment[end])) {
-+        end++;
-+      }
-+      if (end > bodyStart && segment.startsWith('¶ß', end)) {
-+        const body = segment.slice(bodyStart, end);
-+        const ref = numeric ? `&#${body};` : `&${body};`;
-+        const token = `${prefix}${values.length}__`;
-+        values.push(decodeHtmlAttrRef(ref));
-+        out += token;
-+        cursor = end + 2;
-+        continue;
-+      }
-+      const token = `${prefix}${values.length}__`;
-+      values.push(numeric ? '&#' : '&');
-+      out += token;
-+      cursor = bodyStart;
-+    } else {
-+      const token = `${prefix}${values.length}__`;
-+      values.push(';');
-+      out += token;
-+      cursor = pos + 2;
-+    }
++    const placeholder = decodeMermaidPlaceholderAt(segment, pos)!;
++    const [end, decoded] = placeholder;
++    const token = `${prefix}${values.length}__`;
++    values.push(decodeValues ? decoded : segment.slice(pos, end));
++    out += token;
++    cursor = end;
 +  }
 +  return out;
 +};
 +
 +export const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
 +  if (!rawUrl || (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß'))) {
-+    return sanitizeUrl(rawUrl);
++    const sanitized = sanitizeUrl(rawUrl);
++    if (/^https?:/i.test(sanitized) && !URL.canParse(sanitized)) {
++      return 'about:blank';
++    }
++    return reencodeDecodedPlaceholders(sanitized);
 +  }
 +  const trimmed = rawUrl.trimStart();
 +  const normalized = trimmed.replace(/\\/g, '/');
-+  const schemeMatch = /^https?:/i.exec(normalized);
-+  if (!schemeMatch) {
-+    return sanitizeUrl(rawUrl);
-+  }
-+  let authorityStart = schemeMatch[0].length;
-+  while (authorityStart < normalized.length && normalized[authorityStart] === '/') {
-+    authorityStart += 1;
-+  }
-+  const rest = normalized.slice(authorityStart);
-+  const endOffset = rest.search(/[/?#]/);
-+  const authorityEnd = endOffset === -1 ? normalized.length : authorityStart + endOffset;
-+  const authority = normalized.slice(authorityStart, authorityEnd);
-+  const atIndex = authority.lastIndexOf('@');
-+  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++  const schemeInfo = matchHttpSchemePrefix(normalized);
++  if (schemeInfo) {
++    const [authorityStart, slashCount] = consumeHttpSlashes(normalized, schemeInfo.schemeEnd);
++    const rest = normalized.slice(authorityStart);
++    const endOffset = rest.search(/[/?#]/);
++    const authorityEnd = endOffset === -1 ? normalized.length : authorityStart + endOffset;
++    const authority = normalized.slice(authorityStart, authorityEnd);
++    const atIndex = authority.lastIndexOf('@');
++    const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
 +
-+  const pctDecoded = normalized.replace(/%([0-9A-Fa-f]{2})/g, (_m, hex: string) =>
++    const pctDecoded = normalized.replace(/%([0-9A-Fa-f]{2})/g, (_m, hex: string) =>
++      String.fromCharCode(Number.parseInt(hex, 16))
++    );
++    const probe = sanitizeUrl(normalized);
++    const prefix = pickTokenPrefix(normalized, pctDecoded, probe);
++    const values: string[] = [];
++    const userinfoTok = tokenizePlaceholders(
++      normalized.slice(authorityStart, hostStart),
++      prefix,
++      values,
++      true
++    );
++    const hostPort = normalized.slice(hostStart, authorityEnd);
++    let resolvedHost = hostPort;
++    if (hostPort.includes('ﬂ°') || hostPort.includes('¶ß')) {
++      const escaped = hostPort
++        .replace(/&/g, '&amp;')
++        .replace(/</g, '&lt;')
++        .replace(/>/g, '&gt;')
++        .replace(/"/g, '&quot;');
++      resolvedHost = decodeHtmlAttrRef(decodeEntities(escaped));
++    }
++    const tailTok = tokenizePlaceholders(normalized.slice(authorityEnd), prefix, values, true);
++    const schemeOut = schemeInfo.literal
++      ? normalized.slice(0, schemeInfo.schemeEnd)
++      : schemeInfo.canonical;
++    const tokenized = schemeOut + '/'.repeat(slashCount) + userinfoTok + resolvedHost + tailTok;
++    const sanitized = sanitizeUrl(tokenized);
++    if (/^https?:/i.test(sanitized) && !URL.canParse(sanitized)) {
++      return 'about:blank';
++    }
++    const safe = reencodeDecodedPlaceholders(sanitized);
++    if (values.length === 0 || !/^https?:/i.test(safe)) {
++      return safe;
++    }
++    return restoreHttpTokensByComponent(safe, prefix, values);
++  }
++
++  const pctDecoded = rawUrl.replace(/%([0-9A-Fa-f]{2})/g, (_m, hex: string) =>
 +    String.fromCharCode(Number.parseInt(hex, 16))
 +  );
-+  const probe = sanitizeUrl(normalized);
-+  let prefix = '__FGENT_';
-+  while (normalized.includes(prefix) || pctDecoded.includes(prefix) || probe.includes(prefix)) {
-+    prefix += 'X';
-+  }
++  const probe = sanitizeUrl(rawUrl);
++  const prefix = pickTokenPrefix(rawUrl, pctDecoded, probe);
 +  const values: string[] = [];
-+  const userinfoTok = tokenizePlaceholders(
-+    normalized.slice(authorityStart, hostStart),
-+    prefix,
-+    values
-+  );
-+  const hostPort = normalized.slice(hostStart, authorityEnd);
-+  let resolvedHost = hostPort;
-+  if (hostPort.includes('ﬂ°') || hostPort.includes('¶ß')) {
-+    const escaped = hostPort
-+      .replace(/&/g, '&amp;')
-+      .replace(/</g, '&lt;')
-+      .replace(/>/g, '&gt;')
-+      .replace(/"/g, '&quot;');
-+    resolvedHost = decodeHtmlAttrRef(decodeEntities(escaped));
-+  }
-+  const tailTok = tokenizePlaceholders(normalized.slice(authorityEnd), prefix, values);
-+  const tokenized = normalized.slice(0, authorityStart) + userinfoTok + resolvedHost + tailTok;
++  const tokenized = tokenizePlaceholders(rawUrl, prefix, values, false);
 +  const sanitized = sanitizeUrl(tokenized);
-+  if (values.length === 0 || !/^https?:/i.test(sanitized)) {
-+    return sanitized;
++  const safe = reencodeDecodedPlaceholders(sanitized);
++  if (values.length === 0) {
++    return safe;
 +  }
-+  return restoreHttpTokensByComponent(sanitized, prefix, values);
++  return restoreRawTokens(safe, prefix, values);
 +};
 +
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +474,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +674,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -272,7 +472,7 @@ index 48ac4a6..bf15f44 100644
    }
  
    return url;
-@@ -895,23 +1117,223 @@ export default {
+@@ -895,23 +1317,261 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -326,11 +526,12 @@ index 48ac4a6..bf15f44 100644
 +  const dropColorSemicolons = (input: string, word: string): string => {
 +    let result = '';
 +    let lineStart = 0;
++    let inQuotes = false;
++    let escaped = false;
 +    const isLineTerm = (c: string) =>
 +      c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
 +    const processLine = (line: string): string => {
-+      let inQuotes = false;
-+      let escaped = false;
++      let atLineStart = true;
 +      let stmtStart = true;
 +      let inTarget = false;
 +      let seenColon = false;
@@ -347,6 +548,15 @@ index 48ac4a6..bf15f44 100644
 +            inQuotes = false;
 +          }
 +          continue;
++        }
++        if (atLineStart) {
++          if (/\s/.test(c)) {
++            continue;
++          }
++          atLineStart = false;
++          if (line.startsWith('%%', i)) {
++            break;
++          }
 +        }
 +        if (c === '"') {
 +          inQuotes = true;
@@ -414,6 +624,7 @@ index 48ac4a6..bf15f44 100644
 +    for (let i = 0; i < input.length; i++) {
 +      if (isLineTerm(input[i])) {
 +        result += processLine(input.slice(lineStart, i)) + input[i];
++        escaped = false;
 +        lineStart = i + 1;
 +      }
 +    }
@@ -426,6 +637,8 @@ index 48ac4a6..bf15f44 100644
 +  let stmtKind: 0 | 1 | 2 = 0; // 0 = start, 1 = style/classDef, 2 = other
 +  let seenColon = false;
 +  let lastAllowsHex = false;
++  let atLineStart = true;
++  let inComment = false;
 +  let inQuotes = false;
 +  let escaped = false;
 +  let copyFrom = 0;
@@ -441,6 +654,7 @@ index 48ac4a6..bf15f44 100644
 +        out += txt.slice(copyFrom, i);
 +        if (
 +          !inQuotes &&
++          !inComment &&
 +          stmtKind === 1 &&
 +          seenColon &&
 +          lastAllowsHex &&
@@ -450,11 +664,13 @@ index 48ac4a6..bf15f44 100644
 +          stmtKind = 0;
 +          seenColon = false;
 +          lastAllowsHex = false;
++          atLineStart = false;
 +        } else {
 +          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
-+          if (!inQuotes && stmtKind === 0) {
++          if (!inQuotes && !inComment && stmtKind === 0) {
 +            stmtKind = 2;
 +          }
++          atLineStart = false;
 +          lastAllowsHex = false;
 +        }
 +        copyFrom = j + 1;
@@ -462,16 +678,15 @@ index 48ac4a6..bf15f44 100644
 +        continue;
 +      }
 +    }
-+    if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
-+      stmtKind = 0;
-+      seenColon = false;
-+      lastAllowsHex = false;
-+      inQuotes = false;
-+      escaped = false;
-+      continue;
-+    }
 +    if (inQuotes) {
-+      if (escaped) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inComment = false;
++        escaped = false;
++      } else if (escaped) {
 +        escaped = false;
 +      } else if (ch === '\\') {
 +        escaped = true;
@@ -479,6 +694,29 @@ index 48ac4a6..bf15f44 100644
 +        inQuotes = false;
 +      }
 +      continue;
++    }
++    if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++      stmtKind = 0;
++      seenColon = false;
++      lastAllowsHex = false;
++      atLineStart = true;
++      inComment = false;
++      escaped = false;
++      continue;
++    }
++    if (inComment) {
++      continue;
++    }
++    if (atLineStart) {
++      if (/\s/.test(ch)) {
++        continue;
++      }
++      atLineStart = false;
++      if (txt.startsWith('%%', i)) {
++        inComment = true;
++        stmtKind = 2;
++        continue;
++      }
 +    }
 +    if (ch === '"') {
 +      inQuotes = true;
