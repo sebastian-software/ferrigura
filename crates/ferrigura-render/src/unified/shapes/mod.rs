@@ -388,7 +388,7 @@ pub(crate) fn node_svg_with_resolved(
     } else {
         node.link
             .as_deref()
-            .map(crate::common::resolve_entity_placeholders)
+            .map(crate::common::resolve_url_entity_placeholders)
     };
     let link = remapped_link
         .or(resolved_link.as_deref())

@@ -1,0 +1,57 @@
+Decode Mermaid entity placeholders that WHATWG URL normalization percent-encoded in HTTP/HTTPS links. When encodeEntities runs before formatUrl, @braintree/sanitize-url passes HTTP/HTTPS links through new URL(), turning internal placeholders (ﬂ° / ﬂ°° ... ¶ß) into %EF%AC%82%C2%B0(%C2%B0)?<name>%C2%B6%C3%9F so decodeEntities misses them. Resolving those percent-encoded placeholders in cleanUpSvgCode restores entities such as #32; as %20 without decoding unrelated %XX escapes.
+
+diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
+index 64d8255..b2bed00 100644
+--- a/packages/mermaid/src/mermaidAPI.ts
++++ b/packages/mermaid/src/mermaidAPI.ts
+@@ -340,6 +340,42 @@ export const createUserStyles = (
+   return compileCSS(svgId, allStyles);
+ };
+ 
++const decodePercentEncodedEntities = (svg: string): string => {
++  if (!svg.includes('%EF%AC%82%C2%B0')) {
++    return svg;
++  }
++  const holder = document.createElement('div');
++  const encoder = new TextEncoder();
++  return svg.replace(
++    /%EF%AC%82%C2%B0(%C2%B0)?([A-Za-z0-9_]+)%C2%B6%C3%9F/g,
++    (_match, isNum: string | undefined, body: string) => {
++      const ref = isNum ? `&#${body};` : `&${body};`;
++      holder.innerHTML = `<a data-v="${ref}"></a>`;
++      const decoded = holder.firstElementChild?.getAttribute('data-v') ?? ref;
++      let out = '';
++      for (const byte of encoder.encode(decoded)) {
++        if (
++          byte <= 0x20 ||
++          byte === 0x22 ||
++          byte === 0x3c ||
++          byte === 0x3e ||
++          byte === 0x60 ||
++          byte >= 0x7f
++        ) {
++          out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++        } else if (byte === 0x26) {
++          out += '&amp;';
++        } else if (byte === 0x27) {
++          out += '&#39;';
++        } else {
++          out += String.fromCharCode(byte);
++        }
++      }
++      return out;
++    }
++  );
++};
++
+ /**
+  * Clean up svgCode. Do replacements needed
+  *
+@@ -364,6 +400,7 @@ export const cleanUpSvgCode = (
+   }
+ 
+   cleanedUpSvg = decodeEntities(cleanedUpSvg);
++  cleanedUpSvg = decodePercentEncodedEntities(cleanedUpSvg);
+ 
+   // replace old br tags with newer style
+   cleanedUpSvg = cleanedUpSvg.replace(/<br>/g, '<br/>');

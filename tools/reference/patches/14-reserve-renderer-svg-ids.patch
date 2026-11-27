@@ -1,0 +1,260 @@
+Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient) and disambiguate colliding decoded node IDs in the shared unified renderer without letting decoded IDs steal existing literal IDs.
+
+diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
+index b2bed00..a428b53 100644
+--- a/packages/mermaid/src/mermaidAPI.ts
++++ b/packages/mermaid/src/mermaidAPI.ts
+@@ -43,6 +43,7 @@ import type {
+   RenderResult,
+ } from './types.js';
+ import { decodeEntities, getErrorMessage } from './utils.js';
++import { setReservedA11yIds } from './rendering-util/render.js';
+ import { toBase64 } from './utils/base64.js';
+ import { sanitizeCss } from './utils/sanitizeDirective.js';
+ 
+@@ -645,6 +646,9 @@ const renderDiagram = async function (
+ 
+   // -------------------------------------------------------------------------------
+   // Draw the diagram with the renderer
++  const preA11yTitle: string | undefined = diag.db.getAccTitle?.();
++  const preA11yDescr: string | undefined = diag.db.getAccDescription?.();
++  setReservedA11yIds(id, Boolean(preA11yTitle), Boolean(preA11yDescr));
+   try {
+     if (injected.profiling) {
+       await profiler.span('draw', () => diag.renderer.draw(text, id, injected.version, diag));
+@@ -658,6 +662,8 @@ const renderDiagram = async function (
+       errorRenderer.draw(text, id, injected.version);
+     }
+     throw e;
++  } finally {
++    setReservedA11yIds(id, false, false);
+   }
+ 
+   // This is the d3 node for the svg element
+diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
+index 49145b2..4aacf03 100644
+--- a/packages/mermaid/src/rendering-util/render.ts
++++ b/packages/mermaid/src/rendering-util/render.ts
+@@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
+ import { log } from '../logger.js';
+ import { insertLookDefs } from './insertLookDefs.js';
+ import type { LayoutData } from './types.js';
++import { decodeEntities } from '../utils.js';
+ import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
+ 
+ // console.log('MUST be removed, this only for keeping dev server working');
+@@ -97,6 +98,114 @@ const registerDefaultLayoutLoaders = () => {
+ 
+ registerDefaultLayoutLoaders();
+ 
++const reservedA11yBySvgId = new Map<string, { title: boolean; descr: boolean }>();
++
++export const setReservedA11yIds = (svgId: string, title: boolean, descr: boolean): void => {
++  if (title || descr) {
++    reservedA11yBySvgId.set(svgId, { title, descr });
++  } else {
++    reservedA11yBySvgId.delete(svgId);
++  }
++};
++
++const isXmlChar = (cp: number): boolean =>
++  cp === 0x9 ||
++  cp === 0xa ||
++  cp === 0xd ||
++  (cp >= 0x20 && cp <= 0xd7ff) ||
++  (cp >= 0xe000 && cp <= 0xfffd) ||
++  cp >= 0x10000;
++
++const canonicalXmlAttr = (raw: string): string => {
++  let out = '';
++  for (let i = 0; i < raw.length; ) {
++    const cp = raw.codePointAt(i)!;
++    const step = cp > 0xffff ? 2 : 1;
++    if (cp === 0xd) {
++      if (raw.codePointAt(i + step) === 0xa) {
++        i += step + 1;
++      } else {
++        i += step;
++      }
++      out += ' ';
++    } else if (cp === 0x9 || cp === 0xa) {
++      out += ' ';
++      i += step;
++    } else if (!isXmlChar(cp)) {
++      out += '\uFFFD';
++      i += step;
++    } else {
++      out += String.fromCodePoint(cp);
++      i += step;
++    }
++  }
++  return out;
++};
++
++const resolvePlaceholdersAttr = (raw: string): string => {
++  if (!raw.includes('ﬂ°')) {
++    return raw;
++  }
++  const escaped = raw
++    .replace(/&/g, '&amp;')
++    .replace(/</g, '&lt;')
++    .replace(/>/g, '&gt;')
++    .replace(/"/g, '&quot;');
++  const decodedMarkup = decodeEntities(escaped);
++  const holder = document.createElement('div');
++  holder.innerHTML = `<a data-v="${decodedMarkup}"></a>`;
++  return holder.firstElementChild?.getAttribute('data-v') ?? raw;
++};
++
++const canonicalAttrId = (raw: string): string => canonicalXmlAttr(resolvePlaceholdersAttr(raw));
++
++const formatFragmentUrl = (id: string): string => {
++  let out = '#';
++  for (const byte of new TextEncoder().encode(id)) {
++    if (
++      byte <= 0x20 ||
++      byte === 0x22 ||
++      byte === 0x25 ||
++      byte === 0x3c ||
++      byte === 0x3e ||
++      byte === 0x60 ||
++      byte >= 0x7f
++    ) {
++      out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++    } else {
++      out += String.fromCharCode(byte);
++    }
++  }
++  return out;
++};
++
++const percentDecodeFragment = (fragment: string): string | undefined => {
++  const bytes: number[] = [];
++  const encoder = new TextEncoder();
++  for (let i = 0; i < fragment.length; ) {
++    if (
++      fragment[i] === '%' &&
++      i + 2 < fragment.length &&
++      /^[0-9A-Fa-f]{2}$/.test(fragment.slice(i + 1, i + 3))
++    ) {
++      bytes.push(Number.parseInt(fragment.slice(i + 1, i + 3), 16));
++      i += 3;
++    } else {
++      const cp = fragment.codePointAt(i)!;
++      const ch = String.fromCodePoint(cp);
++      for (const b of encoder.encode(ch)) {
++        bytes.push(b);
++      }
++      i += ch.length;
++    }
++  }
++  try {
++    return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
++  } catch {
++    return undefined;
++  }
++};
++
+ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+   if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
+     throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
+@@ -105,9 +214,97 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+   // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
+   // across multiple diagrams on the same page.
+   if (data4Layout.diagramId) {
+-    for (const node of data4Layout.nodes) {
++    const svgId = data4Layout.diagramId;
++    const canonicalSvgId = canonicalXmlAttr(svgId);
++    const a11y = reservedA11yBySvgId.get(svgId);
++    const rendererOwned = new Set<string>([
++      canonicalSvgId,
++      `${canonicalSvgId}-drop-shadow`,
++      `${canonicalSvgId}-drop-shadow-small`,
++    ]);
++    if (data4Layout.config.themeVariables?.useGradient) {
++      rendererOwned.add(`${canonicalSvgId}-gradient`);
++    }
++    if (a11y?.title) {
++      rendererOwned.add(`chart-title-${canonicalSvgId}`);
++    }
++    if (a11y?.descr) {
++      rendererOwned.add(`chart-desc-${canonicalSvgId}`);
++    }
++
++    const plans = data4Layout.nodes.map((node) => {
+       const originalDomId = node.domId || node.id;
+-      node.domId = `${data4Layout.diagramId}-${originalDomId}`;
++      const hadPlaceholder = originalDomId.includes('ﬂ°');
++      const canonicalLocal = canonicalAttrId(originalDomId);
++      const canonicalFull = `${canonicalSvgId}-${canonicalLocal}`;
++      const unchanged =
++        !hadPlaceholder && canonicalLocal === originalDomId && canonicalSvgId === svgId;
++      return { node, originalDomId, hadPlaceholder, canonicalLocal, canonicalFull, unchanged };
++    });
++    const reserved = new Set<string>(plans.map((p) => p.canonicalFull));
++    const seen = new Set<string>();
++    const claimed = plans.map(() => false);
++    for (let i = 0; i < plans.length; i++) {
++      const p = plans[i];
++      if (p.unchanged && !rendererOwned.has(p.canonicalFull) && !seen.has(p.canonicalFull)) {
++        seen.add(p.canonicalFull);
++        claimed[i] = true;
++      }
++    }
++    const nextSuffix = new Map<string, number>();
++    const remapped = new Map<string, string>();
++    for (let i = 0; i < plans.length; i++) {
++      const p = plans[i];
++      if (claimed[i]) {
++        p.node.domId = `${svgId}-${p.originalDomId}`;
++        continue;
++      }
++      const collided = rendererOwned.has(p.canonicalFull) || seen.has(p.canonicalFull);
++      let finalLocal = p.canonicalLocal;
++      if (!collided) {
++        seen.add(p.canonicalFull);
++      } else {
++        let suffix = nextSuffix.get(p.canonicalFull) ?? 1;
++        while (true) {
++          const candidateLocal = `${p.canonicalLocal}-${suffix}`;
++          const candidateFull = `${canonicalSvgId}-${candidateLocal}`;
++          suffix += 1;
++          if (
++            !rendererOwned.has(candidateFull) &&
++            !reserved.has(candidateFull) &&
++            !seen.has(candidateFull)
++          ) {
++            nextSuffix.set(p.canonicalFull, suffix);
++            seen.add(candidateFull);
++            finalLocal = candidateLocal;
++            break;
++          }
++        }
++      }
++      if (finalLocal !== p.originalDomId || canonicalSvgId !== svgId) {
++        const key = `#${svgId}-${p.originalDomId}`;
++        if (!remapped.has(key)) {
++          remapped.set(key, formatFragmentUrl(`${canonicalSvgId}-${finalLocal}`));
++        }
++      }
++      p.node.domId =
++        collided || p.hadPlaceholder ? `${svgId}-${finalLocal}` : `${svgId}-${p.originalDomId}`;
++    }
++    for (const node of data4Layout.nodes) {
++      if (typeof node.link === 'string' && node.link.startsWith('#')) {
++        const fragment = node.link.slice(1);
++        let target: string | undefined;
++        if (fragment.includes('%')) {
++          const decoded = percentDecodeFragment(fragment);
++          if (decoded !== undefined) {
++            target = remapped.get(`#${decoded}`);
++          }
++        }
++        target ??= remapped.get(node.link);
++        if (target !== undefined) {
++          node.link = target;
++        }
++      }
+     }
+   }
+ 

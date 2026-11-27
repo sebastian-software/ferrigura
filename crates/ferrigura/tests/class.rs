@@ -773,8 +773,57 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         "graph-classId-New Item "
     );
 
+    // Normalized HTTP/HTTPS links with Mermaid entity placeholders (such as `#32;`) resolve the
+    // percent-encoded internal placeholder at the SVG sink without decoding unrelated `%XX`
+    // escapes such as `%26` (produced here after `sanitizeUrl`'s two decode passes on `%252526`).
+    let http_entity = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class A\n  click A href \"https://example.org/Chapter#32;One?q=A%252526B\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let http_doc = roxmltree::Document::parse(&http_entity).expect("well-formed SVG XML");
+    let http_href = http_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(http_href, "https://example.org/Chapter%20One?q=A%26B");
+
+    // When both `A%20B#45;C` and `A B#45;C` exist in loose mode, `#graph-classId-A%20B#45;C`
+    // resolves to `A B-C` (decoded target first), while `%2520` targets `A%20B-C`.
+    let disambig_pct = ferrigura::Renderer::new(&loose_config)
+        .render_with(
+            "classDiagram\n  class `A%20B#45;C`\n  class `A B#45;C`\n  click `A B#45;C` href \"#graph-classId-A%20B#45;C\"\n  click `A%20B#45;C` href \"#graph-classId-A%2520B#45;C\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let disambig_doc = roxmltree::Document::parse(&disambig_pct).expect("well-formed SVG XML");
+    let disambig_hrefs: Vec<&str> = disambig_doc
+        .descendants()
+        .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(
+        disambig_hrefs,
+        vec!["#graph-classId-A%2520B-C", "#graph-classId-A%20B-C"]
+    );
+    assert_eq!(
+        resolved_fragment_target(disambig_hrefs[0]),
+        "graph-classId-A%20B-C"
+    );
+    assert_eq!(
+        resolved_fragment_target(disambig_hrefs[1]),
+        "graph-classId-A B-C"
+    );
+
     // Enabling animation never renames unrelated `draw-mask-*` edge IDs and allocates animation
-    // masks around occupied IDs when an edge actually owns `draw-mask-0`.
+    // masks around occupied IDs when an edge actually collides with the first mask (`draw-mask-1`
+    // for `-->`, where serial 0 is consumed by the arrow marker).
     let anim_999 = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
             "flowchart LR\n  A draw-mask-999@--> B\n",
@@ -793,9 +842,9 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
                 && node.attribute("id") == Some("graph-draw-mask-999")),
         "{anim_999}"
     );
-    let anim_0 = ferrigura::Renderer::new(&Value::empty_object())
+    let anim_1 = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "flowchart LR\n  A draw-mask-0@--> B\n",
+            "flowchart LR\n  A draw-mask-1@--> B\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
                 animation: Some(ferrigura::Animation::default()),
@@ -803,19 +852,25 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
             },
         )
         .expect("renders");
-    let anim_0_doc = roxmltree::Document::parse(&anim_0).expect("well-formed SVG XML");
+    let anim_1_doc = roxmltree::Document::parse(&anim_1).expect("well-formed SVG XML");
     assert!(
-        anim_0_doc
+        anim_1_doc
             .descendants()
             .any(|node| node.has_tag_name("path")
-                && node.attribute("id") == Some("graph-draw-mask-0")),
-        "{anim_0}"
+                && node.attribute("id") == Some("graph-draw-mask-1")),
+        "{anim_1}"
     );
+    let mask_ids: Vec<&str> = anim_1_doc
+        .descendants()
+        .filter(|node| node.has_tag_name("mask"))
+        .filter_map(|node| node.attribute("id"))
+        .collect();
+    assert_eq!(mask_ids, vec!["graph-draw-mask-2"]);
     let mut all_ids = std::collections::HashSet::new();
-    for id in anim_0_doc
+    for id in anim_1_doc
         .descendants()
         .filter_map(|node| node.attribute("id"))
     {
-        assert!(all_ids.insert(id), "duplicate SVG id {id:?} in {anim_0}");
+        assert!(all_ids.insert(id), "duplicate SVG id {id:?} in {anim_1}");
     }
 }

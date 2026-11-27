@@ -74,6 +74,73 @@ pub(crate) fn resolve_entity_placeholders(text: &str) -> Cow<'_, str> {
     ))
 }
 
+/// Resolves Mermaid's entity placeholders inside a URL at an SVG sink, handling both literal
+/// placeholders (`ﬂ°°<digits>¶ß` / `ﬂ°<name>¶ß`) and placeholders percent-encoded by WHATWG URL
+/// normalization (`%EF%AC%82%C2%B0(%C2%B0)?<name>%C2%B6%C3%9F`) without decoding unrelated `%XX`
+/// URL escapes.
+#[must_use]
+pub(crate) fn resolve_url_entity_placeholders(url: &str) -> Cow<'_, str> {
+    const PCT_OPEN: &str = "%EF%AC%82%C2%B0";
+    const PCT_NUM: &str = "%C2%B0";
+    const PCT_CLOSE: &str = "%C2%B6%C3%9F";
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+
+    if !url.contains("ﬂ°") && !url.contains(PCT_OPEN) {
+        return Cow::Borrowed(url);
+    }
+
+    let mut working = Cow::Borrowed(url);
+    if url.contains(PCT_OPEN) {
+        let mut out = String::with_capacity(url.len());
+        let mut cursor = 0;
+        while let Some(rel) = url[cursor..].find(PCT_OPEN) {
+            let start = cursor + rel;
+            out.push_str(&url[cursor..start]);
+            let mut pos = start + PCT_OPEN.len();
+            let numeric = url[pos..].starts_with(PCT_NUM);
+            if numeric {
+                pos += PCT_NUM.len();
+            }
+            let body_start = pos;
+            while pos < url.len()
+                && (url.as_bytes()[pos].is_ascii_alphanumeric() || url.as_bytes()[pos] == b'_')
+            {
+                pos += 1;
+            }
+            if pos > body_start && url[pos..].starts_with(PCT_CLOSE) {
+                let body = &url[body_start..pos];
+                let reference = if numeric {
+                    format!("&#{body};")
+                } else {
+                    format!("&{body};")
+                };
+                let decoded = ferrigura_syntax::sanitize::decode_attribute_references(&reference);
+                for byte in decoded.bytes() {
+                    if byte <= 0x20 || matches!(byte, b'"' | b'<' | b'>' | b'`') || byte >= 0x7F {
+                        out.push('%');
+                        out.push(HEX[(byte >> 4) as usize] as char);
+                        out.push(HEX[(byte & 0x0F) as usize] as char);
+                    } else {
+                        out.push(byte as char);
+                    }
+                }
+                cursor = pos + PCT_CLOSE.len();
+            } else {
+                out.push_str(PCT_OPEN);
+                cursor = start + PCT_OPEN.len();
+            }
+        }
+        out.push_str(&url[cursor..]);
+        working = Cow::Owned(out);
+    }
+
+    if working.contains("ﬂ°") {
+        Cow::Owned(resolve_entity_placeholders(working.as_ref()).into_owned())
+    } else {
+        working
+    }
+}
+
 /// `${value}`: the text that a template literal of the reference writes for a theme value. A number
 /// is written as JavaScript writes it, a list as its items joined with commas (`null` items empty), an
 /// object as `[object Object]`, and `null` as `null`. A theme value that is text is written as it is.

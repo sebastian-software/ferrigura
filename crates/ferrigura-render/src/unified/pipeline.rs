@@ -731,20 +731,18 @@ struct ResolvedDomIds {
 }
 
 impl ResolvedDomIds {
-    /// Looks up the remapped fragment URL for `raw_link`, matching both its raw spelling and its
-    /// percent-decoded fragment target (e.g. `#graph-classId-New%20Item#32;`).
+    /// Looks up the remapped fragment URL for `raw_link`, matching its percent-decoded fragment
+    /// target first (so `#graph-classId-A%20B#45;C` targets `A B-C` rather than a literal
+    /// `A%20B-C`), then falling back to its raw spelling.
     fn remap_fragment(&self, raw_link: &str) -> Option<&str> {
-        if let Some(target) = self.remapped_fragments.get(raw_link) {
+        let fragment = raw_link.strip_prefix('#')?;
+        if fragment.contains('%')
+            && let Some(decoded) = percent_decode_fragment(fragment)
+            && let Some(target) = self.remapped_fragments.get(&format!("#{decoded}"))
+        {
             return Some(target.as_str());
         }
-        let fragment = raw_link.strip_prefix('#')?;
-        if !fragment.contains('%') {
-            return None;
-        }
-        let decoded = percent_decode_fragment(fragment)?;
-        self.remapped_fragments
-            .get(&format!("#{decoded}"))
-            .map(String::as_str)
+        self.remapped_fragments.get(raw_link).map(String::as_str)
     }
 
     /// Resolves and disambiguates node/cluster DOM IDs and edge IDs across the entire diagram in a

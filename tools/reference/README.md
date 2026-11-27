@@ -30,6 +30,8 @@ The first run takes about half a minute; later runs reuse the build while the pi
 | 10    | Not a fix: an optional measured-input hook for the adaptive flowchart geometry comparison ([0019](../../docs/decisions/0019-adaptive-flowchart-mode.md)) |
 | 11    | SVG flowchart edge labels mask their edges at full opacity, without changing layout                                                                      |
 | 12    | All nonempty shared SVG edge-label backgrounds use full opacity, retaining theme fill transparency; state, block and agentflow no longer halve it        |
+| 13    | Decode Mermaid entity placeholders that WHATWG URL normalization percent-encoded in HTTP/HTTPS click links without decoding unrelated `%XX` escapes      |
+| 14    | Reserve renderer-owned SVG IDs (`drop-shadow`, optional `gradient`, emitted accessibility title/desc) and disambiguate colliding decoded node IDs        |
 
 A new patch is a diff against the pinned commit with the earlier patches applied, with a header that says what it fixes and, where there is one, the upstream issue. When upstream fixes a bug, its patch goes with the next move of the pin.
 
