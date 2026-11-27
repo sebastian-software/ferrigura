@@ -17,8 +17,10 @@
 //! `fg-0123456789abcdef-sans`. Equal subsets get equal names, and the hash is computed over the
 //! subset bytes and their weight and style, so a different subset gets a different name.
 
+use std::borrow::Borrow;
 use std::collections::{BTreeSet, HashMap};
 use std::fmt::Write as _;
+use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
 use base64::Engine;
@@ -29,7 +31,7 @@ use skera::{DEFAULT_LAYOUT_FEATURES, Plan, SubsetFlags, subset_font};
 
 use crate::error::TextError;
 use crate::fonts::{Face, FontFamily, FontStyle};
-use crate::measure::{Run, fallback_runs};
+use crate::measure::{Run, for_each_fallback_run};
 
 /// Subsets retained by one reusable renderer. The budget includes keys and values; font data is
 /// shared with the renderer's immutable registry, not copied into the cache.
@@ -44,17 +46,131 @@ struct CacheState {
     clock: u64,
 }
 
-#[derive(Hash, PartialEq, Eq)]
+trait CacheKeyRef {
+    fn parts(&self) -> (usize, usize, &[char]);
+}
+
+impl PartialEq for dyn CacheKeyRef + '_ {
+    fn eq(&self, other: &Self) -> bool {
+        self.parts() == other.parts()
+    }
+}
+
+impl Eq for dyn CacheKeyRef + '_ {}
+
+impl Hash for dyn CacheKeyRef + '_ {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let (addr, len, chars) = self.parts();
+        addr.hash(state);
+        len.hash(state);
+        chars.hash(state);
+    }
+}
+
+#[derive(Clone)]
 struct CacheKey {
     data_address: usize,
     data_len: usize,
-    characters: Box<[char]>,
+    characters: Arc<[char]>,
+}
+
+impl CacheKeyRef for CacheKey {
+    fn parts(&self) -> (usize, usize, &[char]) {
+        (self.data_address, self.data_len, &self.characters)
+    }
+}
+
+impl PartialEq for CacheKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.parts() == other.parts()
+    }
+}
+
+impl Eq for CacheKey {}
+
+impl Hash for CacheKey {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let (addr, len, chars) = self.parts();
+        addr.hash(state);
+        len.hash(state);
+        chars.hash(state);
+    }
+}
+
+impl<'a> Borrow<dyn CacheKeyRef + 'a> for CacheKey {
+    fn borrow(&self) -> &(dyn CacheKeyRef + 'a) {
+        self
+    }
+}
+
+struct LookupKey<'a> {
+    data_address: usize,
+    data_len: usize,
+    characters: &'a [char],
+}
+
+impl CacheKeyRef for LookupKey<'_> {
+    fn parts(&self) -> (usize, usize, &[char]) {
+        (self.data_address, self.data_len, self.characters)
+    }
+}
+
+/// A subset (or complete CFF font) paired with its precomputed single-face FNV-1a hash state and
+/// optional precomputed base64 payload so repeated renders skip both re-hashing and re-encoding.
+/// When a subset fits in the cache budget on its own but adding a cached base64 copy would exceed
+/// the budget, `base64` is left `None` so the subset bytes remain cached and are encoded on demand.
+#[derive(Debug)]
+pub(crate) struct EmbeddedSubset {
+    pub(crate) bytes: Arc<Vec<u8>>,
+    pub(crate) base64: Option<String>,
+    pub(crate) solo_weight: u16,
+    pub(crate) solo_style: FontStyle,
+    pub(crate) solo_hash: u64,
+}
+
+impl EmbeddedSubset {
+    pub(crate) fn new(bytes: Arc<Vec<u8>>, weight: u16, style: FontStyle) -> Self {
+        Self::new_with_base64(bytes, weight, style, true)
+    }
+
+    pub(crate) fn new_with_base64(
+        bytes: Arc<Vec<u8>>,
+        weight: u16,
+        style: FontStyle,
+        include_base64: bool,
+    ) -> Self {
+        let mut hasher = Fnv1a::new();
+        hash_face_subset(&mut hasher, weight, style, bytes.as_slice());
+        let base64 = include_base64
+            .then(|| base64::engine::general_purpose::STANDARD.encode(bytes.as_slice()));
+        Self {
+            bytes,
+            base64,
+            solo_weight: weight,
+            solo_style: style,
+            solo_hash: hasher.finish(),
+        }
+    }
+}
+
+enum SubsetData {
+    Uncached(Vec<u8>),
+    Cached(Arc<EmbeddedSubset>),
+}
+
+impl SubsetData {
+    fn as_bytes(&self) -> &[u8] {
+        match self {
+            Self::Uncached(bytes) => bytes,
+            Self::Cached(entry) => entry.bytes.as_slice(),
+        }
+    }
 }
 
 struct CacheEntry {
     // A weak reference keeps the allocation identity unique without retaining the font bytes.
     _data: Option<std::sync::Weak<Vec<u8>>>,
-    subset: Arc<Vec<u8>>,
+    subset: Arc<EmbeddedSubset>,
     charge: usize,
     used: u64,
 }
@@ -146,14 +262,20 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
                     && primary.style() == faces[index].style()))
         {
             let face = faces[index];
-            let mut characters: BTreeSet<char> = stretches
+            let mut characters: Vec<char> = stretches
                 .iter()
                 .filter(|run| same_face(run.face, face))
                 .flat_map(|run| run.text.chars())
                 .collect();
-            if metric_faces.iter().any(|metric| same_face(metric, face)) {
-                characters.insert(' ');
+            if metric_faces.iter().any(|metric| same_face(metric, face))
+                || characters
+                    .iter()
+                    .any(|character| COLLAPSED_WHITE_SPACE.contains(character))
+            {
+                characters.push(' ');
             }
+            characters.sort_unstable();
+            characters.dedup();
             subsets.push((face, cached_subset(face, &characters)?));
             index += 1;
         }
@@ -244,7 +366,13 @@ struct SelectedRuns<'a, 'f> {
 fn select_runs<'a, 'f>(runs: &[Run<'a, 'f>]) -> Result<SelectedRuns<'a, 'f>, TextError> {
     // The stretches each run is set in, after the fallback to the symbol face: a subset holds the
     // characters drawn in its face, and no other.
-    let stretches: Vec<Run<'_, '_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
+    let mut stretches = Vec::with_capacity(runs.len());
+    for run in runs {
+        let _ = for_each_fallback_run::<std::convert::Infallible>(*run, |stretch| {
+            stretches.push(stretch);
+            Ok(())
+        });
+    }
     let mut faces: Vec<&Face> = stretches.iter().map(|run| run.face).collect();
     // SVG line boxes use the first family's metrics even when every character falls back.
     // Keep supplied primary faces in the cascade; a space gives the metrics-only subset a cmap.
@@ -340,47 +468,72 @@ fn family_order(family: FontFamily) -> u8 {
 /// text with a line break or a tab needs the space glyph even when it has no space of its own.
 const COLLAPSED_WHITE_SPACE: [char; 3] = ['\n', '\r', '\t'];
 
-fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<Vec<u8>>, TextError> {
+fn cached_subset(face: &Face, characters: &[char]) -> Result<SubsetData, TextError> {
     if let crate::fonts::FontData::Registered {
         bytes: data,
         embed_whole: true,
+        whole_embed,
     } = &face.data
     {
-        return Ok(data.clone());
+        if let Some(entry) = whole_embed {
+            return Ok(SubsetData::Cached(Arc::clone(entry)));
+        }
+        return Ok(SubsetData::Cached(Arc::new(EmbeddedSubset::new(
+            data.clone(),
+            face.weight().css_value(),
+            face.style(),
+        ))));
     }
     let cache = ACTIVE_CACHE.with(|active| active.borrow().clone());
     let Some(cache) = cache else {
-        return subset_characters(face, characters).map(Arc::new);
+        return subset_sorted_characters(face, characters).map(SubsetData::Uncached);
     };
-    let mut normalized = characters.clone();
-    if COLLAPSED_WHITE_SPACE.iter().any(|c| normalized.contains(c)) {
-        normalized.insert(' ');
-    }
     let (data_address, data_owner) = match &face.data {
         crate::fonts::FontData::Bundled(data) => (data.as_ptr() as usize, None),
         crate::fonts::FontData::Registered { bytes: data, .. } => {
             (Arc::as_ptr(data) as usize, Some(Arc::downgrade(data)))
         }
     };
-    let key = CacheKey {
+    let data_len = face.data().len();
+    let lookup = LookupKey {
         data_address,
-        data_len: face.data().len(),
-        characters: normalized.into_iter().collect(),
+        data_len,
+        characters,
     };
     {
         let mut state = cache.0.lock().unwrap_or_else(|e| e.into_inner());
         state.clock = state.clock.wrapping_add(1);
         let now = state.clock;
-        if let Some(entry) = state.entries.get_mut(&key) {
+        if let Some(entry) = state.entries.get_mut(&lookup as &dyn CacheKeyRef) {
             entry.used = now;
-            return Ok(entry.subset.clone());
+            return Ok(SubsetData::Cached(Arc::clone(&entry.subset)));
         }
     }
-    let subset = Arc::new(subset_characters(face, characters)?);
+    let subset_bytes = subset_sorted_characters(face, characters)?;
+    let base_charge = ENTRY_OVERHEAD
+        .saturating_add(std::mem::size_of_val(characters))
+        .saturating_add(subset_bytes.capacity());
+    if base_charge > CACHE_BUDGET {
+        return Ok(SubsetData::Uncached(subset_bytes));
+    }
+    let estimated_base64 = base64::encoded_len(subset_bytes.len(), true).unwrap_or(usize::MAX);
+    let include_base64 = base_charge.saturating_add(estimated_base64) <= CACHE_BUDGET;
+    let subset = Arc::new(EmbeddedSubset::new_with_base64(
+        Arc::new(subset_bytes),
+        face.weight().css_value(),
+        face.style(),
+        include_base64,
+    ));
     let charge = ENTRY_OVERHEAD
-        .saturating_add(key.characters.len() * std::mem::size_of::<char>())
-        .saturating_add(subset.capacity());
+        .saturating_add(std::mem::size_of_val(characters))
+        .saturating_add(subset.bytes.capacity())
+        .saturating_add(subset.base64.as_ref().map_or(0, String::capacity));
     if charge <= CACHE_BUDGET {
+        let key = CacheKey {
+            data_address,
+            data_len,
+            characters: Arc::from(characters),
+        };
         let mut state = cache.0.lock().unwrap_or_else(|e| e.into_inner());
         if !state.entries.contains_key(&key) {
             while state.entries.len() >= CACHE_ENTRIES || state.bytes + charge > CACHE_BUDGET {
@@ -388,11 +541,7 @@ fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<Vec<u8>
                     .entries
                     .iter()
                     .min_by_key(|(_, entry)| entry.used)
-                    .map(|(key, _)| CacheKey {
-                        data_address: key.data_address,
-                        data_len: key.data_len,
-                        characters: key.characters.clone(),
-                    })
+                    .map(|(key, _)| key.clone())
                 else {
                     break;
                 };
@@ -407,14 +556,31 @@ fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<Vec<u8>
                 key,
                 CacheEntry {
                     _data: data_owner,
-                    subset: subset.clone(),
+                    subset: Arc::clone(&subset),
                     charge,
                     used,
                 },
             );
         }
     }
-    Ok(subset)
+    Ok(SubsetData::Cached(subset))
+}
+
+fn subset_sorted_characters(face: &Face, characters: &[char]) -> Result<Vec<u8>, TextError> {
+    let mut unicodes = IntSet::empty();
+    for character in characters {
+        unicodes.insert(u32::from(*character));
+    }
+    if characters
+        .iter()
+        .any(|character| COLLAPSED_WHITE_SPACE.contains(character))
+    {
+        unicodes.insert(u32::from(' '));
+    }
+    // The name records 0 to 6 in English, which is what a browser needs for the family.
+    let mut name_ids = IntSet::empty();
+    name_ids.insert_range(NameId::from(0)..=NameId::from(6));
+    subset_data(face.data(), &unicodes, &name_ids)
 }
 
 fn subset_characters(face: &Face, characters: &BTreeSet<char>) -> Result<Vec<u8>, TextError> {
@@ -504,45 +670,101 @@ pub(crate) fn requires_whole_font(font: &FontRef<'_>) -> bool {
     font.table_data(Tag::new(b"CFF ")).is_some() || font.table_data(Tag::new(b"CFF2")).is_some()
 }
 
-/// The family name of a set of subsets: the hash of each face's weight, style and bytes.
-fn family_name(family: FontFamily, subsets: &[(&Face, Arc<Vec<u8>>)]) -> String {
-    let hash = fnv1a(&canonical_bytes(subsets));
+/// The family name of a set of subsets: the streaming 64-bit FNV-1a hash of each face's weight,
+/// style, subset length and subset bytes. Fixed-width integers are little-endian, so the hash does
+/// not depend on the platform.
+fn family_name(family: FontFamily, subsets: &[(&Face, SubsetData)]) -> String {
+    let hash = family_hash(subsets);
     format!("fg-{hash:016x}-{}", family.css_suffix())
 }
 
-/// The bytes the family hash covers, face by face: the weight, the style, the length of the subset
-/// and the subset itself. Fixed-width integers are little-endian, so the bytes do not depend on the
-/// platform.
-fn canonical_bytes(subsets: &[(&Face, Arc<Vec<u8>>)]) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    for (face, data) in subsets {
-        bytes.extend_from_slice(&face.weight().css_value().to_le_bytes());
-        bytes.push(match face.style() {
-            FontStyle::Normal => 0,
-            FontStyle::Italic => 1,
-        });
-        bytes.extend_from_slice(&(data.len() as u64).to_le_bytes());
-        bytes.extend_from_slice(data);
+fn family_hash(subsets: &[(&Face, SubsetData)]) -> u64 {
+    let mut hasher = Fnv1a::new();
+    for (index, (face, data)) in subsets.iter().enumerate() {
+        let weight = face.weight().css_value();
+        let style = face.style();
+        if index == 0
+            && let SubsetData::Cached(entry) = data
+            && entry.solo_weight == weight
+            && entry.solo_style == style
+        {
+            hasher = Fnv1a::from_state(entry.solo_hash);
+            continue;
+        }
+        hash_face_subset(&mut hasher, weight, style, data.as_bytes());
     }
-    bytes
+    hasher.finish()
 }
 
-/// 64-bit FNV-1a. It is deterministic on every platform and needs no dependency. It is not a
-/// cryptographic hash: a collision would only mix two subsets under one name, and the name is not
+fn hash_face_subset(hasher: &mut Fnv1a, weight: u16, style: FontStyle, data: &[u8]) {
+    hasher.update(&weight.to_le_bytes());
+    hasher.update_byte(match style {
+        FontStyle::Normal => 0,
+        FontStyle::Italic => 1,
+    });
+    hasher.update(&(data.len() as u64).to_le_bytes());
+    hasher.update(data);
+}
+
+/// Streaming 64-bit FNV-1a. It is deterministic on every platform and needs no dependency. It is not
+/// a cryptographic hash: a collision would only mix two subsets under one name, and the name is not
 /// a security boundary.
-pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
+pub(crate) struct Fnv1a(u64);
+
+impl Fnv1a {
     const OFFSET_BASIS: u64 = 0xcbf2_9ce4_8422_2325;
     const PRIME: u64 = 0x0000_0100_0000_01b3;
-    bytes.iter().fold(OFFSET_BASIS, |hash, byte| {
-        (hash ^ u64::from(*byte)).wrapping_mul(PRIME)
-    })
+
+    pub(crate) const fn new() -> Self {
+        Self(Self::OFFSET_BASIS)
+    }
+
+    pub(crate) const fn from_state(state: u64) -> Self {
+        Self(state)
+    }
+
+    pub(crate) fn update(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.0 = (self.0 ^ u64::from(*byte)).wrapping_mul(Self::PRIME);
+        }
+    }
+
+    pub(crate) fn update_byte(&mut self, byte: u8) {
+        self.0 = (self.0 ^ u64::from(byte)).wrapping_mul(Self::PRIME);
+    }
+
+    pub(crate) const fn finish(self) -> u64 {
+        self.0
+    }
 }
 
-fn font_face_rules(name: &str, subsets: &[(&Face, Arc<Vec<u8>>)]) -> Result<String, TextError> {
-    let mut css = String::new();
+/// 64-bit FNV-1a over a contiguous slice.
+pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
+    let mut hasher = Fnv1a::new();
+    hasher.update(bytes);
+    hasher.finish()
+}
+
+fn font_face_rules(name: &str, subsets: &[(&Face, SubsetData)]) -> Result<String, TextError> {
+    let mut capacity = 0usize;
     for (face, data) in subsets {
-        let encoded = base64::engine::general_purpose::STANDARD.encode(data.as_slice());
-        let format = if data.starts_with(b"OTTO") {
+        let variations = variation_defaults(face)?;
+        let encoded_len = match data {
+            SubsetData::Cached(entry) => entry.base64.as_ref().map_or_else(
+                || base64::encoded_len(entry.bytes.len(), true).unwrap_or(0),
+                String::len,
+            ),
+            SubsetData::Uncached(bytes) => base64::encoded_len(bytes.len(), true).unwrap_or(0),
+        };
+        capacity = capacity
+            .saturating_add(96)
+            .saturating_add(name.len())
+            .saturating_add(variations.len())
+            .saturating_add(encoded_len);
+    }
+    let mut css = String::with_capacity(capacity);
+    for (face, data) in subsets {
+        let format = if data.as_bytes().starts_with(b"OTTO") {
             "otf"
         } else {
             "ttf"
@@ -550,29 +772,50 @@ fn font_face_rules(name: &str, subsets: &[(&Face, Arc<Vec<u8>>)]) -> Result<Stri
         let variations = variation_defaults(face)?;
         let _ = write!(
             css,
-            "@font-face{{font-family:\"{name}\";font-weight:{};font-style:{};{variations}src:url(data:font/{format};base64,{encoded})}}",
+            "@font-face{{font-family:\"{name}\";font-weight:{};font-style:{};{variations}src:url(data:font/{format};base64,",
             face.weight().css_value(),
             face.style().css_keyword(),
         );
+        match data {
+            SubsetData::Cached(entry) => {
+                if let Some(encoded) = &entry.base64 {
+                    css.push_str(encoded);
+                } else {
+                    base64::engine::general_purpose::STANDARD
+                        .encode_string(entry.bytes.as_slice(), &mut css);
+                }
+            }
+            SubsetData::Uncached(bytes) => {
+                base64::engine::general_purpose::STANDARD.encode_string(bytes, &mut css);
+            }
+        }
+        css.push_str(")}");
     }
     Ok(css)
 }
 
 /// A variable font is measured at its default location. Per-face descriptors freeze that same
 /// location in the browser, including wght/opsz axes that CSS otherwise changes automatically.
-fn variation_defaults(face: &Face) -> Result<String, TextError> {
-    let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
+fn variation_defaults(face: &Face) -> Result<&str, TextError> {
+    face.meta()?
+        .variation_defaults
+        .as_deref()
+        .ok_or(TextError::InvalidFont)
+}
+
+/// Parses the `fvar` default axis settings once per face; `None` signals an invalid `fvar` table.
+pub(crate) fn parse_variation_defaults(font: &FontRef<'_>) -> Option<String> {
     if font.table_data(Tag::new(b"fvar")).is_none() {
-        return Ok(String::new());
+        return Some(String::new());
     }
-    let fvar = font.fvar().map_err(|_| TextError::InvalidFont)?;
-    let axes = fvar.axes().map_err(|_| TextError::InvalidFont)?;
+    let fvar = font.fvar().ok()?;
+    let axes = fvar.axes().ok()?;
     let mut settings = Vec::new();
     for axis in axes {
         let mut tag = String::new();
         for byte in axis.axis_tag().to_be_bytes() {
             if !(0x20..=0x7e).contains(&byte) {
-                return Err(TextError::InvalidFont);
+                return None;
             }
             if byte == b'"' || byte == b'\\' {
                 let _ = write!(tag, "\\{byte:02x} ");
@@ -583,9 +826,9 @@ fn variation_defaults(face: &Face) -> Result<String, TextError> {
         settings.push(format!("\"{tag}\" {}", axis.default_value().to_f64()));
     }
     if settings.is_empty() {
-        Ok(String::new())
+        Some(String::new())
     } else {
-        Ok(format!("font-variation-settings:{};", settings.join(",")))
+        Some(format!("font-variation-settings:{};", settings.join(",")))
     }
 }
 
@@ -708,6 +951,7 @@ mod cache_tests {
         let crate::fonts::FontData::Registered {
             bytes: original,
             embed_whole: true,
+            whole_embed: Some(precomputed),
         } = &face.data
         else {
             panic!("expected CFF");
@@ -715,13 +959,114 @@ mod cache_tests {
         let cache = Arc::new(SubsetCache::default());
         with_subset_cache(&cache, || {
             for text in ["alpha", "beta", "gamma"] {
-                let characters = text.chars().collect();
-                let embedded = cached_subset(&face, &characters).unwrap();
-                assert!(Arc::ptr_eq(original, &embedded));
-                assert_eq!(embedded.as_slice(), subset_face(&face, text).unwrap());
+                let mut characters: Vec<char> = text.chars().collect();
+                characters.sort_unstable();
+                characters.dedup();
+                let SubsetData::Cached(embedded) = cached_subset(&face, &characters).unwrap()
+                else {
+                    panic!("expected cached CFF payload");
+                };
+                assert!(Arc::ptr_eq(precomputed, &embedded));
+                assert!(Arc::ptr_eq(original, &embedded.bytes));
+                assert_eq!(embedded.bytes.as_slice(), subset_face(&face, text).unwrap());
             }
         });
         assert!(cache.0.lock().unwrap().entries.is_empty());
+    }
+
+    #[test]
+    fn streaming_fnv1a_matches_materialized_canonical_bytes() {
+        let regular_bytes = subset_face(regular(), "Hello").unwrap();
+        let bold_bytes = subset_face(bold(), "World").unwrap();
+        let materialize = |items: &[(&Face, &[u8])]| {
+            let mut raw = Vec::new();
+            for (face, bytes) in items {
+                raw.extend_from_slice(&face.weight().css_value().to_le_bytes());
+                raw.push(match face.style() {
+                    FontStyle::Normal => 0,
+                    FontStyle::Italic => 1,
+                });
+                raw.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
+                raw.extend_from_slice(bytes);
+            }
+            fnv1a(&raw)
+        };
+        let expected_single = materialize(&[(regular(), &regular_bytes)]);
+        let expected_multi = materialize(&[(regular(), &regular_bytes), (bold(), &bold_bytes)]);
+
+        let uncached_single = [(regular(), SubsetData::Uncached(regular_bytes.clone()))];
+        assert_eq!(family_hash(&uncached_single), expected_single);
+
+        let cached_regular = Arc::new(EmbeddedSubset::new(
+            Arc::new(regular_bytes.clone()),
+            regular().weight().css_value(),
+            regular().style(),
+        ));
+        let cached_bold = Arc::new(EmbeddedSubset::new(
+            Arc::new(bold_bytes.clone()),
+            bold().weight().css_value(),
+            bold().style(),
+        ));
+        let cached_single = [(regular(), SubsetData::Cached(Arc::clone(&cached_regular)))];
+        assert_eq!(family_hash(&cached_single), expected_single);
+
+        let uncached_multi = [
+            (regular(), SubsetData::Uncached(regular_bytes)),
+            (bold(), SubsetData::Uncached(bold_bytes)),
+        ];
+        assert_eq!(family_hash(&uncached_multi), expected_multi);
+
+        let cached_multi = [
+            (regular(), SubsetData::Cached(cached_regular)),
+            (bold(), SubsetData::Cached(cached_bold)),
+        ];
+        assert_eq!(family_hash(&cached_multi), expected_multi);
+    }
+
+    #[test]
+    fn subset_cache_hit_reuses_precomputed_payload() {
+        let cache = Arc::new(SubsetCache::default());
+        let mut chars: Vec<char> = "reuse".chars().collect();
+        chars.sort_unstable();
+        chars.dedup();
+        with_subset_cache(&cache, || {
+            let SubsetData::Cached(first) = cached_subset(regular(), &chars).unwrap() else {
+                panic!("expected cached payload");
+            };
+            let SubsetData::Cached(second) = cached_subset(regular(), &chars).unwrap() else {
+                panic!("expected cached payload");
+            };
+            assert!(Arc::ptr_eq(&first, &second));
+            assert!(first.base64.as_deref().is_some_and(|b64| !b64.is_empty()));
+        });
+    }
+
+    #[test]
+    fn large_subset_without_cached_base64_still_renders_identical_rules() {
+        let bytes = Arc::new(b"0001large-subset-payload".to_vec());
+        let with_b64 = Arc::new(EmbeddedSubset::new_with_base64(
+            Arc::clone(&bytes),
+            400,
+            FontStyle::Normal,
+            true,
+        ));
+        let without_b64 = Arc::new(EmbeddedSubset::new_with_base64(
+            bytes,
+            400,
+            FontStyle::Normal,
+            false,
+        ));
+        assert!(with_b64.base64.is_some());
+        assert!(without_b64.base64.is_none());
+        assert_eq!(with_b64.solo_hash, without_b64.solo_hash);
+        let css_with =
+            font_face_rules("fg-test-sans", &[(regular(), SubsetData::Cached(with_b64))]).unwrap();
+        let css_without = font_face_rules(
+            "fg-test-sans",
+            &[(regular(), SubsetData::Cached(without_b64))],
+        )
+        .unwrap();
+        assert_eq!(css_with, css_without);
     }
 
     #[test]
