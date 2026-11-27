@@ -31,10 +31,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..4f92b5c 100644
+index 48ac4a6..895ce33 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,428 @@ export function interpolateToCurve(
+@@ -244,6 +244,461 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -453,6 +453,39 @@ index 48ac4a6..4f92b5c 100644
 +  const values: string[] = [];
 +  const tokenized = tokenizePlaceholders(rawUrl, prefix, values, false);
 +  const sanitized = sanitizeUrl(tokenized);
++  if (/^https?:/i.test(sanitized)) {
++    const decodedValues = values.map((raw) => {
++      const parsed = decodeMermaidPlaceholderAt(raw, 0);
++      return parsed ? parsed[1] : raw;
++    });
++    const schemeMatch = /^https?:/i.exec(sanitized);
++    let candidate = sanitized;
++    if (schemeMatch) {
++      let authorityStart = schemeMatch[0].length;
++      while (authorityStart < sanitized.length && sanitized[authorityStart] === '/') {
++        authorityStart += 1;
++      }
++      const rest = sanitized.slice(authorityStart);
++      const endOffset = rest.search(/[/?#]/);
++      const authorityEnd = endOffset === -1 ? sanitized.length : authorityStart + endOffset;
++      const authority = sanitized.slice(authorityStart, authorityEnd);
++      const atIndex = authority.lastIndexOf('@');
++      const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++      const hostPort = sanitized.slice(hostStart, authorityEnd);
++      if (hostPort.includes(prefix)) {
++        const resolvedHost = restoreRawTokens(hostPort, prefix, decodedValues);
++        candidate = sanitized.slice(0, hostStart) + resolvedHost + sanitized.slice(authorityEnd);
++      }
++    }
++    if (!URL.canParse(candidate)) {
++      return 'about:blank';
++    }
++    const safe = reencodeDecodedPlaceholders(candidate);
++    if (decodedValues.length === 0) {
++      return safe;
++    }
++    return restoreHttpTokensByComponent(safe, prefix, decodedValues);
++  }
 +  const safe = reencodeDecodedPlaceholders(sanitized);
 +  if (values.length === 0) {
 +    return safe;
@@ -463,16 +496,23 @@ index 48ac4a6..4f92b5c 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +674,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +707,14 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
 -    return sanitizeUrl(url);
++    if (url.startsWith('#')) {
++      const sanitized = sanitizeHttpUrlWithEntities(url);
++      if (sanitized === 'about:blank') {
++        return sanitized;
++      }
++      return url.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
++    }
 +    return sanitizeHttpUrlWithEntities(url);
    }
  
    return url;
-@@ -895,23 +1317,248 @@ export default {
+@@ -895,23 +1357,267 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -505,23 +545,42 @@ index 48ac4a6..4f92b5c 100644
 +    return true;
 +  };
 +  const startsWithCssProp = (s: string, start: number): boolean => {
-+    let k = start;
-+    while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++    let end = start;
++    while (
++      end < s.length &&
++      s[end] !== '\n' &&
++      s[end] !== '\r' &&
++      s[end] !== '\u2028' &&
++      s[end] !== '\u2029'
++    ) {
++      end++;
++    }
++    const line = s.slice(start, end);
++    let k = 0;
++    while (k < line.length && /\s/.test(line[k])) {
 +      k++;
 +    }
-+    let sawLetter = false;
-+    while (k < s.length) {
-+      const c = s[k];
-+      if (/[A-Za-z]/.test(c)) {
-+        sawLetter = true;
-+      } else if (c === '-') {
++    let letterCount = 0;
++    let afterColonIdx = -1;
++    while (k < line.length) {
++      const c = line[k];
++      if (c >= 'a' && c <= 'z') {
++        letterCount++;
++      } else if (c === '-' && letterCount > 0) {
 +        // continue
 +      } else {
-+        return sawLetter && c === ':' && s[k + 1] !== ':';
++        if (letterCount >= 2 && c === ':' && line[k + 1] !== ':') {
++          afterColonIdx = k + 1;
++        }
++        break;
 +      }
 +      k++;
 +    }
-+    return false;
++    if (afterColonIdx === -1) {
++      return false;
++    }
++    const afterColon = line.slice(afterColonIdx);
++    return !/(?:-->|---|==>|-\.|<--|~~~|:::|o--|x--|--o|--x|\[|\{)/.test(afterColon);
 +  };
 +  const dropColorSemicolons = (input: string, word: string): string => {
 +    let result = '';

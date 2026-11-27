@@ -96,6 +96,21 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
         None
     } else if loose {
         Some(url.to_owned())
+    } else if url.starts_with('#') {
+        // Same-document fragment links have no scheme and cannot trigger javascript:/data:/vbscript:.
+        // Validate through `sanitize_url` (enforcing bounded obfuscation decoding), then preserve
+        // the original percent-encoded fragment spelling (e.g. `#graph-flowchart-A%2520B-0`) so
+        // DOM target lookup still reaches nodes whose ID contains literal `%20`.
+        let sanitized = sanitize_url(url);
+        if sanitized == BLANK_URL {
+            Some(sanitized)
+        } else {
+            let cleaned: String = url
+                .chars()
+                .filter(|&c| !matches!(c, '\u{0000}'..='\u{001F}' | '\u{007F}'..='\u{009F}'))
+                .collect();
+            Some(cleaned)
+        }
     } else {
         Some(sanitize_url(url))
     }
@@ -660,8 +675,20 @@ pub fn sanitize_url(url: &str) -> String {
     }
     let back_sanitized = trimmed.replace('\\', "/");
     if scheme == "mailto:" || scheme.contains("://") {
-        if is_http_scheme_prefix(&back_sanitized) && ::url::Url::parse(&back_sanitized).is_err() {
-            return BLANK_URL.to_owned();
+        if is_http_scheme_prefix(&back_sanitized) {
+            let (candidate, promoted) = match url_tokens.as_ref() {
+                Some(tokens) if tokens.mode == TokenMode::Raw => {
+                    let (resolved, http_tokens) =
+                        promote_raw_tokens_for_http(&back_sanitized, tokens);
+                    (std::borrow::Cow::Owned(resolved), Some(http_tokens))
+                }
+                _ => (std::borrow::Cow::Borrowed(back_sanitized.as_str()), None),
+            };
+            if ::url::Url::parse(candidate.as_ref()).is_err() {
+                return BLANK_URL.to_owned();
+            }
+            let effective_tokens = promoted.as_ref().or(url_tokens.as_ref());
+            return finalize_non_http(candidate.into_owned(), effective_tokens);
         }
         return finalize_non_http(back_sanitized, url_tokens.as_ref());
     }
@@ -1267,19 +1294,74 @@ fn restore_http_tokens_by_component(url: &str, tokens: &UrlEntityTokens) -> Stri
     out
 }
 
+/// Converts `TokenMode::Raw` placeholders into `TokenMode::Http` when bounded decoding turned an
+/// obfuscated scheme (such as `%2568ttps://...`) into `http:` or `https:`, resolving any tokens
+/// inside `host[:port]` directly before WHATWG authority validation.
+fn promote_raw_tokens_for_http(url: &str, tokens: &UrlEntityTokens) -> (String, UrlEntityTokens) {
+    let decoded_values: Vec<String> = tokens
+        .values
+        .iter()
+        .map(|raw| {
+            decode_mermaid_placeholder_at(raw, 0)
+                .map_or_else(|| raw.clone(), |(_, decoded)| decoded)
+        })
+        .collect();
+    let http_tokens = UrlEntityTokens {
+        prefix: tokens.prefix.clone(),
+        values: decoded_values,
+        mode: TokenMode::Http,
+    };
+    let scheme_len = if url
+        .get(..5)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("http:"))
+    {
+        5
+    } else if url
+        .get(..6)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("https:"))
+    {
+        6
+    } else {
+        return (url.to_owned(), http_tokens);
+    };
+    let slashes = url[scheme_len..].bytes().take_while(|&b| b == b'/').count();
+    let authority_start = scheme_len + slashes;
+    let authority_end = url[authority_start..]
+        .find(['/', '?', '#'])
+        .map_or(url.len(), |offset| authority_start + offset);
+    let authority = &url[authority_start..authority_end];
+    let host_start = authority
+        .rfind('@')
+        .map_or(authority_start, |at| authority_start + at + 1);
+    let host_port = &url[host_start..authority_end];
+    if !host_port.contains(http_tokens.prefix.as_str()) {
+        return (url.to_owned(), http_tokens);
+    }
+    let resolved_host = restore_raw_tokens(host_port, &http_tokens);
+    let mut out = String::with_capacity(url.len());
+    out.push_str(&url[..host_start]);
+    out.push_str(&resolved_host);
+    out.push_str(&url[authority_end..]);
+    (out, http_tokens)
+}
+
 /// The `http:` and `https:` branch of `sanitizeUrl`: `about:blank` when `URL.canParse` is false,
 /// otherwise the serialized `URL` with any tokenized Mermaid placeholders substituted back using
 /// each component's WHATWG percent-encode set.
 fn normalize_http_with_tokens(candidate: &str, tokens: Option<&UrlEntityTokens>) -> String {
-    let Ok(parsed) = ::url::Url::parse(candidate) else {
+    let (resolved_candidate, promoted) = match tokens {
+        Some(tokens) if tokens.mode == TokenMode::Raw => {
+            let (resolved, http_tokens) = promote_raw_tokens_for_http(candidate, tokens);
+            (std::borrow::Cow::Owned(resolved), Some(http_tokens))
+        }
+        _ => (std::borrow::Cow::Borrowed(candidate), None),
+    };
+    let Ok(parsed) = ::url::Url::parse(resolved_candidate.as_ref()) else {
         return BLANK_URL.to_owned();
     };
-    let Some(tokens) = tokens else {
+    let Some(tokens) = promoted.as_ref().or(tokens) else {
         return parsed.to_string();
     };
-    if tokens.mode != TokenMode::Http {
-        return restore_raw_tokens(parsed.as_str(), tokens);
-    }
     use ::url::Position;
     let mut out = String::with_capacity(parsed.as_str().len());
     out.push_str(&parsed[..Position::BeforeUsername]);
@@ -2570,6 +2652,26 @@ mod tests {
         assert_eq!(
             sanitize_url("https://example.org/__fg00000001__fg00000000_0__/ﬂ°copy¶ß"),
             "https://example.org/__fg00000001__fg00000000_0__/%C2%A9"
+        );
+        // Multi-pass obfuscated HTTP schemes (`%2568ttps://`) still get component-aware encoding
+        // and authority validation once decoded to HTTP.
+        assert_eq!(
+            sanitize_url("%2568ttps://example.org/partﬂ°°63¶ßone"),
+            "https://example.org/part%3Fone"
+        );
+        assert_eq!(
+            sanitize_url("%2568ttps://exampleﬂ°°32¶ßorg:8080/partﬂ°°63¶ßone"),
+            "about:blank"
+        );
+        // Same-document fragment links preserve their percent-encoded spelling in `format_url`
+        // while still failing closed on over-budget nested encodings.
+        assert_eq!(
+            format_url("#graph-flowchart-A%2520B-0", false).as_deref(),
+            Some("#graph-flowchart-A%2520B-0")
+        );
+        assert_eq!(
+            format_url("#foo%25252525252525252541", false).as_deref(),
+            Some("about:blank")
         );
     }
 }

@@ -1707,4 +1707,48 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     .expect_err("invalid trailing syntax must fail");
     assert_eq!(parse_err.line, 3);
     assert_eq!(parse_err.column, 23);
+
+    // Semicolon before colon-containing flowchart node IDs is preserved (not merged into classDef).
+    let colon_node_stmt = ferrigura::render(
+        "flowchart LR\n  classDef hot fill:#abc,stroke:red; X:Y --> Z;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(colon_node_stmt.contains("fill:#abc"), "{colon_node_stmt}");
+    assert!(colon_node_stmt.contains("X:Y"), "{colon_node_stmt}");
+
+    // Strict-mode flowchart same-document fragment links preserve `%2520` spelling to match a
+    // literal `%20` node ID.
+    let strict_frag = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "flowchart LR\n  A%20B[Node]\n  click A%20B href \"#graph-flowchart-A%2520B-0\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let strict_frag_doc = roxmltree::Document::parse(&strict_frag).expect("well-formed SVG XML");
+    assert!(
+        strict_frag_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-flowchart-A%20B-0")),
+        "{strict_frag}"
+    );
+    let strict_frag_href = strict_frag_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(strict_frag_href, "#graph-flowchart-A%2520B-0");
+
+    // Multi-pass encoded HTTP schemes (`%2568ttps://`) still percent-encode path `?` entities.
+    let double_pct_scheme = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"%2568ttps://example.org/part#63;one\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        double_pct_scheme.contains("xlink:href=\"https://example.org/part%3Fone\""),
+        "{double_pct_scheme}"
+    );
 }

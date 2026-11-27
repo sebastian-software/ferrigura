@@ -562,25 +562,37 @@ pub fn decode_entities(text: &str) -> String {
         .replace("¶ß", ";")
 }
 
-/// Whether `rest` starts (after optional horizontal JS whitespace) with an ASCII CSS property
-/// declaration (`<name>:` not followed by another `:`, so flowchart `B:::red` is excluded), such
-/// as `color:#abcdef` in `classDef late fill:#123456;color:#abcdef`.
+/// Whether `rest` starts (after optional horizontal JS whitespace) with a lowercase ASCII CSS
+/// property declaration (`<name>:` not followed by another `:`, with at least two characters and
+/// no flowchart edge/node operators on the rest of the line), such as `color:#abcdef` in
+/// `classDef late fill:#123456;color:#abcdef`, while keeping `;` before flowchart statements like
+/// `B:::red;` or `X:Y --> Z;`.
 fn starts_with_css_property(rest: &str) -> bool {
-    let trimmed = rest.trim_start_matches(|c: char| {
-        is_js_space(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
-    });
-    let mut chars = trimmed.chars();
-    let mut saw_letter = false;
-    while let Some(ch) = chars.next() {
-        if ch.is_ascii_alphabetic() {
-            saw_letter = true;
-        } else if ch == '-' {
+    let line = rest.split(JS_LINE_TERMINATORS).next().unwrap_or(rest);
+    let trimmed = line.trim_start_matches(|c: char| is_js_space(c));
+    let mut letter_count = 0usize;
+    let mut after_colon_start = None;
+    for (idx, ch) in trimmed.char_indices() {
+        if ch.is_ascii_lowercase() {
+            letter_count += 1;
+        } else if ch == '-' && letter_count > 0 {
             continue;
         } else {
-            return saw_letter && ch == ':' && chars.next() != Some(':');
+            if letter_count >= 2 && ch == ':' && !trimmed[idx + 1..].starts_with(':') {
+                after_colon_start = Some(idx + 1);
+            }
+            break;
         }
     }
-    false
+    let Some(after_idx) = after_colon_start else {
+        return false;
+    };
+    let after_colon = &trimmed[after_idx..];
+    ![
+        "-->", "---", "==>", "-.", "<--", "~~~", ":::", "o--", "x--", "--o", "--x", "[", "{",
+    ]
+    .iter()
+    .any(|op| after_colon.contains(op))
 }
 
 /// Byte offset of the color-terminating semicolon to drop on a single line for a `style` or

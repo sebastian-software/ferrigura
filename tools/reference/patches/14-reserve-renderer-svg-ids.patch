@@ -288,7 +288,7 @@ index 64d8255..7e22f45 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..c847e42 100644
+index 49145b2..5c7e99c 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -299,7 +299,7 @@ index 49145b2..c847e42 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,307 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,342 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -383,45 +383,80 @@ index 49145b2..c847e42 100644
 +    .replace(/>/g, '&gt;')
 +    .replace(/"/g, '&quot;');
 +
-+export const swapProtectedSvgIds = (svgRoot: Element | null): Array<[string, string]> => {
++interface ProtectedSvgTokens {
++  prefix: string;
++  originals: string[];
++}
++
++export const swapProtectedSvgIds = (svgRoot: Element | null): ProtectedSvgTokens | null => {
 +  if (!svgRoot) {
-+    return [];
++    return null;
 +  }
 +  const entries = protectedAttrsBySvgRoot.get(svgRoot);
 +  if (!entries || entries.size === 0) {
-+    return [];
++    return null;
 +  }
 +  const rawHtml = svgRoot.outerHTML;
-+  let prefix = '__FGPROT_';
-+  while (rawHtml.includes(prefix)) {
-+    prefix += 'X';
++  const used = new Set<number>();
++  const re = /__fgp([0-9a-f]{8})(?=_)/gi;
++  let match: RegExpExecArray | null;
++  while ((match = re.exec(rawHtml)) !== null) {
++    used.add(Number.parseInt(match[1], 16));
 +  }
-+  const tokens: Array<[string, string]> = [];
-+  let serial = 0;
++  let id = 0;
++  while (used.has(id)) {
++    id += 1;
++  }
++  const prefix = `__fgp${id.toString(16).padStart(8, '0')}_`;
++  const originals: string[] = [];
 +  for (const [el, attrs] of entries) {
 +    if (attrs.id !== undefined && el.getAttribute('id') === attrs.id) {
-+      const token = `${prefix}${serial++}__`;
++      const token = `${prefix}${originals.length}__`;
 +      el.setAttribute('id', token);
-+      tokens.push([token, xmlEscapeAttr(attrs.id)]);
++      originals.push(xmlEscapeAttr(attrs.id));
 +    }
 +    if (attrs.dataId !== undefined && el.getAttribute('data-id') === attrs.dataId) {
-+      const token = `${prefix}${serial++}__`;
++      const token = `${prefix}${originals.length}__`;
 +      el.setAttribute('data-id', token);
-+      tokens.push([token, xmlEscapeAttr(attrs.dataId)]);
++      originals.push(xmlEscapeAttr(attrs.dataId));
 +    }
 +  }
 +  protectedAttrsBySvgRoot.delete(svgRoot);
 +  fragmentRemapperBySvgRoot.delete(svgRoot);
-+  return tokens;
++  return originals.length > 0 ? { prefix, originals } : null;
 +};
 +
-+export const restoreProtectedSvgIds = (svg: string, tokens: Array<[string, string]>): string => {
-+  if (tokens.length === 0) {
++export const restoreProtectedSvgIds = (
++  svg: string,
++  tokens: ProtectedSvgTokens | null
++): string => {
++  if (!tokens || tokens.originals.length === 0) {
 +    return svg;
 +  }
-+  let out = svg;
-+  for (const [token, original] of tokens) {
-+    out = out.replaceAll(token, () => original);
++  const { prefix, originals } = tokens;
++  let out = '';
++  let cursor = 0;
++  while (cursor < svg.length) {
++    const pos = svg.indexOf(prefix, cursor);
++    if (pos === -1) {
++      return out + svg.slice(cursor);
++    }
++    out += svg.slice(cursor, pos);
++    const digitsStart = pos + prefix.length;
++    let digitsEnd = digitsStart;
++    while (digitsEnd < svg.length && svg[digitsEnd] >= '0' && svg[digitsEnd] <= '9') {
++      digitsEnd++;
++    }
++    if (digitsEnd > digitsStart && svg.startsWith('__', digitsEnd)) {
++      const idx = Number.parseInt(svg.slice(digitsStart, digitsEnd), 10);
++      if (idx >= 0 && idx < originals.length) {
++        out += originals[idx];
++        cursor = digitsEnd + 2;
++        continue;
++      }
++    }
++    out += prefix;
++    cursor = digitsStart;
 +  }
 +  return out;
 +};
@@ -607,7 +642,7 @@ index 49145b2..c847e42 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +407,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +442,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -686,7 +721,7 @@ index 49145b2..c847e42 100644
 +        elementOwned.add(p.canonicalPath);
 +        edgeClaimed[i] = true;
 +      }
-     }
++    }
 +
 +    const nextSuffix = new Map<string, number>();
 +    const remapped = new Map<string, string>();
@@ -794,7 +829,7 @@ index 49145b2..c847e42 100644
 +        (p.edge as { dataId?: string }).dataId = p.canonicalEdgeId;
 +        edgeDataIdMap.set(p.originalEdgeId, p.canonicalEdgeId);
 +      }
-+    }
+     }
 +
 +    const remapFragment = (rawLink: string): string => {
 +      const fragment = stripFragmentMarker(rawLink);
