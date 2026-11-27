@@ -16,7 +16,7 @@ import { Size } from './size';
 
 /* How often each diagram type is written: the Mermaid blocks with a known header in a sample of
    1,000 Markdown files from 705 public repositories on GitHub. */
-const usage = { diagrams: 1284, ofTheTen: 1262, flowcharts: 945 };
+const usage = { repositories: 705, diagrams: 1284, ofTheTen: 1262, flowcharts: 945 };
 
 /** The ten diagram types in the three groups of decision 0024. */
 const groups = [
@@ -40,6 +40,35 @@ const groups = [
   },
 ];
 
+/** The three groups as cards. */
+function Groups() {
+  return (
+    <MonoWide className="fgr-gap">
+      <MonoCards>
+        {groups.map((group) => (
+          <MonoCard key={group.title} title={group.title} api={group.types}>
+            <p className="fgr-card-text">{group.body}</p>
+            <MonoVerdict>{group.verdict}</MonoVerdict>
+          </MonoCard>
+        ))}
+      </MonoCards>
+    </MonoWide>
+  );
+}
+
+/** The footnote of the share: what was counted, and that the count is our own. */
+function Basis() {
+  return (
+    <p className="fgr-footnote">
+      * Our own count, made as carefully as we could, and not an official statistic. We took 1,000
+      Markdown files with a Mermaid diagram from {grouped(usage.repositories)} public repositories,
+      found with GitHub&rsquo;s code search. Of the {grouped(usage.diagrams)} diagrams whose type we
+      could tell, {grouped(usage.ofTheTen)} are of these ten types, and {grouped(usage.flowcharts)}{' '}
+      of those are flowcharts.
+    </p>
+  );
+}
+
 /** Which diagram types Ferrigura draws, and why it draws these and no others. */
 export function Focus() {
   const share = Math.round((100 * usage.ofTheTen) / usage.diagrams);
@@ -51,29 +80,20 @@ export function Focus() {
     >
       <MonoPassage
         note={{
-          figure: `${share} of 100`,
-          children: `Mermaid diagrams in public repositories are of the ten types Ferrigura draws, in a sample of ${grouped(usage.diagrams)}`,
+          figure: `~${share}%*`,
+          children:
+            'of the Mermaid diagrams in public repositories are of the ten types Ferrigura draws',
         }}
       >
         <p>
           Mermaid began with the flowchart and has kept growing. It now knows more than thirty
           diagram types, some of them everywhere and some still marked beta. What people write is
-          far less spread out. In a sample of {grouped(usage.diagrams)} Mermaid diagrams from public
-          repositories on GitHub, {grouped(usage.flowcharts)} are flowcharts, and nine more types
-          cover nearly all of the rest.
+          far less spread out. In public repositories on GitHub, about three of four Mermaid
+          diagrams are flowcharts, and nine more types cover nearly all of the rest.
         </p>
       </MonoPassage>
       <p>Ferrigura draws those ten. They come in three groups.</p>
-      <MonoWide className="fgr-gap">
-        <MonoCards>
-          {groups.map((group) => (
-            <MonoCard key={group.title} title={group.title} api={group.types}>
-              <p className="fgr-card-text">{group.body}</p>
-              <MonoVerdict>{group.verdict}</MonoVerdict>
-            </MonoCard>
-          ))}
-        </MonoCards>
-      </MonoWide>
+      <Groups />
       <p>
         A type Ferrigura draws is ported whole and checked whole: what it reads and what it draws
         are compared with Mermaid {coverage.mermaid}, input by input. No type is half supported. A
@@ -88,6 +108,7 @@ export function Focus() {
         {' · '}
         <Link to="/architecture/decisions/0024-a-fixed-list-of-diagram-types/">Why ten types</Link>
       </p>
+      <Basis />
     </MonoSection>
   );
 }
