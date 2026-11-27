@@ -144,7 +144,14 @@ impl Chart<'_> {
         let (Some(min_time), Some(max_time)) = (min_time, max_time) else {
             return Ok(Vec::new());
         };
-        if dayjs::years_between(max_time, min_time) > 5.0 {
+        if !min_time.is_finite()
+            || !max_time.is_finite()
+            || max_time - min_time > 6.0 * 366.0 * 86_400_000.0
+        {
+            return Ok(Vec::new());
+        }
+        let years = dayjs::years_between(max_time, min_time);
+        if !years.is_finite() || years > 5.0 {
             // The reference warns and draws nothing for a span of more than five years.
             return Ok(Vec::new());
         }
@@ -163,7 +170,11 @@ impl Chart<'_> {
             } else if let Some(range) = open.take() {
                 ranges.push(range);
             }
-            day = dayjs::add_days(day, 1.0);
+            let next = dayjs::add_days(day, 1.0);
+            if !next.is_finite() || next <= day {
+                break;
+            }
+            day = next;
         }
         // A run still open at the end of the span is not pushed (`ganttRenderer.js:580-590`): the
         // reference drops an excluded run that reaches the last day, and so does the port.

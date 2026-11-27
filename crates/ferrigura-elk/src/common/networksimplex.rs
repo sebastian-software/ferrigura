@@ -552,11 +552,8 @@ impl<'a> NetworkSimplex<'a> {
         }
 
         // normalize and, if desired, balance
-        if self.balance {
-            let mut filling = self.normalize();
+        if let Some(mut filling) = self.normalize() {
             self.balance_filling(&mut filling);
-        } else {
-            self.normalize();
         }
 
         // release the created resources
@@ -1039,8 +1036,13 @@ impl<'a> NetworkSimplex<'a> {
     }
 
     /// Java `normalize()`: shifts the layers so that the lowest is 0. Returns how many nodes are
-    /// in each layer, including the nodes of previously layered components.
-    fn normalize(&mut self) -> Vec<i32> {
+    /// in each layer (including previously layered components) only when balancing is enabled and
+    /// the layer span fits within a bounded allocation.
+    fn normalize(&mut self) -> Option<Vec<i32>> {
+        const MAX_BALANCE_LAYERS: i64 = 1_000_000;
+        if self.graph.node_order.is_empty() {
+            return None;
+        }
         // determine lowest assigned layer and layer count
         let mut highest = i32::MIN;
         let mut lowest = i32::MAX;
@@ -1050,39 +1052,60 @@ impl<'a> NetworkSimplex<'a> {
             highest = highest.max(layer);
         }
 
-        // normalize and determine layer filling
-        let size = highest.wrapping_sub(lowest).wrapping_add(1) as usize;
-        let mut filling = vec![0i32; size];
+        // normalize layers
         for &node in &self.graph.node_order {
             let n = &mut self.graph.nodes[node];
             n.layer = n.layer.wrapping_sub(lowest);
-            filling[n.layer as usize] += 1;
+        }
+
+        if !self.balance {
+            return None;
+        }
+
+        let span = i64::from(highest) - i64::from(lowest) + 1;
+        if span <= 0 || span > MAX_BALANCE_LAYERS {
+            return None;
+        }
+        let mut filling = vec![0i32; span as usize];
+        for &node in &self.graph.node_order {
+            if let Ok(index) = usize::try_from(self.graph.nodes[node].layer)
+                && let Some(slot) = filling.get_mut(index)
+            {
+                *slot += 1;
+            }
         }
 
         // also consider nodes of already layered connected components
         if let Some(counts) = &self.previous_layering_node_counts {
-            for (layer_id, &count) in counts.iter().enumerate() {
-                filling[layer_id] = filling[layer_id].wrapping_add(count);
-                if filling.len() == layer_id + 1 {
-                    break;
-                }
+            for (slot, &count) in filling.iter_mut().zip(counts.iter()) {
+                *slot = slot.wrapping_add(count);
             }
         }
-        filling
+        Some(filling)
     }
 
     /// Java `balance(filling)`: moves a node with as many incoming as outgoing edges to the least
     /// filled layer its edges allow.
     fn balance_filling(&mut self, filling: &mut [i32]) {
+        if filling.is_empty() {
+            return;
+        }
+        let max_layer = filling.len() as i32;
         // determine possible layers
         for &node in &self.graph.node_order {
             if self.graph.nodes[node].incoming.len() == self.graph.nodes[node].outgoing.len() {
                 // node might get shifted
                 let layer = self.graph.nodes[node].layer;
+                if layer < 0 || layer >= max_layer {
+                    continue;
+                }
                 let mut new_layer = layer;
                 let (min_span_in, min_span_out) = self.minimal_span(node);
-                let start = layer.wrapping_sub(min_span_in).wrapping_add(1);
-                let end = layer.wrapping_add(min_span_out);
+                if min_span_in < 0 || min_span_out < 0 {
+                    continue;
+                }
+                let start = layer.saturating_sub(min_span_in).saturating_add(1).max(0);
+                let end = layer.saturating_add(min_span_out).min(max_layer);
                 for i in start..end {
                     if filling[i as usize] < filling[new_layer as usize] {
                         new_layer = i;
@@ -1427,5 +1450,19 @@ mod tests {
         assert_eq!(graph.make_connected(), None);
         NetworkSimplex::for_graph(&mut graph).execute();
         assert_feasible(&graph);
+    }
+
+    #[test]
+    fn huge_delta_does_not_oom_with_or_without_balancing() {
+        for balance in [false, true] {
+            let mut graph = NGraph::new();
+            let a = graph.add_node(NNode::new());
+            let b = graph.add_node(NNode::new());
+            add_edge(&mut graph, a, b, 1_000_000_000, 1.0);
+            NetworkSimplex::for_graph(&mut graph)
+                .with_balancing(balance)
+                .execute();
+            assert_eq!(layers(&graph, &[a, b]), vec![0, 1_000_000_000]);
+        }
     }
 }

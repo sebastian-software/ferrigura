@@ -395,10 +395,11 @@ fn stroke_classes(thickness: &str, pattern: &str) -> String {
 
 /// `generateDashArray` of `edges.js`: the neo dash array of a dotted or dashed edge.
 fn generate_dash_array(length: f64, start: f64, end: f64) -> String {
+    const MAX_DASH_PAIRS: f64 = 10_000.0;
     let middle = length - start - end;
     let raw = (middle / 4.0).floor();
     let pairs = if raw.is_finite() {
-        raw.max(0.0) as usize
+        raw.clamp(0.0, MAX_DASH_PAIRS) as usize
     } else {
         0
     };
@@ -1237,5 +1238,11 @@ mod tests {
     fn the_markers_of_the_diagram_are_twelve() {
         let svg = markers("svg");
         assert_eq!(svg.matches("<marker ").count(), 12);
+    }
+
+    #[test]
+    fn dash_array_is_capped() {
+        let huge = generate_dash_array(1e10, 0.0, 4.0);
+        assert!(huge.len() < 100_000);
     }
 }

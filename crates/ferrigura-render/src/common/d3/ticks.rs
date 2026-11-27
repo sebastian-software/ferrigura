@@ -55,12 +55,16 @@ fn tick_spec(start: f64, stop: f64, count: f64) -> (f64, f64, f64) {
 /// domain gives the same values in descending order.
 #[must_use]
 pub fn ticks(start: f64, stop: f64, count: f64) -> Vec<f64> {
-    // `!(count > 0)`: a NaN count gives no ticks too.
-    if count.is_nan() || count <= 0.0 {
+    const MAX_TICKS: f64 = 10_000.0;
+    // `!(count > 0)`: a non-finite or non-positive count gives no ticks.
+    if !count.is_finite() || count <= 0.0 {
         return Vec::new();
     }
     if start == stop {
         return vec![start];
+    }
+    if !start.is_finite() || !stop.is_finite() {
+        return Vec::new();
     }
     let reverse = stop < start;
     let (i1, i2, inc) = if reverse {
@@ -68,11 +72,15 @@ pub fn ticks(start: f64, stop: f64, count: f64) -> Vec<f64> {
     } else {
         tick_spec(start, stop, count)
     };
-    // `!(i2 >= i1)`: NaN bounds give no ticks.
-    if i1.is_nan() || i2.is_nan() || i2 < i1 {
+    // `!(i2 >= i1)`: non-finite or inverted bounds give no ticks.
+    if !i1.is_finite() || !i2.is_finite() || !inc.is_finite() || i2 < i1 {
         return Vec::new();
     }
-    let n = (i2 - i1 + 1.0) as usize;
+    let span = i2 - i1 + 1.0;
+    if !span.is_finite() || span <= 0.0 {
+        return Vec::new();
+    }
+    let n = span.min(MAX_TICKS) as usize;
     let mut out = Vec::with_capacity(n);
     for i in 0..n {
         let index = i as f64;
@@ -133,5 +141,15 @@ mod tests {
     #[test]
     fn a_count_that_is_not_positive_gives_no_ticks() {
         assert!(ticks(0.0, 10.0, 0.0).is_empty());
+    }
+
+    #[test]
+    fn non_finite_bounds_and_huge_counts_do_not_panic_or_oom() {
+        assert!(ticks(0.0, f64::INFINITY, 10.0).is_empty());
+        assert!(ticks(f64::NEG_INFINITY, 0.0, 10.0).is_empty());
+        assert!(ticks(0.0, 10.0, f64::INFINITY).is_empty());
+        assert!(ticks(-1e308, 1e308, 10.0).is_empty());
+        let capped = ticks(0.0, 10.0, 1e9);
+        assert!(capped.len() <= 10_000);
     }
 }

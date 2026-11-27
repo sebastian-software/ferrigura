@@ -93,25 +93,80 @@ impl Engine {
     /// `FDLayout.calcGrid` and `updateGrid` (`FDLayout.js` 381-467): cells of the repulsion range
     /// over the root bounds, each node in every cell its rectangle covers.
     fn update_grid(&mut self) {
+        const MAX_GRID_CELLS: f64 = 100_000.0;
+        const MAX_GRID_DIM: f64 = 10_000.0;
         let range = self.repulsion_range;
-        let size_x = ((self.graph.right - self.graph.left) / range).ceil() as usize;
-        let size_y = ((self.graph.bottom - self.graph.top) / range).ceil() as usize;
+        let width = self.graph.right - self.graph.left;
+        let height = self.graph.bottom - self.graph.top;
+        if self.graph.nodes.is_empty()
+            || !range.is_finite()
+            || range <= 0.0
+            || !width.is_finite()
+            || !height.is_finite()
+            || width < 0.0
+            || height < 0.0
+        {
+            self.grid = Vec::new();
+            for node in &mut self.graph.nodes {
+                node.start_x = 0;
+                node.finish_x = -2;
+                node.start_y = 0;
+                node.finish_y = -2;
+            }
+            return;
+        }
+        let raw_x = (width / range).ceil().max(1.0);
+        let raw_y = (height / range).ceil().max(1.0);
+        let (size_x, size_y) = if raw_x.is_finite()
+            && raw_y.is_finite()
+            && raw_x <= MAX_GRID_DIM
+            && raw_y <= MAX_GRID_DIM
+            && raw_x * raw_y <= MAX_GRID_CELLS
+        {
+            (raw_x as usize, raw_y as usize)
+        } else {
+            let scale = ((raw_x * raw_y) / MAX_GRID_CELLS).sqrt();
+            let capped_x = if scale.is_finite() && scale > 0.0 {
+                (raw_x / scale).floor().clamp(1.0, MAX_GRID_DIM) as usize
+            } else {
+                256
+            };
+            let capped_y = if scale.is_finite() && scale > 0.0 {
+                (raw_y / scale).floor().clamp(1.0, MAX_GRID_DIM) as usize
+            } else {
+                256
+            };
+            (capped_x, capped_y)
+        };
         self.grid = vec![vec![Vec::new(); size_y]; size_x];
+        let cell_x = (width / size_x as f64).max(range);
+        let cell_y = (height / size_y as f64).max(range);
         let (left, top) = (self.graph.left, self.graph.top);
         for v in 0..self.graph.nodes.len() {
-            self.add_node_to_grid(v, left, top);
+            self.add_node_to_grid(v, left, top, cell_x, cell_y);
         }
     }
 
     /// `FDLayout.addNodeToGrid` (`FDLayout.js` 432-455). The last finish uses `height + y`, as the
     /// source does; the cells are the same as for `y + height` apart from rounding of that sum.
-    fn add_node_to_grid(&mut self, v: usize, left: f64, top: f64) {
-        let range = self.repulsion_range;
+    fn add_node_to_grid(&mut self, v: usize, left: f64, top: f64, cell_x: f64, cell_y: f64) {
+        let grid_x = self.grid.len();
+        let grid_y = self.grid.first().map_or(0, Vec::len);
+        if grid_x == 0 || grid_y == 0 {
+            let node = &mut self.graph.nodes[v];
+            node.start_x = 0;
+            node.finish_x = -2;
+            node.start_y = 0;
+            node.finish_y = -2;
+            return;
+        }
+        let max_x = (grid_x - 1) as i64;
+        let max_y = (grid_y - 1) as i64;
         let rect = self.graph.nodes[v].rect;
-        let start_x = ((rect.x - left) / range).floor() as i64;
-        let finish_x = ((rect.width + rect.x - left) / range).floor() as i64;
-        let start_y = ((rect.y - top) / range).floor() as i64;
-        let finish_y = ((rect.height + rect.y - top) / range).floor() as i64;
+        let start_x = (((rect.x - left) / cell_x).floor() as i64).clamp(0, max_x);
+        let finish_x = (((rect.width + rect.x - left) / cell_x).floor() as i64).clamp(0, max_x);
+        let start_y = (((rect.y - top) / cell_y).floor() as i64).clamp(0, max_y);
+        let finish_y = (((rect.height + rect.y - top) / cell_y).floor() as i64).clamp(0, max_y);
         for i in start_x..=finish_x {
             for j in start_y..=finish_y {
                 self.grid[i as usize][j as usize].push(v);
@@ -142,31 +197,32 @@ impl Engine {
             let (start_x, finish_x) = (self.graph.nodes[a].start_x, self.graph.nodes[a].finish_x);
             let (start_y, finish_y) = (self.graph.nodes[a].start_y, self.graph.nodes[a].finish_y);
             let mut surrounding: Vec<usize> = Vec::new();
-            let mut in_surrounding = vec![false; n];
-            for i in (start_x - 1)..(finish_x + 2) {
-                for j in (start_y - 1)..(finish_y + 2) {
-                    if i < 0
-                        || j < 0
-                        || i as usize >= self.grid.len()
-                        || j as usize >= self.grid[0].len()
-                    {
-                        continue;
-                    }
-                    for &b in &self.grid[i as usize][j as usize] {
-                        if a == b {
-                            continue;
-                        }
-                        if !processed[b] && !in_surrounding[b] {
-                            let rect_b = self.graph.nodes[b].rect;
-                            let distance_x = (rect_a.center_x() - rect_b.center_x()).abs()
-                                - ((rect_a.width / 2.0) + (rect_b.width / 2.0));
-                            let distance_y = (rect_a.center_y() - rect_b.center_y()).abs()
-                                - ((rect_a.height / 2.0) + (rect_b.height / 2.0));
-                            if distance_x <= self.repulsion_range
-                                && distance_y <= self.repulsion_range
-                            {
-                                surrounding.push(b);
-                                in_surrounding[b] = true;
+            let grid_x = self.grid.len() as i64;
+            let grid_y = self.grid.first().map_or(0, Vec::len) as i64;
+            if grid_x > 0 && grid_y > 0 {
+                let mut in_surrounding = vec![false; n];
+                let lo_x = start_x.saturating_sub(1).max(0);
+                let hi_x = finish_x.saturating_add(2).min(grid_x);
+                let lo_y = start_y.saturating_sub(1).max(0);
+                let hi_y = finish_y.saturating_add(2).min(grid_y);
+                for i in lo_x..hi_x {
+                    for j in lo_y..hi_y {
+                        for &b in &self.grid[i as usize][j as usize] {
+                            if a == b {
+                                continue;
+                            }
+                            if !processed[b] && !in_surrounding[b] {
+                                let rect_b = self.graph.nodes[b].rect;
+                                let distance_x = (rect_a.center_x() - rect_b.center_x()).abs()
+                                    - ((rect_a.width / 2.0) + (rect_b.width / 2.0));
+                                let distance_y = (rect_a.center_y() - rect_b.center_y()).abs()
+                                    - ((rect_a.height / 2.0) + (rect_b.height / 2.0));
+                                if distance_x <= self.repulsion_range
+                                    && distance_y <= self.repulsion_range
+                                {
+                                    surrounding.push(b);
+                                    in_surrounding[b] = true;
+                                }
                             }
                         }
                     }
@@ -280,5 +336,80 @@ impl Engine {
         target.repulsion = PointD::default();
         target.gravitation = PointD::default();
         self.total_displacement += displacement_x.abs() + displacement_y.abs();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::geometry::RectD;
+    use crate::graph::{LGraph, LNode};
+
+    fn engine_with_rects(rects: &[RectD], range: f64) -> Engine {
+        let mut graph = LGraph::default();
+        for &rect in rects {
+            graph.nodes.push(LNode {
+                rect,
+                edges: Vec::new(),
+                no_of_children: 1.0,
+                spring: PointD::default(),
+                repulsion: PointD::default(),
+                gravitation: PointD::default(),
+                start_x: 0,
+                finish_x: 0,
+                start_y: 0,
+                finish_y: 0,
+                surrounding: Vec::new(),
+            });
+        }
+        graph.update_bounds();
+        Engine {
+            graph,
+            grid: Vec::new(),
+            total_iterations: 0,
+            max_iterations: 0.0,
+            total_displacement: 0.0,
+            old_total_displacement: 0.0,
+            total_displacement_threshold: 0.0,
+            cooling_factor: 0.5,
+            initial_cooling_factor: 0.5,
+            cooling_cycle: 0.0,
+            max_cooling_cycle: 0.0,
+            final_temperature: 0.0,
+            max_node_displacement: 0.0,
+            repulsion_range: range,
+            nodes_with_gravity: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn grid_handles_exact_integer_bounds_zero_extent_and_huge_coords() {
+        // Exact integer `(right - left) / range`: finish_x == size_x must not panic.
+        let mut exact = engine_with_rects(
+            &[
+                RectD::new(0.0, 0.0, 50.0, 50.0),
+                RectD::new(50.0, 50.0, 50.0, 50.0),
+            ],
+            50.0,
+        );
+        exact.update_grid();
+        exact.calc_repulsion_forces(true, true);
+
+        // Zero-width / zero-height nodes must not panic on empty grid indexing.
+        let mut zero = engine_with_rects(&[RectD::new(0.0, 0.0, 0.0, 0.0)], 50.0);
+        zero.update_grid();
+        zero.calc_repulsion_forces(true, true);
+
+        // Huge finite coordinates must cap grid dimensions without OOM.
+        let mut huge = engine_with_rects(
+            &[
+                RectD::new(0.0, 0.0, 10.0, 10.0),
+                RectD::new(1e9, 1e9, 10.0, 10.0),
+            ],
+            50.0,
+        );
+        huge.update_grid();
+        assert!(huge.grid.len() * huge.grid[0].len() <= 100_000);
+        huge.calc_repulsion_forces(true, true);
     }
 }

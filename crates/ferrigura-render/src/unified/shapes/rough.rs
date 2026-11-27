@@ -291,12 +291,13 @@ fn arc_to_cubic(
     large: bool,
     sweep: bool,
 ) -> Vec<[Point; 3]> {
-    let flat = arc_to_flat(from, to, rx, ry, large, sweep, None);
+    let flat = arc_to_flat(from, to, rx, ry, large, sweep, None, 0);
     flat.as_chunks::<3>().0.to_vec()
 }
 
 /// The control points and end points of an arc, flat: `[c1, c2, end]` triples, in order.
 /// `recursive` carries the angles and the center of a split arc: `[f1, f2, cx, cy]`.
+#[allow(clippy::too_many_arguments)]
 fn arc_to_flat(
     from: Point,
     to: Point,
@@ -305,6 +306,7 @@ fn arc_to_flat(
     large: bool,
     sweep: bool,
     recursive: Option<[f64; 4]>,
+    depth: usize,
 ) -> Vec<Point> {
     let (x1, y1, x2, y2) = (from.x, from.y, to.x, to.y);
     let (mut r1, mut r2) = (rx.abs(), ry.abs());
@@ -357,7 +359,7 @@ fn arc_to_flat(
     let mut params = Vec::new();
     let mut df = f2 - f1;
     let limit = PI * 120.0 / 180.0;
-    if df.abs() > limit {
+    if df.is_finite() && df.abs() > limit && depth < 16 {
         let f2old = f2;
         let (x2old, y2old) = (x2, y2);
         f2 = if sweep && f2 > f1 {
@@ -375,6 +377,7 @@ fn arc_to_flat(
             false,
             sweep,
             Some([f2, f2old, cx, cy]),
+            depth + 1,
         );
     }
     df = f2 - f1;
@@ -395,6 +398,9 @@ fn round9(value: f64) -> f64 {
     format!("{value:.9}").parse().unwrap_or(value)
 }
 
+/// Upper bound on ellipse sample steps so huge or overflowing dimensions cannot OOM or loop.
+const MAX_ELLIPSE_STEPS: f64 = 4096.0;
+
 /// `ellipseWithParams` (`renderer.js`) at roughness 0: the ellipse's core, sampled a quarter of a step
 /// from one step before the start to one step past the end, and joined by Catmull-Rom cubics
 /// (`_computeEllipsePoints` with `coreOnly`, `_curve` with tightness 0). Returns the curve's ops and the
@@ -404,17 +410,28 @@ fn ellipse_ops(cx: f64, cy: f64, width: f64, height: f64) -> (Vec<Op>, Vec<Point
     let rx = (width / 2.0).abs();
     let ry = (height / 2.0).abs();
     let psq = (PI * 2.0 * ((pow(width / 2.0, 2.0) + pow(height / 2.0, 2.0)) / 2.0).sqrt()).sqrt();
-    let steps = CURVE_STEP_COUNT
+    let raw_steps = CURVE_STEP_COUNT
         .max(CURVE_STEP_COUNT / 200.0_f64.sqrt() * psq)
         .ceil();
+    let steps = if raw_steps.is_finite() && raw_steps >= CURVE_STEP_COUNT {
+        raw_steps.min(MAX_ELLIPSE_STEPS)
+    } else {
+        CURVE_STEP_COUNT
+    };
     let increment = 2.0 * PI / steps;
     let step = increment / 4.0;
     let sample = |angle: f64| Point::new(cx + rx * cos(angle), cy + ry * sin(angle));
     let mut points = vec![sample(-step)];
-    let mut angle = 0.0;
-    while angle <= 2.0 * PI {
-        points.push(sample(angle));
-        angle += step;
+    if step.is_finite() && step > 0.0 {
+        let mut angle = 0.0;
+        while angle <= 2.0 * PI {
+            points.push(sample(angle));
+            let next = angle + step;
+            if next <= angle {
+                break;
+            }
+            angle = next;
+        }
     }
     points.push(sample(0.0));
     points.push(sample(step));
@@ -539,7 +556,12 @@ fn segments_box(segments: &[Segment]) -> BBox {
 /// `points-on-curve`'s `getPointsOnBezierCurveWithSplitting`: the points of a cubic at the given
 /// flatness, subdividing it at its midpoint until it is flat enough.
 fn points_on_cubic(p: [Point; 4], tolerance: f64, out: &mut Vec<Point>) {
-    if flatness(p) < tolerance {
+    points_on_cubic_depth(p, tolerance, out, 0);
+}
+
+fn points_on_cubic_depth(p: [Point; 4], tolerance: f64, out: &mut Vec<Point>, depth: usize) {
+    let flat = flatness(p);
+    if !flat.is_finite() || flat < tolerance || depth >= 20 {
         let p0 = p[0];
         match out.last() {
             Some(last) if last.distance(p0) > 1.0 => out.push(p0),
@@ -555,8 +577,8 @@ fn points_on_cubic(p: [Point; 4], tolerance: f64, out: &mut Vec<Point>) {
         let r1 = lerp(q1, q2);
         let r2 = lerp(q2, q3);
         let red = lerp(r1, r2);
-        points_on_cubic([p[0], q1, r1, red], tolerance, out);
-        points_on_cubic([red, r2, q3, p[3]], tolerance, out);
+        points_on_cubic_depth([p[0], q1, r1, red], tolerance, out, depth + 1);
+        points_on_cubic_depth([red, r2, q3, p[3]], tolerance, out, depth + 1);
     }
 }
 
@@ -1027,5 +1049,26 @@ mod tests {
             "{:?}",
             outline.bbox
         );
+    }
+
+    #[test]
+    fn extreme_ellipse_and_arc_dimensions_do_not_loop_or_oom() {
+        let huge = ellipse(0.0, 0.0, 1e200, 1e200, Paint::BOTH);
+        assert!(huge.stroke.as_ref().is_some_and(|ops| ops.len() < 20_000));
+
+        let inf = ellipse(0.0, 0.0, f64::INFINITY, 10.0, Paint::STROKE);
+        assert!(inf.stroke.as_ref().is_some_and(|ops| ops.len() < 20_000));
+
+        let flat = arc_to_flat(
+            Point::new(0.0, 0.0),
+            Point::new(10.0, 10.0),
+            5.0,
+            5.0,
+            false,
+            true,
+            Some([0.0, f64::INFINITY, 0.0, 0.0]),
+            0,
+        );
+        assert_eq!(flat.len(), 3);
     }
 }
