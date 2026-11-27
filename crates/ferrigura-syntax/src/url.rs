@@ -97,7 +97,8 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
     } else if loose {
         Some(url.to_owned())
     } else {
-        Some(sanitize_url(url))
+        let resolved = resolve_http_authority_entities(url);
+        Some(sanitize_url(resolved.as_ref()))
     }
 }
 
@@ -665,16 +666,31 @@ fn resolve_http_authority_entities(candidate: &str) -> std::borrow::Cow<'_, str>
     if !candidate.contains("ﬂ°") {
         return std::borrow::Cow::Borrowed(candidate);
     }
-    let Some(colon) = candidate.find(':') else {
+    let normalized: std::borrow::Cow<'_, str> = if candidate.contains('\\') {
+        std::borrow::Cow::Owned(candidate.replace('\\', "/"))
+    } else {
+        std::borrow::Cow::Borrowed(candidate)
+    };
+    let scheme_len = if normalized
+        .get(..5)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("http:"))
+    {
+        5
+    } else if normalized
+        .get(..6)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("https:"))
+    {
+        6
+    } else {
         return std::borrow::Cow::Borrowed(candidate);
     };
-    let after_colon = &candidate[colon + 1..];
+    let after_colon = &normalized[scheme_len..];
     let slashes = after_colon.bytes().take_while(|&b| b == b'/').count();
-    let authority_start = colon + 1 + slashes;
-    let authority_end = candidate[authority_start..]
+    let authority_start = scheme_len + slashes;
+    let authority_end = normalized[authority_start..]
         .find(['/', '?', '#'])
-        .map_or(candidate.len(), |offset| authority_start + offset);
-    let authority = &candidate[authority_start..authority_end];
+        .map_or(normalized.len(), |offset| authority_start + offset);
+    let authority = &normalized[authority_start..authority_end];
     if !authority.contains("ﬂ°") {
         return std::borrow::Cow::Borrowed(candidate);
     }
@@ -683,10 +699,10 @@ fn resolve_http_authority_entities(candidate: &str) -> std::borrow::Cow<'_, str>
         .replace('<', "&lt;")
         .replace('>', "&gt;");
     let resolved = crate::sanitize::decode_attribute_references(&crate::decode_entities(&escaped));
-    let mut out = String::with_capacity(candidate.len());
-    out.push_str(&candidate[..authority_start]);
+    let mut out = String::with_capacity(normalized.len());
+    out.push_str(&normalized[..authority_start]);
     out.push_str(&resolved);
-    out.push_str(&candidate[authority_end..]);
+    out.push_str(&normalized[authority_end..]);
     std::borrow::Cow::Owned(out)
 }
 

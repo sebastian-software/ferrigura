@@ -1,66 +1,83 @@
-Resolve Mermaid entity placeholders in HTTP/HTTPS URL authorities before host/IDNA normalization in formatUrl, and decode percent-encoded placeholders (%EF%AC%82%C2%B0...%C2%B6%C3%9F) strictly inside href/xlink:href attributes in cleanUpSvgCode without touching unrelated text labels or %XX escapes.
+Resolve Mermaid entity placeholders in HTTP/HTTPS URL authorities before host/IDNA normalization in formatUrl, and decode percent-encoded placeholders (%EF%AC%82%C2%B0...%C2%B6%C3%9F) directly on live DOM href/xlink:href attributes before serialization so text nodes and unrelated %XX escapes are never touched.
 
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index 64d8255..eacddcc 100644
+index 64d8255..d4a6309 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
-@@ -340,6 +340,48 @@ export const createUserStyles = (
+@@ -340,6 +340,62 @@ export const createUserStyles = (
    return compileCSS(svgId, allStyles);
  };
  
-+const decodePercentEncodedEntities = (svg: string): string => {
-+  if (!svg.includes('%EF%AC%82%C2%B0')) {
-+    return svg;
++const decodePercentEncodedUrlValue = (
++  value: string,
++  holder: HTMLDivElement,
++  encoder: TextEncoder
++): string =>
++  value.replace(
++    /%EF%AC%82%C2%B0(%C2%B0)?([A-Za-z0-9_]+)%C2%B6%C3%9F/g,
++    (_match, isNum: string | undefined, body: string) => {
++      const ref = isNum ? `&#${body};` : `&${body};`;
++      holder.innerHTML = `<a data-v="${ref}"></a>`;
++      const decoded = holder.firstElementChild?.getAttribute('data-v') ?? ref;
++      let out = '';
++      for (const byte of encoder.encode(decoded)) {
++        if (
++          byte <= 0x20 ||
++          byte === 0x22 ||
++          byte === 0x3c ||
++          byte === 0x3e ||
++          byte === 0x60 ||
++          byte >= 0x7f
++        ) {
++          out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++        } else {
++          out += String.fromCharCode(byte);
++        }
++      }
++      return out;
++    }
++  );
++
++const decodePercentEncodedHrefAttrs = (svgRoot: Element | null): void => {
++  if (!svgRoot) {
++    return;
 +  }
 +  const holder = document.createElement('div');
 +  const encoder = new TextEncoder();
-+  return svg.replace(
-+    /(\b(?:xlink:)?href=")([^"]*%EF%AC%82%C2%B0[^"]*)(")/g,
-+    (_attrMatch, prefix: string, value: string, suffix: string) =>
-+      prefix +
-+      value.replace(
-+        /%EF%AC%82%C2%B0(%C2%B0)?([A-Za-z0-9_]+)%C2%B6%C3%9F/g,
-+        (_match, isNum: string | undefined, body: string) => {
-+          const ref = isNum ? `&#${body};` : `&${body};`;
-+          holder.innerHTML = `<a data-v="${ref}"></a>`;
-+          const decoded = holder.firstElementChild?.getAttribute('data-v') ?? ref;
-+          let out = '';
-+          for (const byte of encoder.encode(decoded)) {
-+            if (
-+              byte <= 0x20 ||
-+              byte === 0x22 ||
-+              byte === 0x3c ||
-+              byte === 0x3e ||
-+              byte === 0x60 ||
-+              byte >= 0x7f
-+            ) {
-+              out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
-+            } else if (byte === 0x26) {
-+              out += '&amp;';
-+            } else if (byte === 0x27) {
-+              out += '&#39;';
-+            } else {
-+              out += String.fromCharCode(byte);
-+            }
++  for (const el of svgRoot.querySelectorAll('*')) {
++    for (const attr of Array.from(el.attributes)) {
++      if (
++        (attr.localName === 'href' &&
++          (attr.namespaceURI === null || attr.namespaceURI === XMLNS_XLINK_STD)) ||
++        attr.name === 'xlink:href'
++      ) {
++        if (attr.value.includes('%EF%AC%82%C2%B0')) {
++          const decoded = decodePercentEncodedUrlValue(attr.value, holder, encoder);
++          if (attr.namespaceURI) {
++            el.setAttributeNS(attr.namespaceURI, attr.name, decoded);
++          } else {
++            el.setAttribute(attr.name, decoded);
 +          }
-+          return out;
 +        }
-+      ) +
-+      suffix
-+  );
++      }
++    }
++  }
 +};
 +
  /**
   * Clean up svgCode. Do replacements needed
   *
-@@ -364,6 +406,7 @@ export const cleanUpSvgCode = (
-   }
+@@ -636,7 +692,9 @@ const renderDiagram = async function (
+   const serializeSvg = (): string => {
+     // -------------------------------------------------------------------------------
+     // Clean up SVG code
+-    root.select(`[id="${id}"]`).selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
++    const svgRootSelection = root.select(`[id="${id}"]`);
++    svgRootSelection.selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
++    decodePercentEncodedHrefAttrs(svgRootSelection.node() as Element | null);
  
-   cleanedUpSvg = decodeEntities(cleanedUpSvg);
-+  cleanedUpSvg = decodePercentEncodedEntities(cleanedUpSvg);
- 
-   // replace old br tags with newer style
-   cleanedUpSvg = cleanedUpSvg.replace(/<br>/g, '<br/>');
+     // Fix for when the base tag is used
+     let code: string = root.select<HTMLDivElement>(enclosingDivID_selector).node()!.innerHTML;
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
 index 48ac4a6..14a50e2 100644
 --- a/packages/mermaid/src/utils.ts

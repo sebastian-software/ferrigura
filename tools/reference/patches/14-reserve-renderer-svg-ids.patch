@@ -1,7 +1,7 @@
-Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs in the shared unified renderer without letting decoded IDs steal literal IDs or redirecting links away from winning literal elements, and protect single-decoded IDs from a second decodeEntities pass.
+Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs in the shared unified renderer without mutating edge.id before ELK layout or redirecting links away from winning literal elements, recognize entity-encoded fragment markers, and protect both placeholder boundaries (ﬂ° and ¶ß) on resolved IDs from a second decodeEntities pass.
 
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index eacddcc..8389875 100644
+index d4a6309..ce7ed36 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
 @@ -43,6 +43,7 @@ import type {
@@ -12,15 +12,17 @@ index eacddcc..8389875 100644
  import { toBase64 } from './utils/base64.js';
  import { sanitizeCss } from './utils/sanitizeDirective.js';
  
-@@ -406,6 +407,7 @@ export const cleanUpSvgCode = (
+@@ -420,6 +421,9 @@ export const cleanUpSvgCode = (
    }
  
    cleanedUpSvg = decodeEntities(cleanedUpSvg);
-+  cleanedUpSvg = cleanedUpSvg.replaceAll('\uE000__FG_FL__\uE000', 'ﬂ');
-   cleanedUpSvg = decodePercentEncodedEntities(cleanedUpSvg);
++  cleanedUpSvg = cleanedUpSvg
++    .replaceAll('\uE000__FG_FL__\uE000', 'ﬂ')
++    .replaceAll('\uE000__FG_PI__\uE000', '¶');
  
    // replace old br tags with newer style
-@@ -651,6 +653,9 @@ const renderDiagram = async function (
+   cleanedUpSvg = cleanedUpSvg.replace(/<br>/g, '<br/>');
+@@ -664,6 +668,9 @@ const renderDiagram = async function (
  
    // -------------------------------------------------------------------------------
    // Draw the diagram with the renderer
@@ -30,7 +32,7 @@ index eacddcc..8389875 100644
    try {
      if (injected.profiling) {
        await profiler.span('draw', () => diag.renderer.draw(text, id, injected.version, diag));
-@@ -664,6 +669,8 @@ const renderDiagram = async function (
+@@ -677,6 +684,8 @@ const renderDiagram = async function (
        errorRenderer.draw(text, id, injected.version);
      }
      throw e;
@@ -40,7 +42,7 @@ index eacddcc..8389875 100644
  
    // This is the d3 node for the svg element
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..2d84b50 100644
+index 49145b2..ee54c07 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -51,7 +53,7 @@ index 49145b2..2d84b50 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,117 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,135 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -117,7 +119,25 @@ index 49145b2..2d84b50 100644
 +const canonicalAttrId = (raw: string): string => canonicalXmlAttr(resolvePlaceholdersAttr(raw));
 +
 +const protectResolvedId = (value: string): string =>
-+  value.includes('ﬂ°') ? value.replace(/ﬂ(?=°)/g, '\uE000__FG_FL__\uE000') : value;
++  value
++    .replace(/ﬂ(?=°)/g, '\uE000__FG_FL__\uE000')
++    .replace(/¶(?=ß)/g, '\uE000__FG_PI__\uE000');
++
++const stripFragmentMarker = (rawLink: string): string | undefined => {
++  if (rawLink.startsWith('#')) {
++    return rawLink.slice(1);
++  }
++  if (rawLink.startsWith('ﬂ°')) {
++    const close = rawLink.indexOf('¶ß');
++    if (close !== -1) {
++      const end = close + 2;
++      if (resolvePlaceholdersAttr(rawLink.slice(0, end)) === '#') {
++        return rawLink.slice(end);
++      }
++    }
++  }
++  return undefined;
++};
 +
 +const formatFragmentUrl = (id: string): string => {
 +  let out = '#';
@@ -169,7 +189,7 @@ index 49145b2..2d84b50 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,9 +217,187 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,9 +235,190 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -281,7 +301,8 @@ index 49145b2..2d84b50 100644
 +        p.hadPlaceholder || finalLocal !== p.originalDomId || canonicalSvgId !== svgId;
 +      const rawDistinctFromOwner =
 +        p.hadPlaceholder ||
-+        `${canonicalSvgId}-${finalLocal}` === p.canonicalFull ||
++        p.canonicalLocal !== p.originalDomId ||
++        canonicalSvgId !== svgId ||
 +        !elementOwned.has(p.canonicalFull);
 +      if (normalizedChanged && rawDistinctFromOwner) {
 +        const key = `#${svgId}-${p.originalDomId}`;
@@ -337,33 +358,47 @@ index 49145b2..2d84b50 100644
 +        (p.edge as { pathId?: string }).pathId = protectResolvedId(finalPath);
 +      }
 +      if (p.edgeHadPlaceholder) {
-+        p.edge.id = protectResolvedId(p.canonicalEdgeId);
++        (p.edge as { dataId?: string }).dataId = protectResolvedId(p.canonicalEdgeId);
 +      }
 +    }
 +
 +    for (const node of data4Layout.nodes) {
-+      if (typeof node.link === 'string' && node.link.startsWith('#')) {
-+        const fragment = node.link.slice(1);
-+        let target: string | undefined;
-+        if (fragment.includes('%')) {
-+          const decoded = percentDecodeFragment(fragment);
-+          if (decoded !== undefined) {
-+            target = remapped.get(`#${decoded}`);
++      if (typeof node.link === 'string') {
++        const fragment = stripFragmentMarker(node.link);
++        if (fragment !== undefined) {
++          let target: string | undefined;
++          if (fragment.includes('%')) {
++            const decoded = percentDecodeFragment(fragment);
++            if (decoded !== undefined) {
++              target = remapped.get(`#${decoded}`);
++            }
 +          }
-+        }
-+        target ??= remapped.get(node.link);
-+        if (target !== undefined) {
-+          node.link = target;
++          target ??= remapped.get(`#${fragment}`);
++          if (target !== undefined) {
++            node.link = target;
++          }
 +        }
 +      }
      }
    }
  
 diff --git a/packages/mermaid/src/rendering-util/rendering-elements/edges.js b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
-index 1f88ca4..436d2cf 100644
+index 1f88ca4..db862aa 100644
 --- a/packages/mermaid/src/rendering-util/rendering-elements/edges.js
 +++ b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
-@@ -834,7 +834,7 @@ export const insertEdge = function (
+@@ -81,7 +81,10 @@ export const insertEdgeLabel = async (elem, edge) => {
+   const edgeLabel = elem.insert('g').attr('class', 'edgeLabel');
+ 
+   // Create inner g, label, this will be positioned now for centering the text
+-  const label = edgeLabel.insert('g').attr('class', 'label').attr('data-id', edge.id);
++  const label = edgeLabel
++    .insert('g')
++    .attr('class', 'label')
++    .attr('data-id', edge.dataId ?? edge.id);
+ 
+   const isMarkdown = edge.labelType === 'markdown';
+   const markdownWidth = undefined; // Use default width for markdown labels
+@@ -834,7 +837,7 @@ export const insertEdge = function (
  
      svgPath = select(svgPathNode)
        .select('path')
@@ -372,7 +407,7 @@ index 1f88ca4..436d2cf 100644
        .attr(
          'class',
          ' ' +
-@@ -857,7 +857,7 @@ export const insertEdge = function (
+@@ -857,7 +860,7 @@ export const insertEdge = function (
      svgPath = elem
        .append('path')
        .attr('d', linePath)
@@ -381,3 +416,12 @@ index 1f88ca4..436d2cf 100644
        .attr(
          'class',
          ' ' +
+@@ -895,7 +898,7 @@ export const insertEdge = function (
+   // MC Special
+   svgPath.attr('data-edge', true);
+   svgPath.attr('data-et', 'edge');
+-  svgPath.attr('data-id', edge.id);
++  svgPath.attr('data-id', edge.dataId ?? edge.id);
+   svgPath.attr('data-points', pointsStr);
+   // Add data attributes for neo look support
+   svgPath.attr('data-look', handleUndefinedAttr(edge.look));

@@ -793,10 +793,11 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
     assert_eq!(http_href, "https://example.org/Chapter%20One?q=A%26B");
 
     // Hostname entities (such as `#46;` for `.`) resolve before WHATWG/IDNA host normalization
-    // instead of turning into Punycode (`xn--...`), while invalid hostname entities fail closed.
+    // instead of turning into Punycode (`xn--...`), including URLs with explicit ports, while
+    // invalid hostname entities fail closed.
     let host_entity = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "classDiagram\n  class A\n  class B\n  click A href \"https://example#46;org/Chapter#32;One\"\n  click B href \"https://example#32;org/docs\"\n",
+            "classDiagram\n  class A\n  class B\n  class C\n  click A href \"https://example#46;org/Chapter#32;One\"\n  click B href \"https://example#32;org/docs\"\n  click C href \"https://example#46;org:8080/path\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
                 ..ferrigura::RenderOptions::default()
@@ -810,8 +811,76 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .collect();
     assert_eq!(
         host_hrefs,
-        vec!["https://example.org/Chapter%20One", "about:blank"]
+        vec![
+            "https://example.org/Chapter%20One",
+            "about:blank",
+            "https://example.org:8080/path",
+        ]
     );
+
+    // Distinct raw node IDs after XML normalization (`Foo Bar` vs literal-tab `Foo\tBar` in loose
+    // mode) remap `#graph-classId-Foo%09Bar` to the disambiguated `Foo Bar-1` class.
+    let tab_loose_collide = ferrigura::Renderer::new(&loose_config)
+        .render_with(
+            "classDiagram\n  class `Foo Bar`\n  class `Foo\tBar`\n  click `Foo\tBar` href \"#graph-classId-Foo%09Bar\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let tab_loose_doc =
+        roxmltree::Document::parse(&tab_loose_collide).expect("well-formed SVG XML");
+    let tab_loose_href = tab_loose_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(tab_loose_href, "#graph-classId-Foo%20Bar-1");
+    assert_eq!(
+        resolved_fragment_target(tab_loose_href),
+        "graph-classId-Foo Bar-1"
+    );
+
+    // Entity-encoded fragment markers (`#35;`) still match remapped disambiguated class IDs.
+    let encoded_hash = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo-Bar`\n  class `Foo#45;Bar`\n  click `Foo#45;Bar` href \"#35;graph-classId-Foo#45;Bar\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let encoded_hash_doc = roxmltree::Document::parse(&encoded_hash).expect("well-formed SVG XML");
+    let encoded_hash_href = encoded_hash_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(encoded_hash_href, "#graph-classId-Foo-Bar-1");
+
+    // Resolved IDs containing closing Mermaid entity tokens (`Foo#182;ß` -> `Foo¶ß`) are not
+    // decoded a second time to `;`.
+    let close_token = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo#182;ß`\n  click `Foo#182;ß` href \"#graph-classId-Foo#182;ß\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let close_doc = roxmltree::Document::parse(&close_token).expect("well-formed SVG XML");
+    assert!(
+        close_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Foo¶ß")),
+        "{close_token}"
+    );
+    let close_href = close_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(resolved_fragment_target(close_href), "graph-classId-Foo¶ß");
 
     // When a subgraph `foo` keeps `graph-foo` and a colliding edge `foo@-->` is disambiguated to
     // `graph-foo-1`, fragment links to `#graph-foo` remain on the subgraph (with or without an

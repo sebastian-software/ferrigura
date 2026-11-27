@@ -722,6 +722,24 @@ fn percent_decode_fragment(fragment: &str) -> Option<String> {
     String::from_utf8(out).ok()
 }
 
+/// Strips a leading `#` fragment marker, including when the marker itself was encoded as a
+/// Mermaid entity placeholder (such as `#35;` -> `ﬂ°°35¶ß` or `#num;` -> `ﬂ°num¶ß`), returning
+/// the raw fragment body without decoding the target ID.
+fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
+    if let Some(rest) = raw_link.strip_prefix('#') {
+        return Some(rest);
+    }
+    if raw_link.starts_with("ﬂ°")
+        && let Some(close) = raw_link.find("¶ß")
+    {
+        let end = close + "¶ß".len();
+        if crate::common::resolve_entity_placeholders(&raw_link[..end]) == "#" {
+            return Some(&raw_link[end..]);
+        }
+    }
+    None
+}
+
 /// Pre-resolved, XML-normalized, collision-free DOM and edge IDs for one unified render pass.
 struct ResolvedDomIds {
     nodes: Vec<String>,
@@ -733,16 +751,23 @@ struct ResolvedDomIds {
 impl ResolvedDomIds {
     /// Looks up the remapped fragment URL for `raw_link`, matching its percent-decoded fragment
     /// target first (so `#graph-classId-A%20B#45;C` targets `A B-C` rather than a literal
-    /// `A%20B-C`), then falling back to its raw spelling.
+    /// `A%20B-C`), then falling back to its raw spelling. Also recognizes entity-encoded leading
+    /// `#` markers (such as `#35;`).
     fn remap_fragment(&self, raw_link: &str) -> Option<&str> {
-        let fragment = raw_link.strip_prefix('#')?;
+        let fragment = strip_fragment_marker(raw_link)?;
         if fragment.contains('%')
             && let Some(decoded) = percent_decode_fragment(fragment)
             && let Some(target) = self.remapped_fragments.get(&format!("#{decoded}"))
         {
             return Some(target.as_str());
         }
-        self.remapped_fragments.get(raw_link).map(String::as_str)
+        if raw_link.starts_with('#') {
+            self.remapped_fragments.get(raw_link).map(String::as_str)
+        } else {
+            self.remapped_fragments
+                .get(&format!("#{fragment}"))
+                .map(String::as_str)
+        }
     }
 
     /// Resolves and disambiguates node/cluster DOM IDs and edge IDs across the entire diagram in a
@@ -880,6 +905,7 @@ impl ResolvedDomIds {
                 nodes.push(node.dom_id.clone());
                 continue;
             }
+            let canonical_differs = canonical_local != node.dom_id;
             let collided = is_renderer_owned_id(&canonical_full, &canonical_svg_id, defs)
                 || !seen.insert(canonical_full.clone());
             let final_local = if !collided {
@@ -903,7 +929,8 @@ impl ResolvedDomIds {
             let normalized_changed =
                 had_placeholder || final_local != node.dom_id || canonical_svg_id != svg_id;
             let raw_distinct_from_owner = had_placeholder
-                || format!("{canonical_svg_id}-{final_local}") == canonical_full
+                || canonical_differs
+                || canonical_svg_id != svg_id
                 || !element_owned.contains(&canonical_full);
             if normalized_changed && raw_distinct_from_owner {
                 let target_id = format!("{canonical_svg_id}-{final_local}");
