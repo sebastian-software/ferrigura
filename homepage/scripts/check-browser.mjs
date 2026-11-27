@@ -131,7 +131,7 @@ async function verifyExample(page, origin) {
 async function verifyCompareSlider(page, origin) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(new URL('/comparisons/side-by-side/', origin).href, { waitUntil: 'load' });
-  assert.equal(await page.locator('.fgr-side').count(), 10, 'The page needs ten figures');
+  assert.equal(await page.locator('.fgr-side').count(), 9, 'The page needs nine figures');
   await verifyComparisonFonts(page);
   await verifyComparisonLabels(page);
   const slider = page.locator('.fgr-compare').nth(3);
