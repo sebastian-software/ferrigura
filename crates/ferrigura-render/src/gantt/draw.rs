@@ -67,9 +67,6 @@ impl ResolvedGanttIds {
         };
 
         let fragment = strip_fragment_marker(raw_link)?;
-        if let Some(target) = self.remapped_fragments.get(&format!("#{fragment}")) {
-            return Some(target.clone());
-        }
         if fragment.contains('%')
             && let Some(decoded) = percent_decode_fragment(fragment)
         {
@@ -83,6 +80,9 @@ impl ResolvedGanttIds {
             if self.element_owned.contains(&resolved_target) {
                 return Some(format_fragment_url(&resolved_target));
             }
+        }
+        if let Some(target) = self.remapped_fragments.get(&format!("#{fragment}")) {
+            return Some(target.clone());
         }
         let resolved_target = canonical_attr_id(fragment);
         if resolved_target != fragment && self.element_owned.contains(&resolved_target) {
@@ -105,10 +105,12 @@ impl Chart<'_> {
 
     /// The `excludes` rectangles (`drawExcludeDays`, `ganttRenderer.js:543-616`): one per run of
     /// excluded days, drawn in a group that is written whenever `excludes` or `includes` is given.
-    pub(super) fn exclude_group(&self, out: &mut String) -> Result<(), RenderError> {
+    /// Returns the DOM IDs emitted on the exclusion rectangles so task ID allocation can reserve
+    /// them.
+    pub(super) fn exclude_group(&self, out: &mut String) -> Result<Vec<String>, RenderError> {
         let model = self.model;
         if model.excludes.is_empty() && model.includes.is_empty() {
-            return Ok(());
+            return Ok(Vec::new());
         }
         // `minTime` and `maxTime`: the first task sets each, the others move them.
         let mut min_time: Option<f64> = None;
@@ -123,11 +125,11 @@ impl Chart<'_> {
             }
         }
         let (Some(min_time), Some(max_time)) = (min_time, max_time) else {
-            return Ok(());
+            return Ok(Vec::new());
         };
         if dayjs::years_between(max_time, min_time) > 5.0 {
             // The reference warns and draws nothing for a span of more than five years.
-            return Ok(());
+            return Ok(Vec::new());
         }
 
         let mut ranges: Vec<(f64, f64)> = Vec::new();
@@ -154,6 +156,7 @@ impl Chart<'_> {
         let gl = self.conf.grid_line_start_padding as f64;
         let tp = self.conf.top_padding as f64;
         let fill = self.colour("fill", &self.tokens().exclude_bkg_color);
+        let mut exclude_ids = Vec::with_capacity(ranges.len());
         let mut out_group = String::from("<g>");
         for (index, (start, end)) in ranges.iter().copied().enumerate() {
             let x = scale.apply(dayjs::start_of_day(start)) + sp;
@@ -161,10 +164,12 @@ impl Chart<'_> {
                 scale.apply(dayjs::end_of_day(end)) - scale.apply(dayjs::start_of_day(start));
             let origin = scale.apply(start) + sp + 0.5 * (scale.apply(end) - scale.apply(start));
             let row = index as f64 * self.gap + 0.5 * self.h;
+            let date = dayjs::format_date(start);
+            exclude_ids.push(format!("{}-exclude-{date}", self.id));
             out_group.push_str(&format!(
                 "<rect id=\"{}-exclude-{}\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" transform-origin=\"{}px {}px\" class=\"exclude-range\"{fill}></rect>",
                 escape(self.id),
-                escape(&dayjs::format_date(start)),
+                escape(&date),
                 number(x),
                 number(gl),
                 number(width),
@@ -175,7 +180,7 @@ impl Chart<'_> {
         }
         out_group.push_str("</g>");
         out.push_str(&out_group);
-        Ok(())
+        Ok(exclude_ids)
     }
 
     /// The values of an axis: the scale's ticks, or the custom interval's instants when the
@@ -307,6 +312,7 @@ impl Chart<'_> {
         out: &mut String,
         texts: &mut Texts,
         mut drawing: Option<&mut crate::animation::Drawing>,
+        exclude_ids: &[String],
     ) -> Result<(), RenderError> {
         let vert = self.vert.clone();
         self.array.sort_by_key(|&index| vert[index]);
@@ -344,7 +350,7 @@ impl Chart<'_> {
         // IDs while entity-decoded or XML-normalized IDs that collide with a literal task, a
         // renderer-owned ID, or an earlier decoded task get a numeric suffix, and same-document
         // fragment links to those tasks are remapped and percent-encoded to match.
-        let resolved_ids = self.allocate_task_dom_ids();
+        let resolved_ids = self.allocate_task_dom_ids(exclude_ids);
         if let Some(drawing) = drawing.as_deref_mut() {
             let mask_prefix = format!("{}-draw-mask-", self.id);
             let mut occupied_masks = Vec::new();
@@ -435,7 +441,7 @@ impl Chart<'_> {
 
     /// Allocates unique bar/label DOM IDs when any task ID, SVG ID, or fragment link requires
     /// entity resolution, XML attribute normalization, or collision disambiguation.
-    fn allocate_task_dom_ids(&self) -> Option<ResolvedGanttIds> {
+    fn allocate_task_dom_ids(&self, exclude_ids: &[String]) -> Option<ResolvedGanttIds> {
         use crate::unified::pipeline::{
             canonical_attr_id, canonical_xml_attr, format_fragment_url, needs_id_normalization,
             strip_fragment_marker,
@@ -449,6 +455,9 @@ impl Chart<'_> {
         }
         if !self.model.acc_descr.is_empty() {
             renderer_owned.insert(format!("chart-desc-{canonical_svg_id}"));
+        }
+        for ex_id in exclude_ids {
+            renderer_owned.insert(canonical_xml_attr(ex_id).into_owned());
         }
         let needs_pass = canonical_svg_id != self.id
             || self.model.tasks.iter().any(|task| {

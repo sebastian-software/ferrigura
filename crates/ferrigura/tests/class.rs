@@ -143,13 +143,19 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         "{entity_https}"
     );
 
-    // Percent-encoded `#` decoded by `formatUrl` must not be re-encoded into a Mermaid entity
-    // placeholder after URL formatting (matching Mermaid's `encodeEntities` -> `formatUrl` order).
+    // Percent-encoded `#` stays percent-encoded in `formatUrl`, and when `sanitize_url` decodes
+    // `%23` (triggered here by a `\t` whitespace escape), the decoded `#copy;` must not be
+    // re-encoded into a Mermaid entity placeholder after URL formatting (matching Mermaid's
+    // `encodeEntities` -> `formatUrl` order).
     let percent_hash = render(
-        "classDiagram\n  class A\n  click A href \"/docs/%23copy;\"\n",
+        "classDiagram\n  class A\n  class B\n  click A href \"/docs/%23copy;\"\n  click B href \"/docs/%23copy;\\t\"\n",
         &Value::empty_object(),
     )
     .expect("renders");
+    assert!(
+        percent_hash.contains("xlink:href=\"/docs/%23copy;\""),
+        "{percent_hash}"
+    );
     assert!(
         percent_hash.contains("xlink:href=\"/docs/#copy;\""),
         "{percent_hash}"
@@ -785,10 +791,10 @@ fn url_entity_placeholders_and_fragment_precedence_match_reference() {
 
     // Normalized HTTP/HTTPS links with Mermaid entity placeholders (such as `#32;`) resolve the
     // percent-encoded internal placeholder at the SVG sink without decoding unrelated `%XX`
-    // escapes such as `%26` (produced here after `sanitizeUrl`'s two decode passes on `%252526`).
+    // escapes such as `%26`.
     let http_entity = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "classDiagram\n  class A\n  click A href \"https://example.org/Chapter#32;One?q=A%252526B\"\n",
+            "classDiagram\n  class A\n  click A href \"https://example.org/Chapter#32;One?q=A%26B\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
                 ..ferrigura::RenderOptions::default()
@@ -1495,7 +1501,7 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     )
     .expect("renders");
     assert!(
-        token_lookalike.contains("xlink:href=\"https://example.org/__fg00000000_0__/%C2%A9\""),
+        token_lookalike.contains("xlink:href=\"https://example.org/%5f_fg00000000_0__/%C2%A9\""),
         "{token_lookalike}"
     );
     assert!(
@@ -1909,7 +1915,7 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     assert!(!gantt_collision.contains("ﬂ°"), "{gantt_collision}");
 
     // Entity authority terminator (`#47;`), entity-spelled IPv4 host (`192#46;168.1.1`), host entity
-    // with double-encoded query (`?q=A%252526B`), and caret entity in path (`#94;`).
+    // with percent-encoded query (`?q=A%252526B`), and caret entity in path (`#94;`).
     let entity_url_cases = [
         (
             "https://example.org#47;docs#63;b",
@@ -1918,7 +1924,7 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         ("https://192#46;168.1.1/x", "https://192.168.1.1/x"),
         (
             "https://example#46;org/?q=A%252526B",
-            "https://example.org/?q=A%26B",
+            "https://example.org/?q=A%252526B",
         ),
         ("https://example.org/a#94;b", "https://example.org/a%5Eb"),
     ];
@@ -2063,4 +2069,58 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     }
     assert!(anim_ids.contains("graph-draw-mask-0"));
     assert!(anim_ids.contains("graph-draw-mask-1"));
+
+    // Gantt exclusion-range `<rect id="{id}-exclude-YYYY-MM-DD">` IDs are reserved before task
+    // IDs so a colliding task (`exclude#45;2024-01-06`) is suffixed and its fragment remapped.
+    let gantt_exclude = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  excludes weekends\n  section S\n  Task : exclude#45;2024-01-06, 2024-01-05, 4d\n  click exclude#45;2024-01-06 href \"#graph-exclude#45;2024-01-06\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let gantt_ex_doc = roxmltree::Document::parse(&gantt_exclude).expect("well-formed SVG XML");
+    let mut ex_ids = std::collections::HashSet::new();
+    for id in gantt_ex_doc.descendants().filter_map(|n| n.attribute("id")) {
+        assert!(
+            ex_ids.insert(id),
+            "duplicate gantt exclusion id {id:?} in {gantt_exclude}"
+        );
+    }
+    assert!(
+        gantt_ex_doc.descendants().any(|n| n.has_tag_name("rect")
+            && n.attribute("class") == Some("exclude-range")
+            && n.attribute("id") == Some("graph-exclude-2024-01-06")),
+        "{gantt_exclude}"
+    );
+    assert!(ex_ids.contains("graph-exclude-2024-01-06-2"));
+    assert!(
+        gantt_exclude.contains("xlink:href=\"#graph-exclude-2024-01-06-2\""),
+        "{gantt_exclude}"
+    );
+
+    // In loose mode, Gantt fragment remapping prefers a percent-decoded target (`A B-C`) over a
+    // raw alias (`A%20B-C`), matching unified diagrams.
+    let gantt_pct_prec = ferrigura::Renderer::new(&loose_cfg)
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : A%20B#45;C, 2024-01-01, 1d\n  T2 : A#32;B#45;C, 2024-01-02, 1d\n  click A%20B#45;C href \"#graph-A%20B#45;C\"\n  click A#32;B#45;C href \"#graph-A%2520B#45;C\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let gantt_prec_doc = roxmltree::Document::parse(&gantt_pct_prec).expect("well-formed SVG XML");
+    let gantt_prec_hrefs: Vec<&str> = gantt_prec_doc
+        .descendants()
+        .filter_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(gantt_prec_hrefs, vec!["#graph-A%20B-C", "#graph-A%2520B-C"]);
+    assert_eq!(resolved_fragment_target(gantt_prec_hrefs[0]), "graph-A B-C");
+    assert_eq!(
+        resolved_fragment_target(gantt_prec_hrefs[1]),
+        "graph-A%20B-C"
+    );
 }

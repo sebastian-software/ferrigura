@@ -463,13 +463,22 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         "{valid_click}"
     );
     let encoded_click = render(
-        "flowchart TD\nA[x]\nclick A \"https://example.com/files?q=A%252526B\"\n",
+        "flowchart TD\nA[x]\nclick A \"https://example.com/files?q=A%26B\"\n",
         &Value::empty_object(),
     )
     .expect("renders");
     assert!(
         encoded_click.contains("xlink:href=\"https://example.com/files?q=A%26B\""),
         "{encoded_click}"
+    );
+    let relative_encoded_click = render(
+        "flowchart TD\nA[x]\nclick A \"/docs/a%2Fb?q=A%26B\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        relative_encoded_click.contains("xlink:href=\"/docs/a%2Fb?q=A%26B\""),
+        "{relative_encoded_click}"
     );
     let valid_image = render(
         "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",

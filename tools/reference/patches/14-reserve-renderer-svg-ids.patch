@@ -1,7 +1,5 @@
-Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs (including pre-assigned use-case path IDs and block-diagram nodes/edges) in the shared unified and block renderers, prefer existing decoded fragment targets over raw fallbacks (including post-render state click links and trimmed fragment whitespace), defer data-id placeholder rewriting until after layout/line-hops, and protect only the marked resolved DOM ID attributes from a second decodeEntities pass using a collision-free per-render token.
-
 diff --git a/packages/mermaid/src/diagrams/gantt/ganttRenderer.js b/packages/mermaid/src/diagrams/gantt/ganttRenderer.js
-index 22a0562..779cb8f 100644
+index 22a0562..b193c92 100644
 --- a/packages/mermaid/src/diagrams/gantt/ganttRenderer.js
 +++ b/packages/mermaid/src/diagrams/gantt/ganttRenderer.js
 @@ -28,6 +28,11 @@ import {
@@ -16,13 +14,18 @@ index 22a0562..779cb8f 100644
  
  dayjs.extend(dayjsDuration);
  
-@@ -280,13 +285,18 @@ export const draw = function (text, id, version, diagObj) {
+@@ -280,13 +285,23 @@ export const draw = function (text, id, version, diagObj) {
      const rectangles = svg.append('g').selectAll('rect').data(theArray).enter();
  
      const links = diagObj.db.getLinks();
++    const excludeIds = Array.from(
++      svg.node()?.querySelectorAll('rect.exclude-range[id]') ?? [],
++      (el) => el.getAttribute('id') ?? ''
++    ).filter(Boolean);
 +    const ganttIds = allocateGanttTaskIds(
 +      theArray.map((d) => d.id),
-+      id
++      id,
++      excludeIds
 +    );
 +    const taskDomIdByObj = new Map(theArray.map((d, i) => [d, ganttIds.domIds[i]]));
  
@@ -37,7 +40,7 @@ index 22a0562..779cb8f 100644
        })
        .attr('rx', 3)
        .attr('ry', 3)
-@@ -394,8 +404,8 @@ export const draw = function (text, id, version, diagObj) {
+@@ -394,8 +409,8 @@ export const draw = function (text, id, version, diagObj) {
      // Append task labels
      rectangles
        .append('text')
@@ -48,7 +51,7 @@ index 22a0562..779cb8f 100644
        })
        .text(function (d) {
          return d.task;
-@@ -522,17 +532,24 @@ export const draw = function (text, id, version, diagObj) {
+@@ -522,17 +537,24 @@ export const draw = function (text, id, version, diagObj) {
            return links.has(d.id);
          })
          .each(function (o) {
@@ -158,7 +161,7 @@ index 64d8255..7e22f45 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..55fe07c 100644
+index 49145b2..24b859b 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -169,7 +172,7 @@ index 49145b2..55fe07c 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,416 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,420 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -400,7 +403,8 @@ index 49145b2..55fe07c 100644
 +
 +export const allocateGanttTaskIds = (
 +  rawIds: string[],
-+  svgId: string
++  svgId: string,
++  extraReservedIds: string[] = []
 +): {
 +  domIds: string[];
 +  elementOwned: Set<string>;
@@ -415,6 +419,9 @@ index 49145b2..55fe07c 100644
 +  }
 +  if (a11y?.descr) {
 +    rendererOwned.add(`chart-desc-${canonicalSvgId}`);
++  }
++  for (const exId of extraReservedIds) {
++    rendererOwned.add(canonicalXmlAttr(exId));
 +  }
 +  const plans = rawIds.map((raw) => {
 +    const hadPlaceholder = raw.includes('ﬂ°') || raw.includes('¶ß');
@@ -537,10 +544,6 @@ index 49145b2..55fe07c 100644
 +  if (fragment === undefined) {
 +    return rawLink;
 +  }
-+  const direct = remappedFragments.get(`#${fragment}`);
-+  if (direct !== undefined) {
-+    return direct;
-+  }
 +  if (fragment.includes('%')) {
 +    const decoded = percentDecodeFragment(fragment);
 +    if (decoded !== undefined) {
@@ -556,6 +559,10 @@ index 49145b2..55fe07c 100644
 +        return formatFragmentUrl(resolved);
 +      }
 +    }
++  }
++  const direct = remappedFragments.get(`#${fragment}`);
++  if (direct !== undefined) {
++    return direct;
 +  }
 +  const resolved = canonicalAttrId(fragment);
 +  if (resolved !== fragment && elementOwned.has(resolved)) {
@@ -586,7 +593,7 @@ index 49145b2..55fe07c 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +516,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +520,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {

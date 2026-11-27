@@ -95,10 +95,12 @@ fn starts_with_fragment_marker(url: &str) -> bool {
 /// `formatUrl` of the reference.
 ///
 /// The link is trimmed with JavaScript's `trim`, and an empty result gives `None`. `loose` is
-/// `securityLevel === 'loose'`: the trimmed link is returned as it is, and otherwise it goes
-/// through [`sanitize_url`], except same-document fragments (starting with `#` or an entity
-/// spelling of `#` like `#35;`), which enforce the bounded decoding limit without running scheme
-/// detection on the fragment body and preserve their percent-encoded spelling for DOM lookup.
+/// `securityLevel === 'loose'`: the trimmed link is returned as it is, and otherwise it is
+/// validated through [`sanitize_url`], except same-document fragments (starting with `#` or an
+/// entity spelling of `#` like `#35;`), which enforce the bounded decoding limit without running
+/// scheme detection on the fragment body and preserve their percent-encoded spelling for DOM
+/// lookup. Safe URLs without control characters, HTML entities, or whitespace escapes preserve
+/// percent-encoded delimiters (such as `%26` or `%2F`) instead of emitting their decoded form.
 #[must_use]
 pub fn format_url(link: &str, loose: bool) -> Option<String> {
     let url = js_trim(link);
@@ -116,8 +118,109 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
             .collect();
         Some(cleaned)
     } else {
-        Some(sanitize_url(url))
+        let sanitized = sanitize_url(url);
+        if sanitized == BLANK_URL {
+            return Some(sanitized);
+        }
+        if url.contains('%')
+            && !needs_another_pass(url)
+            && let Some(preserved) = preserve_encoded_url(url, &sanitized)
+        {
+            return Some(preserved);
+        }
+        Some(sanitized)
     }
+}
+
+/// Whether the earliest scheme delimiter (`/`, `?`, `:`, or `&colon;`) in `text` is `/` or `?`,
+/// meaning any later colon cannot introduce a URI scheme.
+fn first_scheme_delimiter_is_path_or_query(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    for (idx, &byte) in bytes.iter().enumerate() {
+        match byte {
+            b'/' | b'?' => return true,
+            b':' => return false,
+            b'&' if bytes
+                .get(idx..idx + "&colon;".len())
+                .is_some_and(|slice| slice.eq_ignore_ascii_case(b"&colon;")) =>
+            {
+                return false;
+            }
+            _ => {}
+        }
+    }
+    false
+}
+
+/// Returns the leading literal RFC-3986 scheme if it is in [`ALLOWED_SINK_SCHEMES`] and is not
+/// `http` or `https` (which go through WHATWG authority validation).
+fn literal_allowed_non_http_scheme(text: &str) -> Option<&str> {
+    let bytes = text.as_bytes();
+    if bytes.first().is_none_or(|b| !b.is_ascii_alphabetic()) {
+        return None;
+    }
+    let mut end = 1;
+    while end < bytes.len()
+        && (bytes[end].is_ascii_alphanumeric() || matches!(bytes[end], b'+' | b'-' | b'.'))
+    {
+        end += 1;
+    }
+    if bytes.get(end) != Some(&b':') {
+        return None;
+    }
+    let scheme = &text[..end];
+    if scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https") {
+        return None;
+    }
+    ALLOWED_SINK_SCHEMES
+        .iter()
+        .any(|allowed| scheme.eq_ignore_ascii_case(allowed))
+        .then_some(scheme)
+}
+
+/// Preserves percent-encoded bytes (such as `%26`, `%2F`, `%23`, `%25`) in an already-validated
+/// URL that carries no literal control characters, HTML entities, or whitespace escapes.
+fn preserve_encoded_url(url: &str, sanitized: &str) -> Option<String> {
+    if matches!(url.chars().next(), Some('.' | '/')) {
+        return Some(url.to_owned());
+    }
+    let (prepared, url_tokens) = tokenize_url_entity_placeholders(url);
+    let effective = resolve_decoded_http_scheme_tokens(prepared.as_ref(), url_tokens.as_ref());
+    if is_http_scheme_prefix(effective.as_ref()) && is_http_scheme_prefix(sanitized) {
+        let back_sanitized = effective.replace('\\', "/");
+        let resolved = resolve_http_host_tokens(&back_sanitized, url_tokens.as_ref());
+        if ::url::Url::parse(resolved.as_ref()).is_err() {
+            return None;
+        }
+        let scheme = url_scheme(&back_sanitized)
+            .map(|s| js_trim(&s.to_lowercase()).to_owned())
+            .unwrap_or_default();
+        if scheme.contains("://") {
+            if let Some(ref tokens) = url_tokens {
+                return Some(restore_http_tokens_by_component(resolved.as_ref(), tokens));
+            }
+            return Some(resolved.into_owned());
+        }
+        return Some(normalize_http_with_tokens(
+            resolved.as_ref(),
+            url_tokens.as_ref(),
+        ));
+    }
+    if let Some(raw_scheme) = literal_allowed_non_http_scheme(url)
+        && literal_allowed_non_http_scheme(sanitized)
+            .is_some_and(|s| s.eq_ignore_ascii_case(raw_scheme))
+    {
+        return Some(url.replace('\\', "/"));
+    }
+    if url_scheme(url).is_none() && url_scheme(sanitized).is_none() {
+        return Some(url.to_owned());
+    }
+    if first_scheme_delimiter_is_path_or_query(url)
+        && first_scheme_delimiter_is_path_or_query(sanitized)
+    {
+        return Some(url.replace('\\', "/"));
+    }
+    None
 }
 
 /// Validates `url` at an SVG link sink without altering accepted URLs.
@@ -2605,6 +2708,52 @@ mod tests {
         assert_eq!(
             format_url("#foo%25252525252525252541", false).as_deref(),
             Some("about:blank")
+        );
+        // Safe URLs preserve percent-encoded delimiters in `format_url` while still rejecting
+        // obfuscated unsafe schemes and invalid hosts.
+        assert_eq!(
+            format_url("https://example.org/?q=A%26B", false).as_deref(),
+            Some("https://example.org/?q=A%26B")
+        );
+        assert_eq!(
+            format_url("https://EXAMPLE.ORG/a%2Fb?q=1%3D2#s%231", false).as_deref(),
+            Some("https://example.org/a%2Fb?q=1%3D2#s%231")
+        );
+        assert_eq!(
+            format_url("https://example.org:8080/a%2Fb?q=A%26B", false).as_deref(),
+            Some("https://example.org:8080/a%2Fb?q=A%26B")
+        );
+        assert_eq!(
+            format_url("https://exampleﬂ°°46¶ßorg/Chapterﬂ°°32¶ßOne?q=A%26B", false).as_deref(),
+            Some("https://example.org/Chapter%20One?q=A%26B")
+        );
+        assert_eq!(
+            format_url("/docs/a%2Fb?q=A%26B", false).as_deref(),
+            Some("/docs/a%2Fb?q=A%26B")
+        );
+        assert_eq!(
+            format_url("docs/a%2Fb?q=A%26B", false).as_deref(),
+            Some("docs/a%2Fb?q=A%26B")
+        );
+        assert_eq!(
+            format_url("docs/a%2Fb?t=12:30&q=A%26B", false).as_deref(),
+            Some("docs/a%2Fb?t=12:30&q=A%26B")
+        );
+        assert_eq!(
+            format_url("mailto:a@b.c?subject=A%26B", false).as_deref(),
+            Some("mailto:a@b.c?subject=A%26B")
+        );
+        assert_eq!(
+            format_url("%6aavascript:alert(1)", false).as_deref(),
+            Some("about:blank")
+        );
+        assert_eq!(
+            format_url("https://example.org%2Fdocsﬂ°°63¶ßb", false).as_deref(),
+            Some("https://example.org/docs%3Fb")
+        );
+        assert_eq!(
+            sanitize_url("https://example.org/%5f_fg00000000_0__/ﬂ°copy¶ß"),
+            "https://example.org/__fg00000000_0__/%C2%A9"
         );
     }
 }

@@ -81,9 +81,9 @@ pub fn render_with_animation(
     let mut body = String::new();
     // `appendDivSvgG` leaves an empty group before the chart's own elements (`mermaidAPI.ts:418`).
     body.push_str("<g></g>");
-    chart.exclude_group(&mut body)?;
+    let exclude_ids = chart.exclude_group(&mut body)?;
     chart.grid(&mut body, &mut texts)?;
-    chart.draw_rects(&mut body, &mut texts, drawing.as_mut())?;
+    chart.draw_rects(&mut body, &mut texts, drawing.as_mut(), &exclude_ids)?;
     chart.section_labels(&mut body, &mut texts)?;
     chart.today(&mut body);
     chart.title(&mut body, &mut texts);
