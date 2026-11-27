@@ -63,12 +63,12 @@ fn add_port(
     index
 }
 
-fn set_alignment(graph: &mut LGraph, node: usize, id: OptionId, name: &str) {
+fn set_alignment(graph: &mut LGraph, node: usize, id: OptionId, name: &'static str) {
     graph.nodes[node].properties.set(
         id,
         Some(OptionValue::Enum {
             class: "PortAlignment",
-            name: name.to_string(),
+            name,
         }),
     );
 }
@@ -89,14 +89,16 @@ fn set_enum_set(
     );
 }
 
-fn set_enum(graph: &mut LGraph, node: usize, id: OptionId, class: &'static str, name: &str) {
-    graph.nodes[node].properties.set(
-        id,
-        Some(OptionValue::Enum {
-            class,
-            name: name.to_string(),
-        }),
-    );
+fn set_enum(
+    graph: &mut LGraph,
+    node: usize,
+    id: OptionId,
+    class: &'static str,
+    name: &'static str,
+) {
+    graph.nodes[node]
+        .properties
+        .set(id, Some(OptionValue::Enum { class, name }));
 }
 
 fn set_surrounding(graph: &mut LGraph, top: f64, left: f64, bottom: f64, right: f64) {
@@ -277,7 +279,7 @@ fn surrounding_margins_and_the_top_border_offset_move_the_ports() {
 fn free_fixed_side_and_fixed_order_place_the_ports_alike() {
     // FIXED_SIDE is what the port side processor leaves behind. FIXED_ORDER takes the free branch
     // of every Java switch on the constraints. The label and size step treats all three like FREE.
-    let place = |constraints: &str| {
+    let place = |constraints: &'static str| {
         let mut graph = node_graph(100.0, 50.0);
         set_enum(
             &mut graph,

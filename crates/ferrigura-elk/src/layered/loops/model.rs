@@ -199,9 +199,7 @@ pub fn set_port_side(graph: &mut LGraph, lport: usize, side: PortSide) {
 /// `SelfLoopHolder.needsSelfLoopProcessing`: a regular node with at least one self loop.
 pub fn needs_self_loop_processing(graph: &LGraph, node: usize) -> bool {
     graph.nodes[node].node_type == NodeType::NORMAL
-        && outgoing_edges(graph, node)
-            .into_iter()
-            .any(|edge| is_self_loop(graph, edge))
+        && outgoing_edges(graph, node).any(|edge| is_self_loop(graph, edge))
 }
 
 impl SelfLoopHolder {

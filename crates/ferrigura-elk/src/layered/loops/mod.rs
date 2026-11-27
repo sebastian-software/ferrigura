@@ -38,7 +38,7 @@ pub fn preprocess(graph: &mut LGraph) -> Result<(), LayoutError> {
         }
         let mut holder = SelfLoopHolder::initialize(graph, node)?;
         model::hide(graph, &mut holder)?;
-        graph.nodes[node].self_loops = Some(holder);
+        graph.nodes[node].self_loops = Some(Box::new(holder));
     }
     Ok(())
 }

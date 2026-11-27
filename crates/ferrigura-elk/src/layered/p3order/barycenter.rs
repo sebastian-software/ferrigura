@@ -69,10 +69,7 @@ impl BarycenterHeuristic {
         forward: bool,
     ) -> Result<(), LayoutError> {
         let start = start_index(forward, layout.order.len());
-        let mut nodes = layout.order[start].clone();
-        self.order_randomly(net, &mut nodes, random)?;
-        layout.order[start] = nodes;
-        Ok(())
+        self.order_randomly(net, &mut layout.order[start], random)
     }
 
     /// `minimizeCrossings(order, freeLayerIndex, forwardSweep, isFirstSweep)`: reorders the free layer
@@ -86,31 +83,25 @@ impl BarycenterHeuristic {
         forward: bool,
         is_first_sweep: bool,
     ) -> Result<(), LayoutError> {
-        if free != start_index(forward, layout.order.len()) {
+        let Layout { order, node_ports } = layout;
+        if free != start_index(forward, order.len()) {
             let fixed = if forward { free - 1 } else { free + 1 };
-            self.ports.calculate_port_ranks(
-                net,
-                &layout.node_ports,
-                &layout.order[fixed],
-                port_type_for(forward),
-            );
+            self.ports
+                .calculate_port_ranks(net, node_ports, &order[fixed], port_type_for(forward));
         }
         // `preOrdered = !isFirstSweep || isExternalPortDummy(firstNodeInLayer)`.
-        let first_is_external = layout.order[free]
+        let first_is_external = order[free]
             .first()
             .is_some_and(|&node| net.node_type(node) == NodeType::EXTERNAL_PORT);
         let pre_ordered = !is_first_sweep || first_is_external;
-        let mut nodes = layout.order[free].clone();
         self.order_by_barycenters(
             net,
-            &layout.node_ports,
+            node_ports,
             random,
-            &mut nodes,
+            &mut order[free],
             pre_ordered,
             forward,
-        )?;
-        layout.order[free] = nodes;
-        Ok(())
+        )
     }
 
     /// `minimizeCrossings(List<LNode>, preOrdered, randomize = true, forward)`: random barycenters.
@@ -229,7 +220,7 @@ impl BarycenterHeuristic {
         }
 
         if let Some(associates) = &net.graph().nodes[node].barycenter_associates {
-            for &associate in associates {
+            for &associate in associates.iter() {
                 if net.layer(node) == net.layer(associate) {
                     self.calculate_barycenter(net, node_ports, random, associate, forward);
                     let degree = self.states[associate].degree;

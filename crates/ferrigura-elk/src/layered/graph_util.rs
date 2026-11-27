@@ -139,7 +139,7 @@ mod tests {
     use crate::layered::lgraph::LNode;
 
     /// A layer with one node of the given width, in a layer of width 50.
-    fn one_node_layer(alignment: Option<&str>) -> LGraph {
+    fn one_node_layer(alignment: Option<&'static str>) -> LGraph {
         let mut node = LNode {
             size: KVector { x: 30.0, y: 10.0 },
             ..LNode::default()
@@ -149,7 +149,7 @@ mod tests {
                 options::ALIGNMENT,
                 Some(OptionValue::Enum {
                     class: "Alignment",
-                    name: name.to_string(),
+                    name,
                 }),
             );
         }

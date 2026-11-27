@@ -280,7 +280,8 @@ fn constraints_prevent_switch(net: &Net, layout: &Layout, upper: usize, lower: u
 fn have_successor_constraints(net: &Net, upper: usize, lower: usize) -> bool {
     net.graph().nodes[upper]
         .in_layer_successor_constraints
-        .contains(&lower)
+        .as_deref()
+        .is_some_and(|list| list.contains(&lower))
 }
 
 /// `haveLayoutUnitConstraints`: unless one of the two is a long edge dummy, nodes of different
@@ -312,7 +313,6 @@ fn have_layout_unit_constraints(net: &Net, layout: &Layout, upper: usize, lower:
 /// `hasEdgesOnSide`: a port on `side` with a `PORT_DUMMY` or an edge.
 fn has_edges_on_side(net: &Net, layout: &Layout, node: usize, side: PortSide) -> bool {
     net.side_ports(&layout.node_ports[node], side)
-        .into_iter()
         .any(|port| has_port_dummy(net, port) || net.degree(port) > 0)
 }
 
@@ -346,9 +346,7 @@ impl NorthSouthEdgeNeighbouringNodeCrossingsCounter {
         for &node in nodes {
             for side in [PortSide::SOUTH, PortSide::NORTH] {
                 for (id, port) in
-                    in_north_south_east_west_order(net, &layout.node_ports[node], side)
-                        .into_iter()
-                        .enumerate()
+                    in_north_south_east_west_order(net, &layout.node_ports[node], side).enumerate()
                 {
                     port_positions.insert(port, id as i32);
                 }
@@ -417,8 +415,8 @@ impl NorthSouthEdgeNeighbouringNodeCrossingsCounter {
     ) -> Result<(i32, i32), LayoutError> {
         let first_degree = |node: usize, side: PortSide| {
             net.side_ports(&layout.node_ports[node], side)
-                .first()
-                .map_or(0, |&port| net.degree(port) as i32)
+                .next()
+                .map_or(0, |port| net.degree(port) as i32)
         };
         if self.origin_port_position_of(net, layout, further)?
             > self.origin_port_position_of(net, layout, closer)?
@@ -483,7 +481,6 @@ fn origin_of(net: &Net, node: usize) -> Option<usize> {
 /// `numberOfNorthSouthEdges`: the ports on `side` with a `PORT_DUMMY`.
 fn number_of_north_south_edges(net: &Net, layout: &Layout, node: usize, side: PortSide) -> i32 {
     net.side_ports(&layout.node_ports[node], side)
-        .into_iter()
         .filter(|&port| has_port_dummy(net, port))
         .count() as i32
 }
@@ -503,10 +500,13 @@ fn is_normal(net: &Net, node: usize) -> bool {
 /// `CrossingMatrixFiller`, two-sided: the between-layer crossings of each pair of nodes of the free
 /// layer in both orders, counted when first asked for.
 struct CrossingMatrixFiller {
-    /// `isCrossingMatrixFilled`, indexed by the node ids.
-    filled: Vec<Vec<bool>>,
-    /// `crossingMatrix`: `[upper][lower]` holds the crossings with `upper` above `lower`.
-    matrix: Vec<Vec<i32>>,
+    /// Side length of the square crossing matrix (number of nodes in the free layer).
+    length: usize,
+    /// `isCrossingMatrixFilled`, flat row-major by `upper_id * length + lower_id`.
+    filled: Vec<bool>,
+    /// `crossingMatrix`: flat row-major, `[upper_id * length + lower_id]` holds the crossings with
+    /// `upper` above `lower`.
+    matrix: Vec<i32>,
     /// `inBetweenLayerCrossingCounter`.
     counter: BetweenLayerEdgeTwoNodeCrossingsCounter,
 }
@@ -514,9 +514,11 @@ struct CrossingMatrixFiller {
 impl CrossingMatrixFiller {
     fn new(net: &Net, layout: &Layout, free: usize) -> Self {
         let length = layout.order.get(free).map_or(0, Vec::len);
+        let cells = length * length;
         CrossingMatrixFiller {
-            filled: vec![vec![false; length]; length],
-            matrix: vec![vec![0; length]; length],
+            length,
+            filled: vec![false; cells],
+            matrix: vec![0; cells],
             counter: BetweenLayerEdgeTwoNodeCrossingsCounter::new(net, layout, free),
         }
     }
@@ -531,22 +533,24 @@ impl CrossingMatrixFiller {
         lower: usize,
     ) -> Result<i32, LayoutError> {
         let (upper_id, lower_id) = (node_ids[upper], node_ids[lower]);
-        let length = self.matrix.len();
+        let length = self.length;
         if upper_id >= length || lower_id >= length {
             return Err(LayoutError::Unsupported(
                 "a node id outside its layer in the greedy switch".to_string(),
             ));
         }
-        if !self.filled[upper_id][lower_id] {
+        let ul = upper_id * length + lower_id;
+        if !self.filled[ul] {
             // `fillCrossingMatrix`, two-sided.
             self.counter
                 .count_both_side_crossings(net, layout, upper, lower)?;
-            self.matrix[upper_id][lower_id] = self.counter.upper_lower_crossings;
-            self.matrix[lower_id][upper_id] = self.counter.lower_upper_crossings;
-            self.filled[upper_id][lower_id] = true;
-            self.filled[lower_id][upper_id] = true;
+            let lu = lower_id * length + upper_id;
+            self.matrix[ul] = self.counter.upper_lower_crossings;
+            self.matrix[lu] = self.counter.lower_upper_crossings;
+            self.filled[ul] = true;
+            self.filled[lu] = true;
         }
-        Ok(self.matrix[upper_id][lower_id])
+        Ok(self.matrix[ul])
     }
 }
 

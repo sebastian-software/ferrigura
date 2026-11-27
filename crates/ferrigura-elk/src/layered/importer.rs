@@ -179,7 +179,7 @@ fn transform_node(
             options::PORT_CONSTRAINTS,
             Some(OptionValue::Enum {
                 class: "PortConstraints",
-                name: "FREE".to_string(),
+                name: "FREE",
             }),
         ),
         Some(PortConstraints::FREE) => {}
@@ -882,7 +882,7 @@ fn edge_labels(edge: &ElkEdge, graph_properties: &mut BTreeSet<GraphProperties>)
                     options::EDGE_LABELS_PLACEMENT,
                     Some(OptionValue::Enum {
                         class: "EdgeLabelPlacement",
-                        name: "CENTER".to_string(),
+                        name: "CENTER",
                     }),
                 );
             }
@@ -908,7 +908,7 @@ fn needs_model_order_based_on_parent(root: &ElkNode) -> bool {
     let props = &root.properties;
     let strategy_is = |id: OptionId, name: &str| {
         props.value_or_default(id).is_some_and(|value| match value {
-            crate::core::data::OptionValue::Enum { name: found, .. } => found == name,
+            crate::core::data::OptionValue::Enum { name: found, .. } => *found == name,
             _ => false,
         })
     };
@@ -950,7 +950,7 @@ mod tests {
             options::EDGE_ROUTING_SELF_LOOP_DISTRIBUTION,
             Some(OptionValue::Enum {
                 class: "SelfLoopDistributionStrategy",
-                name: "EQUALLY".to_string(),
+                name: "EQUALLY",
             }),
         );
         root.children.push(ElkNode {

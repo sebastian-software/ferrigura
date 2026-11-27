@@ -121,7 +121,7 @@ pub(super) fn run(graphs: &mut [LGraph], hierarchical: bool) -> Result<(), Layou
             options::PORT_CONSTRAINTS,
             Some(OptionValue::Enum {
                 class: "PortConstraints",
-                name: "FIXED_ORDER".to_string(),
+                name: "FIXED_ORDER",
             }),
         );
     }
@@ -372,7 +372,6 @@ impl<'g> Hierarchy<'g> {
                 }
                 let north_south_ports = net
                     .side_ports(ports, PortSide::NORTH)
-                    .into_iter()
                     .chain(net.side_ports(ports, PortSide::SOUTH));
                 for port in north_south_ports {
                     if let Some(dummy) = graph.ports[port].north_south_dummy {
@@ -674,7 +673,6 @@ impl<'g> Hierarchy<'g> {
             in_north_south_east_west_order(&parent.net, &parent.layout.node_ports[node], side);
         let current = &self.holders[nested].layout.order[layer];
         let dummies: Vec<usize> = ports
-            .into_iter()
             .filter_map(|port| {
                 let data = &parent.net.graph().ports[port];
                 if data.inside_connections {

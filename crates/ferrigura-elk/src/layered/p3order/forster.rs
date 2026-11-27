@@ -27,6 +27,11 @@ use super::barycenter::BarycenterState;
 /// the order of the layers when the sweep starts (`LinkedHashMultimap`).
 pub(super) struct ForsterConstraintResolver {
     layout_units: HashMap<usize, Vec<usize>>,
+    /// Whether any layer in the graph has a layout unit or successor constraint.
+    has_any_constraints: bool,
+    /// Per-layer flag when `has_any_constraints` is true: whether the layer has any node with
+    /// successor constraints or a layout unit entry.
+    layer_has_constraints: Vec<bool>,
 }
 
 /// `ConstraintGroup`. Groups are kept in an arena and named by their index in it.
@@ -179,15 +184,47 @@ impl ForsterConstraintResolver {
     /// unit, in the order of the layers.
     pub(super) fn new(net: &Net, layout: &Layout) -> Self {
         let mut layout_units: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut has_successor_constraints = false;
+        let nodes = &net.graph().nodes;
         for &node in layout.order.iter().flatten() {
-            if let Some(unit) = net.graph().nodes[node].in_layer_layout_unit {
+            let data = &nodes[node];
+            if let Some(unit) = data.in_layer_layout_unit {
                 let members = layout_units.entry(unit).or_default();
                 if !members.contains(&node) {
                     members.push(node);
                 }
             }
+            if data
+                .in_layer_successor_constraints
+                .as_ref()
+                .is_some_and(|list| !list.is_empty())
+            {
+                has_successor_constraints = true;
+            }
         }
-        ForsterConstraintResolver { layout_units }
+        let has_any_constraints = !layout_units.is_empty() || has_successor_constraints;
+        let layer_has_constraints = if has_any_constraints {
+            layout
+                .order
+                .iter()
+                .map(|layer| {
+                    layer.iter().any(|&node| {
+                        nodes[node]
+                            .in_layer_successor_constraints
+                            .as_ref()
+                            .is_some_and(|list| !list.is_empty())
+                            || layout_units.contains_key(&node)
+                    })
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        ForsterConstraintResolver {
+            layout_units,
+            has_any_constraints,
+            layer_has_constraints,
+        }
     }
 
     /// `processConstraints(nodes)`: the layer's nodes, sorted by barycenter, in the order that keeps
@@ -198,6 +235,15 @@ impl ForsterConstraintResolver {
         nodes: &mut Vec<usize>,
         states: &mut [BarycenterState],
     ) -> Result<(), LayoutError> {
+        if !self.has_any_constraints {
+            return Ok(());
+        }
+        if nodes
+            .first()
+            .is_none_or(|&node| !self.layer_has_constraints[net.layer(node)])
+        {
+            return Ok(());
+        }
         let mut groups = Groups {
             arena: Vec::with_capacity(nodes.len()),
             of_node: HashMap::with_capacity(nodes.len()),
@@ -231,9 +277,11 @@ impl ForsterConstraintResolver {
         let mut last_non_dummy: Option<usize> = None;
         for &group in list {
             let node = groups.arena[group].nodes[0];
-            for &successor in &net.graph().nodes[node].in_layer_successor_constraints {
-                let target = groups.group_of(successor);
-                groups.add_constraint(group, target);
+            if let Some(successors) = &net.graph().nodes[node].in_layer_successor_constraints {
+                for &successor in successors.iter() {
+                    let target = groups.group_of(successor);
+                    groups.add_constraint(group, target);
+                }
             }
             if net.node_type(node) == NodeType::NORMAL {
                 if let Some(last) = last_non_dummy {

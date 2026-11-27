@@ -328,7 +328,7 @@ fn update_opposite_node_layer_constraints(
         options::LAYER_CONSTRAINT,
         Some(crate::core::data::OptionValue::Enum {
             class: "LayerConstraint",
-            name: new_constraint.java_name().to_string(),
+            name: new_constraint.java_name(),
         }),
     );
 }
@@ -518,7 +518,7 @@ mod tests {
             options::LAYER_CONSTRAINT,
             Some(crate::core::data::OptionValue::Enum {
                 class: "LayerConstraint",
-                name: "FIRST_SEPARATE".to_string(),
+                name: "FIRST_SEPARATE",
             }),
         );
         graph.ports = vec![

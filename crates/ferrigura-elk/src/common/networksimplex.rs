@@ -10,8 +10,8 @@
 //! Java objects are indices here. [`NGraph`] owns the nodes and edges, and [`NNode`] and
 //! [`NEdge`] refer to each other by index. The Java `NGraph.nodes` list is [`NGraph::nodes`].
 //! Removing a node from it and adding the node back moves the node to the end, as in Java.
-//! The Java `LinkedHashSet` of tree edges is an `IndexSet`. It iterates in insertion order,
-//! and it removes with `shift_remove`, because `IndexSet::remove` changes the order.
+//! The Java `LinkedHashSet` of tree edges is an intrusive doubly-linked list indexed by edge
+//! internal id (`TreeEdges`), which preserves exact insertion order with O(1) insert and remove.
 //!
 //! Java semantics kept: `int` arithmetic wraps, `double` operations keep their operand order,
 //! and the `else if` in `minimalSpan` is reproduced as written. Where Java throws for misuse,
@@ -22,8 +22,6 @@
 
 use std::collections::VecDeque;
 
-use indexmap::IndexSet;
-
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 
 /// `REMOVE_SUBTREES_THRESH`: graphs with fewer nodes keep their leaves.
@@ -31,6 +29,9 @@ const REMOVE_SUBTREES_THRESH: usize = 40;
 
 /// `FUZZY_ST_ZERO`: a cut value below this counts as negative, which tolerates rounding.
 const FUZZY_ST_ZERO: f64 = -1e-10;
+
+/// Sentinel for an absent link in [`TreeEdges`].
+const NONE: usize = usize::MAX;
 
 /// A node of an [`NGraph`]. Its edges are indices into the graph's edges.
 #[derive(Debug, Clone, Default)]
@@ -40,7 +41,7 @@ pub struct NNode {
     /// Java `origin`: the caller's handle for the object this node derives from. `None` is Java `null`.
     pub origin: Option<usize>,
     /// Java `type`: a label for debug output with no semantic meaning.
-    pub node_type: String,
+    pub node_type: &'static str,
     /// Java `layer`: the rank of the node. [`NetworkSimplex::execute`] normalizes it so that
     /// the lowest layer is 0.
     pub layer: i32,
@@ -344,6 +345,76 @@ fn remove_value(list: &mut Vec<usize>, value: usize) {
     }
 }
 
+/// An insertion-ordered set of spanning tree edges, keyed by edge `internal_id` (`0..num_edges`).
+///
+/// Mirrors Java's `LinkedHashSet<NEdge>` with O(1) append, O(1) removal, and iteration in exact
+/// insertion order.
+struct TreeEdges {
+    present: Vec<bool>,
+    prev: Vec<usize>,
+    next: Vec<usize>,
+    head: usize,
+    tail: usize,
+}
+
+impl TreeEdges {
+    fn new() -> Self {
+        TreeEdges {
+            present: Vec::new(),
+            prev: Vec::new(),
+            next: Vec::new(),
+            head: NONE,
+            tail: NONE,
+        }
+    }
+
+    fn with_len(num_edges: usize) -> Self {
+        TreeEdges {
+            present: vec![false; num_edges],
+            prev: vec![NONE; num_edges],
+            next: vec![NONE; num_edges],
+            head: NONE,
+            tail: NONE,
+        }
+    }
+
+    fn insert(&mut self, id: usize) {
+        if self.present[id] {
+            return;
+        }
+        self.present[id] = true;
+        self.prev[id] = self.tail;
+        self.next[id] = NONE;
+        if self.tail != NONE {
+            self.next[self.tail] = id;
+        } else {
+            self.head = id;
+        }
+        self.tail = id;
+    }
+
+    fn remove(&mut self, id: usize) {
+        if !self.present[id] {
+            return;
+        }
+        self.present[id] = false;
+        let prev = self.prev[id];
+        let next = self.next[id];
+        if prev != NONE {
+            self.next[prev] = next;
+        } else {
+            self.head = next;
+        }
+        if next != NONE {
+            self.prev[next] = prev;
+        } else {
+            self.tail = prev;
+        }
+        self.prev[id] = NONE;
+        self.next[id] = NONE;
+    }
+}
+
 /// Java `NetworkSimplex`: finds the layering of a graph that minimizes the sum of weight times
 /// length over all edges, with every length at least the edge's minimal length.
 ///
@@ -361,8 +432,8 @@ pub struct NetworkSimplex<'a> {
     iteration_limit: i32,
     /// Java `edges`: the edges of this run, in the order of the node list's outgoing edges.
     edges: Vec<usize>,
-    /// Java `treeEdges`: the spanning tree edges in insertion order.
-    tree_edges: IndexSet<usize>,
+    /// Java `treeEdges`: the spanning tree edges in insertion order, keyed by `internal_id`.
+    tree_edges: TreeEdges,
     /// Java `sources`: the nodes without incoming edges.
     sources: Vec<usize>,
     /// Java `edgeVisited`, indexed by the edge's internal id.
@@ -388,7 +459,7 @@ impl<'a> NetworkSimplex<'a> {
             balance: false,
             iteration_limit: i32::MAX,
             edges: Vec::new(),
-            tree_edges: IndexSet::new(),
+            tree_edges: TreeEdges::new(),
             sources: Vec::new(),
             edge_visited: Vec::new(),
             post_order: 1,
@@ -484,6 +555,7 @@ impl<'a> NetworkSimplex<'a> {
     /// Java `removeSubtrees()`: removes leafs until no leafs are left.
     fn remove_subtrees(&mut self) {
         self.subtree_nodes_stack = Vec::new();
+        let mut removed = vec![false; self.graph.nodes.len()];
 
         // find initial leafs
         let mut leafs = VecDeque::new();
@@ -514,9 +586,9 @@ impl<'a> NetworkSimplex<'a> {
             }
 
             self.subtree_nodes_stack.push((node, edge));
-            // remove the node from the graph's nodes
-            remove_value(&mut self.graph.node_order, node);
+            removed[node] = true;
         }
+        self.graph.node_order.retain(|&node| !removed[node]);
     }
 
     /// Java `reattachSubtrees()`: re-attaches the removed leafs in the reverse order of their removal.
@@ -572,7 +644,7 @@ impl<'a> NetworkSimplex<'a> {
         self.cutvalue = vec![0.0; num_edges];
         self.edge_visited = vec![false; num_edges];
         self.edges = the_edges;
-        self.tree_edges = IndexSet::with_capacity(num_edges);
+        self.tree_edges = TreeEdges::with_len(num_edges);
         self.post_order = 1;
     }
 
@@ -581,7 +653,7 @@ impl<'a> NetworkSimplex<'a> {
     fn dispose(&mut self) {
         self.cutvalue = Vec::new();
         self.edges = Vec::new();
-        self.tree_edges = IndexSet::new();
+        self.tree_edges = TreeEdges::new();
         self.edge_visited = Vec::new();
         self.lowest_po_id = Vec::new();
         self.po_id = Vec::new();
@@ -699,7 +771,7 @@ impl<'a> NetworkSimplex<'a> {
                 {
                     // edge is a tight non-tree edge
                     self.graph.edges[edge].tree_edge = true;
-                    self.tree_edges.insert(edge);
+                    self.tree_edges.insert(id);
                     node_count += self.tight_tree_dfs(opposite);
                 }
             }
@@ -854,11 +926,13 @@ impl<'a> NetworkSimplex<'a> {
     /// Java `leaveEdge()`: a tree edge with a negative cut value, or `None` if the layering is
     /// optimal. The first such edge in insertion order is returned.
     fn leave_edge(&self) -> Option<usize> {
-        for &edge in self.tree_edges.iter() {
-            let id = self.graph.edges[edge].internal_id;
-            if self.graph.edges[edge].tree_edge && self.cutvalue[id] < FUZZY_ST_ZERO {
+        let mut current = self.tree_edges.head;
+        while current != NONE {
+            let edge = self.edges[current];
+            if self.graph.edges[edge].tree_edge && self.cutvalue[current] < FUZZY_ST_ZERO {
                 return Some(edge);
             }
+            current = self.tree_edges.next[current];
         }
         None
     }
@@ -901,10 +975,12 @@ impl<'a> NetworkSimplex<'a> {
         );
 
         // update tree
+        let leave_id = self.graph.edges[leave].internal_id;
+        let enter_id = self.graph.edges[enter].internal_id;
         self.graph.edges[leave].tree_edge = false;
-        self.tree_edges.shift_remove(&leave);
+        self.tree_edges.remove(leave_id);
         self.graph.edges[enter].tree_edge = true;
-        self.tree_edges.insert(enter);
+        self.tree_edges.insert(enter_id);
         let enter_target = self.graph.edges[enter].target;
         let mut delta = self.slack(enter);
         if !self.is_in_head(enter_target, leave) {
@@ -1256,5 +1332,43 @@ mod tests {
         assert_eq!(graph.incoming_edges(a), &[edge]);
         assert_eq!(graph.outgoing_edges(b), &[edge]);
         assert!(graph.incoming_edges(b).is_empty());
+    }
+
+    #[test]
+    fn tree_edges_preserves_insertion_order_across_removals_and_reinsertions() {
+        let mut set = TreeEdges::with_len(5);
+        let order = |set: &TreeEdges| -> Vec<usize> {
+            let mut items = Vec::new();
+            let mut cur = set.head;
+            while cur != NONE {
+                items.push(cur);
+                cur = set.next[cur];
+            }
+            items
+        };
+
+        set.insert(2);
+        set.insert(0);
+        set.insert(4);
+        set.insert(0); // duplicate insert is a no-op
+        assert_eq!(order(&set), vec![2, 0, 4]);
+
+        // Remove middle, head, tail, and absent element.
+        set.remove(0);
+        assert_eq!(order(&set), vec![2, 4]);
+        set.remove(0);
+        assert_eq!(order(&set), vec![2, 4]);
+        set.remove(2);
+        assert_eq!(order(&set), vec![4]);
+        set.insert(1);
+        set.insert(0); // re-inserted element goes to the tail
+        assert_eq!(order(&set), vec![4, 1, 0]);
+        set.remove(0);
+        assert_eq!(order(&set), vec![4, 1]);
+        set.remove(4);
+        set.remove(1);
+        assert_eq!(order(&set), Vec::<usize>::new());
+        set.insert(3);
+        assert_eq!(order(&set), vec![3]);
     }
 }

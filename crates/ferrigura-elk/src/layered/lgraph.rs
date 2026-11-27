@@ -52,7 +52,7 @@ pub struct LNode {
     /// `InternalProperties.LONG_EDGE_TARGET`: the port the long edge enters at its last node.
     pub long_edge_target: Option<usize>,
     /// `InternalProperties.END_LABELS`: the label cells of the node's ports that have end labels, by port.
-    pub end_labels: Option<Vec<(usize, crate::layered::labelcell::LabelCell)>>,
+    pub end_labels: Option<Box<Vec<(usize, crate::layered::labelcell::LabelCell)>>>,
     /// `InternalProperties.LONG_EDGE_HAS_LABEL_DUMMIES`.
     pub long_edge_has_label_dummies: bool,
     /// `InternalProperties.LABEL_SIDE` of a label dummy: the side its labels go on.
@@ -61,7 +61,7 @@ pub struct LNode {
     pub long_edge_before_label_dummy: bool,
     /// `InternalProperties.SELF_LOOP_HOLDER`: the self loops of the node, installed by the self loop
     /// preprocessor and taken out while the self loop processors work on the node.
-    pub self_loops: Option<SelfLoopHolder>,
+    pub self_loops: Option<Box<SelfLoopHolder>>,
     /// `InternalProperties.ORIGINAL_PORT_CONSTRAINTS`: the port constraints the node had before the
     /// port side processor changed them. Set by the configurator.
     pub original_port_constraints: Option<PortConstraints>,
@@ -70,7 +70,7 @@ pub struct LNode {
     pub nested_graph: Option<usize>,
     /// The parts of an external port dummy, which stands in a nested graph for a port of the node
     /// the graph is nested in.
-    pub external_port: Option<ExternalPortDummy>,
+    pub external_port: Option<Box<ExternalPortDummy>>,
     /// `InternalProperties.IN_LAYER_CONSTRAINT`.
     pub in_layer_constraint: InLayerConstraint,
     /// Whether the graph nested in this node has `GraphProperties.EXTERNAL_PORTS`, which the
@@ -82,10 +82,10 @@ pub struct LNode {
     pub in_layer_layout_unit: Option<usize>,
     /// `InternalProperties.IN_LAYER_SUCCESSOR_CONSTRAINTS`: the nodes of the same layer this node
     /// must come before.
-    pub in_layer_successor_constraints: Vec<usize>,
+    pub in_layer_successor_constraints: Option<Box<Vec<usize>>>,
     /// `InternalProperties.BARYCENTER_ASSOCIATES`: the nodes whose barycenters count towards this
     /// node's, the dummies of its northern and southern ports.
-    pub barycenter_associates: Option<Vec<usize>>,
+    pub barycenter_associates: Option<Box<Vec<usize>>>,
 }
 
 /// The properties of an external port dummy (`NodeType.EXTERNAL_PORT`), which
@@ -472,5 +472,22 @@ impl LGraph {
             x: self.size.x + self.padding.left + self.padding.right,
             y: self.size.y + self.padding.top + self.padding.bottom,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LNode;
+
+    #[test]
+    fn lnode_size_stays_compact() {
+        // Rarely populated inline fields (self loops, external port dummy, end labels,
+        // successor constraints, barycenter associates) are boxed so LNode stays well below
+        // its unboxed ~600-byte footprint.
+        assert!(
+            std::mem::size_of::<LNode>() <= 384,
+            "LNode grew to {} bytes",
+            std::mem::size_of::<LNode>()
+        );
     }
 }

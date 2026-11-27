@@ -74,7 +74,10 @@ pub fn preprocess(graph: &mut LGraph) -> Result<(), LayoutError> {
                 set_layer(graph, dummy, layer, insert_point);
                 pointer += 1;
                 graph.nodes[dummy].in_layer_layout_unit = Some(node);
-                graph.nodes[dummy].in_layer_successor_constraints.push(node);
+                graph.nodes[dummy]
+                    .in_layer_successor_constraints
+                    .get_or_insert_with(Default::default)
+                    .push(node);
             }
 
             // The southern ports, which the port list holds right to left.
@@ -92,11 +95,14 @@ pub fn preprocess(graph: &mut LGraph) -> Result<(), LayoutError> {
                 pointer += 1;
                 set_layer(graph, dummy, layer, pointer);
                 graph.nodes[dummy].in_layer_layout_unit = Some(node);
-                graph.nodes[node].in_layer_successor_constraints.push(dummy);
+                graph.nodes[node]
+                    .in_layer_successor_constraints
+                    .get_or_insert_with(Default::default)
+                    .push(dummy);
             }
 
             if !barycenter_associates.is_empty() {
-                graph.nodes[node].barycenter_associates = Some(barycenter_associates);
+                graph.nodes[node].barycenter_associates = Some(Box::new(barycenter_associates));
             }
         }
     }
@@ -260,7 +266,7 @@ fn create_dummy_node(
         options::PORT_CONSTRAINTS,
         Some(OptionValue::Enum {
             class: "PortConstraints",
-            name: "FIXED_POS".to_string(),
+            name: "FIXED_POS",
         }),
     );
     graph.nodes.push(node);
@@ -448,7 +454,7 @@ mod tests {
             options::PORT_CONSTRAINTS,
             Some(OptionValue::Enum {
                 class: "PortConstraints",
-                name: "FIXED_SIDE".to_string(),
+                name: "FIXED_SIDE",
             }),
         );
         let a = port(&mut graph, 0, PortSide::EAST);
@@ -469,11 +475,17 @@ mod tests {
         let (above, below) = (layer[0], layer[2]);
         assert_eq!(layer[1], 1);
         assert_eq!(graph.nodes[above].node_type, NodeType::NORTH_SOUTH_PORT);
-        assert_eq!(graph.nodes[above].in_layer_successor_constraints, vec![1]);
-        assert_eq!(graph.nodes[1].in_layer_successor_constraints, vec![below]);
         assert_eq!(
-            graph.nodes[1].barycenter_associates,
-            Some(vec![above, below])
+            graph.nodes[above].in_layer_successor_constraints.as_deref(),
+            Some(&vec![1])
+        );
+        assert_eq!(
+            graph.nodes[1].in_layer_successor_constraints.as_deref(),
+            Some(&vec![below])
+        );
+        assert_eq!(
+            graph.nodes[1].barycenter_associates.as_deref(),
+            Some(&vec![above, below])
         );
         assert!(graph.ports[north].incoming.is_empty());
         assert!(graph.ports[south].outgoing.is_empty());

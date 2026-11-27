@@ -80,6 +80,7 @@ fn node_positions(
     let produce_balanced_layout = (align == FixedAlignment::NONE && !favor_straight_edges)
         || align == FixedAlignment::BALANCED;
     let straightening = ThresholdKind::for_graph(graph);
+    let cached_spacings = crate::layered::spacings::Spacings::for_graph(graph);
 
     // The type 1 conflicts, which are the same for all four layouts.
     let marked_edges = mark_conflicts(graph, ni)?;
@@ -90,7 +91,7 @@ fn node_positions(
         aligner::inside_block_shift(graph, ni, layout)?;
     }
     for layout in layouts.iter_mut() {
-        compactor::horizontal_compaction(graph, ni, layout, straightening)?;
+        compactor::horizontal_compaction(graph, ni, layout, straightening, &cached_spacings)?;
     }
 
     if logging {
@@ -380,12 +381,10 @@ pub(super) fn get_edge(
     target: usize,
 ) -> Option<usize> {
     let target_arena = ni.node_of_id[target];
-    connected_edges(graph, lnode(graph, ni, source))
-        .into_iter()
-        .find(|&edge| {
-            graph.ports[graph.edges[edge].target].node == target_arena
-                || graph.ports[graph.edges[edge].source].node == target_arena
-        })
+    connected_edges(graph, lnode(graph, ni, source)).find(|&edge| {
+        graph.ports[graph.edges[edge].target].node == target_arena
+            || graph.ports[graph.edges[edge].source].node == target_arena
+    })
 }
 
 /// `getBlocks(bal)`: the nodes of each block, by its root, in layer order. The key is `None` for the
@@ -657,7 +656,7 @@ mod tests {
             options::NODE_PLACEMENT_BK_FIXED_ALIGNMENT,
             Some(OptionValue::Enum {
                 class: "FixedAlignment",
-                name: "RIGHTDOWN".to_string(),
+                name: "RIGHTDOWN",
             }),
         );
         let (mut progress, root) = ProgressMonitor::new(true);

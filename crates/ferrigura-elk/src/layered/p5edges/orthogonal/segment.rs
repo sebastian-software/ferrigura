@@ -324,13 +324,12 @@ pub fn add_port_positions(
 
 /// `LPort.getConnectedPorts()`: the sources of the incoming edges, then the targets of the
 /// outgoing edges.
-fn connected_ports(graph: &LGraph, port: usize) -> Vec<usize> {
+fn connected_ports(graph: &LGraph, port: usize) -> impl Iterator<Item = usize> + '_ {
     let port = &graph.ports[port];
     port.incoming
         .iter()
         .map(|&edge| graph.edges[edge].source)
         .chain(port.outgoing.iter().map(|&edge| graph.edges[edge].target))
-        .collect()
 }
 
 /// `Math.min` for doubles: NaN wins, and -0.0 is less than 0.0.

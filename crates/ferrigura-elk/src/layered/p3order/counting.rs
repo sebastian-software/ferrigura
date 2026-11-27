@@ -78,6 +78,15 @@ impl BinaryIndexedTree {
         self.size = 0;
     }
 
+    /// Resizes and clears the tree for `max_num` entries, reusing its backing buffers.
+    fn reset(&mut self, max_num: usize) {
+        self.binary_sums.clear();
+        self.binary_sums.resize(max_num + 1, 0);
+        self.nums_per_index.clear();
+        self.nums_per_index.resize(max_num, 0);
+        self.size = 0;
+    }
+
     /// Removes all entries at `index`.
     fn remove_all(&mut self, index: usize) {
         let entries = self.nums_per_index[index];
@@ -107,6 +116,12 @@ pub(super) struct AllCrossingsCounter {
     index_tree: BinaryIndexedTree,
     /// `ends`: the end positions to add to the tree once a port is counted.
     ends: Vec<usize>,
+    /// Reusable scratch buffer for the ports of one layer pair or side count.
+    ports: Vec<usize>,
+    /// Reusable scratch stack for north/south port counting.
+    ns_stack: Vec<usize>,
+    /// Reusable scratch buffer for north/south target ports and degrees.
+    targets_and_degrees: Vec<(usize, usize)>,
 }
 
 impl AllCrossingsCounter {
@@ -134,6 +149,9 @@ impl AllCrossingsCounter {
             port_positions: vec![0; net.graph().ports.len()],
             index_tree: BinaryIndexedTree::new(0),
             ends: Vec::new(),
+            ports: Vec::new(),
+            ns_stack: Vec::new(),
+            targets_and_degrees: Vec::new(),
         }
     }
 
@@ -182,33 +200,29 @@ impl AllCrossingsCounter {
         layout: &Layout,
         layer: &[usize],
     ) -> i32 {
-        let ports = self.init_positions_for_north_south_counting(net, layout, layer);
-        self.index_tree = BinaryIndexedTree::new(ports.len());
-        self.count_north_south_crossings_on_ports(net, layout, &ports)
+        self.init_positions_for_north_south_counting(net, layout, layer);
+        self.index_tree.reset(self.ports.len());
+        self.count_north_south_crossings_on_ports(net, layout)
     }
 
     /// `countNorthSouthCrossingsOnPorts`: the north/south ports have no edges of their own at this
     /// point, so each port's ends are the ports of its dummy (for a node's port), the other port of a
     /// long edge dummy, or the port a dummy's port stands for, each weighted by its degree.
-    fn count_north_south_crossings_on_ports(
-        &mut self,
-        net: &Net,
-        layout: &Layout,
-        ports: &[usize],
-    ) -> i32 {
+    fn count_north_south_crossings_on_ports(&mut self, net: &Net, layout: &Layout) -> i32 {
         let mut crossings = 0;
-        let mut targets_and_degrees: Vec<(usize, usize)> = Vec::new();
-        for &port in ports {
-            let position = self.position(port);
+        for port_index in 0..self.ports.len() {
+            let port = self.ports[port_index];
+            let position = self.port_positions[port];
             self.index_tree.remove_all(position);
-            targets_and_degrees.clear();
+            self.targets_and_degrees.clear();
             let node = net.node_of(port);
             match net.node_type(node) {
                 NodeType::NORMAL => {
                     // Only ports with a dummy are indexed for a normal node.
                     if let Some(dummy) = net.graph().ports[port].north_south_dummy {
                         for &dummy_port in &layout.node_ports[dummy] {
-                            targets_and_degrees.push((dummy_port, net.degree(dummy_port)));
+                            self.targets_and_degrees
+                                .push((dummy_port, net.degree(dummy_port)));
                         }
                     }
                 }
@@ -217,18 +231,18 @@ impl AllCrossingsCounter {
                         .iter()
                         .find(|&&candidate| candidate != port)
                     {
-                        targets_and_degrees.push((other, net.degree(other)));
+                        self.targets_and_degrees.push((other, net.degree(other)));
                     }
                 }
                 NodeType::NORTH_SOUTH_PORT => {
                     if let Some(origin) = net.graph().ports[port].origin_port {
-                        targets_and_degrees.push((origin, net.degree(port)));
+                        self.targets_and_degrees.push((origin, net.degree(port)));
                     }
                 }
                 _ => {}
             }
-            for &(target, degree) in &targets_and_degrees {
-                let end = self.position(target);
+            for &(target, degree) in &self.targets_and_degrees {
+                let end = self.port_positions[target];
                 if end > position {
                     crossings += self.index_tree.rank(end) * degree as i32;
                     self.ends.push(end);
@@ -250,14 +264,14 @@ impl AllCrossingsCounter {
         net: &Net,
         layout: &Layout,
         nodes: &[usize],
-    ) -> Vec<usize> {
-        let mut ports = Vec::new();
-        let mut stack: Vec<usize> = Vec::new();
+    ) {
+        self.ports.clear();
+        self.ns_stack.clear();
         let mut last_layout_unit: Option<usize> = None;
         let mut index = 0;
         for &current in nodes {
             if is_layout_unit_changed(net, last_layout_unit, current) {
-                index = self.empty_stack(net, layout, &mut stack, &mut ports, index);
+                index = self.empty_stack(net, layout, index);
             }
             if let Some(unit) = net.graph().nodes[current].in_layer_layout_unit {
                 last_layout_unit = Some(unit);
@@ -271,9 +285,9 @@ impl AllCrossingsCounter {
                     ) {
                         self.port_positions[port] = index;
                         index += 1;
-                        ports.push(port);
+                        self.ports.push(port);
                     }
-                    index = self.empty_stack(net, layout, &mut stack, &mut ports, index);
+                    index = self.empty_stack(net, layout, index);
                     for port in north_south_ports_with_incident_edges(
                         net,
                         &layout.node_ports[current],
@@ -281,7 +295,7 @@ impl AllCrossingsCounter {
                     ) {
                         self.port_positions[port] = index;
                         index += 1;
-                        ports.push(port);
+                        self.ports.push(port);
                     }
                 }
                 NodeType::NORTH_SOUTH_PORT => {
@@ -292,13 +306,13 @@ impl AllCrossingsCounter {
                     {
                         self.port_positions[port] = index;
                         index += 1;
-                        ports.push(port);
+                        self.ports.push(port);
                     }
                     if current_ports
                         .iter()
                         .any(|&port| net.side(port) == NORTH_SOUTH_STACK_SIDE)
                     {
-                        stack.push(current);
+                        self.ns_stack.push(current);
                     }
                 }
                 NodeType::LONG_EDGE => {
@@ -306,12 +320,12 @@ impl AllCrossingsCounter {
                         if net.side(port) == PortSide::WEST {
                             self.port_positions[port] = index;
                             index += 1;
-                            ports.push(port);
+                            self.ports.push(port);
                         }
                     }
                     for &port in &layout.node_ports[current] {
                         if net.side(port) == PortSide::EAST {
-                            stack.push(current);
+                            self.ns_stack.push(current);
                         }
                     }
                 }
@@ -319,28 +333,20 @@ impl AllCrossingsCounter {
             }
         }
         // The southern dummies left on the stack.
-        self.empty_stack(net, layout, &mut stack, &mut ports, index);
-        ports
+        self.empty_stack(net, layout, index);
     }
 
     /// `emptyStack`: the first eastern port of each node on the stack, the last pushed first.
-    fn empty_stack(
-        &mut self,
-        net: &Net,
-        layout: &Layout,
-        stack: &mut Vec<usize>,
-        ports: &mut Vec<usize>,
-        start_index: usize,
-    ) -> usize {
+    fn empty_stack(&mut self, net: &Net, layout: &Layout, start_index: usize) -> usize {
         let mut index = start_index;
-        while let Some(dummy) = stack.pop() {
+        while let Some(dummy) = self.ns_stack.pop() {
             if let Some(&port) = layout.node_ports[dummy]
                 .iter()
                 .find(|&&port| net.side(port) == NORTH_SOUTH_STACK_SIDE)
             {
                 self.port_positions[port] = index;
                 index += 1;
-                ports.push(port);
+                self.ports.push(port);
             }
         }
         index
@@ -355,11 +361,11 @@ impl AllCrossingsCounter {
         left: &[usize],
         right: &[usize],
     ) -> i32 {
-        let mut ports = Vec::new();
-        self.init_positions(net, layout, left, PortSide::EAST, true, &mut ports);
-        self.init_positions(net, layout, right, PortSide::WEST, false, &mut ports);
-        self.index_tree = BinaryIndexedTree::new(ports.len());
-        self.count_on_ports(net, &ports)
+        self.ports.clear();
+        self.init_positions(net, layout, left, PortSide::EAST, true);
+        self.init_positions(net, layout, right, PortSide::WEST, false);
+        self.index_tree.reset(self.ports.len());
+        self.count_on_ports(net)
     }
 
     /// `countInLayerCrossingsOnSide`: the in-layer crossings of the ports on one side of a layer.
@@ -370,21 +376,22 @@ impl AllCrossingsCounter {
         nodes: &[usize],
         side: PortSide,
     ) -> i32 {
-        let mut ports = Vec::new();
-        self.init_positions(net, layout, nodes, side, true, &mut ports);
-        self.index_tree = BinaryIndexedTree::new(ports.len());
-        self.count_in_layer_on_ports(net, &ports)
+        self.ports.clear();
+        self.init_positions(net, layout, nodes, side, true);
+        self.index_tree.reset(self.ports.len());
+        self.count_in_layer_on_ports(net)
     }
 
     /// `countCrossingsOnPorts`: the crossings of the edges of each port with the edges that end
     /// before them, port by port.
-    fn count_on_ports(&mut self, net: &Net, ports: &[usize]) -> i32 {
+    fn count_on_ports(&mut self, net: &Net) -> i32 {
         let mut crossings = 0;
-        for &port in ports {
-            let position = self.position(port);
+        for port_index in 0..self.ports.len() {
+            let port = self.ports[port_index];
+            let position = self.port_positions[port];
             self.index_tree.remove_all(position);
             for edge in net.connected_edges(port) {
-                let end = self.position(net.other_end(edge, port));
+                let end = self.port_positions[net.other_end(edge, port)];
                 if end > position {
                     crossings += self.index_tree.rank(end);
                     self.ends.push(end);
@@ -399,15 +406,16 @@ impl AllCrossingsCounter {
 
     /// `countInLayerCrossingsOnPorts`: as `count_on_ports`, for the in-layer edges; each edge that
     /// leaves the layer counts the entries already in the tree.
-    fn count_in_layer_on_ports(&mut self, net: &Net, ports: &[usize]) -> i32 {
+    fn count_in_layer_on_ports(&mut self, net: &Net) -> i32 {
         let mut crossings = 0;
-        for &port in ports {
-            let position = self.position(port);
+        for port_index in 0..self.ports.len() {
+            let port = self.ports[port_index];
+            let position = self.port_positions[port];
             self.index_tree.remove_all(position);
             let mut between_layer_edges = 0;
             for edge in net.connected_edges(port) {
                 if net.is_in_layer(edge) {
-                    let end = self.position(net.other_end(edge, port));
+                    let end = self.port_positions[net.other_end(edge, port)];
                     if end > position {
                         crossings += self.index_tree.rank(end);
                         self.ends.push(end);
@@ -425,7 +433,7 @@ impl AllCrossingsCounter {
     }
 
     /// `initPositions`: numbers the ports of the nodes on `side`, node by node, from the top (or the
-    /// bottom), and appends them to `ports`.
+    /// bottom), and appends them to `self.ports`.
     fn init_positions(
         &mut self,
         net: &Net,
@@ -433,33 +441,34 @@ impl AllCrossingsCounter {
         nodes: &[usize],
         side: PortSide,
         top_down: bool,
-        ports: &mut Vec<usize>,
     ) {
-        let mut num_ports = ports.len();
+        let mut num_ports = self.ports.len();
         let count = nodes.len();
+        // `getPorts(node, side, topDown)`: east ports are read in list order when top-down and
+        // reversed otherwise; the other sides the other way round. That is a reversal exactly when
+        // the side being east differs from the reading being top-down.
+        let reverse = (side == PortSide::EAST) != top_down;
         for step in 0..count {
             let node = if top_down {
                 nodes[step]
             } else {
                 nodes[count - 1 - step]
             };
-            let mut node_ports = net.side_ports(&layout.node_ports[node], side);
-            // `getPorts(node, side, topDown)`: east ports are read in list order when top-down and
-            // reversed otherwise; the other sides the other way round. That is a reversal exactly when
-            // the side being east differs from the reading being top-down.
-            if (side == PortSide::EAST) != top_down {
-                node_ports.reverse();
+            let node_ports = &layout.node_ports[node];
+            if reverse {
+                for port in net.side_ports(node_ports, side).rev() {
+                    self.port_positions[port] = num_ports;
+                    num_ports += 1;
+                    self.ports.push(port);
+                }
+            } else {
+                for port in net.side_ports(node_ports, side) {
+                    self.port_positions[port] = num_ports;
+                    num_ports += 1;
+                    self.ports.push(port);
+                }
             }
-            for &port in &node_ports {
-                self.port_positions[port] = num_ports;
-                num_ports += 1;
-            }
-            ports.extend(node_ports);
         }
-    }
-
-    fn position(&self, port: usize) -> usize {
-        self.port_positions[port]
     }
 }
 
@@ -470,14 +479,14 @@ const NORTH_SOUTH_INDEXING_SIDE: PortSide = PortSide::WEST;
 const NORTH_SOUTH_STACK_SIDE: PortSide = PortSide::EAST;
 
 /// `getNorthSouthPortsWithIncidentEdges`: the ports on `side` that have a north/south port dummy.
-fn north_south_ports_with_incident_edges(net: &Net, ports: &[usize], side: PortSide) -> Vec<usize> {
-    ports
-        .iter()
-        .copied()
-        .filter(|&port| {
-            net.side(port) == side && net.graph().ports[port].north_south_dummy.is_some()
-        })
-        .collect()
+fn north_south_ports_with_incident_edges<'b>(
+    net: &'b Net<'_>,
+    ports: &'b [usize],
+    side: PortSide,
+) -> impl Iterator<Item = usize> + 'b {
+    ports.iter().copied().filter(move |&port| {
+        net.side(port) == side && net.graph().ports[port].north_south_dummy.is_some()
+    })
 }
 
 /// `isLayoutUnitChanged`: the node belongs to a layout unit other than the last one, and is not the
@@ -538,26 +547,18 @@ impl CrossingsCounter {
         right: &[usize],
         positions: &mut [i32],
     ) {
-        let mut ports = Vec::new();
-        init_positions(
-            net,
-            layout,
-            left,
-            PortSide::EAST,
-            true,
-            &mut ports,
-            positions,
-        );
-        init_positions(
+        let count = init_positions(net, layout, left, PortSide::EAST, true, 0, positions, None);
+        let total = init_positions(
             net,
             layout,
             right,
             PortSide::WEST,
             false,
-            &mut ports,
+            count,
             positions,
+            None,
         );
-        self.index_tree = BinaryIndexedTree::new(ports.len());
+        self.index_tree.reset(total as usize);
     }
 
     /// `initPortPositionsForInLayerCrossings`: the ports of one side of a layer, top-down, with the
@@ -570,12 +571,17 @@ impl CrossingsCounter {
         side: PortSide,
         positions: &mut [i32],
     ) {
-        let mut ports = Vec::new();
-        let cardinalities = init_positions(net, layout, nodes, side, true, &mut ports, positions);
-        for (node, cardinality) in cardinalities {
-            self.node_cardinalities[node] = cardinality;
-        }
-        self.index_tree = BinaryIndexedTree::new(ports.len());
+        let total = init_positions(
+            net,
+            layout,
+            nodes,
+            side,
+            true,
+            0,
+            positions,
+            Some(&mut self.node_cardinalities),
+        );
+        self.index_tree.reset(total as usize);
     }
 
     /// `countCrossingsBetweenPortsInBothOrders`: the crossings of the edges at `upper` and `lower`
@@ -725,41 +731,49 @@ impl CrossingsCounter {
     }
 }
 
-/// `CrossingsCounter.initPositions`: numbers the ports of `nodes` on `side` from `ports.len()` on,
-/// node by node from the top (or the bottom), and appends them to `ports`. Returns each node with
-/// its number of ports on the side, the `nodeCardinalities` of an in-layer initialization.
+/// `CrossingsCounter.initPositions`: numbers the ports of `nodes` on `side` from `start_index` on,
+/// node by node from the top (or the bottom), and returns the next port position. When
+/// `node_cardinalities` is provided, records each node's number of ports on `side`.
+#[allow(clippy::too_many_arguments)]
 fn init_positions(
     net: &Net,
     layout: &Layout,
     nodes: &[usize],
     side: PortSide,
     top_down: bool,
-    ports: &mut Vec<usize>,
+    start_index: i32,
     positions: &mut [i32],
-) -> Vec<(usize, i32)> {
-    let mut num_ports = ports.len() as i32;
-    let mut cardinalities = Vec::with_capacity(nodes.len());
+    mut node_cardinalities: Option<&mut [i32]>,
+) -> i32 {
+    let mut num_ports = start_index;
     let count = nodes.len();
+    // `getPorts(node, side, topDown)`: east ports are read in list order when top-down and
+    // reversed otherwise; the other sides the other way round.
+    let reverse = (side == PortSide::EAST) != top_down;
     for step in 0..count {
         let node = if top_down {
             nodes[step]
         } else {
             nodes[count - 1 - step]
         };
-        let mut node_ports = net.side_ports(&layout.node_ports[node], side);
-        // `getPorts(node, side, topDown)`: east ports are read in list order when top-down and
-        // reversed otherwise; the other sides the other way round.
-        if (side == PortSide::EAST) != top_down {
-            node_ports.reverse();
+        let node_ports = &layout.node_ports[node];
+        let before = num_ports;
+        if reverse {
+            for port in net.side_ports(node_ports, side).rev() {
+                positions[port] = num_ports;
+                num_ports += 1;
+            }
+        } else {
+            for port in net.side_ports(node_ports, side) {
+                positions[port] = num_ports;
+                num_ports += 1;
+            }
         }
-        cardinalities.push((node, node_ports.len() as i32));
-        for &port in &node_ports {
-            positions[port] = num_ports;
-            num_ports += 1;
+        if let Some(cardinalities) = node_cardinalities.as_deref_mut() {
+            cardinalities[node] = num_ports - before;
         }
-        ports.extend(node_ports);
     }
-    cardinalities
+    num_ports
 }
 
 /// `switchPorts`: the two ports exchange their positions.

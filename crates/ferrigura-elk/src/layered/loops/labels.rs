@@ -149,7 +149,7 @@ mod tests {
             options::DIRECTION,
             Some(OptionValue::Enum {
                 class: "Direction",
-                name: "DOWN".to_string(),
+                name: "DOWN",
             }),
         );
         graph

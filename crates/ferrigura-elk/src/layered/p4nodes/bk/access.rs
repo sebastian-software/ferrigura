@@ -52,31 +52,26 @@ pub fn is_in_layer_edge(graph: &LGraph, edge: usize) -> bool {
 }
 
 /// `LNode.getIncomingEdges()`: the incoming edges of all ports, port by port.
-pub fn incoming_edges(graph: &LGraph, node: &LNode) -> Vec<usize> {
+pub fn incoming_edges<'g>(graph: &'g LGraph, node: &'g LNode) -> impl Iterator<Item = usize> + 'g {
     node.ports
         .iter()
-        .flat_map(|&port| graph.ports[port].incoming.iter().copied())
-        .collect()
+        .flat_map(move |&port| graph.ports[port].incoming.iter().copied())
 }
 
 /// `LNode.getOutgoingEdges()`: the outgoing edges of all ports, port by port.
-pub fn outgoing_edges(graph: &LGraph, node: &LNode) -> Vec<usize> {
+pub fn outgoing_edges<'g>(graph: &'g LGraph, node: &'g LNode) -> impl Iterator<Item = usize> + 'g {
     node.ports
         .iter()
-        .flat_map(|&port| graph.ports[port].outgoing.iter().copied())
-        .collect()
+        .flat_map(move |&port| graph.ports[port].outgoing.iter().copied())
 }
 
 /// `LNode.getConnectedEdges()`: for each port, its incoming edges and then its outgoing ones, as
 /// `LPort`'s `CombineIter` gives them.
-pub fn connected_edges(graph: &LGraph, node: &LNode) -> Vec<usize> {
-    node.ports
-        .iter()
-        .flat_map(|&port| {
-            let port = &graph.ports[port];
-            port.incoming.iter().chain(port.outgoing.iter()).copied()
-        })
-        .collect()
+pub fn connected_edges<'g>(graph: &'g LGraph, node: &'g LNode) -> impl Iterator<Item = usize> + 'g {
+    node.ports.iter().flat_map(move |&port| {
+        let port = &graph.ports[port];
+        port.incoming.iter().chain(port.outgoing.iter()).copied()
+    })
 }
 
 /// `Math.min(double, double)` with Java's rules: NaN wins, and -0.0 is smaller than 0.0.

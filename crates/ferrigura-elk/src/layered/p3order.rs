@@ -223,15 +223,15 @@ fn check_structure(graph: &LGraph) -> Result<(), LayoutError> {
     Ok(())
 }
 
-/// The graph the sweep reads and does not change: ports, edges, node types, and the layer of each
-/// node. `layer_of` is `LNode.getLayer()` and `layer_sizes` is `Layer.getNodes().size()`.
+/// The graph the sweep reads and does not change: ports, edges, node types, port constraints, and
+/// the layer of each node. `layer_of` is `LNode.getLayer()` and `layer_sizes` is
+/// `Layer.getNodes().size()`.
 pub(super) struct Net<'a> {
     graph: &'a LGraph,
     layer_of: Vec<usize>,
     layer_sizes: Vec<usize>,
-    /// The nodes whose port order the sweep fixed (`setPortOrderOnParentGraph`), which read as
-    /// `FIXED_ORDER` from then on.
-    fixed_order: Vec<bool>,
+    /// Cached `PORT_CONSTRAINTS` per node; `fix_port_order` updates a node to `FIXED_ORDER`.
+    constraints: Vec<PortConstraints>,
 }
 
 impl<'a> Net<'a> {
@@ -242,17 +242,20 @@ impl<'a> Net<'a> {
                 layer_of[node] = index;
             }
         }
+        let constraints = (0..graph.nodes.len())
+            .map(|node| port_constraints(graph, node))
+            .collect();
         Net {
             graph,
             layer_of,
             layer_sizes: graph.layers.iter().map(Vec::len).collect(),
-            fixed_order: vec![false; graph.nodes.len()],
+            constraints,
         }
     }
 
     /// `node.setProperty(PORT_CONSTRAINTS, FIXED_ORDER)` while the sweep reads the graph.
     pub(super) fn fix_port_order(&mut self, node: usize) {
-        self.fixed_order[node] = true;
+        self.constraints[node] = PortConstraints::FIXED_ORDER;
     }
 
     /// The graph the sweep reads.
@@ -285,10 +288,7 @@ impl<'a> Net<'a> {
     }
 
     pub(super) fn constraints(&self, node: usize) -> PortConstraints {
-        if self.fixed_order[node] {
-            return PortConstraints::FIXED_ORDER;
-        }
-        port_constraints(self.graph, node)
+        self.constraints[node]
     }
 
     /// `LPort.getIncomingEdges()`.
@@ -346,12 +346,15 @@ impl<'a> Net<'a> {
     }
 
     /// `LNode.getPortSideView(side)` on the given port list: the ports on `side`, in list order.
-    pub(super) fn side_ports(&self, ports: &[usize], side: PortSide) -> Vec<usize> {
+    pub(super) fn side_ports<'b>(
+        &'b self,
+        ports: &'b [usize],
+        side: PortSide,
+    ) -> impl DoubleEndedIterator<Item = usize> + 'b {
         ports
             .iter()
             .copied()
-            .filter(|&port| self.side(port) == side)
-            .collect()
+            .filter(move |&port| self.side(port) == side)
     }
 
     /// `LEdge.isSelfLoop()`: both ends on one node.
@@ -363,20 +366,34 @@ impl<'a> Net<'a> {
 /// `CrossMinUtil.inNorthSouthEastWestOrder`: the ports of a port list on `side`, north to south and
 /// east to west. North and east ports keep the list order; south and west ports, which the list
 /// holds clockwise, are reversed.
-pub(super) fn in_north_south_east_west_order(
-    net: &Net,
-    ports: &[usize],
+pub(super) fn in_north_south_east_west_order<'b>(
+    net: &'b Net<'_>,
+    ports: &'b [usize],
     side: PortSide,
-) -> Vec<usize> {
-    match side {
-        PortSide::EAST | PortSide::NORTH => net.side_ports(ports, side),
-        PortSide::SOUTH | PortSide::WEST => {
-            let mut ports = net.side_ports(ports, side);
-            ports.reverse();
-            ports
+) -> impl Iterator<Item = usize> + 'b {
+    let (slice, reverse) = match side {
+        PortSide::EAST | PortSide::NORTH => (ports, false),
+        PortSide::SOUTH | PortSide::WEST => (ports, true),
+        _ => (&[][..], false),
+    };
+    let mut front = 0;
+    let mut back = slice.len();
+    std::iter::from_fn(move || {
+        while front < back {
+            let port = if reverse {
+                back -= 1;
+                slice[back]
+            } else {
+                let port = slice[front];
+                front += 1;
+                port
+            };
+            if net.side(port) == side {
+                return Some(port);
+            }
         }
-        _ => Vec::new(),
-    }
+        None
+    })
 }
 
 /// `LNode.getProperty(PORT_CONSTRAINTS)`, `UNDEFINED` when unset.
@@ -439,7 +456,7 @@ pub(super) fn transfer_node_and_port_orders(graph: &mut LGraph, best: Layout) {
                     options::PORT_CONSTRAINTS,
                     Some(OptionValue::Enum {
                         class: "PortConstraints",
-                        name: "FIXED_ORDER".to_string(),
+                        name: "FIXED_ORDER",
                     }),
                 );
             }
@@ -500,7 +517,7 @@ mod tests {
     use crate::layered::lgraph::{LEdge, LNode, LPort};
 
     /// A graph with one layer of `count` nodes, in model order `0..count`.
-    fn one_layer(count: usize, consider: Option<&str>) -> LGraph {
+    fn one_layer(count: usize, consider: Option<&'static str>) -> LGraph {
         let mut graph = LGraph {
             nodes: (0..count).map(|_| LNode::default()).collect(),
             layers: vec![(0..count).collect()],
@@ -512,7 +529,7 @@ mod tests {
                 options::CONSIDER_MODEL_ORDER_STRATEGY,
                 Some(OptionValue::Enum {
                     class: "OrderingStrategy",
-                    name: name.to_string(),
+                    name,
                 }),
             );
         }

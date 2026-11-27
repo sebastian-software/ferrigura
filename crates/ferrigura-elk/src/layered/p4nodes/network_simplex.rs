@@ -34,9 +34,9 @@ use crate::java::math::java_round;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
 use crate::layered::p4nodes::bk::access::{
-    connected_edges, is_in_layer_edge, is_self_loop, java_max, outgoing_edges,
+    connected_edges, is_in_layer_edge, is_self_loop, java_max,
 };
-use crate::layered::spacings::{self, SPACING_PORT_PORT};
+use crate::layered::spacings::{SPACING_PORT_PORT, Spacings};
 
 /// `NetworkSimplexPlacer.EDGE_WEIGHT_BASE`.
 const EDGE_WEIGHT_BASE: f64 = 4.0;
@@ -120,6 +120,8 @@ struct Placer<'a> {
     crossing: Vec<bool>,
     /// `NetworkSimplexPlacer.flexibleWhereSpacePermitsEdges`, in insertion order.
     flexible_where_space: Vec<usize>,
+    /// Resolved node-type spacings for `graph`.
+    spacings: Spacings,
 }
 
 /// `NetworkSimplexPlacer.process`: sets the y coordinate of every node.
@@ -223,6 +225,7 @@ impl<'a> Placer<'a> {
             }
         }
 
+        let spacings = Spacings::for_graph(graph);
         Placer {
             graph,
             ng: NGraph::new(),
@@ -237,6 +240,7 @@ impl<'a> Placer<'a> {
             two_paths: Vec::new(),
             crossing: Vec::new(),
             flexible_where_space: Vec::new(),
+            spacings,
         }
     }
 
@@ -305,7 +309,7 @@ impl<'a> Placer<'a> {
             if let Some(last) = last_rep {
                 let last_node = &self.graph.nodes[last.origin];
                 let mut spacing = last_node.margin.bottom
-                    + spacings::vertical(self.graph, last_node, &self.graph.nodes[node])
+                    + self.spacings.vertical(last_node, &self.graph.nodes[node])
                     + self.graph.nodes[node].margin.top;
 
                 if !last.is_flexible {
@@ -438,10 +442,15 @@ impl<'a> Placer<'a> {
 
     /// `transformEdges`: each edge that is neither a self loop nor an in-layer edge.
     fn transform_edges(&mut self) -> Result<(), LayoutError> {
-        for node in self.order.clone() {
-            for edge in outgoing_edges(self.graph, &self.graph.nodes[node]) {
-                if is_handled_edge(self.graph, edge) {
-                    self.transform_edge(edge)?;
+        for order_index in 0..self.order.len() {
+            let node = self.order[order_index];
+            for port_index in 0..self.graph.nodes[node].ports.len() {
+                let port = self.graph.nodes[node].ports[port_index];
+                for edge_index in 0..self.graph.ports[port].outgoing.len() {
+                    let edge = self.graph.ports[port].outgoing[edge_index];
+                    if is_handled_edge(self.graph, edge) {
+                        self.transform_edge(edge)?;
+                    }
                 }
             }
         }
@@ -489,34 +498,45 @@ impl<'a> Placer<'a> {
 
     /// `insertInLayerEdgeAuxiliaryEdges`: keeps the edges to inverted ports short.
     fn insert_in_layer_edge_auxiliary_edges(&mut self) -> Result<(), LayoutError> {
-        for node in self.order.clone() {
+        for order_index in 0..self.order.len() {
+            let node = self.order[order_index];
             if self.graph.nodes[node].node_type != NodeType::NORMAL {
                 continue;
             }
-            for in_layer_edge in connected_edges(self.graph, &self.graph.nodes[node]) {
-                if !is_in_layer_edge(self.graph, in_layer_edge) {
-                    continue;
-                }
+            for port_index in 0..self.graph.nodes[node].ports.len() {
+                let port = self.graph.nodes[node].ports[port_index];
+                let incoming_len = self.graph.ports[port].incoming.len();
+                let total_len = incoming_len + self.graph.ports[port].outgoing.len();
+                for edge_index in 0..total_len {
+                    let in_layer_edge = if edge_index < incoming_len {
+                        self.graph.ports[port].incoming[edge_index]
+                    } else {
+                        self.graph.ports[port].outgoing[edge_index - incoming_len]
+                    };
+                    if !is_in_layer_edge(self.graph, in_layer_edge) {
+                        continue;
+                    }
 
-                let src_port = self.graph.edges[in_layer_edge].source;
-                let tgt_port = self.graph.edges[in_layer_edge].target;
-                let src_is_dummy =
-                    self.graph.nodes[self.graph.ports[src_port].node].node_type != NodeType::NORMAL;
+                    let src_port = self.graph.edges[in_layer_edge].source;
+                    let tgt_port = self.graph.edges[in_layer_edge].target;
+                    let src_is_dummy = self.graph.nodes[self.graph.ports[src_port].node].node_type
+                        != NodeType::NORMAL;
 
-                let the_port = if src_is_dummy { tgt_port } else { src_port };
-                let other_port = if the_port == src_port {
-                    tgt_port
-                } else {
-                    src_port
-                };
-                let dummy_node = self.graph.ports[other_port].node;
+                    let the_port = if src_is_dummy { tgt_port } else { src_port };
+                    let other_port = if the_port == src_port {
+                        tgt_port
+                    } else {
+                        src_port
+                    };
+                    let dummy_node = self.graph.ports[other_port].node;
 
-                let port_rep = self.port_rep(the_port)?;
-                // head/tail doesn't matter since it's a dummy node
-                let dummy_rep = self.rep(dummy_node).head;
+                    let port_rep = self.port_rep(the_port)?;
+                    // head/tail doesn't matter since it's a dummy node
+                    let dummy_rep = self.rep(dummy_node).head;
 
-                let (src, tgt) =
-                    if self.index_of(self.graph.ports[the_port].node) < self.index_of(dummy_node) {
+                    let (src, tgt) = if self.index_of(self.graph.ports[the_port].node)
+                        < self.index_of(dummy_node)
+                    {
                         // port --> dummy
                         (port_rep, dummy_rep)
                     } else {
@@ -524,7 +544,8 @@ impl<'a> Placer<'a> {
                         (dummy_rep, port_rep)
                     };
 
-                self.add_edge(src, tgt, EDGE_WEIGHT_BASE, 0, None);
+                    self.add_edge(src, tgt, EDGE_WEIGHT_BASE, 0, None);
+                }
             }
         }
         Ok(())
@@ -788,12 +809,10 @@ impl<'a> Placer<'a> {
         if node_index > 0 {
             let above = layer_members[node_index - 1];
             let above_rep = self.rep(above);
-            let spacing = spacings::vertical(
-                self.graph,
-                &self.graph.nodes[above],
-                &self.graph.nodes[center_node],
-            )
-            .ceil();
+            let spacing = self
+                .spacings
+                .vertical(&self.graph.nodes[above], &self.graph.nodes[center_node])
+                .ceil();
             above_dist = (f64::from(self.ng.node(n_node.head).layer)
                 - self.graph.nodes[center_node].margin.top)
                 - ((f64::from(self.ng.node(above_rep.head).layer)
@@ -805,12 +824,10 @@ impl<'a> Placer<'a> {
         if node_index < layer_members.len() - 1 {
             let below = layer_members[node_index + 1];
             let below_rep = self.rep(below);
-            let spacing = spacings::vertical(
-                self.graph,
-                &self.graph.nodes[below],
-                &self.graph.nodes[center_node],
-            )
-            .ceil();
+            let spacing = self
+                .spacings
+                .vertical(&self.graph.nodes[below], &self.graph.nodes[center_node])
+                .ceil();
             below_dist = (f64::from(self.ng.node(below_rep.head).layer)
                 - self.graph.nodes[below].margin.top)
                 - ((f64::from(self.ng.node(n_node.head).layer)
@@ -892,17 +909,28 @@ impl<'a> Placer<'a> {
     /// `identifyPaths`: the paths that start at a junction.
     fn identify_paths(&mut self) -> Vec<Path> {
         let mut paths = Vec::new();
-        for junction in self.order.clone() {
+        for order_index in 0..self.order.len() {
+            let junction = self.order[order_index];
             if self.node_state[junction] != JUNCTION {
                 continue;
             }
-            for edge in connected_edges(self.graph, &self.graph.nodes[junction]) {
-                if !is_handled_edge(self.graph, edge) {
-                    continue;
-                }
-                let path = self.follow(edge, junction);
-                if path.len() > 1 {
-                    paths.push(path);
+            for port_index in 0..self.graph.nodes[junction].ports.len() {
+                let port = self.graph.nodes[junction].ports[port_index];
+                let incoming_len = self.graph.ports[port].incoming.len();
+                let total_len = incoming_len + self.graph.ports[port].outgoing.len();
+                for edge_index in 0..total_len {
+                    let edge = if edge_index < incoming_len {
+                        self.graph.ports[port].incoming[edge_index]
+                    } else {
+                        self.graph.ports[port].outgoing[edge_index - incoming_len]
+                    };
+                    if !is_handled_edge(self.graph, edge) {
+                        continue;
+                    }
+                    let path = self.follow(edge, junction);
+                    if path.len() > 1 {
+                        paths.push(path);
+                    }
                 }
             }
         }
@@ -930,7 +958,6 @@ impl<'a> Placer<'a> {
             // recurse
             self.node_state[other] = VISITED;
             let next = connected_edges(self.graph, &self.graph.nodes[other])
-                .into_iter()
                 .find(|&incident| is_handled_edge(self.graph, incident) && incident != edge);
             match next {
                 Some(incident) => {
@@ -1032,13 +1059,13 @@ impl<'a> Placer<'a> {
     }
 
     /// `NNode.of().origin(origin).type(node_type).create(nGraph)`.
-    fn new_node(&mut self, origin: Origin, node_type: &str) -> usize {
+    fn new_node(&mut self, origin: Origin, node_type: &'static str) -> usize {
         let mut node = NNode::new();
         node.origin = match origin {
             Origin::None => None,
             Origin::Node(index) | Origin::Port(index) => Some(index),
         };
-        node.node_type = node_type.to_string();
+        node.node_type = node_type;
         let index = self.ng.add_node(node);
         if self.origins.len() <= index {
             self.origins.resize(index + 1, Origin::None);

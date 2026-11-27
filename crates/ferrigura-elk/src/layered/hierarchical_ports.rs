@@ -103,7 +103,7 @@ fn set_widths(graph: &mut LGraph, nodes: &[usize], top_down: bool, delta: f64) {
             options::ALIGNMENT,
             Some(crate::core::data::OptionValue::Enum {
                 class: "Alignment",
-                name: "CENTER".to_string(),
+                name: "CENTER",
             }),
         );
         graph.nodes[node].size.x = current_width;
@@ -253,10 +253,10 @@ mod tests {
     fn dummy(side: PortSide) -> LNode {
         LNode {
             node_type: NodeType::EXTERNAL_PORT,
-            external_port: Some(ExternalPortDummy {
+            external_port: Some(Box::new(ExternalPortDummy {
                 side: Some(side),
                 ..ExternalPortDummy::default()
-            }),
+            })),
             ..LNode::default()
         }
     }
