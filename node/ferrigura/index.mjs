@@ -8,14 +8,28 @@ const load = createNativeLoader(import.meta.url, {
   binaryPattern: 'ferrigura.node',
 });
 
+/** Rejects non-object config values (including arrays and typed arrays/Buffers) before N-API. */
+function validateConfig(config) {
+  if (config === undefined || config === null) return config;
+  if (
+    typeof config !== 'object' ||
+    Array.isArray(config) ||
+    types.isArrayBufferView(config) ||
+    types.isAnyArrayBuffer(config)
+  ) {
+    throw new TypeError('configuration must be an object');
+  }
+  return config;
+}
+
 /** Render one diagram synchronously, or reuse Renderer for a configuration. */
 export function render(text, config, options, fonts) {
-  return load().render(text, config, options, fontInputs(fonts));
+  return load().render(text, validateConfig(config), options, fontInputs(fonts));
 }
 export class Renderer {
   #native;
   constructor(config, fonts) {
-    this.#native = new (load().Renderer)(config, fontInputs(fonts));
+    this.#native = new (load().Renderer)(validateConfig(config), fontInputs(fonts));
   }
   render(text, options) {
     return this.#native.render(text, options);

@@ -408,8 +408,21 @@ fn run(job: &Job) -> Result<(), String> {
             .map_err(|error| format!("cannot create {}: {error}", dir.display()))?;
     }
     let several = job.inputs.len() > 1;
+    #[cfg(unix)]
+    let mut written_inodes: HashMap<(u64, u64), PathBuf> = HashMap::new();
     for input in &job.inputs {
-        render_input(&renderer, input, &options, job, input_limit).map_err(|message| {
+        #[cfg(unix)]
+        let result = render_input(
+            &renderer,
+            input,
+            &options,
+            job,
+            input_limit,
+            &mut written_inodes,
+        );
+        #[cfg(not(unix))]
+        let result = render_input(&renderer, input, &options, job, input_limit);
+        result.map_err(|message| {
             if several {
                 format!("{}: {message}", input.name())
             } else {
@@ -441,6 +454,7 @@ fn render_input(
     options: &RenderOptions,
     job: &Job,
     limit: u64,
+    #[cfg(unix)] written_inodes: &mut HashMap<(u64, u64), PathBuf>,
 ) -> Result<(), String> {
     let text = match input {
         Input::Stdin => read_stdin(limit)?,
@@ -449,16 +463,47 @@ fn render_input(
     let svg = renderer
         .render_with(&text, options)
         .map_err(|error| error.to_string())?;
-    write_svg(job, input, &svg)
+    #[cfg(unix)]
+    {
+        write_svg(job, input, &svg, written_inodes)
+    }
+    #[cfg(not(unix))]
+    {
+        write_svg(job, input, &svg)
+    }
 }
 
 /// Writes an SVG to `--output`, into `--output-dir`, or to standard output.
-fn write_svg(job: &Job, input: &Input, svg: &str) -> Result<(), String> {
+fn write_svg(
+    job: &Job,
+    input: &Input,
+    svg: &str,
+    #[cfg(unix)] written_inodes: &mut HashMap<(u64, u64), PathBuf>,
+) -> Result<(), String> {
     if let Some(path) = &job.output {
         return write_svg_file(path, svg);
     }
     if let Some(dir) = &job.output_dir {
         let path = svg_path(dir, input)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            if let Ok(meta) = fs::metadata(&path)
+                && let Some(previous) = written_inodes.get(&(meta.dev(), meta.ino()))
+            {
+                return Err(format!(
+                    "{} collides with {} on this file system",
+                    path.display(),
+                    previous.display()
+                ));
+            }
+            let file = write_svg_file_returning(&path, svg)?;
+            if let Ok(meta) = file.metadata() {
+                written_inodes.insert((meta.dev(), meta.ino()), path);
+            }
+            return Ok(());
+        }
+        #[cfg(not(unix))]
         return write_svg_file(&path, svg);
     }
     let mut stdout = io::stdout().lock();
@@ -469,10 +514,15 @@ fn write_svg(job: &Job, input: &Input, svg: &str) -> Result<(), String> {
 }
 
 fn write_svg_file(path: &Path, svg: &str) -> Result<(), String> {
+    write_svg_file_returning(path, svg).map(|_| ())
+}
+
+fn write_svg_file_returning(path: &Path, svg: &str) -> Result<fs::File, String> {
     fs::File::create(path)
         .and_then(|mut file| {
             file.write_all(svg.as_bytes())?;
-            file.write_all(b"\n")
+            file.write_all(b"\n")?;
+            Ok(file)
         })
         .map_err(|error| format!("cannot write {}: {error}", path.display()))
 }
@@ -746,9 +796,16 @@ mod tests {
             parse_args(args(&["--output-dir", "out", "a/pets.mmd", "b/pets.mmd"])).unwrap_err(),
             "out/pets.svg would be written twice"
         );
-        let case_error =
-            parse_args(args(&["--output-dir", "out", "a/Pets.mmd", "b/pets.mmd"])).unwrap_err();
-        assert!(case_error.contains("collides with"), "{case_error}");
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        {
+            let case_error =
+                parse_args(args(&["--output-dir", "out", "a/Pets.mmd", "b/pets.mmd"])).unwrap_err();
+            assert!(case_error.contains("collides with"), "{case_error}");
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        {
+            assert!(parse_args(args(&["--output-dir", "out", "a/Pets.mmd", "b/pets.mmd"])).is_ok());
+        }
     }
 
     #[test]
