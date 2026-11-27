@@ -6,8 +6,9 @@
 //! color functions of `khroma`; the port of those functions is in [`khroma`].
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::fmt;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 use crate::value::Value;
 
@@ -22,11 +23,28 @@ pub mod tokens;
 /// The result of computing the variables of a theme.
 pub(crate) type Res<T> = Result<T, ThemeError>;
 
+/// An empty object, used when a theme fails to compute its variables.
+static EMPTY_OBJECT: Value = Value::Object(BTreeMap::new());
+
 /// The variables of `redux-color` without overrides, computed once per process.
 static REDUX_COLOR: LazyLock<Res<Value>> = LazyLock::new(|| redux_color::variables(None));
 
 /// The variables of `redux-dark-color` without overrides, computed once per process.
 static REDUX_DARK_COLOR: LazyLock<Res<Value>> = LazyLock::new(|| redux_dark_color::variables(None));
+
+/// The typed tokens of `redux-color` without overrides, computed once per process.
+static REDUX_COLOR_TOKENS: LazyLock<Arc<ThemeTokens>> = LazyLock::new(|| {
+    Arc::new(ThemeTokens::from_value(
+        Theme::ReduxColor.default_variables(),
+    ))
+});
+
+/// The typed tokens of `redux-dark-color` without overrides, computed once per process.
+static REDUX_DARK_COLOR_TOKENS: LazyLock<Arc<ThemeTokens>> = LazyLock::new(|| {
+    Arc::new(ThemeTokens::from_value(
+        Theme::ReduxDarkColor.default_variables(),
+    ))
+});
 
 /// A theme that ferrigura ships.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,13 +108,41 @@ impl Theme {
         self.variables_shared(overrides).into_owned()
     }
 
+    /// The `themeVariables` of the theme without overrides, computed once per process.
+    #[must_use]
+    pub fn default_variables(self) -> &'static Value {
+        match self.base() {
+            Ok(variables) => variables,
+            Err(_) => &EMPTY_OBJECT,
+        }
+    }
+
+    /// The typed tokens of the theme without overrides, computed once per process.
+    #[must_use]
+    pub fn default_tokens(self) -> Arc<ThemeTokens> {
+        match self {
+            Self::ReduxColor => Arc::clone(&REDUX_COLOR_TOKENS),
+            Self::ReduxDarkColor => Arc::clone(&REDUX_DARK_COLOR_TOKENS),
+        }
+    }
+
+    /// The typed tokens of the theme with the user's overrides applied. Reuses the process-wide
+    /// cached tokens when there are no overrides to apply.
+    #[must_use]
+    pub fn tokens_shared(self, overrides: Option<&Value>) -> Arc<ThemeTokens> {
+        if !has_overrides(overrides) {
+            return self.default_tokens();
+        }
+        Arc::new(ThemeTokens::from_value(&self.variables_shared(overrides)))
+    }
+
     /// The `themeVariables` of the theme, as [`Theme::variables`] gives them, borrowed from the copy
     /// that is computed once per process when there are no overrides to apply. An empty object gives
     /// the same variables as none: the theme's own.
     #[must_use]
     pub fn variables_shared(self, overrides: Option<&Value>) -> Cow<'static, Value> {
         self.shared(overrides)
-            .unwrap_or_else(|_| Cow::Owned(Value::empty_object()))
+            .unwrap_or(Cow::Borrowed(&EMPTY_OBJECT))
     }
 
     /// The `themeVariables` of the theme, as [`Theme::variables`] gives them, or the error when a
@@ -141,7 +187,7 @@ impl Theme {
 
 /// Whether the overrides change a variable. Without any, the theme's variables are its own:
 /// `calculate` gives the same for `None`, an empty object and an empty array.
-fn has_overrides(overrides: Option<&Value>) -> bool {
+pub(crate) fn has_overrides(overrides: Option<&Value>) -> bool {
     match overrides {
         Some(Value::Object(map)) => !map.is_empty(),
         Some(Value::Array(items)) => !items.is_empty(),

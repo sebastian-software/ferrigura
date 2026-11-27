@@ -4,11 +4,12 @@
 //! `utils.ts`; the order of the layers is the one `mermaidAPI` applies.
 
 use std::collections::BTreeMap as Map;
+use std::sync::{Arc, OnceLock};
 
 use ferroni::Regex;
 
-use super::{CONFIG_KEYS, cached_defaults};
-use crate::theme::Theme;
+use super::{CONFIG_KEYS, cached_defaults, is_top_key};
+use crate::theme::{Theme, has_overrides};
 use crate::value::Value;
 
 /// The settings a diagram section may set for its own diagram type.
@@ -46,21 +47,42 @@ pub fn effective(site: Option<&Value>, diagram_key: Option<&str>, directive: &Va
     SiteConfig::new(site).effective(diagram_key, directive)
 }
 
+/// The resolved `themeVariables` of a diagram configuration: either the site's cached variables for
+/// a shipped theme (unchanged by the directive), or freshly computed variables.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ResolvedThemeVariables {
+    /// Identical to [`SiteConfig::site_theme_variables`] for this theme.
+    Site(Theme),
+    /// Modified by the directive (either directive `themeVariables` or a theme change with
+    /// overrides).
+    Custom(Value),
+}
+
 /// The site configuration: what `initialize` gives, merged onto the defaults, with the values that
 /// the layers below read. A renderer resolves it once, so that a render merges only the diagram's own
-/// front matter and directives on top of it, with [`SiteConfig::effective`]. [`effective`] is the same
-/// merge in one call.
-#[derive(Debug, Clone, PartialEq)]
+/// front matter and directives on top of it, with [`SiteConfig::effective`] or
+/// [`SiteConfig::effective_for`]. [`effective`] is the same merge in one call.
+#[derive(Debug, Clone)]
 pub struct SiteConfig {
     /// What the user passed to `initialize`, or an empty object: the reference's `site_delta`.
     settings: Value,
-    /// The defaults with the settings on top: the reference's `site_config`.
-    merged: Value,
     /// `merged` merged onto an empty object, the first layer of every diagram's configuration. It
     /// does not depend on the diagram, so it is merged once and copied for each one.
     first_layer: Value,
     /// The keys that a diagram may not set, from the merged `secure` list.
     secure: Vec<String>,
+    /// The theme name of the merged site configuration (`theme_name(&merged, "default")`).
+    site_theme: String,
+    /// Cached `themeVariables` for `Theme::ReduxColor` with the site's `themeVariables` overrides.
+    light_theme_variables: OnceLock<Arc<Value>>,
+    /// Cached `themeVariables` for `Theme::ReduxDarkColor` with the site's `themeVariables` overrides.
+    dark_theme_variables: OnceLock<Arc<Value>>,
+}
+
+impl PartialEq for SiteConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.settings == other.settings
+    }
 }
 
 impl SiteConfig {
@@ -68,18 +90,21 @@ impl SiteConfig {
     /// none.
     #[must_use]
     pub fn new(site: Option<&Value>) -> Self {
-        let settings = site.cloned().unwrap_or_else(|| Value::Object(Map::new()));
-        let mut merged = Value::Object(Map::new());
+        let settings = site.cloned().unwrap_or_else(Value::empty_object);
+        let mut merged = Value::empty_object();
         assign_with_depth(&mut merged, cached_defaults(), 2);
         assign_with_depth(&mut merged, &settings, 2);
         let secure = secure_keys(&merged);
-        let mut first_layer = Value::Object(Map::new());
+        let site_theme = theme_name(&merged, "default");
+        let mut first_layer = Value::empty_object();
         assign_with_depth(&mut first_layer, &merged, 2);
         Self {
             settings,
-            merged,
             first_layer,
             secure,
+            site_theme,
+            light_theme_variables: OnceLock::new(),
+            dark_theme_variables: OnceLock::new(),
         }
     }
 
@@ -89,34 +114,116 @@ impl SiteConfig {
         &self.settings
     }
 
+    /// The theme name resolved from the site configuration (`initialize` over defaults).
+    #[must_use]
+    pub fn site_theme(&self) -> &str {
+        &self.site_theme
+    }
+
+    /// Whether the site configuration supplies any `themeVariables` overrides.
+    #[must_use]
+    pub fn has_theme_overrides(&self) -> bool {
+        has_overrides(self.settings.get("themeVariables"))
+    }
+
+    /// The `themeVariables` of `theme` with the site's `themeVariables` overrides applied.
+    ///
+    /// Reuses the process-wide default variables when the site sets no overrides, and caches the
+    /// computed variables on this `SiteConfig` otherwise.
+    #[must_use]
+    pub fn site_theme_variables(&self, theme: Theme) -> &Value {
+        let site_overrides = self.settings.get("themeVariables");
+        if !has_overrides(site_overrides) {
+            return theme.default_variables();
+        }
+        let slot = match theme {
+            Theme::ReduxColor => &self.light_theme_variables,
+            Theme::ReduxDarkColor => &self.dark_theme_variables,
+        };
+        slot.get_or_init(|| Arc::new(theme.variables(site_overrides)))
+    }
+
     /// The configuration of one diagram, as [`effective`] gives it: the site configuration with the
     /// diagram's directive merged on top.
     #[must_use]
     pub fn effective(&self, diagram_key: Option<&str>, directive: &Value) -> Value {
         let defaults = cached_defaults();
-        let mut directive = directive.clone();
-        sanitize_directive(&mut directive);
-        add_font_family_variable(&mut directive);
-
-        sanitize(&mut directive, &self.secure);
-        let mut sum = Value::Object(Map::new());
-        assign_with_depth(&mut sum, &directive, 2);
-
-        let mut config = self.first_layer.clone();
-        assign_with_depth(&mut config, &sum, 2);
-        resolve_appearance(
-            &mut config,
-            &sum,
-            &directive,
-            &self.settings,
-            defaults,
-            diagram_key,
-        );
-        let variables = theme_variables(&self.merged, &self.settings, &sum, &config);
+        let (mut config, resolved) = if is_empty_object(directive) {
+            let mut config = self.first_layer.clone();
+            resolve_appearance(&mut config, &[&self.settings, defaults], diagram_key);
+            let theme = Theme::from_name(
+                config
+                    .get("theme")
+                    .and_then(Value::as_str)
+                    .unwrap_or(&self.site_theme),
+            );
+            (config, ResolvedThemeVariables::Site(theme))
+        } else {
+            let (directive, sum) = self.prepare_directive(directive);
+            let mut config = self.first_layer.clone();
+            assign_with_depth(&mut config, &sum, 2);
+            resolve_appearance(
+                &mut config,
+                &[&sum, &directive, &self.settings, defaults],
+                diagram_key,
+            );
+            let resolved = self.resolve_theme_variables(&sum, &config);
+            (config, resolved)
+        };
+        let variables = match resolved {
+            ResolvedThemeVariables::Site(theme) => self.site_theme_variables(theme).clone(),
+            ResolvedThemeVariables::Custom(variables) => variables,
+        };
         if let Value::Object(map) = &mut config {
             map.insert("themeVariables".to_owned(), variables);
         }
         config
+    }
+
+    /// Like [`Self::effective`], but populates only the top-level configuration keys (excluding
+    /// `themeVariables`) and the requested diagram `sections` (plus `diagram_key`), returning the
+    /// resolved `themeVariables` separately without cloning unused diagram sections or the
+    /// site-level `themeVariables` map.
+    #[must_use]
+    pub fn effective_for(
+        &self,
+        diagram_key: Option<&str>,
+        sections: &[&str],
+        directive: &Value,
+    ) -> (Value, ResolvedThemeVariables) {
+        let defaults = cached_defaults();
+        let include_key = |key: &str| -> bool {
+            key != "themeVariables"
+                && (Some(key) == diagram_key || sections.contains(&key) || is_top_key(key))
+        };
+        let mut config = match &self.first_layer {
+            Value::Object(map) => Value::Object(
+                map.iter()
+                    .filter(|(key, _)| include_key(key))
+                    .map(|(key, value)| (key.clone(), value.clone()))
+                    .collect(),
+            ),
+            other => other.clone(),
+        };
+        if is_empty_object(directive) {
+            resolve_appearance(&mut config, &[&self.settings, defaults], diagram_key);
+            let theme = Theme::from_name(
+                config
+                    .get("theme")
+                    .and_then(Value::as_str)
+                    .unwrap_or(&self.site_theme),
+            );
+            return (config, ResolvedThemeVariables::Site(theme));
+        }
+        let (directive, sum) = self.prepare_directive(directive);
+        assign_selected_with_depth(&mut config, &sum, 2, include_key);
+        resolve_appearance(
+            &mut config,
+            &[&sum, &directive, &self.settings, defaults],
+            diagram_key,
+        );
+        let resolved = self.resolve_theme_variables(&sum, &config);
+        (config, resolved)
     }
 
     /// The user's theme overrides of a diagram with the directive given, as
@@ -125,37 +232,58 @@ impl SiteConfig {
     pub fn user_theme_variables(&self, directive: &Value) -> Value {
         theme_overrides(Some(&self.settings), directive)
     }
+
+    fn prepare_directive(&self, directive: &Value) -> (Value, Value) {
+        let mut directive = directive.clone();
+        sanitize_directive(&mut directive);
+        add_font_family_variable(&mut directive);
+        sanitize(&mut directive, &self.secure);
+        let mut sum = Value::empty_object();
+        assign_with_depth(&mut sum, &directive, 2);
+        (directive, sum)
+    }
+
+    /// Resolves the `themeVariables` of the configuration, as `updateCurrentConfig` computes them.
+    /// When the directive leaves `themeVariables` empty or absent, returns
+    /// [`ResolvedThemeVariables::Site`] so callers can borrow the cached site-level variables.
+    fn resolve_theme_variables(&self, sum: &Value, config: &Value) -> ResolvedThemeVariables {
+        let directive_overrides = sum.get("themeVariables");
+        let resolved_theme_name = config
+            .get("theme")
+            .and_then(Value::as_str)
+            .unwrap_or(&self.site_theme);
+        let resolved_theme = Theme::from_name(resolved_theme_name);
+        let Some(directive_overrides) = directive_overrides.filter(|value| match value {
+            Value::Object(map) => !map.is_empty(),
+            Value::Array(items) => !items.is_empty(),
+            _ => true,
+        }) else {
+            return ResolvedThemeVariables::Site(resolved_theme);
+        };
+        let theme_set_by_directive = sum
+            .get("theme")
+            .and_then(Value::as_str)
+            .is_some_and(|name| !name.is_empty());
+        if theme_set_by_directive || resolved_theme_name != self.site_theme {
+            let mut overrides = self
+                .settings
+                .get("themeVariables")
+                .cloned()
+                .unwrap_or_else(Value::empty_object);
+            assign_with_depth(&mut overrides, directive_overrides, 2);
+            ResolvedThemeVariables::Custom(resolved_theme.variables(Some(&overrides)))
+        } else {
+            let mut variables = self
+                .site_theme_variables(Theme::from_name(&self.site_theme))
+                .clone();
+            assign_with_depth(&mut variables, directive_overrides, 2);
+            ResolvedThemeVariables::Custom(variables)
+        }
+    }
 }
 
-/// The `themeVariables` of the configuration, as `updateCurrentConfig` computes them. When the theme
-/// is set or changed by a directive, the theme's variables are computed again from the user's
-/// overrides and the directive's overrides. Otherwise the site's variables stay, with the
-/// directive's overrides merged on top, as `assignWithDepth` merges them.
-fn theme_variables(site_config: &Value, site_delta: &Value, sum: &Value, config: &Value) -> Value {
-    let site_overrides = site_delta
-        .get("themeVariables")
-        .cloned()
-        .unwrap_or_else(Value::empty_object);
-    let directive_overrides = sum.get("themeVariables");
-    let site_theme = theme_name(site_config, "default");
-    let resolved_theme = theme_name(config, &site_theme);
-    let theme_set_by_directive = sum
-        .get("theme")
-        .and_then(Value::as_str)
-        .is_some_and(|name| !name.is_empty());
-    if theme_set_by_directive || resolved_theme != site_theme {
-        let mut overrides = site_overrides;
-        if let Some(directive) = directive_overrides {
-            assign_with_depth(&mut overrides, directive, 2);
-        }
-        Theme::from_name(&resolved_theme).variables(Some(&overrides))
-    } else {
-        let mut variables = Theme::from_name(&site_theme).variables(Some(&site_overrides));
-        if let Some(directive) = directive_overrides {
-            assign_with_depth(&mut variables, directive, 2);
-        }
-        variables
-    }
+fn is_empty_object(value: &Value) -> bool {
+    matches!(value, Value::Object(map) if map.is_empty())
 }
 
 fn theme_name(config: &Value, fallback: &str) -> String {
@@ -181,6 +309,9 @@ fn theme_overrides(site: Option<&Value>, directive: &Value) -> Value {
         .and_then(|site| site.get("themeVariables"))
         .cloned()
         .unwrap_or_else(Value::empty_object);
+    if directive.get("themeVariables").is_none() && directive.get("fontFamily").is_none() {
+        return overrides;
+    }
     let mut directive = directive.clone();
     sanitize_directive(&mut directive);
     add_font_family_variable(&mut directive);
@@ -290,6 +421,43 @@ pub fn assign_with_depth(dst: &mut Value, src: &Value, depth: i32) {
     }
 }
 
+/// Merges selected top-level keys of object `src` into object `dst` with [`assign_with_depth`].
+fn assign_selected_with_depth(
+    dst: &mut Value,
+    src: &Value,
+    depth: i32,
+    mut include: impl FnMut(&str) -> bool,
+) {
+    let (Value::Object(target), Value::Object(source)) = (dst, src) else {
+        return;
+    };
+    for (key, src_value) in source {
+        if !include(key) || src_value.is_null() {
+            continue;
+        }
+        if src_value.is_object() || src_value.is_array() {
+            let child = target.entry(key.clone()).or_insert_with(|| {
+                if src_value.is_array() {
+                    Value::Array(Vec::new())
+                } else {
+                    Value::Object(Map::new())
+                }
+            });
+            if child.is_object() || child.is_array() || child.is_null() {
+                assign_with_depth(child, src_value, depth - 1);
+            }
+        } else {
+            match target.get(key) {
+                Some(existing)
+                    if existing.is_object() || existing.is_array() || existing.is_null() => {}
+                _ => {
+                    target.insert(key.clone(), src_value.clone());
+                }
+            }
+        }
+    }
+}
+
 /// Deep merge of two configuration values, as the `merge` of es-toolkit that `cleanAndMerge`
 /// uses. Objects merge key by key, arrays by index, and any other value replaces the target's.
 pub fn deep_merge(target: &mut Value, source: &Value) {
@@ -341,7 +509,7 @@ pub fn sanitize_directive(args: &mut Value) {
                 if key.starts_with("__")
                     || key.contains("proto")
                     || key.contains("constr")
-                    || !CONFIG_KEYS.contains(&key.as_str())
+                    || CONFIG_KEYS.binary_search(&key.as_str()).is_err()
                     || value.is_null()
                 {
                     map.remove(&key);
@@ -419,20 +587,11 @@ fn secure_keys(config: &Value) -> Vec<String> {
 }
 
 /// Sets `theme`, `look` and `layout` on the top level and in the diagram's section, with the
-/// first usable value of: the directive's section, the directive, the `initialize` section, the
-/// `initialize` value, the defaults. The reference's `resolveAppearance` does the same.
-fn resolve_appearance(
-    config: &mut Value,
-    sum: &Value,
-    directive: &Value,
-    site_delta: &Value,
-    defaults: &Value,
-    diagram_key: Option<&str>,
-) {
+/// first usable value across `layers`. The reference's `resolveAppearance` does the same.
+fn resolve_appearance(config: &mut Value, layers: &[&Value], diagram_key: Option<&str>) {
     let Some(diagram_key) = diagram_key else {
         return;
     };
-    let layers = [sum, directive, site_delta, defaults];
     for key in APPEARANCE_KEYS {
         let Some(value) = layers
             .iter()
@@ -679,6 +838,86 @@ mod tests {
                     resolved.user_theme_variables(directive),
                     user_theme_variables(Some(&site), directive),
                 );
+            }
+        }
+        assert_eq!(resolved, SiteConfig::new(Some(&site)));
+        // Site-level theme variables are cached by pointer once resolved.
+        let first_light = resolved.site_theme_variables(Theme::ReduxColor);
+        let second_light = resolved.site_theme_variables(Theme::ReduxColor);
+        assert!(std::ptr::eq(first_light, second_light));
+    }
+
+    #[test]
+    fn effective_for_matches_effective_on_every_included_key_and_theme_variables() {
+        let sites = [
+            json!({}),
+            json!({
+                "theme": "neutral",
+                "themeVariables": { "primaryColor": "#336699", "fontFamily": "Fixture" },
+                "flowchart": { "curve": "basis" },
+                "secure": ["fontSize"],
+            }),
+            json!({ "theme": "dark", "themeVariables": { "lineColor": "#abcdef" } }),
+        ];
+        let directives = [
+            json!({}),
+            json!({ "theme": "forest", "pie": { "theme": "dark", "textPosition": 0.9 } }),
+            json!({ "fontSize": 40, "themeVariables": { "lineColor": "#ff00aa" } }),
+            json!({ "fontFamily": "Arial", "look": "handDrawn", "layout": "elk" }),
+            json!({ "themeVariables": {} }),
+            json!({ "themeVariables": 3, "gantt": { "barHeight": 30 } }),
+        ];
+        for site in &sites {
+            let resolved = SiteConfig::new(Some(site));
+            for (diagram_key, sections) in [
+                (None, &[][..]),
+                (Some("pie"), &[][..]),
+                (
+                    Some("flowchart"),
+                    &["flowchart", "elk", "class", "er", "state"][..],
+                ),
+                (Some("kanban"), &["mindmap"][..]),
+                (Some("treemap"), &[][..]),
+            ] {
+                for directive in &directives {
+                    let full = resolved.effective(diagram_key, directive);
+                    let (scoped, theme_vars) =
+                        resolved.effective_for(diagram_key, sections, directive);
+                    let scoped_map = scoped.as_object().expect("scoped config is an object");
+                    assert!(!scoped_map.contains_key("themeVariables"));
+                    for (key, value) in scoped_map {
+                        assert_eq!(
+                            full.get(key),
+                            Some(value),
+                            "mismatch for key {key} ({diagram_key:?}, {directive:?})"
+                        );
+                    }
+                    if let Some(diagram_key) = diagram_key {
+                        assert_eq!(
+                            scoped.get(diagram_key),
+                            full.get(diagram_key),
+                            "diagram section {diagram_key}"
+                        );
+                    }
+                    for &section in sections {
+                        assert_eq!(
+                            scoped.get(section),
+                            full.get(section),
+                            "extra section {section}"
+                        );
+                    }
+                    let actual_vars = match &theme_vars {
+                        ResolvedThemeVariables::Site(theme) => {
+                            resolved.site_theme_variables(*theme)
+                        }
+                        ResolvedThemeVariables::Custom(vars) => vars,
+                    };
+                    assert_eq!(
+                        Some(actual_vars),
+                        full.get("themeVariables"),
+                        "themeVariables mismatch ({diagram_key:?}, {directive:?})"
+                    );
+                }
             }
         }
     }

@@ -142,7 +142,16 @@ impl Schema {
                 insert(&mut nodes, path, 0, position, *field_type);
             }
         }
+        nodes.sort_unstable_by_key(|node| node.key);
         Self { nodes }
+    }
+
+    /// Finds a top-level schema node by key in logarithmic time.
+    fn node(&self, key: &str) -> Option<&Node> {
+        self.nodes
+            .binary_search_by_key(&key, |node| node.key)
+            .ok()
+            .map(|index| &self.nodes[index])
     }
 }
 
@@ -189,11 +198,40 @@ pub(super) fn read_types(
     schema: &Schema,
 ) -> Vec<ConfigWarning> {
     let mut found = Vec::new();
-    visit(value, &schema.nodes, defaults, &mut found);
+    visit(value, &schema.nodes, defaults, Some(&mut found));
     // A stable sort by position: each option's changes are in the order they were made, and the
     // options are in the order of the list.
     found.sort_by_key(|(position, _)| *position);
     found.into_iter().map(|(_, warning)| warning).collect()
+}
+
+/// Like [`read_types`], without collecting [`ConfigWarning`]s.
+pub(super) fn read_types_quiet(value: &mut Value, defaults: &Value, schema: &Schema) {
+    visit(value, &schema.nodes, defaults, None);
+}
+
+/// Like [`read_types_quiet`], for one top-level section value in place without wrapping it in a
+/// temporary root object. Returns `false` when the section had the wrong type and no default,
+/// matching the removal performed by [`read_types`].
+pub(super) fn read_section_quiet(
+    section: &mut Value,
+    key: &str,
+    defaults: &Value,
+    schema: &Schema,
+) -> bool {
+    let Some(node) = schema.node(key) else {
+        return true;
+    };
+    if let Some(field_type) = node.field_type
+        && read_value(section, field_type, node, None)
+    {
+        match default_at(defaults, node.path) {
+            Some(default) => *section = default.clone(),
+            None => return false,
+        }
+    }
+    visit(section, &node.children, defaults, None);
+    true
 }
 
 /// Reads the options below `parent` that `nodes` describe, each with its children.
@@ -201,25 +239,27 @@ fn visit(
     parent: &mut Value,
     nodes: &[Node],
     defaults: &Value,
-    found: &mut Vec<(usize, ConfigWarning)>,
+    mut found: Option<&mut Vec<(usize, ConfigWarning)>>,
 ) {
     for node in nodes {
         let Some(slot) = parent.get_mut(node.key) else {
             continue;
         };
         if let Some(field_type) = node.field_type
-            && read_value(slot, field_type, node, found)
+            && read_value(slot, field_type, node, found.as_deref_mut())
         {
             let default = default_at(defaults, node.path).cloned();
-            found.push((
-                node.position,
-                ConfigWarning {
-                    path: node.path.join("."),
-                    expected: field_type.expected(),
-                    found: slot.clone(),
-                    outcome: Outcome::Replaced(default.clone()),
-                },
-            ));
+            if let Some(found) = found.as_deref_mut() {
+                found.push((
+                    node.position,
+                    ConfigWarning {
+                        path: node.path.join("."),
+                        expected: field_type.expected(),
+                        found: slot.clone(),
+                        outcome: Outcome::Replaced(default.clone()),
+                    },
+                ));
+            }
             match default {
                 Some(default) => *slot = default,
                 None => {
@@ -230,7 +270,7 @@ fn visit(
                 }
             }
         }
-        visit(slot, &node.children, defaults, found);
+        visit(slot, &node.children, defaults, found.as_deref_mut());
     }
 }
 
@@ -240,22 +280,24 @@ fn read_value(
     slot: &mut Value,
     field_type: FieldType,
     node: &Node,
-    found: &mut Vec<(usize, ConfigWarning)>,
+    found: Option<&mut Vec<(usize, ConfigWarning)>>,
 ) -> bool {
     match field_type {
         FieldType::Object => !slot.is_object(),
         FieldType::Scalars(scalars) => match read_scalars(slot, scalars) {
             Reading::Kept => false,
             Reading::Read(number) => {
-                found.push((
-                    node.position,
-                    ConfigWarning {
-                        path: node.path.join("."),
-                        expected: field_type.expected(),
-                        found: slot.clone(),
-                        outcome: Outcome::Read(number),
-                    },
-                ));
+                if let Some(found) = found {
+                    found.push((
+                        node.position,
+                        ConfigWarning {
+                            path: node.path.join("."),
+                            expected: field_type.expected(),
+                            found: slot.clone(),
+                            outcome: Outcome::Read(number),
+                        },
+                    ));
+                }
                 *slot = Value::Number(number);
                 false
             }
@@ -279,7 +321,7 @@ fn read_items(
     list: &mut Vec<Value>,
     items: &[Scalar],
     node: &Node,
-    found: &mut Vec<(usize, ConfigWarning)>,
+    mut found: Option<&mut Vec<(usize, ConfigWarning)>>,
 ) {
     let mut index = 0;
     list.retain_mut(|item| {
@@ -288,28 +330,32 @@ fn read_items(
         match read_scalars(item, items) {
             Reading::Kept => true,
             Reading::Read(number) => {
-                found.push((
-                    node.position,
-                    ConfigWarning {
-                        path: item_path(node, position),
-                        expected: scalar_names(items),
-                        found: item.clone(),
-                        outcome: Outcome::Read(number),
-                    },
-                ));
+                if let Some(found) = found.as_deref_mut() {
+                    found.push((
+                        node.position,
+                        ConfigWarning {
+                            path: item_path(node, position),
+                            expected: scalar_names(items),
+                            found: item.clone(),
+                            outcome: Outcome::Read(number),
+                        },
+                    ));
+                }
                 *item = Value::Number(number);
                 true
             }
             Reading::Refused => {
-                found.push((
-                    node.position,
-                    ConfigWarning {
-                        path: item_path(node, position),
-                        expected: scalar_names(items),
-                        found: item.clone(),
-                        outcome: Outcome::Dropped,
-                    },
-                ));
+                if let Some(found) = found.as_deref_mut() {
+                    found.push((
+                        node.position,
+                        ConfigWarning {
+                            path: item_path(node, position),
+                            expected: scalar_names(items),
+                            found: item.clone(),
+                            outcome: Outcome::Dropped,
+                        },
+                    ));
+                }
                 false
             }
         }
