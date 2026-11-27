@@ -196,16 +196,16 @@ fn has_non_percent_obfuscation(text: &str) -> bool {
 }
 
 /// Handles relative URLs where a path, query, or non-entity fragment delimiter (`/`, `?`, or `#`)
-/// precedes any colon (such as `data/chart.svg?time=12:30` or `data#part:two`), which
-/// `@braintree/sanitize-url`'s greedy scheme regex would otherwise misclassify as a blocked
-/// `data:` / `javascript:` / `vbscript:` scheme.
+/// precedes any colon (such as `data/chart.svg?time=12:30`, `data#part:two`, or
+/// `docs%2Freport%3A2026.pdf`), which `@braintree/sanitize-url`'s greedy scheme regex would
+/// otherwise misclassify as a blocked `data:` / `javascript:` / `vbscript:` scheme or decode into
+/// a different path.
 fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
     if matches!(url.chars().next(), Some('.' | '/')) {
         return None;
     }
-    let delim_pos = first_scheme_delimiter_is_relative(url)?;
-    let raw_prefix = &url[..delim_pos];
-    if raw_prefix.contains("ﬂ°") || raw_prefix.contains("¶ß") {
+    let raw_delim = first_scheme_delimiter_is_relative(url);
+    if raw_delim.is_none() && url_scheme(url).is_some() {
         return None;
     }
     let (prepared, url_tokens) = tokenize_url_entity_placeholders(url);
@@ -219,6 +219,15 @@ fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
         || guard_url(&decoded, false) == BLANK_URL
     {
         return None;
+    }
+    if let Some(ref tokens) = url_tokens {
+        let substituted = substitute_token_values(&decoded, &tokens.prefix, &tokens.decoded);
+        let cleaned: String = substituted.chars().filter(|&c| !is_ctrl(c)).collect();
+        let head = cleaned.trim_start_matches(is_js_space);
+        if first_scheme_delimiter_is_relative(head).is_none() || guard_url(head, false) == BLANK_URL
+        {
+            return None;
+        }
     }
     if !has_non_percent_obfuscation(url) {
         return Some(finalize_raw(prepared.into_owned(), url_tokens.as_ref()));
@@ -3036,6 +3045,20 @@ mod tests {
         assert_eq!(
             format_url("#graph-classId-Caf&ﬂ°xE9¶ß%201", false).as_deref(),
             Some("#graph-classId-Cafﬂ°°233¶ß%201")
+        );
+        // Relative URLs with percent-encoded path/colon delimiters (`docs%2Freport%3A2026.pdf`,
+        // `data%2Freport%3A2026.pdf`) preserve their escapes while encoded schemes fail closed.
+        assert_eq!(
+            format_url("docs%2Freport%3A2026.pdf", false).as_deref(),
+            Some("docs%2Freport%3A2026.pdf")
+        );
+        assert_eq!(
+            format_url("data%2Freport%3A2026.pdf", false).as_deref(),
+            Some("data%2Freport%3A2026.pdf")
+        );
+        assert_eq!(
+            format_url("javascript%3Aalert(1)", false).as_deref(),
+            Some("about:blank")
         );
     }
 }

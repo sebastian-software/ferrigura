@@ -777,6 +777,9 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
                 break;
             }
         }
+        if ch == '%' && line.as_bytes().get(at + 1) == Some(&b'%') {
+            break;
+        }
         if ch == '"' && !prev_was_alnum {
             state.in_quotes = true;
             stmt_start = false;
@@ -1079,6 +1082,9 @@ fn color_semicolon_byte(
                 state.in_note_block = true;
                 break;
             }
+        }
+        if ch == '%' && line.as_bytes().get(at + 1) == Some(&b'%') {
+            break;
         }
         if ch == '"' && !prev_was_alnum {
             state.in_quotes = true;
@@ -1415,6 +1421,11 @@ impl StyleStmtTracker {
                 self.prev_was_alnum = false;
                 return;
             }
+        }
+        if ch == '%' && src.as_bytes().get(at + 1) == Some(&b'%') {
+            self.in_plain_line = true;
+            self.prev_was_alnum = false;
+            return;
         }
         if ch == '"' && !self.prev_was_alnum {
             self.state.in_quotes = true;

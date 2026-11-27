@@ -2238,4 +2238,19 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         resolved_fragment_target(frag_num_href),
         "graph-classId-Café"
     );
+
+    // Quotes inside inline `%%` comments in state diagrams do not leak into later `style` lines.
+    let state_inline_comment = ferrigura::render(
+        "stateDiagram-v2\n  A --> B %% \"draft\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        state_inline_comment.contains("fill:#abc"),
+        "{state_inline_comment}"
+    );
+    assert!(
+        !state_inline_comment.contains("&amp;abc;"),
+        "{state_inline_comment}"
+    );
 }

@@ -29,10 +29,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..f11a111 100644
+index 48ac4a6..f6bb5f1 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,797 @@ export function interpolateToCurve(
+@@ -244,6 +244,802 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -677,13 +677,10 @@ index 48ac4a6..f11a111 100644
 +    return null;
 +  }
 +  const delimPos = firstSchemeDelimiterIsRelative(url);
-+  if (delimPos <= 0) {
++  if (delimPos < 0 && url.match(BR_URL_SCHEME_RE) !== null) {
 +    return null;
 +  }
-+  const rawPrefix = url.slice(0, delimPos);
-+  if (rawPrefix.includes('ﬂ°') || rawPrefix.includes('¶ß')) {
-+    return null;
-+  }
++  const rawPrefix = delimPos > 0 ? url.slice(0, delimPos) : url;
 +  const rawPrefixHexDecoded = rawPrefix.replace(/&#[xX]([0-9a-fA-F]+);?/g, (_m, hex: string) => {
 +    const cp = Number.parseInt(hex, 16);
 +    return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
@@ -704,6 +701,14 @@ index 48ac4a6..f11a111 100644
 +  const decoded = decodeSanitizeUrlOnly(prepared);
 +  if (!decoded || firstSchemeDelimiterIsRelative(decoded) < 0) {
 +    return null;
++  }
++  if (decodedValues.length > 0) {
++    const substituted = restoreRawTokens(decoded, prefix, decodedValues)
++      .replace(BR_CTRL_CHARS_RE, '')
++      .trimStart();
++    if (firstSchemeDelimiterIsRelative(substituted) < 0) {
++      return null;
++    }
 +  }
 +  if (!hasNonPercentObfuscation(url)) {
 +    const safe = reencodeDecodedPlaceholders(prepared);
@@ -830,7 +835,7 @@ index 48ac4a6..f11a111 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +1043,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +1048,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -871,7 +876,7 @@ index 48ac4a6..f11a111 100644
    }
  
    return url;
-@@ -895,23 +1718,704 @@ export default {
+@@ -895,23 +1723,712 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -1165,6 +1170,9 @@ index 48ac4a6..f11a111 100644
 +            inNoteBlock = true;
 +            break;
 +          }
++        }
++        if (c === '%' && line[i + 1] === '%') {
++          break;
 +        }
 +        if (c === '"' && !prevWasAlnum) {
 +          inQuotes = true;
@@ -1507,6 +1515,11 @@ index 48ac4a6..f11a111 100644
 +        prevWasAlnum = false;
 +        continue;
 +      }
++    }
++    if (ch === '%' && txt[i + 1] === '%') {
++      inPlainLine = true;
++      prevWasAlnum = false;
++      continue;
 +    }
 +    if (ch === '"' && !prevWasAlnum) {
 +      inQuotes = true;

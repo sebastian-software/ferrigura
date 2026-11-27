@@ -614,6 +614,18 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         decoy_avoid.contains("xlink:href=\"#%67raph-G%2541\""),
         "{decoy_avoid}"
     );
+    // Relative click URLs with percent-encoded path and colon delimiters preserve their spelling.
+    for rel in ["docs%2Freport%3A2026.pdf", "data%2Freport%3A2026.pdf"] {
+        let svg = render(
+            &format!("flowchart TD\nA[x]\nclick A \"{rel}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            svg.contains(&format!("xlink:href=\"{rel}\"")),
+            "rel={rel}: {svg}"
+        );
+    }
     let valid_image = render(
         "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",
         &Value::empty_object(),
