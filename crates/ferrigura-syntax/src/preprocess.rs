@@ -387,17 +387,19 @@ fn comment_match_end(text: &str, start: usize) -> Option<usize> {
     Some(end)
 }
 
-/// Whether the diagram's first non-blank, non-comment line is a flowchart header (`flowchart` or
-/// `graph`), where `;` separates diagram statements and `classDef` properties are comma-separated.
-fn is_flowchart_text(text: &str) -> bool {
+/// Whether the diagram's first non-blank, non-comment line is a dialect whose `classDef`
+/// declarations accept semicolon-separated CSS properties (`treemap` / `stateDiagram`). All
+/// flowchart and flowchart-derived dialects (`flowchart`, `graph`, `agentflow-beta`,
+/// `swimlane-beta`, etc.) use `;` as a statement separator instead.
+fn allows_classdef_semicolon_css(text: &str) -> bool {
     for line in text.split(JS_LINE_TERMINATORS) {
         let trimmed = line.trim_start_matches(is_js_space);
         if trimmed.is_empty() || trimmed.starts_with("%%") {
             continue;
         }
         return trimmed
-            .strip_prefix("flowchart")
-            .or_else(|| trimmed.strip_prefix("graph"))
+            .strip_prefix("treemap")
+            .or_else(|| trimmed.strip_prefix("stateDiagram"))
             .is_some_and(|after| {
                 after
                     .chars()
@@ -408,9 +410,21 @@ fn is_flowchart_text(text: &str) -> bool {
     false
 }
 
-/// Whether `rest` (at the first non-whitespace token of a line outside quotes) starts a plain-text
-/// directive or comment (`%%`, `accTitle`, `accDescr`, `title`) whose literal `"` characters do
-/// not open a multiline quoted string.
+/// Whether `rest` (at the first non-whitespace token of a line outside quotes) opens a multiline
+/// `accDescr { ... }` block whose body lines are plain text until the closing `}`.
+fn starts_acc_descr_block(rest: &str) -> bool {
+    if let Some(after) = rest.strip_prefix("accDescr") {
+        let after_ws = after.trim_start_matches(|c: char| {
+            is_js_space(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
+        });
+        return after_ws.starts_with('{');
+    }
+    false
+}
+
+/// Whether `rest` (at the first non-whitespace token of a line outside quotes) starts a single-line
+/// plain-text directive or comment (`%%`, `accTitle`, `accDescr`, `title`) whose literal `"`
+/// characters do not open a multiline quoted string.
 fn is_plain_text_line(rest: &str) -> bool {
     if rest.starts_with("%%") {
         return true;
@@ -434,7 +448,7 @@ pub(crate) fn encode_entities(text: &str) -> String {
     if !text.contains('#') {
         return text.to_owned();
     }
-    let allow_classdef_css_semi = !is_flowchart_text(text);
+    let allow_classdef_css_semi = allows_classdef_semicolon_css(text);
     let text = drop_color_semicolons(text, "style", allow_classdef_css_semi);
     let text = drop_color_semicolons(&text, "classDef", allow_classdef_css_semi);
     encode_hash_entities(&text)
@@ -454,14 +468,19 @@ pub(crate) fn remap_encoded_error(
     let Some(target_line) = error.line.checked_sub(1 + line_offset) else {
         return error;
     };
-    let allow_classdef_css_semi = !is_flowchart_text(cleaned);
+    let allow_classdef_css_semi = allows_classdef_semicolon_css(cleaned);
     let mut initial_in_quotes = false;
+    let mut initial_in_acc_descr_block = false;
     let mut lines = cleaned.split('\n');
     for _ in 0..target_line {
         let Some(prev_line) = lines.next() else {
             return error;
         };
-        advance_quote_state(prev_line, &mut initial_in_quotes);
+        advance_quote_state(
+            prev_line,
+            &mut initial_in_quotes,
+            &mut initial_in_acc_descr_block,
+        );
     }
     let Some(orig_line) = lines.next() else {
         return error;
@@ -473,19 +492,24 @@ pub(crate) fn remap_encoded_error(
         orig_line,
         error.column,
         initial_in_quotes,
+        initial_in_acc_descr_block,
         allow_classdef_css_semi,
     );
     error
 }
 
-/// Advances the multiline double-quote state across a single line (skipping `%%`, `accTitle`,
-/// `accDescr`, and `title` plain-text lines outside quotes, ignoring inch marks after
-/// alphanumerics, and matching Mermaid's lexer where `"` closes a string without backslash
-/// escaping).
-fn advance_quote_state(line: &str, in_quotes: &mut bool) {
+/// Advances the multiline double-quote and `accDescr { ... }` block state across a single line.
+fn advance_quote_state(line: &str, in_quotes: &mut bool, in_acc_descr_block: &mut bool) {
     let mut at_line_start = true;
     let mut prev_was_alnum = false;
     for (at, ch) in line.char_indices() {
+        if *in_acc_descr_block {
+            if ch == '}' {
+                *in_acc_descr_block = false;
+            }
+            prev_was_alnum = false;
+            continue;
+        }
         if *in_quotes {
             if ch == '"' {
                 *in_quotes = false;
@@ -499,7 +523,16 @@ fn advance_quote_state(line: &str, in_quotes: &mut bool) {
                 continue;
             }
             at_line_start = false;
-            if is_plain_text_line(&line[at..]) {
+            let rest = &line[at..];
+            if starts_acc_descr_block(rest) {
+                if let Some(brace) = rest.find('{')
+                    && !rest[brace + 1..].contains('}')
+                {
+                    *in_acc_descr_block = true;
+                }
+                break;
+            }
+            if is_plain_text_line(rest) {
                 break;
             }
         }
@@ -516,11 +549,12 @@ fn advance_quote_state(line: &str, in_quotes: &mut bool) {
 const JS_LINE_TERMINATORS: [char; 4] = ['\n', '\r', '\u{2028}', '\u{2029}'];
 
 /// Maps a 1-based column in `encode_entities(orig_line)` back to its 1-based column in `orig_line`,
-/// given the quote state carried in from preceding lines.
+/// given the quote and `accDescr { ... }` block state carried in from preceding lines.
 fn remap_encoded_line_column(
     orig_line: &str,
     encoded_column: usize,
     initial_in_quotes: bool,
+    initial_in_acc_descr_block: bool,
     allow_classdef_css_semi: bool,
 ) -> usize {
     let mut chars: Vec<(char, usize)> = orig_line
@@ -533,11 +567,16 @@ fn remap_encoded_line_column(
         let mut to_remove = Vec::new();
         let mut char_offset = 0usize;
         let mut in_quotes = initial_in_quotes;
+        let mut in_acc_descr_block = initial_in_acc_descr_block;
         for segment in current.split_inclusive(JS_LINE_TERMINATORS) {
             let content = segment.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(segment);
-            if let Some(semi_byte) =
-                color_semicolon_byte(content, word, &mut in_quotes, allow_classdef_css_semi)
-            {
+            if let Some(semi_byte) = color_semicolon_byte(
+                content,
+                word,
+                &mut in_quotes,
+                &mut in_acc_descr_block,
+                allow_classdef_css_semi,
+            ) {
                 to_remove.push(char_offset + content[..semi_byte].chars().count());
             }
             char_offset += segment.chars().count();
@@ -559,7 +598,7 @@ fn remap_encoded_line_column(
     }
     let current: String = chars.iter().map(|&(c, _)| c).collect();
     let mut mapped_cols: Vec<usize> = Vec::with_capacity(chars.len());
-    let mut tracker = StyleStmtTracker::with_in_quotes(initial_in_quotes);
+    let mut tracker = StyleStmtTracker::with_state(initial_in_quotes, initial_in_acc_descr_block);
     let mut char_idx = 0usize;
     let mut byte_idx = 0usize;
     while char_idx < chars.len() {
@@ -666,6 +705,7 @@ fn color_semicolon_byte(
     line: &str,
     word: &str,
     in_quotes: &mut bool,
+    in_acc_descr_block: &mut bool,
     allow_classdef_css_semi: bool,
 ) -> Option<usize> {
     let mut at_line_start = true;
@@ -678,6 +718,14 @@ fn color_semicolon_byte(
     let mut chars = line.char_indices();
 
     while let Some((at, ch)) = chars.next() {
+        if *in_acc_descr_block {
+            if ch == '}' {
+                *in_acc_descr_block = false;
+                stmt_start = true;
+            }
+            prev_was_alnum = false;
+            continue;
+        }
         if *in_quotes {
             if ch == '"' {
                 *in_quotes = false;
@@ -691,7 +739,16 @@ fn color_semicolon_byte(
                 continue;
             }
             at_line_start = false;
-            if is_plain_text_line(&line[at..]) {
+            let rest = &line[at..];
+            if starts_acc_descr_block(rest) {
+                if let Some(brace) = rest.find('{')
+                    && !rest[brace + 1..].contains('}')
+                {
+                    *in_acc_descr_block = true;
+                }
+                break;
+            }
+            if is_plain_text_line(rest) {
                 break;
             }
         }
@@ -768,11 +825,16 @@ fn color_semicolon_byte(
 fn drop_color_semicolons(text: &str, word: &str, allow_classdef_css_semi: bool) -> String {
     let mut out = String::with_capacity(text.len());
     let mut in_quotes = false;
+    let mut in_acc_descr_block = false;
     for line in text.split_inclusive(JS_LINE_TERMINATORS) {
         let content = line.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(line);
-        if let Some(semicolon) =
-            color_semicolon_byte(content, word, &mut in_quotes, allow_classdef_css_semi)
-        {
+        if let Some(semicolon) = color_semicolon_byte(
+            content,
+            word,
+            &mut in_quotes,
+            &mut in_acc_descr_block,
+            allow_classdef_css_semi,
+        ) {
             out.push_str(&line[..semicolon]);
             out.push_str(&line[semicolon + 1..]);
         } else {
@@ -807,29 +869,31 @@ enum StmtKind {
 /// Single-pass O(n) forward tracker for whether the current `#<hex>;` sits inside an unquoted
 /// `style` or `classDef` declaration value (after `:` and a CSS token separator), resetting
 /// statement state on every line terminator and unquoted `;` while preserving quote context across
-/// multiline quoted labels.
+/// multiline quoted labels and ignoring literal quotes inside `accDescr { ... }` blocks.
 struct StyleStmtTracker {
     kind: StmtKind,
     seen_colon: bool,
     last_allows_hex: bool,
     at_line_start: bool,
     in_plain_line: bool,
+    in_acc_descr_block: bool,
     in_quotes: bool,
     prev_was_alnum: bool,
 }
 
 impl StyleStmtTracker {
     fn new() -> Self {
-        Self::with_in_quotes(false)
+        Self::with_state(false, false)
     }
 
-    fn with_in_quotes(in_quotes: bool) -> Self {
+    fn with_state(in_quotes: bool, in_acc_descr_block: bool) -> Self {
         Self {
             kind: StmtKind::Start,
             seen_colon: false,
             last_allows_hex: false,
             at_line_start: true,
             in_plain_line: false,
+            in_acc_descr_block,
             in_quotes,
             prev_was_alnum: false,
         }
@@ -858,6 +922,16 @@ impl StyleStmtTracker {
     }
 
     fn push(&mut self, src: &str, at: usize, ch: char) {
+        if self.in_acc_descr_block {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.reset_line();
+            } else if ch == '}' {
+                self.in_acc_descr_block = false;
+                self.reset();
+            }
+            self.prev_was_alnum = false;
+            return;
+        }
         if self.in_quotes {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
                 self.reset_line();
@@ -881,7 +955,14 @@ impl StyleStmtTracker {
                 return;
             }
             self.at_line_start = false;
-            if is_plain_text_line(&src[at..]) {
+            let rest = &src[at..];
+            if starts_acc_descr_block(rest) {
+                self.in_acc_descr_block = true;
+                self.kind = StmtKind::Other;
+                self.prev_was_alnum = false;
+                return;
+            }
+            if is_plain_text_line(rest) {
                 self.in_plain_line = true;
                 self.kind = StmtKind::Other;
                 self.prev_was_alnum = false;
@@ -928,6 +1009,7 @@ impl StyleStmtTracker {
     fn allows_hex_color(&self, name: &str) -> bool {
         !self.in_quotes
             && !self.in_plain_line
+            && !self.in_acc_descr_block
             && self.kind == StmtKind::Style
             && self.seen_colon
             && self.last_allows_hex

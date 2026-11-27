@@ -166,7 +166,7 @@ The gantt model is the DB state after `getTasks()` (`ganttDb.js`), with the fiel
 
 - **Dates are numbers.** `startTime`, `endTime` and `renderEndTime` are epoch milliseconds in UTC, and `null` is a date the DB leaves unresolved or an Invalid Date. The parser takes the current time as an option (`now`), for the dates that take missing parts from the clock; the differential run gives both sides the same fixed clock under `TZ=UTC`.
 - **Sanitized texts.** `title`, `accTitle` and `accDescr` are the DB values after the sanitizer of the flowchart ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules. A `title` statement overrides the front matter title even when it sanitizes to empty. Task texts and section names are raw.
-- **Links** map a task id to the URL of its `click … href` statement after `sanitizeUrl`, for the tasks that exist when the line is read. Callbacks are not in the model (decision 0006).
+- **Links** map a task id to the URL of its `click … href` statement (after `sanitizeUrl`, or as written when `securityLevel` is `loose`), for the tasks that exist when the line is read. Callbacks are not in the model (decision 0006).
 - **Statements are raw.** `dateFormat`, `axisFormat`, `tickInterval` and `todayMarker` keep the text after their keyword, blanks included; `includes` and `excludes` are lower case and de-duplicated in first-seen order.
 
 ## Sequence

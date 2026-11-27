@@ -1805,4 +1805,46 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
         .expect("href");
     assert_eq!(entity_frag_href, "#graph-classId-A%2520B");
+
+    // Percent-encoded path separators (`%2F`) before an entity (`#63;`) classify the entity into
+    // the decoded path component (`%3F`) rather than the host.
+    let pct_slash_entity = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org%2Fdocs#63;b\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        pct_slash_entity.contains("xlink:href=\"https://example.org/docs%3Fb\""),
+        "{pct_slash_entity}"
+    );
+
+    // Flowchart-derived dialects (`swimlane-beta`, `agentflow-beta`) also keep `;` separators
+    // before colon-named nodes after `classDef`.
+    let swimlane_colon = ferrigura::render(
+        "swimlane-beta\n  classDef hot fill:#abc,stroke:red; alpha:beta;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(swimlane_colon.contains("alpha:beta"), "{swimlane_colon}");
+    let agentflow_colon = ferrigura::render(
+        "agentflow-beta\n  classDef hot fill:#abc,stroke:red; alpha:beta;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(agentflow_colon.contains("alpha:beta"), "{agentflow_colon}");
+
+    // Literal quotes inside multiline `accDescr { ... }` blocks do not leak past the closing `}`.
+    let acc_block_flow = ferrigura::render(
+        "flowchart LR\n  accDescr {\n    The \"metric\n  }\n  A\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(acc_block_flow.contains("fill:#abc"), "{acc_block_flow}");
+    let acc_block_class = ferrigura::render(
+        "classDiagram\n  accDescr {\n    The \"metric\n  }\n  class A\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(acc_block_class.contains("fill:#abc"), "{acc_block_class}");
+    assert!(!acc_block_class.contains("&amp;abc;"), "{acc_block_class}");
 }
