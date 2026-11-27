@@ -208,3 +208,29 @@ void test('fixed Gantt clock agrees with the CLI', () => {
   assert.equal(cli, `${render(text, {}, { now })}\n`);
   assert.equal(new Renderer().render(text, { now }), render(text, {}, { now }));
 });
+
+void test('non-object, cyclic, and reentrant config objects fail safely', () => {
+  for (const invalid of [123, true, 'dark', []]) {
+    assert.throws(() => render(PIE, invalid), /object/);
+    assert.throws(() => new Renderer(invalid), /object/);
+  }
+  const cyclic = {};
+  cyclic.self = cyclic;
+  assert.throws(() => render(PIE, cyclic));
+  assert.throws(() => new Renderer(cyclic));
+
+  // A getter on `config` runs before `fonts` Uint8Array slices are acquired, so detaching the
+  // buffer cannot invalidate a live Rust slice.
+  const copy = new Uint8Array(FONT_DATA);
+  const reentrant = {
+    get theme() {
+      structuredClone(copy.buffer, { transfer: [copy.buffer] });
+      return 'default';
+    },
+  };
+  assert.throws(() =>
+    render(FONT_TEXT, reentrant, undefined, {
+      fonts: [{ family: 'Detached', data: copy }],
+    })
+  );
+});

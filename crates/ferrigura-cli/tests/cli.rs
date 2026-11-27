@@ -693,3 +693,134 @@ fn protected_catalog_reuses_warm_cache_without_token_or_network() {
     assert!(!stderr(&output).contains("do-not-log-this"));
     fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn double_dash_renders_files_starting_with_a_dash() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("dash-filenames");
+    fs::create_dir_all(&dir).unwrap();
+    let dash_file = dir.join("-diagram.mmd");
+    fs::write(&dash_file, PIE).unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_ferrigura"))
+        .current_dir(&dir)
+        .args(["--id", "dashed", "--", "-diagram.mmd"])
+        .output()
+        .expect("the binary runs");
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(stdout(&output).contains("id=\"dashed\""));
+    fs::remove_dir_all(dir).unwrap();
+}
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[test]
+fn output_dir_rejects_case_only_filename_collisions() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("case-collision-out");
+    let output = run(
+        &[
+            "--output-dir",
+            dir.to_str().unwrap(),
+            "first/Diagram.mmd",
+            "second/diagram.mmd",
+        ],
+        "",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(stderr(&output).contains("collides with"));
+    assert!(!dir.exists());
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn output_dir_rejects_unicode_normalization_collisions_on_macos() {
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("apfs-norm-collision");
+    let first_dir = root.join("nfc");
+    let second_dir = root.join("nfd");
+    let out_dir = root.join("out");
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&first_dir).unwrap();
+    fs::create_dir_all(&second_dir).unwrap();
+    let nfc = first_dir.join("Caf\u{00e9}.mmd");
+    let nfd = second_dir.join("Cafe\u{0301}.mmd");
+    fs::write(&nfc, "pie\n  \"First\" : 1\n").unwrap();
+    fs::write(&nfd, "pie\n  \"Second\" : 1\n").unwrap();
+    let output = run(
+        &[
+            "--output-dir",
+            out_dir.to_str().unwrap(),
+            nfc.to_str().unwrap(),
+            nfd.to_str().unwrap(),
+        ],
+        "",
+    );
+    assert_eq!(output.status.code(), Some(1), "{}", stderr(&output));
+    assert!(
+        stderr(&output).contains("collides with"),
+        "{}",
+        stderr(&output)
+    );
+    // First SVG was preserved, not silently overwritten by the second input.
+    let written = fs::read_to_string(out_dir.join("Caf\u{00e9}.svg")).unwrap();
+    assert!(written.contains("First"));
+    assert!(!written.contains("Second"));
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[test]
+fn output_dir_allows_case_distinct_filenames_on_case_sensitive_platforms() {
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("case-sensitive-out");
+    let first_dir = root.join("first");
+    let second_dir = root.join("second");
+    let out_dir = root.join("out");
+    fs::create_dir_all(&first_dir).unwrap();
+    fs::create_dir_all(&second_dir).unwrap();
+    let upper = first_dir.join("Diagram.mmd");
+    let lower = second_dir.join("diagram.mmd");
+    fs::write(&upper, PIE).unwrap();
+    fs::write(&lower, PIE).unwrap();
+    let output = run(
+        &[
+            "--output-dir",
+            out_dir.to_str().unwrap(),
+            upper.to_str().unwrap(),
+            lower.to_str().unwrap(),
+        ],
+        "",
+    );
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(out_dir.join("Diagram.svg").is_file());
+    assert!(out_dir.join("diagram.svg").is_file());
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn bounded_reads_reject_oversized_inputs_and_configs_while_allowing_custom_max_text_size() {
+    let oversized_input = "a".repeat(200_000);
+    let output = run(&[], &oversized_input);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        stderr(&output).contains("exceeds size limit"),
+        "{}",
+        stderr(&output)
+    );
+
+    // A diagram larger than the default 50,000 UTF-16 limit succeeds when maxTextSize is raised.
+    let comment_pad = " ".repeat(60_000);
+    let large_valid = format!("%%{comment_pad}\n{PIE}");
+    let config = scratch("large-text-limit.json", r#"{"maxTextSize": 100000}"#);
+    let raised = run(&["--config", config.to_str().unwrap()], &large_valid);
+    assert!(raised.status.success(), "{}", stderr(&raised));
+    assert!(stdout(&raised).starts_with("<svg "));
+
+    // Oversized config file is rejected without reading past the 2 MiB ceiling.
+    let huge_config = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("oversized-config.json");
+    let file = fs::File::create(&huge_config).unwrap();
+    file.set_len(2 * 1024 * 1024 + 1).unwrap();
+    let config_err = run(&["--config", huge_config.to_str().unwrap()], PIE);
+    assert_eq!(config_err.status.code(), Some(1));
+    assert!(
+        stderr(&config_err).contains("exceeds size limit"),
+        "{}",
+        stderr(&config_err)
+    );
+    fs::remove_file(huge_config).unwrap();
+}

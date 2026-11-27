@@ -10,6 +10,11 @@
 //! links only those (decision 0020); a text of another type is refused as not registered, and a
 //! text of a type that ferrigura does not draw is refused with an error that names the type.
 
+#[cfg(not(feature = "all"))]
+use std::sync::LazyLock;
+use std::sync::{Arc, Mutex, PoisonError};
+
+#[cfg(any(test, not(feature = "all")))]
 use ferrigura::diagrams::{self, Plugin};
 use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, RendererBuilder};
 use ferrigura_model::value::Value;
@@ -100,12 +105,11 @@ pub fn render(
     options: Option<RenderOptionsInput>,
     fonts: Option<FontOptionsInput>,
 ) -> Result<String> {
-    let config = config.map_or_else(Value::empty_object, Value::from);
+    let config = parse_config(config)?;
     let options = render_options(options)?;
-    font_builder(builder(&config), fonts)?
-        .shared()
-        .render_with(&text, &options)
-        .map_err(to_error)
+    let (faces, fallbacks) = parse_fonts(fonts.as_ref())?;
+    let renderer = cached_renderer(&config, &faces, &fallbacks)?;
+    renderer.render_with(&text, &options).map_err(to_error)
 }
 
 /// A renderer that resolves its configuration once, for many renders.
@@ -127,12 +131,15 @@ impl Renderer {
     /// that reads it, as `render` reports it.
     ///
     /// # Errors
-    /// Throws immediately if supplied font bytes or face metadata are invalid.
+    /// Throws immediately if `config` is not an object (when provided) or if supplied font bytes or
+    /// face metadata are invalid.
     #[napi(constructor)]
     pub fn new(config: Option<serde_json::Value>, fonts: Option<FontOptionsInput>) -> Result<Self> {
-        let config = config.map_or_else(Value::empty_object, Value::from);
+        let config = parse_config(config)?;
+        let (faces, fallbacks) = parse_fonts(fonts.as_ref())?;
+        let (builder, _) = build_with_fonts(builder(&config), &faces, &fallbacks)?;
         Ok(Self {
-            inner: font_builder(builder(&config), fonts)?.build(),
+            inner: builder.build(),
         })
     }
 
@@ -150,13 +157,48 @@ impl Renderer {
     }
 }
 
-/// Applies only owned bytes: file and network loading never enter the addon.
-fn font_builder(
-    mut builder: RendererBuilder,
-    input: Option<FontOptionsInput>,
-) -> Result<RendererBuilder> {
-    if let Some(input) = input {
-        for font in input.fonts.unwrap_or_default() {
+/// Validates a JS `config` already converted by N-API's depth- and node-bounded `serde_json::Value`
+/// deserializer (so any JS getters run before `fonts` `Uint8Array` slices are extracted), rejecting
+/// non-object values while treating `undefined` and `null` as an empty object.
+fn parse_config(config: Option<serde_json::Value>) -> Result<Value> {
+    match config {
+        None | Some(serde_json::Value::Null) => Ok(Value::empty_object()),
+        Some(value @ serde_json::Value::Object(_)) => Ok(Value::from(value)),
+        Some(_) => Err(Error::new(
+            Status::InvalidArg,
+            "configuration must be an object",
+        )),
+    }
+}
+
+#[cfg(test)]
+fn validate_config(config: Option<Value>) -> Result<Value> {
+    match config {
+        None | Some(Value::Null) => Ok(Value::empty_object()),
+        Some(value) if value.is_object() => Ok(value),
+        Some(_) => Err(Error::new(
+            Status::InvalidArg,
+            "configuration must be an object",
+        )),
+    }
+}
+
+struct BorrowedFace<'a> {
+    family: &'a str,
+    data: &'a [u8],
+    weight: FontWeight,
+    style: FontStyle,
+}
+
+/// Validates host-supplied font metadata and borrows the byte slices without copying.
+fn parse_fonts(input: Option<&FontOptionsInput>) -> Result<(Vec<BorrowedFace<'_>>, Vec<String>)> {
+    let Some(input) = input else {
+        return Ok((Vec::new(), Vec::new()));
+    };
+    let mut faces = Vec::new();
+    if let Some(fonts) = &input.fonts {
+        faces.reserve(fonts.len());
+        for font in fonts {
             let weight = font.weight.unwrap_or(400.0);
             if !weight.is_finite() || weight.fract() != 0.0 || !(1.0..=1000.0).contains(&weight) {
                 return Err(Error::new(
@@ -179,22 +221,234 @@ fn font_builder(
                     ));
                 }
             };
-            builder = builder
-                .font_face(&font.family, font.data.to_vec(), weight, style)
-                .map_err(|error| {
-                    Error::new(
-                        Status::InvalidArg,
-                        format!("cannot register font {:?}: {error}", font.family),
-                    )
-                })?;
-        }
-        if let Some(fallbacks) = input.fallbacks
-            && !fallbacks.is_empty()
-        {
-            builder = builder.font_fallbacks(fallbacks);
+            faces.push(BorrowedFace {
+                family: &font.family,
+                data: font.data.as_ref(),
+                weight,
+                style,
+            });
         }
     }
-    Ok(builder)
+    let fallbacks = input.fallbacks.clone().unwrap_or_default();
+    Ok((faces, fallbacks))
+}
+
+struct OwnedFaceKey {
+    family: String,
+    data: Arc<Vec<u8>>,
+    weight: FontWeight,
+    style: FontStyle,
+}
+
+struct FontCacheKey {
+    fingerprint: u64,
+    faces: Vec<OwnedFaceKey>,
+    fallbacks: Vec<String>,
+}
+
+impl FontCacheKey {
+    fn matches(&self, fingerprint: u64, faces: &[BorrowedFace<'_>], fallbacks: &[String]) -> bool {
+        self.fingerprint == fingerprint
+            && self.fallbacks == fallbacks
+            && self.faces.len() == faces.len()
+            && self.faces.iter().zip(faces).all(|(cached, incoming)| {
+                cached.family == incoming.family
+                    && cached.weight == incoming.weight
+                    && cached.style == incoming.style
+                    && cached.data.as_slice() == incoming.data
+            })
+    }
+}
+
+fn font_fingerprint(faces: &[BorrowedFace<'_>], fallbacks: &[String]) -> Option<u64> {
+    if faces.is_empty() && fallbacks.is_empty() {
+        return None;
+    }
+    fn add(hash: &mut u64, bytes: &[u8]) {
+        for byte in bytes {
+            *hash = (*hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
+        }
+    }
+    let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+    for face in faces {
+        add(&mut hash, &(face.family.len() as u64).to_le_bytes());
+        add(&mut hash, face.family.as_bytes());
+        add(&mut hash, &face.weight.css_value().to_le_bytes());
+        add(&mut hash, face.style.css_keyword().as_bytes());
+        add(&mut hash, &(face.data.len() as u64).to_le_bytes());
+        add(&mut hash, face.data);
+    }
+    add(&mut hash, &(fallbacks.len() as u64).to_le_bytes());
+    for family in fallbacks {
+        add(&mut hash, &(family.len() as u64).to_le_bytes());
+        add(&mut hash, family.as_bytes());
+    }
+    Some(hash)
+}
+
+/// Applies only owned bytes: file and network loading never enter the addon. Duplicate byte slices
+/// within one call share a single `Arc<Vec<u8>>`.
+fn build_with_fonts(
+    mut builder: RendererBuilder,
+    faces: &[BorrowedFace<'_>],
+    fallbacks: &[String],
+) -> Result<(RendererBuilder, Vec<OwnedFaceKey>)> {
+    let mut owned_faces: Vec<OwnedFaceKey> = Vec::with_capacity(faces.len());
+    for face in faces {
+        let data = owned_faces
+            .iter()
+            .find(|previous| previous.data.as_slice() == face.data)
+            .map_or_else(
+                || Arc::new(face.data.to_vec()),
+                |previous| Arc::clone(&previous.data),
+            );
+        builder = builder
+            .font_face_shared(face.family, Arc::clone(&data), face.weight, face.style)
+            .map_err(|error| {
+                Error::new(
+                    Status::InvalidArg,
+                    format!("cannot register font {:?}: {error}", face.family),
+                )
+            })?;
+        owned_faces.push(OwnedFaceKey {
+            family: face.family.to_owned(),
+            data,
+            weight: face.weight,
+            style: face.style,
+        });
+    }
+    if !fallbacks.is_empty() {
+        builder = builder.font_fallbacks(fallbacks);
+    }
+    Ok((builder, owned_faces))
+}
+
+const RENDERER_CACHE_CAPACITY: usize = 8;
+/// Maximum retained supplied-font bytes across all renderers in [`RENDERER_CACHE`].
+const RENDERER_CACHE_FONT_BYTE_BUDGET: usize = 16 * 1024 * 1024;
+
+struct CachedRenderer {
+    config: Value,
+    fonts: Option<FontCacheKey>,
+    font_bytes: usize,
+    renderer: Arc<ferrigura::Renderer>,
+}
+
+fn estimated_font_bytes(faces: &[OwnedFaceKey]) -> usize {
+    let mut seen = Vec::new();
+    let mut total = 0usize;
+    for face in faces {
+        let ptr = Arc::as_ptr(&face.data) as usize;
+        if !seen.contains(&ptr) {
+            seen.push(ptr);
+            total = total.saturating_add(face.data.capacity());
+        }
+        // CFF/CFF2 fonts embed whole with a precomputed base64 payload (~4/3x).
+        if face.data.starts_with(b"OTTO") {
+            let b64 = face.data.len().saturating_mul(4) / 3 + 4;
+            total = total.saturating_add(b64);
+        }
+    }
+    total
+}
+
+static RENDERER_CACHE: Mutex<Vec<CachedRenderer>> = Mutex::new(Vec::new());
+
+fn take_cached(
+    cache: &mut Vec<CachedRenderer>,
+    config: &Value,
+    fingerprint: Option<u64>,
+    faces: &[BorrowedFace<'_>],
+    fallbacks: &[String],
+) -> Option<Arc<ferrigura::Renderer>> {
+    let position = cache.iter().position(|entry| {
+        identical(&entry.config, config)
+            && match (&entry.fonts, fingerprint) {
+                (None, None) => true,
+                (Some(key), Some(fp)) => key.matches(fp, faces, fallbacks),
+                _ => false,
+            }
+    })?;
+    let entry = cache.remove(position);
+    let renderer = Arc::clone(&entry.renderer);
+    cache.push(entry);
+    Some(renderer)
+}
+
+/// Returns a cached renderer for this configuration and font set, avoiding repeated plugin setup,
+/// font copying/validation, and configuration resolution across one-shot `render()` calls.
+fn cached_renderer(
+    config: &Value,
+    faces: &[BorrowedFace<'_>],
+    fallbacks: &[String],
+) -> Result<Arc<ferrigura::Renderer>> {
+    let fingerprint = font_fingerprint(faces, fallbacks);
+    {
+        let mut cache = RENDERER_CACHE
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if let Some(renderer) = take_cached(&mut cache, config, fingerprint, faces, fallbacks) {
+            return Ok(renderer);
+        }
+    }
+    let (builder, owned_faces) = build_with_fonts(builder(config), faces, fallbacks)?;
+    let font_bytes = estimated_font_bytes(&owned_faces);
+    let renderer = Arc::new(builder.build());
+    if font_bytes > RENDERER_CACHE_FONT_BYTE_BUDGET {
+        return Ok(renderer);
+    }
+    let fonts_key = fingerprint.map(|fp| FontCacheKey {
+        fingerprint: fp,
+        faces: owned_faces,
+        fallbacks: fallbacks.to_vec(),
+    });
+    let mut cache = RENDERER_CACHE
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    if let Some(existing) = take_cached(&mut cache, config, fingerprint, faces, fallbacks) {
+        return Ok(existing);
+    }
+    while cache.len() >= RENDERER_CACHE_CAPACITY
+        || (font_bytes > 0
+            && cache
+                .iter()
+                .map(|entry| entry.font_bytes)
+                .fold(0usize, usize::saturating_add)
+                .saturating_add(font_bytes)
+                > RENDERER_CACHE_FONT_BYTE_BUDGET)
+    {
+        if cache.is_empty() {
+            break;
+        }
+        cache.remove(0);
+    }
+    cache.push(CachedRenderer {
+        config: config.clone(),
+        fonts: fonts_key,
+        font_bytes,
+        renderer: Arc::clone(&renderer),
+    });
+    Ok(renderer)
+}
+
+/// Exact value equality matching `ferrigura`'s shorthand cache (`0.0` vs `-0.0`, `NaN == NaN`).
+fn identical(a: &Value, b: &Value) -> bool {
+    match (a, b) {
+        (Value::Null, Value::Null) => true,
+        (Value::Bool(a), Value::Bool(b)) => a == b,
+        (Value::Number(a), Value::Number(b)) => a.to_bits() == b.to_bits(),
+        (Value::String(a), Value::String(b)) => a == b,
+        (Value::Array(a), Value::Array(b)) => {
+            a.len() == b.len() && a.iter().zip(b).all(|(a, b)| identical(a, b))
+        }
+        (Value::Object(a), Value::Object(b)) => {
+            a.len() == b.len()
+                && a.iter()
+                    .zip(b)
+                    .all(|((key_a, a), (key_b, b))| key_a == key_b && identical(a, b))
+        }
+        _ => false,
+    }
 }
 
 /// The render options of the addon's input.
@@ -275,6 +529,7 @@ compile_error!(
 );
 
 /// The plugins of this build, one per enabled feature.
+#[cfg(any(test, not(feature = "all")))]
 #[expect(
     clippy::vec_init_then_push,
     reason = "a `vec!` literal cannot hold `#[cfg]` elements"
@@ -304,18 +559,33 @@ fn plugins() -> Vec<Plugin> {
     plugins
 }
 
+#[cfg(not(feature = "all"))]
+static PLUGINS: LazyLock<Box<[Plugin]>> = LazyLock::new(|| plugins().into_boxed_slice());
+
 /// A builder with the plugins of this build.
 fn builder(config: &Value) -> RendererBuilder {
-    plugins()
-        .into_iter()
-        .fold(ferrigura::Renderer::builder(config), RendererBuilder::with)
+    #[cfg(feature = "all")]
+    {
+        ferrigura::Renderer::builder(config).with_all()
+    }
+    #[cfg(not(feature = "all"))]
+    {
+        PLUGINS
+            .iter()
+            .copied()
+            .fold(ferrigura::Renderer::builder(config), RendererBuilder::with)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::collections::{BTreeMap, HashSet};
 
     use super::*;
+
+    const SANS: &[u8] = include_bytes!("../../ferrigura-text/fonts/LexicaUltralegible-Regular.ttf");
+    const MONO: &[u8] =
+        include_bytes!("../../ferrigura-text/fonts/AtkinsonHyperlegibleMono-Regular.ttf");
 
     /// Which features this build has, in the order of `plugins`.
     const FEATURES: [bool; 10] = [
@@ -331,6 +601,14 @@ mod tests {
         cfg!(feature = "quadrant_chart"),
     ];
 
+    fn render_for_test(text: &str, config: Option<Value>) -> Result<String> {
+        let config = validate_config(config)?;
+        let renderer = cached_renderer(&config, &[], &[])?;
+        renderer
+            .render_with(text, &RenderOptions::default())
+            .map_err(to_error)
+    }
+
     #[test]
     fn one_plugin_per_enabled_feature() {
         let plugins = plugins();
@@ -339,23 +617,68 @@ mod tests {
         assert_eq!(plugins.len(), FEATURES.iter().filter(|on| **on).count());
     }
 
+    #[test]
+    fn rejects_non_object_config_and_accepts_null_or_object() {
+        assert_eq!(validate_config(None).unwrap(), Value::empty_object());
+        assert_eq!(
+            validate_config(Some(Value::Null)).unwrap(),
+            Value::empty_object()
+        );
+        let obj = Value::Object(BTreeMap::from([(
+            "theme".to_owned(),
+            Value::String("dark".to_owned()),
+        )]));
+        assert_eq!(validate_config(Some(obj.clone())).unwrap(), obj);
+        for invalid in [
+            Value::Bool(true),
+            Value::Number(123.0),
+            Value::String("dark".to_owned()),
+            Value::Array(vec![]),
+        ] {
+            let error = validate_config(Some(invalid)).unwrap_err();
+            assert_eq!(error.status, Status::InvalidArg);
+            assert!(error.reason.contains("object"), "{error}");
+        }
+    }
+
+    #[test]
+    fn caches_one_shot_renderers_for_default_and_supplied_fonts() {
+        let empty = Value::empty_object();
+        let default_a = cached_renderer(&empty, &[], &[]).unwrap();
+        let default_b = cached_renderer(&empty, &[], &[]).unwrap();
+        assert!(Arc::ptr_eq(&default_a, &default_b));
+
+        let sans_face = [BorrowedFace {
+            family: "Fixture",
+            data: SANS,
+            weight: FontWeight::Normal,
+            style: FontStyle::Normal,
+        }];
+        let mono_face = [BorrowedFace {
+            family: "Fixture",
+            data: MONO,
+            weight: FontWeight::Normal,
+            style: FontStyle::Normal,
+        }];
+        let font_a = cached_renderer(&empty, &sans_face, &[]).unwrap();
+        let font_b = cached_renderer(&empty, &sans_face, &[]).unwrap();
+        let font_c = cached_renderer(&empty, &mono_face, &[]).unwrap();
+        assert!(Arc::ptr_eq(&font_a, &font_b));
+        assert!(!Arc::ptr_eq(&font_a, &default_a));
+        assert!(!Arc::ptr_eq(&font_a, &font_c));
+    }
+
     #[cfg(feature = "sequence")]
     #[test]
     fn draws_a_type_whose_feature_is_on() {
-        let svg = render(
-            "sequenceDiagram\n  A->>B: Hi\n".to_owned(),
-            None,
-            None,
-            None,
-        )
-        .unwrap();
+        let svg = render_for_test("sequenceDiagram\n  A->>B: Hi\n", None).unwrap();
         assert!(svg.starts_with("<svg "));
     }
 
     #[cfg(not(feature = "pie"))]
     #[test]
     fn refuses_a_type_whose_feature_is_off() {
-        let error = render("pie\n  \"Dogs\" : 1\n".to_owned(), None, None, None).unwrap_err();
+        let error = render_for_test("pie\n  \"Dogs\" : 1\n", None).unwrap_err();
         let message = error.to_string();
         assert!(message.contains("pie"), "{message}");
         assert!(message.contains("not registered"), "{message}");

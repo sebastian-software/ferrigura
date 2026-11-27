@@ -6,17 +6,26 @@
 //! the configuration that `initialize` takes, as a JSON object. Several inputs are rendered through one
 //! `ferrigura::Renderer`, so the configuration is resolved once.
 
-use std::collections::HashSet;
+use std::collections::HashMap;
+use std::ffi::OsString;
 use std::fs;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 mod font_catalog;
 mod protected;
+
+/// Maximum size of a `--config` JSON file (2 MiB).
+const CONFIG_LIMIT: u64 = 2 * 1024 * 1024;
+/// Default `maxTextSize` in UTF-16 code units, matching `ferrigura::Renderer`.
+const DEFAULT_MAX_TEXT_SIZE: u64 = 50_000;
+/// Hard ceiling on diagram input bytes (64 MiB) to prevent OOM on huge files or streams.
+const HARD_INPUT_LIMIT: u64 = 64 * 1024 * 1024;
 
 // A render makes many small allocations, which mimalloc serves faster than the system allocator. The
 // targets are the ones of the `mimalloc` dependency in Cargo.toml.
@@ -212,12 +221,40 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             }
             "-o" | "--output" => job.output = Some(value(&mut args, &argument)?.into()),
             "--output-dir" => job.output_dir = Some(value(&mut args, &argument)?.into()),
+            "--" => {
+                for file in args {
+                    job.inputs.push(Input::File(file.into()));
+                }
+                break;
+            }
             "-" => job.inputs.push(Input::Stdin),
             other if other.starts_with('-') => return Err(format!("unknown option {other}")),
             file => job.inputs.push(Input::File(file.into())),
         }
     }
     job.settle()
+}
+
+/// Output file key for `--output-dir` collision checks: case-folded on case-insensitive platforms
+/// (macOS/Windows) and exact on case-sensitive platforms.
+#[derive(Debug, PartialEq, Eq, Hash)]
+enum TargetKey {
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    Folded(String),
+    Raw(OsString),
+}
+
+impl TargetKey {
+    fn from_path(path: &Path) -> Self {
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        if let Some(name) = path.file_name().and_then(|name| name.to_str()) {
+            return Self::Folded(name.to_lowercase());
+        }
+        Self::Raw(path.file_name().map_or_else(
+            || path.as_os_str().to_os_string(),
+            std::ffi::OsStr::to_os_string,
+        ))
+    }
 }
 
 impl Job {
@@ -244,11 +281,19 @@ impl Job {
             return Err("--output takes one input; use --output-dir for several".to_owned());
         }
         if let Some(dir) = &self.output_dir {
-            let mut targets = HashSet::new();
+            let mut targets: HashMap<TargetKey, PathBuf> = HashMap::new();
             for input in &self.inputs {
                 let target = svg_path(dir, input)?;
-                if !targets.insert(target.clone()) {
-                    return Err(format!("{} would be written twice", target.display()));
+                let key = TargetKey::from_path(&target);
+                if let Some(previous) = targets.insert(key, target.clone()) {
+                    if previous == target {
+                        return Err(format!("{} would be written twice", target.display()));
+                    }
+                    return Err(format!(
+                        "{} collides with {} (names differ only in case)",
+                        target.display(),
+                        previous.display()
+                    ));
                 }
             }
         }
@@ -320,20 +365,29 @@ fn run(job: &Job) -> Result<(), String> {
         Some(path) => read_config(path)?,
         None => Value::empty_object(),
     };
+    let input_limit = diagram_input_limit(&config);
     let mut builder = Renderer::builder(&config).with_all();
     let mut fallback_families = Vec::new();
     if let Some(path) = &job.font_lock {
         let (fonts, fallbacks) = font_catalog::read_lock(path)?;
         for (family, data, weight, style) in fonts {
             builder = builder
-                .font_face(&family, data, weight, style)
+                .font_face_shared(&family, data, weight, style)
                 .map_err(|error| format!("cannot register font {family:?}: {error}"))?;
         }
         fallback_families = fallbacks;
     }
+    let mut loaded_fonts: HashMap<PathBuf, Arc<Vec<u8>>> = HashMap::new();
     for font in &job.fonts {
+        let data = if let Some(existing) = loaded_fonts.get(&font.path) {
+            Arc::clone(existing)
+        } else {
+            let bytes = Arc::new(read_font_file(&font.path)?);
+            loaded_fonts.insert(font.path.clone(), Arc::clone(&bytes));
+            bytes
+        };
         builder = builder
-            .font_file_face(&font.family, &font.path, font.weight, font.style)
+            .font_face_shared(&font.family, data, font.weight, font.style)
             .map_err(|error| format!("cannot register font {:?}: {error}", font.family))?;
     }
     fallback_families.extend(job.font_fallbacks.iter().cloned());
@@ -354,8 +408,21 @@ fn run(job: &Job) -> Result<(), String> {
             .map_err(|error| format!("cannot create {}: {error}", dir.display()))?;
     }
     let several = job.inputs.len() > 1;
+    #[cfg(unix)]
+    let mut written_inodes: HashMap<(u64, u64), PathBuf> = HashMap::new();
     for input in &job.inputs {
-        render_input(&renderer, input, &options, job).map_err(|message| {
+        #[cfg(unix)]
+        let result = render_input(
+            &renderer,
+            input,
+            &options,
+            job,
+            input_limit,
+            &mut written_inodes,
+        );
+        #[cfg(not(unix))]
+        let result = render_input(&renderer, input, &options, job, input_limit);
+        result.map_err(|message| {
             if several {
                 format!("{}: {message}", input.name())
             } else {
@@ -366,45 +433,98 @@ fn run(job: &Job) -> Result<(), String> {
     Ok(())
 }
 
+/// Computes a safe UTF-8 byte ceiling for diagram input from `maxTextSize` (each UTF-16 code unit
+/// is at most 3 UTF-8 bytes), bounded by [`HARD_INPUT_LIMIT`].
+fn diagram_input_limit(config: &Value) -> u64 {
+    let max_text = match config.get("maxTextSize") {
+        Some(Value::Number(n))
+            if n.is_finite() && *n >= 0.0 && n.fract() == 0.0 && *n <= 9_007_199_254_740_991.0 =>
+        {
+            *n as u64
+        }
+        _ => DEFAULT_MAX_TEXT_SIZE,
+    };
+    max_text.saturating_mul(3).min(HARD_INPUT_LIMIT)
+}
+
 /// Renders one input, and writes its SVG where the job says.
 fn render_input(
     renderer: &Renderer,
     input: &Input,
     options: &RenderOptions,
     job: &Job,
+    limit: u64,
+    #[cfg(unix)] written_inodes: &mut HashMap<(u64, u64), PathBuf>,
 ) -> Result<(), String> {
     let text = match input {
-        Input::Stdin => {
-            let mut text = String::new();
-            io::stdin()
-                .read_to_string(&mut text)
-                .map_err(|error| format!("cannot read standard input: {error}"))?;
-            text
-        }
-        Input::File(path) => read(path)?,
+        Input::Stdin => read_stdin(limit)?,
+        Input::File(path) => read_text_file(path, limit)?,
     };
     let svg = renderer
         .render_with(&text, options)
         .map_err(|error| error.to_string())?;
-    write_svg(job, input, &svg)
+    #[cfg(unix)]
+    {
+        write_svg(job, input, &svg, written_inodes)
+    }
+    #[cfg(not(unix))]
+    {
+        write_svg(job, input, &svg)
+    }
 }
 
 /// Writes an SVG to `--output`, into `--output-dir`, or to standard output.
-fn write_svg(job: &Job, input: &Input, svg: &str) -> Result<(), String> {
+fn write_svg(
+    job: &Job,
+    input: &Input,
+    svg: &str,
+    #[cfg(unix)] written_inodes: &mut HashMap<(u64, u64), PathBuf>,
+) -> Result<(), String> {
     if let Some(path) = &job.output {
-        return fs::write(path, format!("{svg}\n"))
-            .map_err(|error| format!("cannot write {}: {error}", path.display()));
+        return write_svg_file(path, svg);
     }
     if let Some(dir) = &job.output_dir {
         let path = svg_path(dir, input)?;
-        return fs::write(&path, format!("{svg}\n"))
-            .map_err(|error| format!("cannot write {}: {error}", path.display()));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            if let Ok(meta) = fs::metadata(&path)
+                && let Some(previous) = written_inodes.get(&(meta.dev(), meta.ino()))
+            {
+                return Err(format!(
+                    "{} collides with {} on this file system",
+                    path.display(),
+                    previous.display()
+                ));
+            }
+            let file = write_svg_file_returning(&path, svg)?;
+            if let Ok(meta) = file.metadata() {
+                written_inodes.insert((meta.dev(), meta.ino()), path);
+            }
+            return Ok(());
+        }
+        #[cfg(not(unix))]
+        return write_svg_file(&path, svg);
     }
     let mut stdout = io::stdout().lock();
     stdout
         .write_all(svg.as_bytes())
         .and_then(|()| stdout.write_all(b"\n"))
         .map_err(|error| format!("cannot write standard output: {error}"))
+}
+
+fn write_svg_file(path: &Path, svg: &str) -> Result<(), String> {
+    write_svg_file_returning(path, svg).map(|_| ())
+}
+
+fn write_svg_file_returning(path: &Path, svg: &str) -> Result<fs::File, String> {
+    fs::File::create(path)
+        .and_then(|mut file| {
+            file.write_all(svg.as_bytes())?;
+            file.write_all(b"\n")?;
+            Ok(file)
+        })
+        .map_err(|error| format!("cannot write {}: {error}", path.display()))
 }
 
 /// The file of an input's SVG in the output directory: the input's name, with the extension `svg`.
@@ -418,20 +538,95 @@ fn svg_path(dir: &Path, input: &Input) -> Result<PathBuf, String> {
     Ok(dir.join(Path::new(name).with_extension("svg")))
 }
 
-fn read(path: &Path) -> Result<String, String> {
-    fs::read_to_string(path).map_err(|error| format!("cannot read {}: {error}", path.display()))
+fn read_stdin(limit: u64) -> Result<String, String> {
+    let mut bytes = Vec::new();
+    io::stdin()
+        .take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("cannot read standard input: {error}"))?;
+    if bytes.len() as u64 > limit {
+        return Err(format!(
+            "standard input exceeds size limit of {limit} bytes"
+        ));
+    }
+    String::from_utf8(bytes).map_err(|error| format!("cannot read standard input: {error}"))
+}
+
+fn read_text_file(path: &Path, limit: u64) -> Result<String, String> {
+    let file =
+        fs::File::open(path).map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    let metadata = file
+        .metadata()
+        .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    if metadata.is_file() && metadata.len() > limit {
+        return Err(format!(
+            "{} exceeds size limit of {limit} bytes",
+            path.display()
+        ));
+    }
+    let mut bytes = Vec::new();
+    file.take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    if bytes.len() as u64 > limit {
+        return Err(format!(
+            "{} exceeds size limit of {limit} bytes",
+            path.display()
+        ));
+    }
+    String::from_utf8(bytes).map_err(|error| format!("cannot read {}: {error}", path.display()))
+}
+
+fn read_font_file(path: &Path) -> Result<Vec<u8>, String> {
+    let mut options = fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(libc::O_NONBLOCK);
+    }
+    let file = options
+        .open(path)
+        .map_err(|error| format!("cannot read font {}: {error}", path.display()))?;
+    let metadata = file
+        .metadata()
+        .map_err(|error| format!("cannot read font {}: {error}", path.display()))?;
+    if !metadata.is_file() {
+        return Err(format!(
+            "cannot read font {}: not a regular file",
+            path.display()
+        ));
+    }
+    if metadata.len() > font_catalog::LIMIT {
+        return Err(format!(
+            "cannot read font {}: exceeds size limit",
+            path.display()
+        ));
+    }
+    let mut bytes = Vec::new();
+    file.take(font_catalog::LIMIT + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("cannot read font {}: {error}", path.display()))?;
+    if bytes.len() as u64 > font_catalog::LIMIT {
+        return Err(format!(
+            "cannot read font {}: exceeds size limit",
+            path.display()
+        ));
+    }
+    Ok(bytes)
 }
 
 fn read_config(path: &Path) -> Result<Value, String> {
-    let json: serde_json::Value = serde_json::from_str(&read(path)?)
-        .map_err(|error| format!("{}: {error}", path.display()))?;
-    if !json.is_object() {
+    let text = read_text_file(path, CONFIG_LIMIT)?;
+    let config: Value =
+        serde_json::from_str(&text).map_err(|error| format!("{}: {error}", path.display()))?;
+    if !config.is_object() {
         return Err(format!(
             "{}: the configuration must be a JSON object",
             path.display()
         ));
     }
-    Ok(Value::from(json))
+    Ok(config)
 }
 
 #[cfg(test)]
@@ -601,5 +796,43 @@ mod tests {
             parse_args(args(&["--output-dir", "out", "a/pets.mmd", "b/pets.mmd"])).unwrap_err(),
             "out/pets.svg would be written twice"
         );
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        {
+            let case_error =
+                parse_args(args(&["--output-dir", "out", "a/Pets.mmd", "b/pets.mmd"])).unwrap_err();
+            assert!(case_error.contains("collides with"), "{case_error}");
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        {
+            assert!(parse_args(args(&["--output-dir", "out", "a/Pets.mmd", "b/pets.mmd"])).is_ok());
+        }
+    }
+
+    #[test]
+    fn double_dash_terminates_options_for_dash_prefixed_filenames() {
+        let parsed = job(&["--id", "dash", "--", "-diagram.mmd", "--help", "-"]);
+        assert_eq!(parsed.id.as_deref(), Some("dash"));
+        assert_eq!(
+            parsed.inputs,
+            vec![
+                Input::File(PathBuf::from("-diagram.mmd")),
+                Input::File(PathBuf::from("--help")),
+                Input::File(PathBuf::from("-")),
+            ]
+        );
+    }
+
+    #[test]
+    fn diagram_input_limit_tracks_max_text_size_with_hard_ceiling() {
+        assert_eq!(
+            diagram_input_limit(&Value::empty_object()),
+            DEFAULT_MAX_TEXT_SIZE * 3
+        );
+        let larger: Value = serde_json::from_str(r#"{"maxTextSize": 200000}"#).unwrap();
+        assert_eq!(diagram_input_limit(&larger), 600_000);
+        let huge: Value = serde_json::from_str(r#"{"maxTextSize": 100000000}"#).unwrap();
+        assert_eq!(diagram_input_limit(&huge), HARD_INPUT_LIMIT);
+        let invalid: Value = serde_json::from_str(r#"{"maxTextSize": -1}"#).unwrap();
+        assert_eq!(diagram_input_limit(&invalid), DEFAULT_MAX_TEXT_SIZE * 3);
     }
 }

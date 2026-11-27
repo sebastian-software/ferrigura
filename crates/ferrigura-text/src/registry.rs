@@ -6,6 +6,7 @@
 use std::borrow::{Borrow, Cow};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, OnceLock, PoisonError, RwLock};
 
@@ -20,6 +21,8 @@ use crate::{Face, FontFamily, FontStyle, FontWeight, TextError};
 const MAX_RESOLVED_CACHE_ENTRIES: usize = 256;
 const MAX_RESOLVED_CACHE_BYTES: usize = 16 * 1024;
 const MAX_RESOLVED_KEY_BYTES: usize = 1024;
+/// Maximum size of a single registered font file (16 MiB).
+const MAX_FONT_BYTES: u64 = 16 * 1024 * 1024;
 
 trait ResolveKeyRef {
     fn parts(&self) -> (&str, u16, FontStyle);
@@ -160,6 +163,22 @@ impl FontRegistry {
         weight: FontWeight,
         style: FontStyle,
     ) -> Result<(), TextError> {
+        self.register_shared(family, Arc::new(data.into()), weight, style)
+    }
+
+    /// Registers one face from shared TrueType or OpenType bytes, avoiding duplicate copies when
+    /// several aliases reference the same underlying font data.
+    ///
+    /// # Errors
+    ///
+    /// Rejects empty names, weights outside 1..=1000, invalid font data, and OpenType-SVG fonts.
+    pub fn register_shared(
+        &mut self,
+        family: impl Into<String>,
+        data: Arc<Vec<u8>>,
+        weight: FontWeight,
+        style: FontStyle,
+    ) -> Result<(), TextError> {
         let family = family.into();
         let family = self
             .faces
@@ -176,7 +195,6 @@ impl FontRegistry {
                 "font weight must be between 1 and 1000".into(),
             ));
         }
-        let data = Arc::new(data.into());
         let font = FontRef::new(data.as_slice()).map_err(|_| TextError::InvalidFont)?;
         if font.table_data(Tag::new(b"SVG ")).is_some() {
             return Err(TextError::Registration(
@@ -185,15 +203,31 @@ impl FontRegistry {
         }
         crate::kern::validate(&font)?;
         let embed_whole = crate::embed::requires_whole_font(&font);
+        let data_fingerprint = crate::embed::fnv1a(data.as_slice());
+        let bytes = self
+            .faces
+            .iter()
+            .find_map(|existing| {
+                if existing.data_fingerprint == Some(data_fingerprint)
+                    && existing.data() == data.as_slice()
+                {
+                    match &existing.data {
+                        FontData::Registered { bytes, .. } => Some(Arc::clone(bytes)),
+                        FontData::Bundled(_) => None,
+                    }
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| Arc::clone(&data));
         let whole_embed = embed_whole.then(|| {
             Arc::new(EmbeddedSubset::new(
-                Arc::clone(&data),
+                Arc::clone(&bytes),
                 weight.css_value(),
                 style,
             ))
         });
-        let data_fingerprint = crate::embed::fnv1a(data.as_slice());
-        let data_len = data.len();
+        let data_len = bytes.len();
         let mut face = Face {
             family: FontFamily::Registered,
             family_name: Cow::Owned(family),
@@ -204,7 +238,7 @@ impl FontRegistry {
             plans: ShapePlans::new(),
             meta: SharedFaceMeta::new(),
             data: FontData::Registered {
-                bytes: Arc::clone(&data),
+                bytes,
                 embed_whole,
                 whole_embed,
             },
@@ -242,10 +276,7 @@ impl FontRegistry {
         weight: FontWeight,
         style: FontStyle,
     ) -> Result<(), TextError> {
-        let path = path.as_ref();
-        let data = std::fs::read(path).map_err(|error| {
-            TextError::Registration(format!("cannot read font {}: {error}", path.display()))
-        })?;
+        let data = read_font_file(path.as_ref())?;
         self.register(family, data, weight, style)
     }
 
@@ -447,6 +478,73 @@ impl FontRegistry {
         hash.finish()
     }
 
+    /// Reads a regular font file up to the 16 MiB limit without blocking on Unix FIFOs.
+    ///
+    /// # Errors
+    ///
+    /// Reports a file read, non-regular-file, or size-limit error.
+    #[doc(hidden)]
+    pub fn read_font_file(path: &Path) -> Result<Vec<u8>, TextError> {
+        read_font_file(path)
+    }
+
+    /// Estimates the unique retained heap bytes of registered font payloads (including cached
+    /// whole-font base64 strings for CFF faces) so renderer caches can enforce a byte budget.
+    #[must_use]
+    #[doc(hidden)]
+    pub fn cached_font_bytes(&self) -> usize {
+        let mut seen_bytes = Vec::new();
+        let mut total = 0usize;
+        for face in &self.faces {
+            if let FontData::Registered {
+                bytes, whole_embed, ..
+            } = &face.data
+            {
+                let ptr = Arc::as_ptr(bytes) as usize;
+                if !seen_bytes.contains(&ptr) {
+                    seen_bytes.push(ptr);
+                    total = total.saturating_add(bytes.capacity());
+                }
+                if let Some(embed) = whole_embed {
+                    total = total.saturating_add(embed.base64.as_ref().map_or(0, String::capacity));
+                }
+            }
+        }
+        total
+    }
+
+    /// Whether two registries contain the same faces (names, designs, and exact bytes) and
+    /// fallback chain.
+    #[must_use]
+    pub fn same_as(&self, other: &Self) -> bool {
+        if self.faces.len() != other.faces.len() || self.fallbacks != other.fallbacks {
+            return false;
+        }
+        let mut left: Vec<_> = self.faces.iter().collect();
+        let mut right: Vec<_> = other.faces.iter().collect();
+        left.sort_by_key(|face| {
+            (
+                face.family_name(),
+                face.weight().css_value(),
+                face.style().css_keyword(),
+            )
+        });
+        right.sort_by_key(|face| {
+            (
+                face.family_name(),
+                face.weight().css_value(),
+                face.style().css_keyword(),
+            )
+        });
+        left.into_iter().zip(right).all(|(a, b)| {
+            a.family_name() == b.family_name()
+                && a.weight() == b.weight()
+                && a.style() == b.style()
+                && a.data_fingerprint == b.data_fingerprint
+                && a.data() == b.data()
+        })
+    }
+
     /// Reports each uncovered character once, in text order, with the primary family name.
     ///
     /// Measurement retains uncovered characters in the primary face and uses its `.notdef`
@@ -533,6 +631,50 @@ fn family_names(list: &str) -> Vec<String> {
         names.push(name.trim().to_owned());
     }
     names
+}
+
+/// Reads a regular font file up to [`MAX_FONT_BYTES`] without blocking on Unix FIFOs.
+fn read_font_file(path: &Path) -> Result<Vec<u8>, TextError> {
+    let file = {
+        let mut options = std::fs::OpenOptions::new();
+        options.read(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.custom_flags(libc::O_NONBLOCK);
+        }
+        options.open(path).map_err(|error| {
+            TextError::Registration(format!("cannot read font {}: {error}", path.display()))
+        })?
+    };
+    let metadata = file.metadata().map_err(|error| {
+        TextError::Registration(format!("cannot read font {}: {error}", path.display()))
+    })?;
+    if !metadata.is_file() {
+        return Err(TextError::Registration(format!(
+            "cannot read font {}: not a regular file",
+            path.display()
+        )));
+    }
+    if metadata.len() > MAX_FONT_BYTES {
+        return Err(TextError::Registration(format!(
+            "cannot read font {}: exceeds size limit",
+            path.display()
+        )));
+    }
+    let mut bytes = Vec::new();
+    file.take(MAX_FONT_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| {
+            TextError::Registration(format!("cannot read font {}: {error}", path.display()))
+        })?;
+    if bytes.len() as u64 > MAX_FONT_BYTES {
+        return Err(TextError::Registration(format!(
+            "cannot read font {}: exceeds size limit",
+            path.display()
+        )));
+    }
+    Ok(bytes)
 }
 
 #[cfg(test)]

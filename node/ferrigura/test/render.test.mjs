@@ -1,4 +1,13 @@
-import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  truncateSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -283,4 +292,117 @@ test('truncated and Unicode diagrams do not affect later renders', () => {
       assert.equal(renderer.render(seed), baselines[index], `after ${JSON.stringify(text)}`);
     }
   }
+});
+
+test('non-object configuration values are rejected while null and undefined use defaults', () => {
+  const baseline = render(diagram, undefined, { id: 'cfg' });
+  assert.equal(render(diagram, null, { id: 'cfg' }), baseline);
+  assert.equal(new Renderer(null).render(diagram, { id: 'cfg' }), baseline);
+  for (const invalid of [123, 'dark', true, false, [], [1, 2], Buffer.from('x')]) {
+    assert.throws(() => render(diagram, invalid), /object|InvalidArg|expected/i);
+    assert.throws(() => new Renderer(invalid), /object|InvalidArg|expected/i);
+  }
+});
+
+test('fontInputs validates structure and guards local font files against non-regular or oversized files', () => {
+  for (const badOptions of [123, 'bad', []]) {
+    assert.throws(() => render(diagram, undefined, undefined, badOptions), TypeError);
+    assert.throws(() => new Renderer(undefined, badOptions), TypeError);
+  }
+  for (const badFonts of ['not-an-array', 42, {}]) {
+    assert.throws(() => render(diagram, undefined, undefined, { fonts: badFonts }), TypeError);
+    assert.throws(() => new Renderer(undefined, { fonts: badFonts }), TypeError);
+  }
+  for (const badEntry of [null, undefined, 123, 'font', []]) {
+    assert.throws(() => render(diagram, undefined, undefined, { fonts: [badEntry] }), TypeError);
+    assert.throws(() => new Renderer(undefined, { fonts: [badEntry] }), TypeError);
+  }
+  assert.throws(
+    () => new Renderer(undefined, { fonts: [{ family: 'BadData', data: 'not-bytes' }] }),
+    /Uint8Array/
+  );
+  assert.throws(
+    () =>
+      new Renderer(undefined, {
+        fonts: [{ family: 'TooBig', data: new Uint8Array(16 * 1024 * 1024 + 1) }],
+      }),
+    /exceeds size limit/
+  );
+
+  const scratch = mkdtempSync(join(tmpdir(), 'ferrigura-font-guard-'));
+  try {
+    // Rejects directories.
+    assert.throws(
+      () => new Renderer(undefined, { fonts: [{ family: 'Dir', path: scratch }] }),
+      /not a regular file/
+    );
+    // Rejects oversized files (> 16 MiB).
+    const huge = join(scratch, 'huge.ttf');
+    writeFileSync(huge, '');
+    truncateSync(huge, 16 * 1024 * 1024 + 1);
+    assert.throws(
+      () => new Renderer(undefined, { fonts: [{ family: 'Huge', path: huge }] }),
+      /exceeds size limit/
+    );
+    // Rejects symlinks (where supported) and FIFOs (on Unix).
+    const regular = join(scratch, 'real.ttf');
+    writeFileSync(regular, fontData);
+    const link = join(scratch, 'link.ttf');
+    let symlinkCreated = false;
+    try {
+      symlinkSync(regular, link);
+      symlinkCreated = true;
+    } catch (error) {
+      if (!(process.platform === 'win32' && ['EPERM', 'EACCES'].includes(error.code))) {
+        throw error;
+      }
+    }
+    if (symlinkCreated) {
+      assert.throws(
+        () => new Renderer(undefined, { fonts: [{ family: 'Link', path: link }] }),
+        /not a regular file/
+      );
+      assert.throws(
+        () => render(fontText, undefined, undefined, { fonts: [{ family: 'Link', path: link }] }),
+        /not a regular file/
+      );
+    }
+    if (process.platform !== 'win32') {
+      const fifo = join(scratch, 'pipe.ttf');
+      execFileSync('mkfifo', [fifo]);
+      assert.throws(
+        () => new Renderer(undefined, { fonts: [{ family: 'Fifo', path: fifo }] }),
+        /not a regular file/
+      );
+    }
+    // Deduplicated repeated path in one fonts array works cleanly.
+    const dup = new Renderer(undefined, {
+      fonts: [
+        { family: 'Primary', path: regular },
+        { family: 'Alias', path: regular },
+      ],
+    });
+    assert.match(dup.render(fontText), /data:font\//);
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+});
+
+test('repeated one-shot render calls with supplied fonts reuse cached state without cross-talk', () => {
+  const sansPath = fileURLToPath(
+    new URL('../../../crates/ferrigura-text/fonts/LexicaUltralegible-Regular.ttf', import.meta.url)
+  );
+  const sansData = readFileSync(sansPath);
+  const options = { id: 'cached-fonts' };
+  const monoFirst = render(fontText, undefined, options, {
+    fonts: [{ family: 'Custom', data: fontData }],
+  });
+  const monoSecond = render(fontText, undefined, options, {
+    fonts: [{ family: 'Custom', data: fontData }],
+  });
+  const sansSvg = render(fontText, undefined, options, {
+    fonts: [{ family: 'Custom', data: sansData }],
+  });
+  assert.equal(monoFirst, monoSecond);
+  assert.notEqual(monoFirst, sansSvg);
 });

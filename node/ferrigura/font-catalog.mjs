@@ -290,12 +290,19 @@ export async function resolveCatalogFonts(options) {
   }
   if (parsed?.schemaVersion !== 1 || !Array.isArray(parsed.families))
     throw new Error('unsupported font catalog schema');
+  const hasControlChar = (value) => {
+    for (let i = 0; i < value.length; i += 1) {
+      const code = value.charCodeAt(i);
+      if (code <= 0x1f || code === 0x7f) return true;
+    }
+    return false;
+  };
   const seenFamilies = new Set();
   for (const family of parsed.families) {
     if (
       typeof family?.family !== 'string' ||
       !family.family.trim() ||
-      /[\u0000-\u001f\u007f]/.test(family.family) ||
+      hasControlChar(family.family) ||
       typeof family.version !== 'string' ||
       !family.version.trim() ||
       !Array.isArray(family.faces)
@@ -338,7 +345,7 @@ export async function resolveCatalogFonts(options) {
       !requested.trim() ||
       typeof alias !== 'string' ||
       !alias.trim() ||
-      /[\u0000-\u001f\u007f]/.test(alias)
+      hasControlChar(alias)
     )
       throw new TypeError('each selection needs a family and a valid alias');
     const key = fold(alias);
@@ -363,17 +370,26 @@ export async function resolveCatalogFonts(options) {
     return entry.alias;
   });
   const fonts = [];
+  const loaded = new Map();
   for (const { family, alias } of chosen)
     for (const face of family.faces) {
-      const data = await verifiedBytes({
-        cacheDir: options.cacheDir,
-        hash: face.renderer.sha256,
-        size: face.renderer.size,
-        limit: MAX_FONT,
-        url: assetUrl(base, face.renderer.path),
-        offline: options.offline,
-        protectedDownloads: options.protectedDownloads,
-      });
+      let data = loaded.get(face.renderer.sha256);
+      if (data === undefined) {
+        data = await verifiedBytes({
+          cacheDir: options.cacheDir,
+          hash: face.renderer.sha256,
+          size: face.renderer.size,
+          limit: MAX_FONT,
+          url: assetUrl(base, face.renderer.path),
+          offline: options.offline,
+          protectedDownloads: options.protectedDownloads,
+        });
+        loaded.set(face.renderer.sha256, data);
+      } else if (data.byteLength !== face.renderer.size) {
+        throw new Error(
+          `font ${face.renderer.sha256} size mismatch: expected ${face.renderer.size}, got ${data.byteLength}`
+        );
+      }
       fonts.push({ family: alias, weight: face.weight, style: face.style, data });
     }
   return { fonts, fallbacks };

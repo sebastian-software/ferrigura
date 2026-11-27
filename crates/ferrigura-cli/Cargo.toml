@@ -27,6 +27,9 @@ sha2 = "0.11.1"
 ureq = { version = "3.5.2", default-features = false, features = ["rustls"] }
 url = "2.5.9"
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 # mimalloc is the global allocator only where its C source builds with the target's own C compiler.
 # musl keeps the system allocator: the addon's musl build is cross-compiled with Zig, which is not
 # verified for it. The same list gates the allocator in src/main.rs.
