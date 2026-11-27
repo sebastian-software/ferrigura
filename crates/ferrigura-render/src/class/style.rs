@@ -17,7 +17,7 @@ use ferrigura_text::EmbeddedFamily;
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
 use crate::flowchart::style::look_defs_for;
-use crate::svg::{escape_css_tail_in_place, font_faces_capacity, font_faces_css_into};
+use crate::svg::assemble_stylesheet;
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the class rules, the theme variables that `styles.js` reads, in the order of the
@@ -87,9 +87,7 @@ pub fn style_sheet(
     };
     let look = safe_look(&globals.look);
 
-    let mut css = String::with_capacity(font_faces_capacity(svg_id, families) + RULES_CAPACITY);
-    font_faces_css_into(&mut css, svg_id, families);
-    let rules_start = css.len();
+    let mut css = String::with_capacity(RULES_CAPACITY);
     write_custom_properties(&mut css, &id, theme, globals, design);
     let _ = write!(
         css,
@@ -131,8 +129,7 @@ pub fn style_sheet(
     if design.is_some() {
         write_design_rules(&mut css, &id);
     }
-    escape_css_tail_in_place(&mut css, rules_start);
-    css
+    assemble_stylesheet(svg_id, families, css, false)
 }
 
 /// The `<defs>` of the look (the drop shadows and the gradient), which the class diagram writes after

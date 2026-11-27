@@ -18,7 +18,7 @@ use ferrigura_text::EmbeddedFamily;
 
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
-use crate::svg::{escape_css_tail_in_place, font_faces_capacity, font_faces_css_into};
+use crate::svg::assemble_stylesheet;
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens that the rules name, each declared as a custom property on the diagram's id, in the
@@ -107,9 +107,7 @@ pub fn style_sheet(
     };
     let radius = tokens.radius.text().unwrap_or_else(|| "5".to_owned());
 
-    let mut css = String::with_capacity(font_faces_capacity(svg_id, families) + RULES_CAPACITY);
-    font_faces_css_into(&mut css, svg_id, families);
-    let rules_start = css.len();
+    let mut css = String::with_capacity(RULES_CAPACITY);
     write_custom_properties(&mut css, &id, theme, globals, design);
 
     // styles.ts: the global rules every diagram gets.
@@ -186,8 +184,7 @@ pub fn style_sheet(
         css.push('}');
     }
 
-    escape_css_tail_in_place(&mut css, rules_start);
-    css
+    assemble_stylesheet(svg_id, families, css, false)
 }
 
 /// The rules of the design mode, after the state rules and before the `classDef` rules, which keep

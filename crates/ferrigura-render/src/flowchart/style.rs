@@ -19,7 +19,7 @@ use ferrigura_text::EmbeddedFamily;
 use super::policy::FlowchartRouting;
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
-use crate::svg::{escape, escape_css_tail_in_place, font_faces_capacity, font_faces_css_into};
+use crate::svg::{assemble_stylesheet, escape};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the rules, each declared as a custom property on the diagram's id, in the order
@@ -125,9 +125,7 @@ pub fn style_sheet_with_fonts(
     // Keep explicitly authored theme colors, including their alpha channel.
     let label_opacity = "1";
 
-    let mut css = String::with_capacity(font_faces_capacity(svg_id, families) + RULES_CAPACITY);
-    font_faces_css_into(&mut css, svg_id, families);
-    let rules_start = css.len();
+    let mut css = String::with_capacity(RULES_CAPACITY);
     write_custom_properties(&mut css, &id, theme, globals, design, palette.as_ref());
     let _ = write!(
         css,
@@ -182,8 +180,7 @@ pub fn style_sheet_with_fonts(
     }
     write_class_rules(&mut css, &id, classes);
     let _ = write!(css, "{id} text{{white-space:pre;}}");
-    escape_css_tail_in_place(&mut css, rules_start);
-    css
+    assemble_stylesheet(svg_id, families, css, false)
 }
 
 /// The `<defs>` that the look's rules refer to, as `insertLookDefs.ts` appends them: the two drop

@@ -264,6 +264,36 @@ pub fn font_faces(id: &str, families: &[EmbeddedFamily]) -> String {
     css
 }
 
+/// Combines embedded `@font-face` rules with already-built CSS `rules` in one exact-sized buffer
+/// so the font payload is never reallocated or copied while `rules` grows.
+pub(crate) fn assemble_stylesheet(
+    svg_id: &str,
+    families: &[EmbeddedFamily],
+    mut rules: String,
+    wrap_style_tag: bool,
+) -> String {
+    escape_css_tail_in_place(&mut rules, 0);
+    if families.is_empty() && !wrap_style_tag {
+        return rules;
+    }
+    let tag_len = if wrap_style_tag {
+        "<style></style>".len()
+    } else {
+        0
+    };
+    let mut out =
+        String::with_capacity(tag_len + font_faces_capacity(svg_id, families) + rules.len());
+    if wrap_style_tag {
+        out.push_str("<style>");
+    }
+    font_faces_css_into(&mut out, svg_id, families);
+    out.push_str(&rules);
+    if wrap_style_tag {
+        out.push_str("</style>");
+    }
+    out
+}
+
 /// Appends the `@font-face` rules and font-variable declarations of `families` to `out`, escaped
 /// for an XML `<style>` element. Each `family.css` is written directly into `out` without
 /// intermediate copies, while still escaping any `&`, `<`, or `>` in `family.css`, `id`, or

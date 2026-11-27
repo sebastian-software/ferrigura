@@ -11,7 +11,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::ThemeView;
-use crate::svg::{escape_css_tail_in_place, font_faces_capacity, font_faces_css_into};
+use crate::svg::assemble_stylesheet;
 
 /// Room for the gantt rules besides its font faces and `extra`: about 4 KiB.
 const STYLE_RULES_CAPACITY: usize = 5 * 1024;
@@ -208,15 +208,7 @@ pub(crate) fn style_element(
         .unwrap_or_else(|| "16px".to_owned());
     let size = crate::svg::css_declaration_value(&size, "16px");
 
-    let mut out = String::with_capacity(
-        "<style></style>".len()
-            + font_faces_capacity(id, families)
-            + extra.len()
-            + STYLE_RULES_CAPACITY,
-    );
-    out.push_str("<style>");
-    font_faces_css_into(&mut out, id, families);
-    let rules_start = out.len();
+    let mut out = String::with_capacity(extra.len() + STYLE_RULES_CAPACITY);
     match theme.dark {
         None => {
             let _ = write!(out, "#{id}{{");
@@ -247,9 +239,7 @@ pub(crate) fn style_element(
         let _ = write!(out, "{{{body}}}");
     }
     out.push_str(extra);
-    escape_css_tail_in_place(&mut out, rules_start);
-    out.push_str("</style>");
-    out
+    assemble_stylesheet(id, families, out, true)
 }
 
 /// Appends the custom property declarations of the color tokens a set gives.

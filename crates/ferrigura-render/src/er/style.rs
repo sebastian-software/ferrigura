@@ -15,7 +15,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::{Globals, ThemeView};
-use crate::svg::{escape_css_tail_in_place, font_faces_capacity, font_faces_css_into};
+use crate::svg::assemble_stylesheet;
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the entity, edge and cluster rules, in the order of the custom properties. A
@@ -106,9 +106,7 @@ pub fn style_sheet(
         "var(--textColor)"
     };
 
-    let mut css = String::with_capacity(font_faces_capacity(svg_id, families) + RULES_CAPACITY);
-    font_faces_css_into(&mut css, svg_id, families);
-    let rules_start = css.len();
+    let mut css = String::with_capacity(RULES_CAPACITY);
     write_custom_properties(&mut css, &id, theme, globals, palette.as_ref());
     let _ = write!(
         css,
@@ -164,8 +162,7 @@ pub fn style_sheet(
 {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:var(--nodeBorder);filter:{shadow};}}\
 :root{{--mermaid-font-family: {font};}}"
     );
-    escape_css_tail_in_place(&mut css, rules_start);
-    css
+    assemble_stylesheet(svg_id, families, css, false)
 }
 
 /// Appends the custom properties of the colors, declared on the diagram's id. With one set of
