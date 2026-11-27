@@ -2253,4 +2253,31 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         !state_inline_comment.contains("&amp;abc;"),
         "{state_inline_comment}"
     );
+
+    // State block notes opened mid-line and statements following `end note` on the same line keep
+    // hex colors literal in subsequent `style` rules.
+    let state_midline_note = ferrigura::render(
+        "stateDiagram-v2\n  A --> B note right of A\n    \"draft\n  end note style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        state_midline_note.contains("fill:#abc"),
+        "{state_midline_note}"
+    );
+    assert!(
+        !state_midline_note.contains("&amp;abc;"),
+        "{state_midline_note}"
+    );
+
+    // Backtick-quoted class names containing `{` or `"` stay scoped to their backtick token so
+    // following `style` hex colors are not corrupted.
+    for src in [
+        "classDiagram\n  class `A {`\n  class B\n  style B fill:#abc;\n",
+        "classDiagram\n  class `A \"x`\n  class B\n  style B fill:#abc;\n",
+    ] {
+        let class_bt = ferrigura::render(src, &Value::empty_object()).expect("renders");
+        assert!(class_bt.contains("fill:#abc"), "src={src:?}: {class_bt}");
+        assert!(!class_bt.contains("&amp;abc;"), "src={src:?}: {class_bt}");
+    }
 }

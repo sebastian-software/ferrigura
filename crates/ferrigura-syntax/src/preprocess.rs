@@ -538,10 +538,10 @@ fn is_single_colon(src: &str, at: usize) -> bool {
     (at == 0 || bytes[at - 1] != b':') && bytes.get(at + 1) != Some(&b':')
 }
 
-/// Whether `rest` (at the first non-whitespace token of a line in a `stateDiagram`) starts a
-/// multiline `note left/right of <id>` block whose body runs until a line starting with `end note`.
-/// Single-line notes (`note left of A : text`) contain `:` and are already handled as single-line
-/// plain labels.
+/// Whether `rest` (at a word boundary outside quotes/blocks/style statements in a `stateDiagram`)
+/// starts a multiline `note left/right of <id>` block whose body runs until a line starting with
+/// `end note`. Single-line notes (`note left of A : text`) have `:` immediately after `<id>` and
+/// are already handled as single-line plain labels.
 fn starts_multiline_state_note(rest: &str) -> bool {
     let Some(after_note) = strip_ascii_ci_word(rest, "note") else {
         return false;
@@ -569,26 +569,30 @@ fn starts_multiline_state_note(rest: &str) -> bool {
     let line_end = after_of_ws
         .find(JS_LINE_TERMINATORS)
         .unwrap_or(after_of_ws.len());
-    let target = trim_horizontal_ws(&after_of_ws[..line_end]);
-    !target.is_empty() && !target.contains(':')
-}
-
-/// Whether `rest` (at the first non-whitespace token of a line inside a multiline state note) ends
-/// the note with `end note` (case-insensitive, followed by whitespace or line end).
-fn ends_multiline_state_note(rest: &str) -> bool {
-    let Some(after_end) = strip_ascii_ci_word(rest, "end") else {
-        return false;
-    };
-    let after_end_ws = trim_horizontal_ws(after_end);
-    if after_end_ws.len() == after_end.len() {
+    let tail = &after_of_ws[..line_end];
+    let id_end = tail
+        .find(|c: char| matches!(c, ':' | '-') || is_js_space(c))
+        .unwrap_or(tail.len());
+    if id_end == 0 {
         return false;
     }
-    strip_ascii_ci_word(after_end_ws, "note").is_some_and(|after| {
-        after
-            .chars()
-            .next()
-            .is_none_or(|c| is_js_space(c) || matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}'))
-    })
+    let after_id = trim_horizontal_ws(&tail[id_end..]);
+    !after_id.starts_with(':')
+}
+
+/// Byte length of `end <ws> note` at the start of `rest` (case-insensitive, followed by EOF or a
+/// non-word character, matching `state/scanner.rs`), if `rest` closes a multiline state note.
+fn ends_multiline_state_note_len(rest: &str) -> Option<usize> {
+    let after_end = strip_ascii_ci_word(rest, "end")?;
+    let after_end_ws = trim_horizontal_ws(after_end);
+    if after_end_ws.len() == after_end.len() {
+        return None;
+    }
+    let after_note = strip_ascii_ci_word(after_end_ws, "note")?;
+    if after_note.chars().next().is_some_and(is_word) {
+        return None;
+    }
+    Some(rest.len() - after_note.len())
 }
 
 fn trim_horizontal_ws(s: &str) -> &str {
@@ -631,6 +635,7 @@ impl EncodeDialects {
 #[derive(Clone, Copy, Default)]
 struct MultilineScanState {
     in_quotes: bool,
+    in_backticks: bool,
     in_acc_descr_block: bool,
     pending_acc: PendingAcc,
     in_note_block: bool,
@@ -682,22 +687,34 @@ pub(crate) fn remap_encoded_error(
     error
 }
 
-/// Advances the multiline double-quote, `accDescr { ... }`, state `note ... end note`, and
-/// `class ... { ... }` body state across a single line.
+/// Advances the multiline double-quote, backtick, `accDescr { ... }`, state `note ... end note`,
+/// and `class ... { ... }` body state across a single line.
 fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: EncodeDialects) {
     let mut at_line_start = true;
     let mut stmt_start = true;
     let mut in_style_stmt = false;
     let mut in_class_stmt = false;
     let mut prev_was_alnum = false;
+    let mut note_end_until = 0usize;
     for (at, ch) in line.char_indices() {
+        if at < note_end_until {
+            prev_was_alnum = false;
+            continue;
+        }
         if state.in_note_block {
             if at_line_start {
                 if is_js_space(ch) {
                     continue;
                 }
-                if ends_multiline_state_note(&line[at..]) {
+                at_line_start = false;
+                if let Some(len) = ends_multiline_state_note_len(&line[at..]) {
                     state.in_note_block = false;
+                    stmt_start = true;
+                    in_style_stmt = false;
+                    in_class_stmt = false;
+                    note_end_until = at + len;
+                    prev_was_alnum = false;
+                    continue;
                 }
             }
             break;
@@ -729,6 +746,13 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
         if state.in_quotes {
             if ch == '"' {
                 state.in_quotes = false;
+            }
+            prev_was_alnum = false;
+            continue;
+        }
+        if state.in_backticks {
+            if ch == '`' {
+                state.in_backticks = false;
             }
             prev_was_alnum = false;
             continue;
@@ -772,10 +796,6 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
                 }
                 None => {}
             }
-            if dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
-                state.in_note_block = true;
-                break;
-            }
         }
         if ch == '%' && line.as_bytes().get(at + 1) == Some(&b'%') {
             break;
@@ -785,6 +805,21 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
             stmt_start = false;
             prev_was_alnum = false;
             continue;
+        }
+        if dialects.class_diagram_dialect && ch == '`' {
+            state.in_backticks = true;
+            stmt_start = false;
+            prev_was_alnum = false;
+            continue;
+        }
+        if dialects.state_diagram_dialect
+            && !in_style_stmt
+            && matches!(ch, 'n' | 'N')
+            && !line[..at].chars().next_back().is_some_and(is_word)
+            && starts_multiline_state_note(&line[at..])
+        {
+            state.in_note_block = true;
+            break;
         }
         prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
@@ -993,17 +1028,32 @@ fn color_semicolon_byte(
     let mut seen_colon = false;
     let mut seen_colon_hash = false;
     let mut prev_was_alnum = false;
+    let mut note_end_until = 0usize;
     let mut last_semi = None;
     let mut chars = line.char_indices();
 
     while let Some((at, ch)) = chars.next() {
+        if at < note_end_until {
+            prev_was_alnum = false;
+            continue;
+        }
         if state.in_note_block {
             if at_line_start {
                 if is_js_space(ch) {
                     continue;
                 }
-                if ends_multiline_state_note(&line[at..]) {
+                at_line_start = false;
+                if let Some(len) = ends_multiline_state_note_len(&line[at..]) {
                     state.in_note_block = false;
+                    stmt_start = true;
+                    in_target_stmt = false;
+                    in_style_or_classdef = false;
+                    in_class_stmt = false;
+                    seen_colon = false;
+                    seen_colon_hash = false;
+                    note_end_until = at + len;
+                    prev_was_alnum = false;
+                    continue;
                 }
             }
             break;
@@ -1035,6 +1085,13 @@ fn color_semicolon_byte(
         if state.in_quotes {
             if ch == '"' {
                 state.in_quotes = false;
+            }
+            prev_was_alnum = false;
+            continue;
+        }
+        if state.in_backticks {
+            if ch == '`' {
+                state.in_backticks = false;
             }
             prev_was_alnum = false;
             continue;
@@ -1078,10 +1135,6 @@ fn color_semicolon_byte(
                 }
                 None => {}
             }
-            if dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
-                state.in_note_block = true;
-                break;
-            }
         }
         if ch == '%' && line.as_bytes().get(at + 1) == Some(&b'%') {
             break;
@@ -1094,6 +1147,24 @@ fn color_semicolon_byte(
                 seen_colon = false;
             }
             continue;
+        }
+        if dialects.class_diagram_dialect && ch == '`' {
+            state.in_backticks = true;
+            stmt_start = false;
+            prev_was_alnum = false;
+            if in_target_stmt {
+                seen_colon = false;
+            }
+            continue;
+        }
+        if dialects.state_diagram_dialect
+            && !in_style_or_classdef
+            && matches!(ch, 'n' | 'N')
+            && !line[..at].chars().next_back().is_some_and(is_word)
+            && starts_multiline_state_note(&line[at..])
+        {
+            state.in_note_block = true;
+            break;
         }
         prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
@@ -1244,6 +1315,7 @@ struct StyleStmtTracker {
     last_allows_hex: bool,
     at_line_start: bool,
     in_plain_line: bool,
+    note_end_until: usize,
     state: MultilineScanState,
     prev_was_alnum: bool,
     dialects: EncodeDialects,
@@ -1263,6 +1335,7 @@ impl StyleStmtTracker {
             last_allows_hex: false,
             at_line_start: true,
             in_plain_line: false,
+            note_end_until: 0,
             state,
             prev_was_alnum: false,
             dialects,
@@ -1293,6 +1366,7 @@ impl StyleStmtTracker {
         self.reset();
         self.at_line_start = true;
         self.in_plain_line = false;
+        self.note_end_until = 0;
         self.prev_was_alnum = false;
     }
 
@@ -1306,6 +1380,14 @@ impl StyleStmtTracker {
     }
 
     fn push(&mut self, src: &str, at: usize, ch: char) {
+        if at < self.note_end_until {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.reset_line();
+            } else {
+                self.prev_was_alnum = false;
+            }
+            return;
+        }
         if self.state.in_note_block {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
                 self.reset_line();
@@ -1314,9 +1396,10 @@ impl StyleStmtTracker {
                     return;
                 }
                 self.at_line_start = false;
-                if ends_multiline_state_note(&src[at..]) {
+                if let Some(len) = ends_multiline_state_note_len(&src[at..]) {
                     self.state.in_note_block = false;
-                    self.in_plain_line = true;
+                    self.reset();
+                    self.note_end_until = at + len;
                 }
             }
             self.prev_was_alnum = false;
@@ -1351,6 +1434,15 @@ impl StyleStmtTracker {
                 self.reset_line();
             } else if ch == '"' {
                 self.state.in_quotes = false;
+            }
+            self.prev_was_alnum = false;
+            return;
+        }
+        if self.state.in_backticks {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.reset_line();
+            } else if ch == '`' {
+                self.state.in_backticks = false;
             }
             self.prev_was_alnum = false;
             return;
@@ -1414,13 +1506,6 @@ impl StyleStmtTracker {
                 }
                 None => {}
             }
-            if self.dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
-                self.state.in_note_block = true;
-                self.in_plain_line = true;
-                self.kind = StmtKind::Other;
-                self.prev_was_alnum = false;
-                return;
-            }
         }
         if ch == '%' && src.as_bytes().get(at + 1) == Some(&b'%') {
             self.in_plain_line = true;
@@ -1433,6 +1518,27 @@ impl StyleStmtTracker {
                 self.kind = StmtKind::Other;
             }
             self.last_allows_hex = false;
+            self.prev_was_alnum = false;
+            return;
+        }
+        if self.dialects.class_diagram_dialect && ch == '`' {
+            self.state.in_backticks = true;
+            if self.kind == StmtKind::Start {
+                self.kind = StmtKind::Other;
+            }
+            self.last_allows_hex = false;
+            self.prev_was_alnum = false;
+            return;
+        }
+        if self.dialects.state_diagram_dialect
+            && self.kind != StmtKind::Style
+            && matches!(ch, 'n' | 'N')
+            && !src[..at].chars().next_back().is_some_and(is_word)
+            && starts_multiline_state_note(&src[at..])
+        {
+            self.state.in_note_block = true;
+            self.in_plain_line = true;
+            self.kind = StmtKind::Other;
             self.prev_was_alnum = false;
             return;
         }
@@ -1509,6 +1615,7 @@ impl StyleStmtTracker {
 
     fn allows_hex_color(&self, name: &str) -> bool {
         !self.state.in_quotes
+            && !self.state.in_backticks
             && !self.in_plain_line
             && !self.state.in_acc_descr_block
             && !self.state.in_note_block
@@ -1623,6 +1730,35 @@ mod tests {
         assert_eq!(
             encode_entities(input),
             "classDiagram\n  class A {\n    +char quote = '\"'\n  }\n  style A fill:#abc\n"
+        );
+    }
+
+    #[test]
+    fn state_midline_block_note_and_same_line_end_note_preserve_styles() {
+        let input = "stateDiagram-v2\n  A --> B note right of A\n    \"draft\n  end note style A fill:#abc;\n";
+        assert_eq!(
+            encode_entities(input),
+            "stateDiagram-v2\n  A --> B note right of A\n    \"draft\n  end note style A fill:#abc\n"
+        );
+        let semi =
+            "stateDiagram-v2\n  note right of A\n    \"draft\n  end note; style A fill:#abc;\n";
+        assert_eq!(
+            encode_entities(semi),
+            "stateDiagram-v2\n  note right of A\n    \"draft\n  end note; style A fill:#abc\n"
+        );
+    }
+
+    #[test]
+    fn class_backtick_names_do_not_leak_braces_or_quotes_into_later_styles() {
+        let brace_input = "classDiagram\n  class `A {`\n  class B\n  style B fill:#abc;\n";
+        assert_eq!(
+            encode_entities(brace_input),
+            "classDiagram\n  class `A {`\n  class B\n  style B fill:#abc\n"
+        );
+        let quote_input = "classDiagram\n  class `A \"x`\n  class B\n  style B fill:#abc;\n";
+        assert_eq!(
+            encode_entities(quote_input),
+            "classDiagram\n  class `A \"x`\n  class B\n  style B fill:#abc\n"
         );
     }
 }

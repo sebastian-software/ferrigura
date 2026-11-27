@@ -790,4 +790,20 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         loose_class.contains(&format!("xlink:href=\"{deep_url}\"")),
         "{loose_class}"
     );
+
+    // Safe relative click URLs containing non-escape backslashes before `:` are preserved, while
+    // backslash whitespace-escape scheme obfuscation fails closed.
+    let rel_backslash = render(
+        "flowchart TD\nA[x]\nB[y]\nclick A \"data\\archive:2026.pdf\"\nclick B \"java\\tscript:alert(1)\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        rel_backslash.contains("xlink:href=\"data\\archive:2026.pdf\""),
+        "{rel_backslash}"
+    );
+    assert!(
+        rel_backslash.contains("xlink:href=\"about:blank\""),
+        "{rel_backslash}"
+    );
 }

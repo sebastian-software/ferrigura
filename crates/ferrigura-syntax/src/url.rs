@@ -235,15 +235,26 @@ fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
     Some(finalize_raw(decoded, url_tokens.as_ref()))
 }
 
-/// Byte offset of the earliest relative URL delimiter (`/`, `?`, or a `#` fragment marker that
-/// cannot form a numeric character reference with its surroundings) when it precedes any `:` or
-/// `&colon;` scheme separator.
+/// Whether the `\` at byte offset `idx` in `text` is a literal path separator rather than the
+/// start of a Braintree whitespace escape (`\n`, `\r`, `\t`, `\%6e`, `\%72`, `\%74`) or an escape
+/// sequence that could decode into one.
+fn is_non_escape_backslash(text: &str, idx: usize) -> bool {
+    text[idx + 1..]
+        .chars()
+        .next()
+        .is_some_and(|next| !matches!(next, 'n' | 'r' | 't' | '%' | '&' | '\\') && !is_ctrl(next))
+}
+
+/// Byte offset of the earliest relative URL delimiter (`/`, `?`, a non-escape `\`, or a `#`
+/// fragment marker that cannot form a numeric character reference with its surroundings) when it
+/// precedes any `:` or `&colon;` scheme separator.
 fn first_scheme_delimiter_is_relative(text: &str) -> Option<usize> {
     let bytes = text.as_bytes();
     let mut has_escape_or_ctrl = false;
     for (idx, ch) in text.char_indices() {
         match ch {
             '/' | '?' => return Some(idx),
+            '\\' if is_non_escape_backslash(text, idx) => return Some(idx),
             ':' => return None,
             '&' if bytes
                 .get(idx..idx + "&colon;".len())
@@ -612,13 +623,14 @@ fn needs_another_sink_pass(text: &str) -> bool {
         })
 }
 
-/// Byte index immediately after the earliest literal `/`, `?`, `:`, or ASCII-case-insensitive
-/// `&colon;` scheme delimiter in `text`, if any.
+/// Byte index immediately after the earliest literal `/`, `?`, non-escape `\`, `:`, or
+/// ASCII-case-insensitive `&colon;` scheme delimiter in `text`, if any.
 fn find_scheme_delimiter_end(text: &str) -> Option<usize> {
     let bytes = text.as_bytes();
     for (idx, &byte) in bytes.iter().enumerate() {
         match byte {
             b'/' | b'?' | b':' => return Some(idx + 1),
+            b'\\' if is_non_escape_backslash(text, idx) => return Some(idx + 1),
             b'&' if bytes
                 .get(idx..idx + "&colon;".len())
                 .is_some_and(|slice| slice.eq_ignore_ascii_case(b"&colon;")) =>
@@ -3060,5 +3072,34 @@ mod tests {
             format_url("javascript%3Aalert(1)", false).as_deref(),
             Some("about:blank")
         );
+        // Safe relative URLs containing non-escape backslashes before `:` (`data\archive:2026.pdf`)
+        // stay intact while backslash whitespace-escape scheme obfuscation fails closed.
+        assert_eq!(
+            format_url("data\\archive:2026.pdf", false).as_deref(),
+            Some("data\\archive:2026.pdf")
+        );
+        assert_eq!(
+            guard_url("data\\archive:2026.pdf", false),
+            "data\\archive:2026.pdf"
+        );
+        assert_eq!(
+            format_url("data%5Carchive%3A2026.pdf", false).as_deref(),
+            Some("data%5Carchive%3A2026.pdf")
+        );
+        for blocked in [
+            "java\\tscript:alert(1)",
+            "java\\nscript:alert(1)",
+            "java\\rscript:alert(1)",
+            "java\\%74script:alert(1)",
+            "java\\&#116;script:alert(1)",
+            "data\\ﬂ°°116¶ß:2026.pdf",
+        ] {
+            assert_eq!(
+                format_url(blocked, false).as_deref(),
+                Some("about:blank"),
+                "blocked={blocked:?}"
+            );
+        }
+        assert_eq!(guard_url("java\\tscript:alert(1)", false), "about:blank");
     }
 }

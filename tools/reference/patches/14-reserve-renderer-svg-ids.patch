@@ -1,3 +1,15 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs/decisions/0014-upstream-reference-at-a-pin.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(security): reserve renderer-owned SVG IDs and remap colliding fragment links
+
+User-controlled node, subgraph, class, state, and Gantt task IDs can collide with
+renderer-owned SVG IDs (such as arrowhead markers, pattern fills, or Gantt exclude-range
+bars), hijacking url(#...) references or fragment links. This patch reserves
+renderer-owned IDs, disambiguates colliding user IDs across unified and Gantt renderers,
+and remaps same-document fragment hrefs without shadowing literal DOM IDs. Drop or
+re-check when bumping the Mermaid pin if upstream namespaces or reserves renderer IDs.
+
 diff --git a/packages/mermaid/src/diagrams/gantt/ganttRenderer.js b/packages/mermaid/src/diagrams/gantt/ganttRenderer.js
 index 22a0562..b193c92 100644
 --- a/packages/mermaid/src/diagrams/gantt/ganttRenderer.js

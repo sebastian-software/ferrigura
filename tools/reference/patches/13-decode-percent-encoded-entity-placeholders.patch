@@ -1,3 +1,16 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs/decisions/0014-upstream-reference-at-a-pin.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(security): harden entity encoding and URL sanitization against entity-encoded schemes
+
+Upstream encodeEntities strips color semicolons with greedy regexes across lines and
+splits HTML numeric references inside URLs, while upstream formatUrl and sanitizeUrl
+do not validate entity-spelled or percent-encoded URL schemes consistently. This patch
+aligns the pinned reference's encodeEntities, formatUrl, and sanitizeUrl wrappers with
+ferrigura's entity-aware URL sanitization and dialect-aware entity scanner. Drop or
+re-check when bumping the Mermaid pin if upstream adopts equivalent URL and entity
+hardening.
+
 diff --git a/packages/mermaid/src/diagrams/common/svgDrawCommon.ts b/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
 index 86220b2..941a0df 100644
 --- a/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
@@ -29,10 +42,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..f6bb5f1 100644
+index 48ac4a6..d4c620f 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,802 @@ export function interpolateToCurve(
+@@ -244,6 +244,818 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -648,11 +661,27 @@ index 48ac4a6..f6bb5f1 100644
 +  return false;
 +};
 +
++const isNonEscapeBackslash = (text: string, idx: number): boolean => {
++  if (idx + 1 >= text.length) {
++    return false;
++  }
++  const next = text[idx + 1];
++  return (
++    next !== 'n' &&
++    next !== 'r' &&
++    next !== 't' &&
++    next !== '%' &&
++    next !== '&' &&
++    next !== '\\' &&
++    !isCtrlChar(text.charCodeAt(idx + 1))
++  );
++};
++
 +const firstSchemeDelimiterIsRelative = (text: string): number => {
 +  let hasEscapeOrCtrl = false;
 +  for (let i = 0; i < text.length; i++) {
 +    const ch = text[i];
-+    if (ch === '/' || ch === '?') {
++    if (ch === '/' || ch === '?' || (ch === '\\' && isNonEscapeBackslash(text, i))) {
 +      return i;
 +    }
 +    if (ch === ':') {
@@ -835,7 +864,7 @@ index 48ac4a6..f6bb5f1 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +1048,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +1064,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -876,7 +905,7 @@ index 48ac4a6..f6bb5f1 100644
    }
  
    return url;
-@@ -895,23 +1723,712 @@ export default {
+@@ -895,23 +1739,791 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -981,13 +1010,16 @@ index 48ac4a6..f6bb5f1 100644
 +    const rest = s.slice(at);
 +    const lineEnd = rest.search(/[\n\r\u2028\u2029]/);
 +    const line = lineEnd === -1 ? rest : rest.slice(0, lineEnd);
-+    return /^note[^\S\n\r\u2028\u2029]+(?:left|right)[^\S\n\r\u2028\u2029]+of[^\S\n\r\u2028\u2029]+[^:\s][^:]*$/i.test(
-+      line
-+    );
++    const m =
++      /^note[^\S\n\r\u2028\u2029]+(?:left|right)[^\S\n\r\u2028\u2029]+of[^\S\n\r\u2028\u2029]+([^:\-\s]+)[^\S\n\r\u2028\u2029]*(.*)$/i.exec(
++        line
++      );
++    return m !== null && !m[2].startsWith(':');
 +  };
-+  const endsMultilineStateNote = (s: string, at: number): boolean => {
++  const endsMultilineStateNoteLen = (s: string, at: number): number => {
 +    const rest = s.slice(at);
-+    return /^end[^\S\n\r\u2028\u2029]+note(?:$|\s)/i.test(rest);
++    const m = /^end[^\S\n\r\u2028\u2029]+note(?=$|[^A-Za-z0-9_])/i.exec(rest);
++    return m ? m[0].length : -1;
 +  };
 +  const startsStyleOrClassDef = (s: string, at: number): boolean => {
 +    for (const kw of ['style', 'classDef']) {
@@ -1005,6 +1037,7 @@ index 48ac4a6..f6bb5f1 100644
 +    (at === 0 || s[at - 1] !== ':') && s[at + 1] !== ':';
 +  const isAsciiAlnum = (c: string): boolean =>
 +    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
++  const isAsciiWord = (c: string): boolean => isAsciiAlnum(c) || c === '_';
 +
 +  const allowClassDefCssSemi = allowsClassDefSemicolonCss(txt);
 +  const stateDiagramDialect = allowClassDefCssSemi;
@@ -1065,6 +1098,7 @@ index 48ac4a6..f6bb5f1 100644
 +    let result = '';
 +    let lineStart = 0;
 +    let inQuotes = false;
++    let inBackticks = false;
 +    let inAccDescrBlock = false;
 +    let pendingAcc: PendingAcc = 'none';
 +    let inNoteBlock = false;
@@ -1088,8 +1122,19 @@ index 48ac4a6..f6bb5f1 100644
 +            if (/\s/.test(c)) {
 +              continue;
 +            }
-+            if (endsMultilineStateNote(line, i)) {
++            atLineStart = false;
++            const endLen = endsMultilineStateNoteLen(line, i);
++            if (endLen > 0) {
 +              inNoteBlock = false;
++              stmtStart = true;
++              inTarget = false;
++              inStyleOrClassDef = false;
++              inClassStmt = false;
++              seenColon = false;
++              seenColonHash = false;
++              prevWasAlnum = false;
++              i += endLen - 1;
++              continue;
 +            }
 +          }
 +          break;
@@ -1121,6 +1166,13 @@ index 48ac4a6..f6bb5f1 100644
 +        if (inQuotes) {
 +          if (c === '"') {
 +            inQuotes = false;
++          }
++          prevWasAlnum = false;
++          continue;
++        }
++        if (inBackticks) {
++          if (c === '`') {
++            inBackticks = false;
 +          }
 +          prevWasAlnum = false;
 +          continue;
@@ -1166,10 +1218,6 @@ index 48ac4a6..f6bb5f1 100644
 +            pendingAcc = 'title';
 +            break;
 +          }
-+          if (stateDiagramDialect && startsMultilineStateNote(line, i)) {
-+            inNoteBlock = true;
-+            break;
-+          }
 +        }
 +        if (c === '%' && line[i + 1] === '%') {
 +          break;
@@ -1182,6 +1230,25 @@ index 48ac4a6..f6bb5f1 100644
 +            seenColon = false;
 +          }
 +          continue;
++        }
++        if (classDiagramDialect && c === '`') {
++          inBackticks = true;
++          stmtStart = false;
++          prevWasAlnum = false;
++          if (inTarget) {
++            seenColon = false;
++          }
++          continue;
++        }
++        if (
++          stateDiagramDialect &&
++          !inStyleOrClassDef &&
++          (c === 'n' || c === 'N') &&
++          (i === 0 || !isAsciiWord(line[i - 1])) &&
++          startsMultilineStateNote(line, i)
++        ) {
++          inNoteBlock = true;
++          break;
 +        }
 +        prevWasAlnum = isAsciiAlnum(c);
 +        if (c === ';') {
@@ -1300,6 +1367,7 @@ index 48ac4a6..f6bb5f1 100644
 +  let inNoteBlock = false;
 +  let classBodyDepth = 0;
 +  let inQuotes = false;
++  let inBackticks = false;
 +  let prevWasAlnum = false;
 +  let copyFrom = 0;
 +  for (let i = 0; i < txt.length; i++) {
@@ -1314,6 +1382,7 @@ index 48ac4a6..f6bb5f1 100644
 +        out += txt.slice(copyFrom, i);
 +        if (
 +          !inQuotes &&
++          !inBackticks &&
 +          !inPlainLine &&
 +          !inAccDescrBlock &&
 +          !inNoteBlock &&
@@ -1340,6 +1409,7 @@ index 48ac4a6..f6bb5f1 100644
 +          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
 +          if (
 +            !inQuotes &&
++            !inBackticks &&
 +            !inPlainLine &&
 +            !inAccDescrBlock &&
 +            !inNoteBlock &&
@@ -1371,9 +1441,17 @@ index 48ac4a6..f6bb5f1 100644
 +          continue;
 +        }
 +        atLineStart = false;
-+        if (endsMultilineStateNote(txt, i)) {
++        const endLen = endsMultilineStateNoteLen(txt, i);
++        if (endLen > 0) {
 +          inNoteBlock = false;
-+          inPlainLine = true;
++          stmtKind = 0;
++          inClassDef = false;
++          inClassStmt = false;
++          seenColon = false;
++          lastAllowsHex = false;
++          prevWasAlnum = false;
++          i += endLen - 1;
++          continue;
 +        }
 +      }
 +      prevWasAlnum = false;
@@ -1434,6 +1512,21 @@ index 48ac4a6..f6bb5f1 100644
 +        inPlainLine = false;
 +      } else if (ch === '"') {
 +        inQuotes = false;
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (inBackticks) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '`') {
++        inBackticks = false;
 +      }
 +      prevWasAlnum = false;
 +      continue;
@@ -1508,13 +1601,6 @@ index 48ac4a6..f6bb5f1 100644
 +        prevWasAlnum = false;
 +        continue;
 +      }
-+      if (stateDiagramDialect && startsMultilineStateNote(txt, i)) {
-+        inNoteBlock = true;
-+        inPlainLine = true;
-+        stmtKind = 2;
-+        prevWasAlnum = false;
-+        continue;
-+      }
 +    }
 +    if (ch === '%' && txt[i + 1] === '%') {
 +      inPlainLine = true;
@@ -1527,6 +1613,28 @@ index 48ac4a6..f6bb5f1 100644
 +        stmtKind = 2;
 +      }
 +      lastAllowsHex = false;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (classDiagramDialect && ch === '`') {
++      inBackticks = true;
++      if (stmtKind === 0) {
++        stmtKind = 2;
++      }
++      lastAllowsHex = false;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (
++      stateDiagramDialect &&
++      stmtKind !== 1 &&
++      (ch === 'n' || ch === 'N') &&
++      (i === 0 || !isAsciiWord(txt[i - 1])) &&
++      startsMultilineStateNote(txt, i)
++    ) {
++      inNoteBlock = true;
++      inPlainLine = true;
++      stmtKind = 2;
 +      prevWasAlnum = false;
 +      continue;
 +    }
