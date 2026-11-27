@@ -26,40 +26,53 @@ fn valid_unit_divide(numer: f32, denom: f32) -> Option<f32> {
 
 /// `SkFindUnitQuadRoots` (`SkGeometry.cpp` 95-125): the roots in (0, 1) of `a t² + b t + c`, with the
 /// discriminant in double and the roots in float.
-fn unit_quad_roots(a: f32, b: f32, c: f32) -> Vec<f32> {
+fn unit_quad_roots(a: f32, b: f32, c: f32) -> ([f32; 2], usize) {
+    let mut roots = [0.0; 2];
     if a == 0.0 {
-        return valid_unit_divide(-c, b).into_iter().collect();
+        return match valid_unit_divide(-c, b) {
+            Some(r) => {
+                roots[0] = r;
+                (roots, 1)
+            }
+            None => (roots, 0),
+        };
     }
     let discriminant = f64::from(b) * f64::from(b) - 4.0 * f64::from(a) * f64::from(c);
     if discriminant < 0.0 {
-        return Vec::new();
+        return (roots, 0);
     }
     let root = discriminant.sqrt() as f32;
     if !root.is_finite() {
-        return Vec::new();
+        return (roots, 0);
     }
     let q = if b < 0.0 {
         -(b - root) / 2.0
     } else {
         -(b + root) / 2.0
     };
-    let mut roots = Vec::with_capacity(2);
-    roots.extend(valid_unit_divide(q, a));
-    roots.extend(valid_unit_divide(c, q));
-    if roots.len() == 2 {
+    let mut len = 0;
+    if let Some(r) = valid_unit_divide(q, a) {
+        roots[len] = r;
+        len += 1;
+    }
+    if let Some(r) = valid_unit_divide(c, q) {
+        roots[len] = r;
+        len += 1;
+    }
+    if len == 2 {
         if roots[0] > roots[1] {
             roots.swap(0, 1);
         } else if roots[0] == roots[1] {
             // A double root is one root.
-            roots.pop();
+            len = 1;
         }
     }
-    roots
+    (roots, len)
 }
 
 /// `SkFindCubicExtrema` (`SkGeometry.cpp` 454-461): the extremes of one axis of a cubic, with the
 /// coefficients divided by three.
-fn cubic_extrema(a: f32, b: f32, c: f32, d: f32) -> Vec<f32> {
+fn cubic_extrema(a: f32, b: f32, c: f32, d: f32) -> ([f32; 2], usize) {
     let big_a = d - a + 3.0 * (b - c);
     let big_b = 2.0 * (a - b - b + c);
     let big_c = b - a;
@@ -96,18 +109,11 @@ fn eval_quad_axis(p0: f32, p1: f32, p2: f32, t: f32) -> f32 {
     (a * t + b) * t + p0
 }
 
-/// `compute_quad_extremas` (`SkPathPriv.cpp` 1443-1453).
-fn quad_extremas(src: &[Point; 3], out: &mut Vec<Point>) {
-    let mut ts = Vec::with_capacity(2);
-    ts.extend(quad_extrema(src[0].x, src[1].x, src[2].x));
-    ts.extend(quad_extrema(src[0].y, src[1].y, src[2].y));
-    for t in ts {
-        out.push(Point {
-            x: eval_quad_axis(src[0].x, src[1].x, src[2].x, t),
-            y: eval_quad_axis(src[0].y, src[1].y, src[2].y, t),
-        });
+fn eval_quad(src: &[Point; 3], t: f32) -> Point {
+    Point {
+        x: eval_quad_axis(src[0].x, src[1].x, src[2].x, t),
+        y: eval_quad_axis(src[0].y, src[1].y, src[2].y, t),
     }
-    out.push(src[2]);
 }
 
 /// `conic_deriv_coeff` and `conic_find_extrema` (`SkGeometry.cpp` 1247-1275): the extreme of one axis of a
@@ -117,12 +123,8 @@ fn conic_extremum(p0: f32, p1: f32, p2: f32, w: f32) -> Option<f32> {
     let p10 = p1 - p0;
     let wp10 = w * p10;
     let coeff = [w * p20 - p20, p20 - 2.0 * wp10, wp10];
-    let roots = unit_quad_roots(coeff[0], coeff[1], coeff[2]);
-    if roots.len() == 1 {
-        Some(roots[0])
-    } else {
-        None
-    }
+    let (roots, len) = unit_quad_roots(coeff[0], coeff[1], coeff[2]);
+    if len == 1 { Some(roots[0]) } else { None }
 }
 
 /// `SkConicCoeff::eval` at `t` (`SkGeometry.h` 447-475): the numerator and the denominator are quadratics,
@@ -146,76 +148,100 @@ fn eval_conic(src: &[Point; 3], w: f32, t: f32) -> Point {
     }
 }
 
-/// `compute_conic_extremas` (`SkPathPriv.cpp` 1455-1466).
-fn conic_extremas(src: &[Point; 3], w: f32, out: &mut Vec<Point>) {
-    let mut ts = Vec::with_capacity(2);
-    ts.extend(conic_extremum(src[0].x, src[1].x, src[2].x, w));
-    ts.extend(conic_extremum(src[0].y, src[1].y, src[2].y, w));
-    for t in ts {
-        out.push(eval_conic(src, w, t));
-    }
-    out.push(src[2]);
+/// Streaming tight-bounds accumulator (`ComputeTightBounds` and `gfx::SkRectToRectF`), updating the
+/// box inline per verb without heap allocation.
+#[derive(Default)]
+pub(crate) struct TightBounds {
+    has_bounds: bool,
+    left: f32,
+    top: f32,
+    right: f32,
+    bottom: f32,
+    // The last point of the `SkPath` (the start of the curve), and the start of the sub-path, to which
+    // a close returns the current point.
+    current: Point,
+    sub_path_start: Point,
 }
 
-/// `compute_cubic_extremas` (`SkPathPriv.cpp` 1468-1480): the extremes of the cubic, then its end.
-fn cubic_extremas(src: &[Point; 4], out: &mut Vec<Point>) {
-    let mut ts = cubic_extrema(src[0].x, src[1].x, src[2].x, src[3].x);
-    ts.extend(cubic_extrema(src[0].y, src[1].y, src[2].y, src[3].y));
-    for t in ts {
-        out.push(eval_cubic(src, t));
+impl TightBounds {
+    fn include(&mut self, point: Point) {
+        self.left = self.left.min(point.x);
+        self.top = self.top.min(point.y);
+        self.right = self.right.max(point.x);
+        self.bottom = self.bottom.max(point.y);
     }
-    out.push(src[3]);
-}
 
-/// The tight box of the verbs as `[left, top, width, height]` (`ComputeTightBounds` and
-/// `gfx::SkRectToRectF`), or `None` for a path with no verb.
-pub(crate) fn tight_bounds(verbs: &[Verb]) -> Option<[f32; 4]> {
-    let first = match verbs.first()? {
-        Verb::Move(point) => *point,
-        // A path starts with a move.
-        _ => return None,
-    };
-    let (mut left, mut top, mut right, mut bottom) = (first.x, first.y, first.x, first.y);
-
-    // The last point of the `SkPath` (the start of the curve), and the start of the sub-path, to which a
-    // close returns the current point.
-    let mut current = first;
-    let mut sub_path_start = first;
-    let mut extremas: Vec<Point> = Vec::with_capacity(5);
-    for verb in verbs {
-        extremas.clear();
-        match *verb {
+    pub(crate) fn push(&mut self, verb: Verb) {
+        if !self.has_bounds {
+            // A path starts with a move.
+            let Verb::Move(first) = verb else {
+                return;
+            };
+            self.left = first.x;
+            self.top = first.y;
+            self.right = first.x;
+            self.bottom = first.y;
+            self.current = first;
+            self.sub_path_start = first;
+            self.has_bounds = true;
+            return;
+        }
+        match verb {
             Verb::Move(point) => {
-                sub_path_start = point;
-                current = point;
-                extremas.push(point);
+                self.sub_path_start = point;
+                self.current = point;
+                self.include(point);
             }
             Verb::Line(point) => {
-                current = point;
-                extremas.push(point);
+                self.current = point;
+                self.include(point);
             }
             Verb::Quad(control, end) => {
-                quad_extremas(&[current, control, end], &mut extremas);
-                current = end;
+                // `compute_quad_extremas` (`SkPathPriv.cpp` 1443-1453).
+                let src = [self.current, control, end];
+                if let Some(t) = quad_extrema(src[0].x, src[1].x, src[2].x) {
+                    self.include(eval_quad(&src, t));
+                }
+                if let Some(t) = quad_extrema(src[0].y, src[1].y, src[2].y) {
+                    self.include(eval_quad(&src, t));
+                }
+                self.include(end);
+                self.current = end;
             }
             Verb::Cubic(c1, c2, end) => {
-                cubic_extremas(&[current, c1, c2, end], &mut extremas);
-                current = end;
+                // `compute_cubic_extremas` (`SkPathPriv.cpp` 1468-1480).
+                let src = [self.current, c1, c2, end];
+                let (xs, xlen) = cubic_extrema(src[0].x, src[1].x, src[2].x, src[3].x);
+                for &t in &xs[..xlen] {
+                    self.include(eval_cubic(&src, t));
+                }
+                let (ys, ylen) = cubic_extrema(src[0].y, src[1].y, src[2].y, src[3].y);
+                for &t in &ys[..ylen] {
+                    self.include(eval_cubic(&src, t));
+                }
+                self.include(end);
+                self.current = end;
             }
             Verb::Conic(control, end, weight) => {
-                conic_extremas(&[current, control, end], weight, &mut extremas);
-                current = end;
+                // `compute_conic_extremas` (`SkPathPriv.cpp` 1455-1466).
+                let src = [self.current, control, end];
+                if let Some(t) = conic_extremum(src[0].x, src[1].x, src[2].x, weight) {
+                    self.include(eval_conic(&src, weight, t));
+                }
+                if let Some(t) = conic_extremum(src[0].y, src[1].y, src[2].y, weight) {
+                    self.include(eval_conic(&src, weight, t));
+                }
+                self.include(end);
+                self.current = end;
             }
-            Verb::Close => current = sub_path_start,
-        }
-        for point in &extremas {
-            left = left.min(point.x);
-            top = top.min(point.y);
-            right = right.max(point.x);
-            bottom = bottom.max(point.y);
+            Verb::Close => self.current = self.sub_path_start,
         }
     }
-    Some(rect_f(left, top, right, bottom))
+
+    pub(crate) fn finish(&self) -> Option<[f32; 4]> {
+        self.has_bounds
+            .then(|| rect_f(self.left, self.top, self.right, self.bottom))
+    }
 }
 
 /// `SkRectToRectF` (`ui/gfx/geometry/skia_conversions.cc` 68-72): the `BoundingRect` of the two corners.

@@ -25,9 +25,11 @@
 //!
 //! **Correct rounding.** The seven functions computed in `correct.rs` return the correctly rounded value by
 //! Ziv's method: their fixed-point paths compute to 256 fraction bits with an error bound of `(|v| + 1) * 2^-180`, and round
-//! when both bounds round to the same double. `sin` and `cos` first try a double-double evaluation with a
-//! proven error bound (for arguments up to `2^30`), and `acos` a CORE-MATH interval test; each falls back to
-//! fixed point when its bounds do not round alike. Chromium's results are correctly rounded on every input the
+//! when both bounds round to the same double. Each first tries a fast path with a proven error interval:
+//! `sin`, `cos`, `sin_cos`, and `tan` use double-double evaluation for arguments up to `2^30` (`trig_fast.rs`),
+//! `asin` and `acos` use a CORE-MATH table interval test (`acos_fast.rs`), and `log` and `log10` use a
+//! table-driven double-double evaluation (`log_fast.rs`). Each falls back to fixed point when its bounds do
+//! not round alike. Chromium's results are correctly rounded on every input the
 //! probe checked (about 270,000 inputs, against mpmath at 300 bits; `log10` on 200,000, against Python's
 //! `decimal` at 80 digits), so the two agree.
 //!
@@ -60,6 +62,7 @@ mod fused;
 mod hypot;
 mod inverse;
 mod log;
+mod log_fast;
 mod pow;
 mod rem_pio2;
 mod trig;

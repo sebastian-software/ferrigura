@@ -19,14 +19,13 @@ pub(crate) enum Verb {
 }
 
 /// The state of `SVGPathBuilder`, and the last point of the `SkPath` (`fPts.back()`).
-#[derive(Default)]
-struct Builder {
+pub(crate) struct Builder<F> {
     current: Point,
     subpath: Point,
     last_control: Point,
     last_kind: Option<(Kind, bool)>,
     last_point: Point,
-    verbs: Vec<Verb>,
+    sink: F,
 }
 
 /// `Vector2dF` addition of a point and a vector (`PointF + Vector2dF`): two float additions.
@@ -37,10 +36,21 @@ fn add(a: Point, b: Point) -> Point {
     }
 }
 
-impl Builder {
+impl<F: FnMut(Verb)> Builder<F> {
+    pub(crate) fn new(sink: F) -> Self {
+        Self {
+            current: Point::default(),
+            subpath: Point::default(),
+            last_control: Point::default(),
+            last_kind: None,
+            last_point: Point::default(),
+            sink,
+        }
+    }
+
     /// `EmitMoveTo`.
     fn move_to(&mut self, p: Point) {
-        self.verbs.push(Verb::Move(p));
+        (self.sink)(Verb::Move(p));
         self.subpath = p;
         self.current = p;
         self.last_point = p;
@@ -48,14 +58,14 @@ impl Builder {
 
     /// `EmitLineTo`.
     fn line_to(&mut self, p: Point) {
-        self.verbs.push(Verb::Line(p));
+        (self.sink)(Verb::Line(p));
         self.current = p;
         self.last_point = p;
     }
 
     /// `EmitQuadTo`: the quadratic's control point is the one the smooth quadratics reflect.
     fn quad_to(&mut self, c0: Point, p: Point) {
-        self.verbs.push(Verb::Quad(c0, p));
+        (self.sink)(Verb::Quad(c0, p));
         self.last_control = c0;
         self.current = p;
         self.last_point = p;
@@ -63,7 +73,7 @@ impl Builder {
 
     /// `EmitCubicTo`: the second control point is the one the smooth cubics reflect.
     fn cubic_to(&mut self, c0: Point, c1: Point, p: Point) {
-        self.verbs.push(Verb::Cubic(c0, c1, p));
+        (self.sink)(Verb::Cubic(c0, c1, p));
         self.last_control = c1;
         self.current = p;
         self.last_point = p;
@@ -85,7 +95,7 @@ impl Builder {
 
     /// `EmitClose`: the path closes, and the current point is the start of the sub-path.
     fn close(&mut self) {
-        self.verbs.push(Verb::Close);
+        (self.sink)(Verb::Close);
         self.current = self.subpath;
         self.last_point = self.subpath;
     }
@@ -93,14 +103,16 @@ impl Builder {
     /// `EmitArcTo`: `SkPathBuilder::arcTo`, from the last point of the path (its `fPts.back()`).
     fn arc_to(&mut self, p: Point, rx: f32, ry: f32, angle: f32, large: bool, sweep: bool) {
         let from = self.last_point;
-        let conics = skia::arc_to(from, p, rx, ry, angle, large, sweep);
-        self.verbs.extend(conics);
+        let (conics, count) = skia::arc_to(from, p, rx, ry, angle, large, sweep);
+        for &verb in &conics[..count] {
+            (self.sink)(verb);
+        }
         self.current = p;
         self.last_point = p;
     }
 
     /// `EmitSegment` of `SVGPathBuilder`.
-    fn emit(&mut self, segment: &Segment) {
+    pub(crate) fn emit(&mut self, segment: &Segment) {
         let Some(kind) = segment.kind else {
             return;
         };
@@ -176,13 +188,4 @@ impl Builder {
         }
         self.last_kind = Some((kind, rel));
     }
-}
-
-/// The `SkPath` calls of the segments, as `SVGPathBuilder` makes them.
-pub(crate) fn build(segments: &[Segment]) -> Vec<Verb> {
-    let mut builder = Builder::default();
-    for segment in segments {
-        builder.emit(segment);
-    }
-    builder.verbs
 }

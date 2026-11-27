@@ -22,11 +22,8 @@ const SIN_COS_NEARLY_ZERO: f32 = 1.0 / 65536.0;
 /// [`atan2f`], [`tanf`] and [`cosf`] below, 81 boxes of the corpus differ from Chromium's
 /// (`tests/corpus/known-differences.json`), where glibc's float functions would give 344.
 fn sin_cos(radians: f32) -> (f32, f32) {
-    let x = f64::from(radians);
-    (
-        ferrigura_jsmath::sin(x) as f32,
-        ferrigura_jsmath::cos(x) as f32,
-    )
+    let (s, c) = ferrigura_jsmath::sin_cos(f64::from(radians));
+    (s as f32, c as f32)
 }
 
 /// `atan2f`, `tanf` and `cosf` (`SkScalarATan2`, `SkScalarTan`, `SkScalarCos`), correctly rounded as
@@ -187,8 +184,8 @@ fn conic_verb(control: Point, end: Point, weight: f32) -> Verb {
 }
 
 /// `SkPathBuilder::arcTo(rad, angle, arcLarge, arcSweep, endPt)` (`SkPathBuilder.cpp` 563-675): the arc
-/// from `from` (the last point of the path) to `end`, as the verbs it adds. `sweep` is the SVG flag, and
-/// `sweep == true` is clockwise (`kCW`), as `PathBuilder::ArcTo` passes it.
+/// from `from` (the last point of the path) to `end`, as up to 3 verbs on the stack. `sweep` is the SVG
+/// flag, and `sweep == true` is clockwise (`kCW`), as `PathBuilder::ArcTo` passes it.
 pub(crate) fn arc_to(
     from: Point,
     end: Point,
@@ -197,10 +194,12 @@ pub(crate) fn arc_to(
     angle: f32,
     large: bool,
     sweep: bool,
-) -> Vec<Verb> {
+) -> ([Verb; 3], usize) {
+    let mut verbs = [Verb::Close; 3];
     // A radius of zero, or a zero-length arc, is a line (`lineTo(endPt)`).
     if rx0 == 0.0 || ry0 == 0.0 || from == end {
-        return vec![Verb::Line(end)];
+        verbs[0] = Verb::Line(end);
+        return (verbs, 1);
     }
     let mut rx = rx0.abs();
     let mut ry = ry0.abs();
@@ -270,18 +269,19 @@ pub(crate) fn arc_to(
     }
     // A tiny sweep is a line: the arithmetic below would go wrong (skbug.com/40040578).
     if theta_arc.abs() < PI / (1000.0 * 1000.0) {
-        return vec![Verb::Line(end)];
+        verbs[0] = Verb::Line(end);
+        return (verbs, 1);
     }
 
     transform.set_rotate(angle);
     transform.pre_scale(rx, ry);
 
-    // At most a third of a turn per conic, so a quarter circle is at most two.
+    // At most a third of a turn per conic, so a full turn is at most three.
     let segments = (theta_arc / (2.0 * PI / 3.0)).abs().ceil() as i32;
     let theta_width = theta_arc / segments as f32;
     let t = tanf(0.5 * theta_width);
     if !t.is_finite() {
-        return Vec::new();
+        return (verbs, 0);
     }
     let mut start_theta = theta1;
     let w = (0.5 + cosf(theta_width) * 0.5).sqrt();
@@ -293,7 +293,8 @@ pub(crate) fn arc_to(
         && is_integer(end.x)
         && is_integer(end.y);
 
-    let mut verbs = Vec::with_capacity(segments as usize);
+    debug_assert!((0..=3).contains(&segments));
+    let mut len = 0;
     for _ in 0..segments {
         let end_theta = start_theta + theta_width;
         let (sin_end, cos_end) = sin_cos_snap(end_theta);
@@ -314,17 +315,19 @@ pub(crate) fn arc_to(
                 point.y = round_scalar(point.y);
             }
         }
-        verbs.push(conic_verb(mapped[0], mapped[1], w));
+        verbs[len] = conic_verb(mapped[0], mapped[1], w);
+        len += 1;
         start_theta = end_theta;
     }
 
     // The last point of the arc is the end point itself, whatever the rounding of the conics.
-    if let Some(Verb::Conic(control, _, weight)) = verbs.last().copied() {
-        let last = verbs.len() - 1;
-        verbs[last] = Verb::Conic(control, end, weight);
-    } else if let Some(Verb::Quad(control, _)) = verbs.last().copied() {
-        let last = verbs.len() - 1;
-        verbs[last] = Verb::Quad(control, end);
+    if len > 0 {
+        let last = len - 1;
+        match verbs[last] {
+            Verb::Conic(control, _, weight) => verbs[last] = Verb::Conic(control, end, weight),
+            Verb::Quad(control, _) => verbs[last] = Verb::Quad(control, end),
+            _ => {}
+        }
     }
-    verbs
+    (verbs, len)
 }

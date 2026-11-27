@@ -1,7 +1,7 @@
-//! A fast path for `sin` and `cos`: double-double evaluation with a proven error bound, and a rounding
-//! test that returns a result only when the whole error interval rounds to one double. When the test
-//! is not conclusive, the caller takes the fixed-point evaluator in `correct.rs`, so the result is the
-//! correctly rounded value either way. Written for this crate.
+//! A fast path for `sin`, `cos` and `tan`: double-double evaluation with a proven error bound, and a
+//! rounding test that returns a result only when the whole error interval rounds to one double. When
+//! the test is not conclusive, the caller takes the fixed-point evaluator in `correct.rs`, so the
+//! result is the correctly rounded value either way. Written for this crate.
 //!
 //! Every operation is an ordinary rounded double operation (`u = 2^-53`, round to nearest) or an
 //! error-free transformation built from them: `two_sum` (Knuth) and `two_prod` (Dekker, with
@@ -107,14 +107,17 @@ pub(crate) const COS_TAIL: [f64; 7] = [
     f64::from_bits(0x39d0a18a2635085d),
 ];
 
-/// `2^-50`, `2^-92`, `2^-95`, `2^-160`: the factors of the error bounds below.
+/// `2^-20`, `2^-50`, `2^-92`, `2^-95`, `2^-96`, `2^-160`, `2^-200`: the factors of the error bounds below.
+const TWO_M20: f64 = f64::from_bits(0x3eb0000000000000);
 const TWO_M50: f64 = f64::from_bits(0x3cd0000000000000);
 const TWO_M92: f64 = f64::from_bits(0x3a30000000000000);
 const TWO_M95: f64 = f64::from_bits(0x3a00000000000000);
+const TWO_M96: f64 = f64::from_bits(0x39f0000000000000);
 const TWO_M160: f64 = f64::from_bits(0x35f0000000000000);
+const TWO_M200: f64 = f64::from_bits(0x3370000000000000);
 
 /// `s + e = a + b` exactly (Knuth's TwoSum, no condition on the operands).
-fn two_sum(a: f64, b: f64) -> (f64, f64) {
+pub(crate) fn two_sum(a: f64, b: f64) -> (f64, f64) {
     let s = a + b;
     let bb = s - a;
     (s, (a - (s - bb)) + (b - bb))
@@ -129,8 +132,8 @@ fn split(a: f64) -> (f64, f64) {
 }
 
 /// `p + e = a * b` exactly (Dekker's product), when nothing overflows and `e` is not subnormal. The
-/// operands here are below `2^31` and the products above `2^-420`, far from both limits.
-fn two_prod(a: f64, b: f64) -> (f64, f64) {
+/// operands here are below `2^201` and the products above `2^-420`, far from both limits.
+pub(crate) fn two_prod(a: f64, b: f64) -> (f64, f64) {
     let p = a * b;
     let (ah, al) = split(a);
     let (bh, bl) = split(b);
@@ -144,7 +147,7 @@ fn two_prod(a: f64, b: f64) -> (f64, f64) {
 /// (`y`), `al bh` (`x`), their sum (`x + y`), and the last sum, whose operands are below
 /// `(1 + x + y) u |ah bh|` (`1 + x + y`). Terms of order `u^3` are covered by rounding the constants
 /// up. And `|pl| <= (1 + x + y) u |ah bh| (1 + 3u)`.
-fn mul_dd((ah, al): (f64, f64), (bh, bl): (f64, f64)) -> (f64, f64) {
+pub(crate) fn mul_dd((ah, al): (f64, f64), (bh, bl): (f64, f64)) -> (f64, f64) {
     let (ph, pt) = two_prod(ah, bh);
     (ph, pt + (ah * bl + al * bh))
 }
@@ -164,7 +167,11 @@ fn mul_dd((ah, al): (f64, f64), (bh, bl): (f64, f64)) -> (f64, f64) {
 /// - the representation error of the coefficient, `|c - ch - cl| <= u^2 C`: `C`.
 ///
 /// That is at most `12.4 A + 6.01 C <= 9.21`, and `9.21 u^2 < 2^-102.7 < 2^-100` per step.
-fn horner_step((ch, cl): (f64, f64), (zh, zl): (f64, f64), (ah, al): (f64, f64)) -> (f64, f64) {
+pub(crate) fn horner_step(
+    (ch, cl): (f64, f64),
+    (zh, zl): (f64, f64),
+    (ah, al): (f64, f64),
+) -> (f64, f64) {
     let (ph, pl) = two_prod(zh, ah);
     let m = zh * al + zl * ah;
     let (sh, se) = two_sum(ch, ph);
@@ -206,7 +213,7 @@ fn series(z: (f64, f64), dd: &[(f64, f64)], tail: &[f64]) -> (f64, f64) {
 /// result is at least `RN(hi + lo + E)`; when both agree, so does every value in between. The bounds
 /// `eps` below are at least three times the error `E` they cover, which pays for `u |lo|`, the
 /// factors `1 - u` and the roundings in computing `eps`.
-fn round_test([hi, lo, eps]: [f64; 3]) -> Option<f64> {
+pub(crate) fn round_test([hi, lo, eps]: [f64; 3]) -> Option<f64> {
     let lower = hi + (lo - eps);
     let upper = hi + (lo + eps);
     (lower == upper).then_some(lower)
@@ -369,6 +376,54 @@ pub(crate) fn sin_cos_parts(ax: f64) -> Option<([f64; 3], [f64; 3])> {
         sin_reduced(&r, z),
         cos_reduced(&r, z),
     ))
+}
+
+/// Double-double quotient `N / D` with a conservative error bound for [`round_test`].
+///
+/// With renormalized `(nh, nl)` (`|nl| <= u |nh|`) and `(dh, dl)` (`|dl| <= u |dh|`), the two-step
+/// quotient `q1 = nh / dh`, `rem = (nh - q1 dh) + nl - q1 dl`, `q2 = rem / dh`, `(qh, ql) = q1 + q2`
+/// has arithmetic error below `21 u^2 |qh|`. For `|D_true - D| <= ed <= 2^-20 |dh|` and
+/// `|N_true - N| <= en`, the propagated error is below `1.00001 (en + |qh| ed) / |dh|`. Doubling
+/// the propagated term and adding `2^-96 |qh|` exceeds the true error plus `u |ql|` with wide margin.
+fn div_parts([n0, n1, en]: [f64; 3], [d0, d1, ed]: [f64; 3]) -> Option<[f64; 3]> {
+    let (nh, nl) = two_sum(n0, n1);
+    let (dh, dl) = two_sum(d0, d1);
+    let abs_d = dh.abs();
+    let abs_n = nh.abs();
+    if abs_d < TWO_M200 || abs_n < TWO_M200 || ed >= TWO_M20 * abs_d {
+        return None;
+    }
+    let q1 = nh / dh;
+    let (ph, pl) = two_prod(q1, dh);
+    let (sh, sl) = two_sum(nh, -ph);
+    let rem = sh + ((sl + nl) - (pl + q1 * dl));
+    let q2 = rem / dh;
+    let (qh, ql) = two_sum(q1, q2);
+    let eps = 2.0 * ((en + qh.abs() * ed) / abs_d) + TWO_M96 * qh.abs();
+    if !qh.is_finite() || !ql.is_finite() || !eps.is_finite() {
+        return None;
+    }
+    Some([qh, ql, eps])
+}
+
+/// `tan ax` for `2^-100 <= ax`, correctly rounded, or `None` for the fixed-point path.
+pub(crate) fn tan(ax: f64) -> Option<f64> {
+    round_test(tan_parts(ax)?)
+}
+
+/// `tan ax` before rounding as `[hi, lo, eps]`, or `None` when outside the fast path's range or
+/// when the denominator is too small or uncertain for double-double division.
+pub(crate) fn tan_parts(ax: f64) -> Option<[f64; 3]> {
+    let r = reduce(ax)?;
+    let z = r.square();
+    let s = sin_reduced(&r, z);
+    let c = cos_reduced(&r, z);
+    let (num, den) = if r.quadrant & 1 == 0 {
+        (s, c)
+    } else {
+        (neg(c), s)
+    };
+    div_parts(num, den)
 }
 
 #[cfg(test)]
