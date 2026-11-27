@@ -1,7 +1,7 @@
-Resolve Mermaid entity placeholders in HTTP/HTTPS URL authorities before host/IDNA normalization in formatUrl, and decode percent-encoded placeholders (%EF%AC%82%C2%B0...%C2%B6%C3%9F) directly on live DOM href/xlink:href attributes before serialization so text nodes and unrelated %XX escapes are never touched.
+Resolve Mermaid entity placeholders in HTTP/HTTPS URL authorities before host/IDNA normalization in formatUrl, and decode percent-encoded placeholders (%EF%AC%82%C2%B0...%C2%B6%C3%9F) directly on live DOM HTTP/HTTPS href/xlink:href attributes before serialization so text nodes, finalized #... fragments, and unrelated %XX escapes are never touched.
 
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index 64d8255..d4a6309 100644
+index 64d8255..685688e 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
 @@ -340,6 +340,62 @@ export const createUserStyles = (
@@ -51,7 +51,7 @@ index 64d8255..d4a6309 100644
 +          (attr.namespaceURI === null || attr.namespaceURI === XMLNS_XLINK_STD)) ||
 +        attr.name === 'xlink:href'
 +      ) {
-+        if (attr.value.includes('%EF%AC%82%C2%B0')) {
++        if (attr.value.includes('%EF%AC%82%C2%B0') && /^https?:/i.test(attr.value.trim())) {
 +          const decoded = decodePercentEncodedUrlValue(attr.value, holder, encoder);
 +          if (attr.namespaceURI) {
 +            el.setAttributeNS(attr.namespaceURI, attr.name, decoded);

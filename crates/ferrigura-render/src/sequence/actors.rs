@@ -1189,8 +1189,10 @@ impl Renderer<'_> {
         let mut panel_children = Vec::new();
         for (key, value) in &actor.links {
             let target = super::model::value_text(value);
+            let sanitized = ferrigura_syntax::url::sanitize_url(&target);
+            let href = crate::common::resolve_percent_encoded_url_placeholders(&sanitized);
             let mut link = Element::new("a")
-                .with("xlink:href", ferrigura_syntax::url::sanitize_url(&target))
+                .with("xlink:href", href.into_owned())
                 .with("target", "_blank");
             for element in draw_menu_item_text(
                 key,

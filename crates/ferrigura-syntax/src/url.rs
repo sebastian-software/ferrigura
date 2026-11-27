@@ -715,8 +715,7 @@ fn resolve_http_authority_entities(candidate: &str) -> std::borrow::Cow<'_, str>
 /// The `url` crate rejects an `xn--` label whose punycode does not decode, where node 24 keeps the
 /// label, so the reference's URL becomes `about:blank` here.
 fn normalize_http(candidate: &str) -> String {
-    let resolved = resolve_http_authority_entities(candidate);
-    match ::url::Url::parse(resolved.as_ref()) {
+    match ::url::Url::parse(candidate) {
         Ok(parsed) => parsed.to_string(),
         Err(_) => BLANK_URL.to_owned(),
     }

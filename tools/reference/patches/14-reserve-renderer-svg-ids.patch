@@ -1,7 +1,39 @@
-Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs in the shared unified renderer without mutating edge.id before ELK layout or redirecting links away from winning literal elements, recognize entity-encoded fragment markers, and protect both placeholder boundaries (ﬂ° and ¶ß) on resolved IDs from a second decodeEntities pass.
+Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs (including pre-assigned use-case path IDs) in the shared unified renderer without mutating edge.id before ELK layout or redirecting links away from winning literal elements, recognize entity-encoded fragment markers, and protect both placeholder boundaries (ﬂ° and ¶ß) on resolved IDs from a second decodeEntities pass.
 
+diff --git a/packages/mermaid/src/diagrams/usecase/usecaseRenderer.ts b/packages/mermaid/src/diagrams/usecase/usecaseRenderer.ts
+index c02a201..8457734 100644
+--- a/packages/mermaid/src/diagrams/usecase/usecaseRenderer.ts
++++ b/packages/mermaid/src/diagrams/usecase/usecaseRenderer.ts
+@@ -137,6 +137,7 @@ export const prepareUsecaseLayoutData = (
+     if (edge.label !== undefined && edge.labelType === 'text') {
+       edge.label = escapePlainLabel(edge.label);
+     }
++    (edge as { pathId?: string }).pathId = usecaseDomId(diagramId, edge.id);
+   }
+   return data;
+ };
+@@ -190,7 +191,9 @@ const annotateUsecaseElements = (
+ 
+   // Index the edges by id so the paths are matched in a single pass instead of
+   // re-scanning every path for each edge.
+-  const edgesById = new Map(data.edges.map((edge) => [edge.id, edge]));
++  const edgesById = new Map(
++    data.edges.map((edge) => [(edge as { dataId?: string }).dataId ?? edge.id, edge])
++  );
+   svg.selectAll<SVGPathElement, unknown>('path[data-et="edge"]').each(function () {
+     const edge = edgesById.get(this.getAttribute('data-id') ?? '');
+     if (!edge) {
+@@ -198,7 +201,7 @@ const annotateUsecaseElements = (
+     }
+     const path = select(this);
+     path
+-      .attr('id', usecaseDomId(data.diagramId, edge.id))
++      .attr('id', (edge as { pathId?: string }).pathId ?? usecaseDomId(data.diagramId, edge.id))
+       .attr('data-usecase-id', edge.id)
+       .attr('data-usecase-kind', edge.internal ? 'note-connector' : 'relationship');
+     if (edge.internal) {
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index d4a6309..ce7ed36 100644
+index 685688e..6fd46aa 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
 @@ -43,6 +43,7 @@ import type {
@@ -42,7 +74,7 @@ index d4a6309..ce7ed36 100644
  
    // This is the d3 node for the svg element
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..ee54c07 100644
+index 49145b2..23a09eb 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -189,7 +221,7 @@ index 49145b2..ee54c07 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,9 +235,190 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,9 +235,195 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -226,15 +258,20 @@ index 49145b2..ee54c07 100644
 +      const originalEdgeId = edge.id ?? '';
 +      const edgeHadPlaceholder = originalEdgeId.includes('ﬂ°');
 +      const canonicalEdgeId = canonicalAttrId(originalEdgeId);
-+      const rawPath = `${svgId}-${originalEdgeId}`;
-+      const canonicalPath = `${canonicalSvgId}-${canonicalEdgeId}`;
-+      const unchanged = !edgeHadPlaceholder && canonicalPath === rawPath;
++      const explicitPathId = (edge as { pathId?: string }).pathId;
++      const rawPath = explicitPathId ?? `${svgId}-${originalEdgeId}`;
++      const pathHadPlaceholder = explicitPathId ? explicitPathId.includes('ﬂ°') : edgeHadPlaceholder;
++      const canonicalPath = explicitPathId
++        ? canonicalAttrId(explicitPathId)
++        : `${canonicalSvgId}-${canonicalEdgeId}`;
++      const unchanged = !pathHadPlaceholder && canonicalPath === rawPath;
 +      return {
 +        edge,
 +        originalEdgeId,
 +        edgeHadPlaceholder,
 +        canonicalEdgeId,
 +        rawPath,
++        pathHadPlaceholder,
 +        canonicalPath,
 +        unchanged,
 +      };
@@ -345,7 +382,7 @@ index 49145b2..ee54c07 100644
 +        }
 +      }
 +      const rawDistinctFromOwner =
-+        p.edgeHadPlaceholder ||
++        p.pathHadPlaceholder ||
 +        p.canonicalPath !== p.rawPath ||
 +        !elementOwned.has(p.canonicalPath);
 +      if (finalPath !== p.rawPath && rawDistinctFromOwner) {
@@ -354,7 +391,7 @@ index 49145b2..ee54c07 100644
 +          remapped.set(key, formatFragmentUrl(finalPath));
 +        }
 +      }
-+      if (collided || p.edgeHadPlaceholder) {
++      if (collided || p.pathHadPlaceholder) {
 +        (p.edge as { pathId?: string }).pathId = protectResolvedId(finalPath);
 +      }
 +      if (p.edgeHadPlaceholder) {

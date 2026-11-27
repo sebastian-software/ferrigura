@@ -882,6 +882,69 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .expect("href");
     assert_eq!(resolved_fragment_target(close_href), "graph-classId-Foo¶ß");
 
+    // Hostname entities are resolved once (at `format_url`), so text that only resembles a
+    // placeholder after the first pass (`#64258;°period#182;ß`) is not decoded a second time.
+    let single_host = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class A\n  click A href \"https://foo#64258;°period#182;ßbar.example/\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let single_host_doc = roxmltree::Document::parse(&single_host).expect("well-formed SVG XML");
+    let single_host_href = single_host_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(
+        single_host_href,
+        "https://xn--fooflperiodbar-zua6hz6a.example/"
+    );
+
+    // Sequence actor menu links also decode percent-encoded entity placeholders in HTTP URLs
+    // without double-decoding literal placeholders.
+    let seq_link = render(
+        "sequenceDiagram\n  participant A\n  link A: Help @ https://example.org/Chapter#32;One\n  A->>A: ping\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let seq_link_doc = roxmltree::Document::parse(&seq_link).expect("well-formed SVG XML");
+    let seq_href = seq_link_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(seq_href, "https://example.org/Chapter%20One");
+
+    // Finalized remapped fragments whose target ID contains literal `ﬂ°copy¶ß` keep their
+    // percent-encoded bytes intact instead of rewriting `%EF%AC%82%C2%B0copy%C2%B6%C3%9F` to `%C2%A9`.
+    let lit_placeholder_frag = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Id#64258;°copy#182;ß`\n  click `Id#64258;°copy#182;ß` href \"#graph-classId-Id#64258;°copy#182;ß\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let lit_doc = roxmltree::Document::parse(&lit_placeholder_frag).expect("well-formed SVG XML");
+    assert!(
+        lit_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Idﬂ°copy¶ß")),
+        "{lit_placeholder_frag}"
+    );
+    let lit_href = lit_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(lit_href, "#graph-classId-Id%EF%AC%82%C2%B0copy%C2%B6%C3%9F");
+    assert_eq!(
+        resolved_fragment_target(lit_href),
+        "graph-classId-Idﬂ°copy¶ß"
+    );
+
     // When a subgraph `foo` keeps `graph-foo` and a colliding edge `foo@-->` is disambiguated to
     // `graph-foo-1`, fragment links to `#graph-foo` remain on the subgraph (with or without an
     // unrelated `drop-shadow` edge).
