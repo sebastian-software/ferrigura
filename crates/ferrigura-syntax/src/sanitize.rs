@@ -495,10 +495,13 @@ impl Parser<'_> {
             self.insert(element);
         } else if self.open.len() >= MAX_DEPTH || !self.overflow.is_empty() {
             let parent = self.current_parent();
-            let discards = FORBID_CONTENTS.contains(&element.name.as_str())
-                || (self.forbid_style && element.name == "style")
-                || (is_allowed_element(&element.name)
-                    && !namespace_allowed(element.namespace, &element.name, parent));
+            let forbidden = self.forbid_style && element.name == "style";
+            let allowed = !forbidden && is_allowed_element(&element.name);
+            let discards = if !allowed {
+                FORBID_CONTENTS.contains(&element.name.as_str())
+            } else {
+                !namespace_allowed(element.namespace, &element.name, parent)
+            };
             if discards {
                 self.overflow_discards += 1;
             }

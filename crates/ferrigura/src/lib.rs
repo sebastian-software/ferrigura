@@ -774,7 +774,11 @@ fn canonical_value_json(value: &Value) -> String {
                 Value::Null => out.push_str("null"),
                 Value::Bool(flag) => out.push_str(if *flag { "true" } else { "false" }),
                 Value::Number(number) => {
-                    out.push_str(&ferrigura_model::value::number_text(*number));
+                    if let Ok(json) = serde_json::to_string(number) {
+                        out.push_str(&json);
+                    } else {
+                        out.push_str(&ferrigura_model::value::number_text(*number));
+                    }
                 }
                 Value::String(text) => {
                     out.push_str(&serde_json::to_string(text).unwrap_or_default());

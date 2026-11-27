@@ -412,11 +412,13 @@ fn assign_with_depth_inner(dst: &mut Value, src: &Value, depth: i32, recursion: 
         match (dst.as_object_mut(), src) {
             (Some(target), Value::Object(source)) => {
                 for (key, value) in source {
-                    target.insert(key.clone(), value.clone_bounded(remaining));
+                    if let Some(old) = target.insert(key.clone(), value.clone_bounded(remaining)) {
+                        drop_iterative(old);
+                    }
                 }
             }
             (Some(_), Value::Null) => {}
-            _ => *dst = src.clone_bounded(remaining),
+            _ => drop_iterative(std::mem::replace(dst, src.clone_bounded(remaining))),
         }
         return;
     }
@@ -510,7 +512,11 @@ fn deep_merge_inner(target: &mut Value, source: &Value, depth: usize) {
                         deep_merge_inner(existing, value, depth + 1);
                     }
                     _ => {
-                        target.insert(key.clone(), value.clone_bounded(remaining));
+                        if let Some(old) =
+                            target.insert(key.clone(), value.clone_bounded(remaining))
+                        {
+                            drop_iterative(old);
+                        }
                     }
                 }
             }
@@ -524,7 +530,9 @@ fn deep_merge_inner(target: &mut Value, source: &Value, depth: usize) {
                 }
             }
         }
-        (target, source) => *target = source.clone_bounded(remaining),
+        (target, source) => {
+            drop_iterative(std::mem::replace(target, source.clone_bounded(remaining)));
+        }
     }
 }
 
@@ -562,7 +570,9 @@ fn sanitize_directive_inner(args: &mut Value, depth: usize) {
                     || CONFIG_KEYS.binary_search(&key.as_str()).is_err()
                     || value.is_null()
                 {
-                    map.remove(&key);
+                    if let Some(removed) = map.remove(&key) {
+                        drop_iterative(removed);
+                    }
                     continue;
                 }
                 let Some(value) = map.get_mut(&key) else {
@@ -613,7 +623,16 @@ fn sanitize_theme_variables(value: &mut Value, depth: usize) {
     }
     match value {
         Value::Object(variables) => {
-            variables.retain(|key, _| !key.contains("proto") && !key.contains("constr"));
+            let disallowed: Vec<String> = variables
+                .keys()
+                .filter(|key| key.contains("proto") || key.contains("constr"))
+                .cloned()
+                .collect();
+            for key in disallowed {
+                if let Some(removed) = variables.remove(&key) {
+                    drop_iterative(removed);
+                }
+            }
             for entry in variables.values_mut() {
                 sanitize_theme_variables(entry, depth + 1);
             }
@@ -644,11 +663,24 @@ fn sanitize_inner(options: &mut Value, secure: &[String], depth: usize) {
         drop_iterative(Value::Object(std::mem::take(map)));
         return;
     }
-    map.remove("secure");
-    for key in secure {
-        map.remove(key);
+    if let Some(removed) = map.remove("secure") {
+        drop_iterative(removed);
     }
-    map.retain(|key, _| !key.starts_with("__"));
+    for key in secure {
+        if let Some(removed) = map.remove(key) {
+            drop_iterative(removed);
+        }
+    }
+    let dunder: Vec<String> = map
+        .keys()
+        .filter(|key| key.starts_with("__"))
+        .cloned()
+        .collect();
+    for key in dunder {
+        if let Some(removed) = map.remove(&key) {
+            drop_iterative(removed);
+        }
+    }
 
     let keys: Vec<String> = map.keys().cloned().collect();
     for key in keys {

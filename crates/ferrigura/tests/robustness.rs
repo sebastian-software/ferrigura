@@ -500,7 +500,8 @@ fn deeply_nested_html_sanitizer_does_not_overflow() {
     assert!(sanitized.starts_with("<b>"));
     assert!(sanitized.ends_with("</b>"));
 
-    // Forbidden-content elements at or beyond the depth cap must keep discarding their subtree.
+    // Forbidden-content elements at or beyond the depth cap must keep discarding their subtree,
+    // while allowed elements in FORBID_CONTENTS (like <audio>) keep their fallback text.
     for depth in [255, 256, 260] {
         let payload = format!(
             "{}<noscript><p>secret</p></noscript>",
@@ -510,6 +511,12 @@ fn deeply_nested_html_sanitizer_does_not_overflow() {
         assert!(
             !cleaned.contains("secret"),
             "noscript content leaked at depth {depth}: {cleaned}"
+        );
+        let audio = format!("{}<audio>fallback</audio>", "<div>".repeat(depth));
+        let cleaned_audio = ferrigura_syntax::sanitize::sanitize_text(&audio);
+        assert!(
+            cleaned_audio.contains("fallback"),
+            "allowed audio fallback lost at depth {depth}: {cleaned_audio}"
         );
     }
 
@@ -757,6 +764,44 @@ fn deeply_nested_config_value_does_not_overflow() {
         "deep configs with different themes must not collide on derived SVG ID"
     );
 
+    // Deep configs differing only in +0.0 vs -0.0 must also keep distinct derived IDs.
+    let mut deep_pad = Value::Null;
+    for _ in 0..200 {
+        deep_pad = Value::Array(vec![deep_pad]);
+    }
+    let pos_zero_cfg = Value::Object(BTreeMap::from([
+        ("x".to_owned(), Value::Number(0.0)),
+        ("deep".to_owned(), deep_pad.clone()),
+    ]));
+    let neg_zero_cfg = Value::Object(BTreeMap::from([
+        ("x".to_owned(), Value::Number(-0.0)),
+        ("deep".to_owned(), deep_pad),
+    ]));
+    let pos_svg = Renderer::new(&pos_zero_cfg)
+        .render(CONTROL)
+        .expect("pos zero deep config renders");
+    let neg_svg = Renderer::new(&neg_zero_cfg)
+        .render(CONTROL)
+        .expect("neg zero deep config renders");
+    assert_ne!(
+        extract_id(&pos_svg),
+        extract_id(&neg_svg),
+        "deep configs differing in +0.0 vs -0.0 must not collide on derived SVG ID"
+    );
+
+    // Replacing a deep target in `deep_merge` and removing an unknown deep key in
+    // `sanitize_directive` must drop iteratively without overflowing a 2 MiB stack.
+    let mut deep_target = Value::Null;
+    let mut unknown_deep = Value::Null;
+    for _ in 0..5_000 {
+        deep_target = Value::Array(vec![deep_target]);
+        unknown_deep = Value::Array(vec![unknown_deep]);
+    }
+    deep_merge(&mut deep_target, &Value::Null);
+    let mut dir_with_unknown =
+        Value::Object(BTreeMap::from([("unknown".to_owned(), unknown_deep)]));
+    ferrigura_model::config::sanitize_directive(&mut dir_with_unknown);
+
     drop_iterative(deep_obj);
     drop_iterative(deep_arr);
     drop_iterative(eff_obj);
@@ -764,5 +809,7 @@ fn deeply_nested_config_value_does_not_overflow() {
     drop_iterative(merged);
     drop_iterative(dark_cfg);
     drop_iterative(forest_cfg);
+    drop_iterative(pos_zero_cfg);
+    drop_iterative(neg_zero_cfg);
     assert_eq!(renderer.render(CONTROL).unwrap(), control);
 }

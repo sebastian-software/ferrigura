@@ -663,6 +663,12 @@ struct BoundedValue {
     depth: usize,
 }
 
+impl Drop for BoundedValue {
+    fn drop(&mut self) {
+        drop_iterative(std::mem::take(&mut self.value));
+    }
+}
+
 impl<'de> Deserializer<'de> for BoundedValue {
     type Error = serde_json::Error;
 
@@ -705,8 +711,8 @@ impl<'de> Deserializer<'de> for BoundedValue {
         }
     }
 
-    fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        match self.value {
+    fn deserialize_option<V: Visitor<'de>>(mut self, visitor: V) -> Result<V::Value, Self::Error> {
+        match std::mem::take(&mut self.value) {
             Value::Null => visitor.visit_none(),
             other => visitor.visit_some(BoundedValue {
                 value: other,
@@ -715,8 +721,11 @@ impl<'de> Deserializer<'de> for BoundedValue {
         }
     }
 
-    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        drop_iterative(self.value);
+    fn deserialize_ignored_any<V: Visitor<'de>>(
+        mut self,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        drop_iterative(std::mem::take(&mut self.value));
         visitor.visit_unit()
     }
 
@@ -729,6 +738,14 @@ impl<'de> Deserializer<'de> for BoundedValue {
 struct Items {
     items: vec::IntoIter<Value>,
     depth: usize,
+}
+
+impl Drop for Items {
+    fn drop(&mut self) {
+        for item in self.items.by_ref() {
+            drop_iterative(item);
+        }
+    }
 }
 
 impl<'de> SeqAccess<'de> for Items {
@@ -754,6 +771,17 @@ struct Entries {
     entries: btree_map::IntoIter<String, Value>,
     value: Option<Value>,
     depth: usize,
+}
+
+impl Drop for Entries {
+    fn drop(&mut self) {
+        if let Some(value) = self.value.take() {
+            drop_iterative(value);
+        }
+        for (_, value) in self.entries.by_ref() {
+            drop_iterative(value);
+        }
+    }
 }
 
 impl<'de> MapAccess<'de> for Entries {
@@ -853,12 +881,20 @@ mod tests {
 
     #[test]
     fn deserialize_rejects_excessive_nesting() {
-        let mut deep = Value::Null;
-        for _ in 0..200 {
-            deep = Value::Array(vec![deep]);
-        }
-        let result = Value::deserialize(deep);
-        assert!(result.is_err());
+        let handle = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(|| {
+                let mut deep = Value::Null;
+                for _ in 0..5_000 {
+                    deep = Value::Array(vec![deep]);
+                }
+                let result = Value::deserialize(deep);
+                assert!(result.is_err());
+            })
+            .expect("spawn thread");
+        handle
+            .join()
+            .expect("deep value deserialize abort did not overflow");
     }
 
     #[test]
