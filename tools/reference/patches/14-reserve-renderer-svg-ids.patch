@@ -234,7 +234,7 @@ index c02a201..8457734 100644
        .attr('data-usecase-kind', edge.internal ? 'note-connector' : 'relationship');
      if (edge.internal) {
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index 53ebea6..dde4212 100644
+index 64d8255..7e22f45 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
 @@ -43,6 +43,11 @@ import type {
@@ -249,7 +249,7 @@ index 53ebea6..dde4212 100644
  import { toBase64 } from './utils/base64.js';
  import { sanitizeCss } from './utils/sanitizeDirective.js';
  
-@@ -681,6 +686,9 @@ const renderDiagram = async function (
+@@ -608,6 +613,9 @@ const renderDiagram = async function (
  
    // -------------------------------------------------------------------------------
    // Draw the diagram with the renderer
@@ -259,7 +259,7 @@ index 53ebea6..dde4212 100644
    try {
      if (injected.profiling) {
        await profiler.span('draw', () => diag.renderer.draw(text, id, injected.version, diag));
-@@ -694,6 +702,8 @@ const renderDiagram = async function (
+@@ -621,6 +629,8 @@ const renderDiagram = async function (
        errorRenderer.draw(text, id, injected.version);
      }
      throw e;
@@ -268,14 +268,14 @@ index 53ebea6..dde4212 100644
    }
  
    // This is the d3 node for the svg element
-@@ -710,14 +720,17 @@ const renderDiagram = async function (
+@@ -636,13 +646,17 @@ const renderDiagram = async function (
+   const serializeSvg = (): string => {
      // -------------------------------------------------------------------------------
      // Clean up SVG code
-     const svgRootSelection = root.select(`[id="${id}"]`);
+-    root.select(`[id="${id}"]`).selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
++    const svgRootSelection = root.select(`[id="${id}"]`);
 +    const svgRootEl = svgRootSelection.node() as Element | null;
-     svgRootSelection.selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
--    decodePercentEncodedHrefAttrs(svgRootSelection.node() as Element | null, diag.type, config.securityLevel === 'loose');
-+    decodePercentEncodedHrefAttrs(svgRootEl, diag.type, config.securityLevel === 'loose');
++    svgRootSelection.selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
 +    const protectedTokens = swapProtectedSvgIds(svgRootEl);
  
      // Fix for when the base tag is used

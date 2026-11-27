@@ -521,11 +521,32 @@ pub fn decode_entities(text: &str) -> String {
         .replace("¶ß", ";")
 }
 
+/// Whether `rest` starts (after optional horizontal JS whitespace) with an ASCII CSS property
+/// declaration (`<name>:`), such as `color:#abcdef` in `classDef late fill:#123456;color:#abcdef`.
+fn starts_with_css_property(rest: &str) -> bool {
+    let trimmed = rest.trim_start_matches(|c: char| {
+        is_js_space(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
+    });
+    let mut chars = trimmed.chars();
+    let mut saw_letter = false;
+    for ch in chars.by_ref() {
+        if ch.is_ascii_alphabetic() {
+            saw_letter = true;
+        } else if ch == '-' {
+            continue;
+        } else {
+            return saw_letter && ch == ':';
+        }
+    }
+    false
+}
+
 /// Byte offset of the color-terminating semicolon to drop on a single line for a `style` or
 /// `classDef` declaration (`<word> .*:\S*#.*;`), if any. Only matches `word` followed by whitespace
 /// at the start of an unquoted statement (line start or after an unquoted `;`), skips non-hex
-/// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and only drops an
-/// unquoted semicolon at the end of the line so URLs and multi-statement lines stay intact.
+/// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and only drops a
+/// semicolon at end-of-line (or before a following CSS property on `classDef`) so statement
+/// separators like `style A fill:#abc,stroke-width:1px; B --> C;` stay intact.
 fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
     let mut in_quotes = false;
     let mut escaped = false;
@@ -556,7 +577,12 @@ fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
             continue;
         }
         if ch == ';' {
-            if in_target_stmt && seen_colon_hash {
+            let after = &line[at + 1..];
+            if in_target_stmt
+                && seen_colon_hash
+                && (is_horizontal_ws_to_eol(after)
+                    || (word == "classDef" && starts_with_css_property(after)))
+            {
                 last_semi = Some(at);
             }
             stmt_start = true;

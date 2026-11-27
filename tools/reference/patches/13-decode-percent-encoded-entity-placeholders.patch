@@ -1,116 +1,144 @@
-Preserve CSS hex colors after whitespace in style/classDef declarations, resolve Mermaid entity placeholders in HTTP/HTTPS URL authorities before host/IDNA normalization in formatUrl, and decode percent-encoded placeholders (%EF%AC%82%C2%B0...%C2%B6%C3%9F) directly on live DOM sanitized HTTP/HTTPS href/xlink:href attributes before serialization so text nodes, finalized #... fragments, unsanitized imageSquare/kanban URLs, and unrelated %XX escapes are never touched.
+Preserve CSS hex colors and diagram statement separators in style/classDef declarations, resolve host[:port] Mermaid entity placeholders before WHATWG host/IDNA normalization in formatUrl, and substitute source placeholders in userinfo/path/query/fragment with component-aware WHATWG percent-encoding so userinfo delimiters cannot redirect the host and source-typed percent-encoded filenames are preserved verbatim.
 
-diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index 64d8255..53ebea6 100644
---- a/packages/mermaid/src/mermaidAPI.ts
-+++ b/packages/mermaid/src/mermaidAPI.ts
-@@ -340,6 +340,79 @@ export const createUserStyles = (
-   return compileCSS(svgId, allStyles);
- };
- 
-+const decodePercentEncodedUrlValue = (
-+  value: string,
-+  holder: HTMLDivElement,
-+  encoder: TextEncoder
-+): string =>
-+  value.replace(
-+    /%EF%AC%82%C2%B0(%C2%B0)?([A-Za-z0-9_]+)%C2%B6%C3%9F/g,
-+    (_match, isNum: string | undefined, body: string) => {
-+      const ref = isNum ? `&#${body};` : `&${body};`;
-+      holder.innerHTML = `<a data-v="${ref}"></a>`;
-+      const decoded = holder.firstElementChild?.getAttribute('data-v') ?? ref;
-+      let out = '';
-+      for (const byte of encoder.encode(decoded)) {
-+        if (
-+          byte <= 0x20 ||
-+          byte === 0x22 ||
-+          byte === 0x3c ||
-+          byte === 0x3e ||
-+          byte === 0x60 ||
-+          byte >= 0x7f
-+        ) {
-+          out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
-+        } else {
-+          out += String.fromCharCode(byte);
-+        }
-+      }
-+      return out;
-+    }
-+  );
-+
-+const decodePercentEncodedHrefAttrs = (
-+  svgRoot: Element | null,
-+  diagramType: string,
-+  isLoose: boolean
-+): void => {
-+  if (!svgRoot) {
-+    return;
-+  }
-+  const alwaysSanitized = diagramType === 'sequence' || diagramType === 'gantt';
-+  if ((isLoose && !alwaysSanitized) || diagramType === 'state' || diagramType === 'stateDiagram') {
-+    return;
-+  }
-+  const holder = document.createElement('div');
-+  const encoder = new TextEncoder();
-+  for (const el of svgRoot.querySelectorAll('*')) {
-+    for (const attr of Array.from(el.attributes)) {
-+      if (
-+        (attr.localName === 'href' &&
-+          (attr.namespaceURI === null || attr.namespaceURI === XMLNS_XLINK_STD)) ||
-+        attr.name === 'xlink:href'
-+      ) {
-+        const isUnsanitizedImageSquare =
-+          el.localName === 'image' && attr.namespaceURI === null && attr.name === 'href';
-+        const isKanbanTicketLink =
-+          el.localName === 'a' && el.classList.contains('kanban-ticket-link');
-+        if (
-+          !isUnsanitizedImageSquare &&
-+          !isKanbanTicketLink &&
-+          attr.value.includes('%EF%AC%82%C2%B0') &&
-+          /^https?:/i.test(attr.value.trim())
-+        ) {
-+          const decoded = decodePercentEncodedUrlValue(attr.value, holder, encoder);
-+          if (attr.namespaceURI) {
-+            el.setAttributeNS(attr.namespaceURI, attr.name, decoded);
-+          } else {
-+            el.setAttribute(attr.name, decoded);
-+          }
-+        }
-+      }
-+    }
-+  }
-+};
-+
- /**
-  * Clean up svgCode. Do replacements needed
-  *
-@@ -636,7 +709,9 @@ const renderDiagram = async function (
-   const serializeSvg = (): string => {
-     // -------------------------------------------------------------------------------
-     // Clean up SVG code
--    root.select(`[id="${id}"]`).selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
-+    const svgRootSelection = root.select(`[id="${id}"]`);
-+    svgRootSelection.selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
-+    decodePercentEncodedHrefAttrs(svgRootSelection.node() as Element | null, diag.type, config.securityLevel === 'loose');
- 
-     // Fix for when the base tag is used
-     let code: string = root.select<HTMLDivElement>(enclosingDivID_selector).node()!.innerHTML;
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..695efb7 100644
+index 48ac4a6..7db2afc 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,49 @@ export function interpolateToCurve(
+@@ -244,6 +244,189 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
-+function resolveHttpAuthorityEntities(rawUrl: string): string {
-+  if (!rawUrl.includes('ﬂ°')) {
-+    return rawUrl;
++const decodeHtmlAttrRef = (ref: string): string => {
++  if (typeof document !== 'undefined') {
++    const holder = document.createElement('div');
++    holder.innerHTML = `<a data-v="${ref}"></a>`;
++    return holder.firstElementChild?.getAttribute('data-v') ?? ref;
++  }
++  return ref.replace(/&#(\+?\d+);/g, (_m, digits: string) => {
++    const cp = Number.parseInt(digits, 10);
++    return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
++  });
++};
++
++type UrlEncodeComponent = 'userinfo' | 'path' | 'query' | 'fragment';
++
++const percentEncodeComponent = (decoded: string, component: UrlEncodeComponent): string => {
++  const encoder = new TextEncoder();
++  let out = '';
++  for (const byte of encoder.encode(decoded)) {
++    let encode = byte <= 0x20 || byte >= 0x7f;
++    if (!encode) {
++      if (component === 'userinfo') {
++        encode =
++          byte === 0x22 ||
++          byte === 0x23 ||
++          byte === 0x2f ||
++          byte === 0x3a ||
++          byte === 0x3b ||
++          byte === 0x3c ||
++          byte === 0x3d ||
++          byte === 0x3e ||
++          byte === 0x3f ||
++          byte === 0x40 ||
++          byte === 0x5b ||
++          byte === 0x5c ||
++          byte === 0x5d ||
++          byte === 0x5e ||
++          byte === 0x60 ||
++          byte === 0x7b ||
++          byte === 0x7c ||
++          byte === 0x7d;
++      } else if (component === 'path') {
++        encode =
++          byte === 0x22 ||
++          byte === 0x23 ||
++          byte === 0x3c ||
++          byte === 0x3e ||
++          byte === 0x3f ||
++          byte === 0x60 ||
++          byte === 0x7b ||
++          byte === 0x7d;
++      } else if (component === 'query') {
++        encode =
++          byte === 0x22 || byte === 0x23 || byte === 0x27 || byte === 0x3c || byte === 0x3e;
++      } else {
++        encode = byte === 0x22 || byte === 0x3c || byte === 0x3e || byte === 0x60;
++      }
++    }
++    out += encode ? `%${byte.toString(16).toUpperCase().padStart(2, '0')}` : String.fromCharCode(byte);
++  }
++  return out;
++};
++
++const substituteComponentTokens = (
++  segment: string,
++  tokens: Array<[string, string]>,
++  component: UrlEncodeComponent
++): string => {
++  let current = segment;
++  for (const [token, decoded] of tokens) {
++    if (current.includes(token)) {
++      const encoded = percentEncodeComponent(decoded, component);
++      current = current.replaceAll(token, () => encoded);
++    }
++  }
++  return current;
++};
++
++const tokenizePlaceholders = (
++  segment: string,
++  prefix: string,
++  tokens: Array<[string, string]>
++): string => {
++  let out = '';
++  let cursor = 0;
++  while (cursor < segment.length) {
++    const nextOpen = segment.indexOf('ﬂ°', cursor);
++    const nextClose = segment.indexOf('¶ß', cursor);
++    if (nextOpen === -1 && nextClose === -1) {
++      return out + segment.slice(cursor);
++    }
++    const isOpen = nextOpen !== -1 && (nextClose === -1 || nextOpen <= nextClose);
++    const pos = isOpen ? nextOpen : nextClose;
++    out += segment.slice(cursor, pos);
++    if (isOpen) {
++      const numeric = segment.startsWith('ﬂ°°', pos);
++      const bodyStart = pos + (numeric ? 3 : 2);
++      let end = bodyStart;
++      while (end < segment.length && /[A-Za-z0-9_]/.test(segment[end])) {
++        end++;
++      }
++      if (end > bodyStart && segment.startsWith('¶ß', end)) {
++        const body = segment.slice(bodyStart, end);
++        const ref = numeric ? `&#${body};` : `&${body};`;
++        const token = `${prefix}${tokens.length}__`;
++        tokens.push([token, decodeHtmlAttrRef(ref)]);
++        out += token;
++        cursor = end + 2;
++        continue;
++      }
++      const token = `${prefix}${tokens.length}__`;
++      tokens.push([token, numeric ? '&#' : '&']);
++      out += token;
++      cursor = bodyStart;
++    } else {
++      const token = `${prefix}${tokens.length}__`;
++      tokens.push([token, ';']);
++      out += token;
++      cursor = pos + 2;
++    }
++  }
++  return out;
++};
++
++const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
++  if (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß')) {
++    return sanitizeUrl(rawUrl);
 +  }
 +  const normalized = rawUrl.replace(/\\/g, '/');
 +  const schemeMatch = /^https?:/i.exec(normalized);
 +  if (!schemeMatch) {
-+    return rawUrl;
++    return sanitizeUrl(rawUrl);
 +  }
 +  let authorityStart = schemeMatch[0].length;
 +  while (authorityStart < normalized.length && normalized[authorityStart] === '/') {
@@ -122,43 +150,60 @@ index 48ac4a6..695efb7 100644
 +  const authority = normalized.slice(authorityStart, authorityEnd);
 +  const atIndex = authority.lastIndexOf('@');
 +  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++
++  let prefix = '__FGENT_';
++  while (normalized.includes(prefix)) {
++    prefix += 'X';
++  }
++  const tokens: Array<[string, string]> = [];
++  const userinfoTok = tokenizePlaceholders(
++    normalized.slice(authorityStart, hostStart),
++    prefix,
++    tokens
++  );
 +  const hostPort = normalized.slice(hostStart, authorityEnd);
-+  if (!hostPort.includes('ﬂ°')) {
-+    return rawUrl;
++  let resolvedHost = hostPort;
++  if (hostPort.includes('ﬂ°') || hostPort.includes('¶ß')) {
++    const escaped = hostPort
++      .replace(/&/g, '&amp;')
++      .replace(/</g, '&lt;')
++      .replace(/>/g, '&gt;')
++      .replace(/"/g, '&quot;');
++    resolvedHost = decodeHtmlAttrRef(decodeEntities(escaped));
 +  }
-+  const escaped = hostPort
-+    .replace(/&/g, '&amp;')
-+    .replace(/</g, '&lt;')
-+    .replace(/>/g, '&gt;')
-+    .replace(/"/g, '&quot;');
-+  const decodedMarkup = decodeEntities(escaped);
-+  let resolved: string;
-+  if (typeof document !== 'undefined') {
-+    const holder = document.createElement('div');
-+    holder.innerHTML = `<a data-v="${decodedMarkup}"></a>`;
-+    resolved = holder.firstElementChild?.getAttribute('data-v') ?? decodedMarkup;
-+  } else {
-+    resolved = decodedMarkup.replace(/&#(\+?\d+);/g, (_m, digits: string) => {
-+      const cp = Number.parseInt(digits, 10);
-+      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
-+    });
++  const tailTok = tokenizePlaceholders(normalized.slice(authorityEnd), prefix, tokens);
++  const tokenized = normalized.slice(0, authorityStart) + userinfoTok + resolvedHost + tailTok;
++  const sanitized = sanitizeUrl(tokenized);
++  if (tokens.length === 0 || !/^https?:/i.test(sanitized)) {
++    return sanitized;
 +  }
-+  return normalized.slice(0, hostStart) + resolved + normalized.slice(authorityEnd);
-+}
++  try {
++    const parsed = new URL(sanitized);
++    const user = substituteComponentTokens(parsed.username, tokens, 'userinfo');
++    const pass = substituteComponentTokens(parsed.password, tokens, 'userinfo');
++    const auth = user || pass ? `${user}${pass ? `:${pass}` : ''}@` : '';
++    const pathname = substituteComponentTokens(parsed.pathname, tokens, 'path');
++    const search = substituteComponentTokens(parsed.search, tokens, 'query');
++    const hash = substituteComponentTokens(parsed.hash, tokens, 'fragment');
++    return `${parsed.protocol}//${auth}${parsed.host}${pathname}${search}${hash}`;
++  } catch {
++    return sanitized;
++  }
++};
 +
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +295,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +435,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
 -    return sanitizeUrl(url);
-+    return sanitizeUrl(resolveHttpAuthorityEntities(url));
++    return sanitizeHttpUrlWithEntities(url);
    }
  
    return url;
-@@ -895,23 +938,185 @@ export default {
+@@ -895,23 +1078,223 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -177,10 +222,43 @@ index 48ac4a6..695efb7 100644
 -      return 'ﬂ°°' + innerTxt + '¶ß';
 -    } else {
 -      return 'ﬂ°' + innerTxt + '¶ß';
++  const isHorizontalWsToEol = (s: string, start: number): boolean => {
++    for (let k = start; k < s.length; k++) {
++      const c = s[k];
++      if (c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029') {
++        return true;
++      }
++      if (!/\s/.test(c)) {
++        return false;
++      }
+     }
+-  });
++    return true;
++  };
++  const startsWithCssProp = (s: string, start: number): boolean => {
++    let k = start;
++    while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++      k++;
++    }
++    let sawLetter = false;
++    while (k < s.length) {
++      const c = s[k];
++      if (/[A-Za-z]/.test(c)) {
++        sawLetter = true;
++      } else if (c === '-') {
++        // continue
++      } else {
++        return sawLetter && c === ':';
++      }
++      k++;
++    }
++    return false;
++  };
 +  const dropColorSemicolons = (input: string, word: string): string => {
 +    let result = '';
 +    let lineStart = 0;
-+    const isLineTerm = (c: string) => c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
++    const isLineTerm = (c: string) =>
++      c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
 +    const processLine = (line: string): string => {
 +      let inQuotes = false;
 +      let escaped = false;
@@ -210,7 +288,12 @@ index 48ac4a6..695efb7 100644
 +          continue;
 +        }
 +        if (c === ';') {
-+          if (inTarget && seenColonHash) {
++          if (
++            inTarget &&
++            seenColonHash &&
++            (isHorizontalWsToEol(line, i + 1) ||
++              (word === 'classDef' && startsWithCssProp(line, i + 1)))
++          ) {
 +            lastSemi = i;
 +          }
 +          stmtStart = true;
@@ -224,7 +307,11 @@ index 48ac4a6..695efb7 100644
 +            continue;
 +          }
 +          stmtStart = false;
-+          if (line.startsWith(word, i) && i + word.length < line.length && /\s/.test(line[i + word.length])) {
++          if (
++            line.startsWith(word, i) &&
++            i + word.length < line.length &&
++            /\s/.test(line[i + word.length])
++          ) {
 +            inTarget = true;
 +          }
 +          continue;
@@ -244,7 +331,9 @@ index 48ac4a6..695efb7 100644
 +            }
 +            if (j > i + 1 && line[j] === ';') {
 +              const name = line.slice(i + 1, j);
-+              if (!/^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(name)) {
++              if (
++                !/^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(name)
++              ) {
 +                i = j;
 +              }
 +            }
@@ -258,8 +347,7 @@ index 48ac4a6..695efb7 100644
 +        result += processLine(input.slice(lineStart, i)) + input[i];
 +        lineStart = i + 1;
 +      }
-     }
--  });
++    }
 +    return result + processLine(input.slice(lineStart));
 +  };
 +  txt = dropColorSemicolons(txt, 'style');
@@ -289,12 +377,7 @@ index 48ac4a6..695efb7 100644
 +          lastAllowsHex &&
 +          /^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(innerTxt)
 +        ) {
-+          let k = j + 1;
-+          while (k < txt.length && /[^\S\n\r\u2028\u2029]/.test(txt[k])) {
-+            k++;
-+          }
-+          const atEol = k === txt.length || /[\n\r\u2028\u2029]/.test(txt[k]);
-+          out += atEol ? `#${innerTxt}` : `#${innerTxt};`;
++          out += isHorizontalWsToEol(txt, j + 1) ? `#${innerTxt}` : `#${innerTxt};`;
 +          stmtKind = 0;
 +          seenColon = false;
 +          lastAllowsHex = false;

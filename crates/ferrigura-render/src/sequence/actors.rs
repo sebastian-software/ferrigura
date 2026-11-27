@@ -1192,7 +1192,7 @@ impl Renderer<'_> {
         for (key, value) in &actor.links {
             let target = super::model::value_text(value);
             let sanitized = ferrigura_syntax::url::sanitize_url(&target);
-            let resolved = crate::common::resolve_url_entity_placeholders(&sanitized);
+            let resolved = crate::common::resolve_entity_placeholders(&sanitized);
             let href = ferrigura_syntax::url::guard_url(&resolved, self.conf.loose);
             let mut link = Element::new("a")
                 .with("xlink:href", href)

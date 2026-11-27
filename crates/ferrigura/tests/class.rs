@@ -1490,4 +1490,38 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         seq_close_marker.contains("xlink:href=\"/one;two\""),
         "{seq_close_marker}"
     );
+
+    // Decoded userinfo delimiters (`#47;` -> `/`) are percent-encoded as userinfo (`%2F`) so they
+    // cannot redirect the HTTP authority to a different host.
+    let userinfo_slash = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://reader#47;one@example.org/report\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        userinfo_slash.contains("xlink:href=\"https://reader%2Fone@example.org/report\""),
+        "{userinfo_slash}"
+    );
+
+    // Literal percent-encoded filenames in strict-mode links are preserved verbatim (never
+    // confused with Mermaid entity placeholders).
+    let strict_pct_filename = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        strict_pct_filename
+            .contains("xlink:href=\"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\""),
+        "{strict_pct_filename}"
+    );
+
+    // Semicolons separating a `style` statement from a following diagram statement are preserved.
+    let multi_stmt_style = ferrigura::render(
+        "flowchart LR\n  A\n  style A fill:#abc,stroke-width:1px; B --> C;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(multi_stmt_style.contains("fill:#abc"), "{multi_stmt_style}");
+    roxmltree::Document::parse(&multi_stmt_style).expect("well-formed SVG XML");
 }
