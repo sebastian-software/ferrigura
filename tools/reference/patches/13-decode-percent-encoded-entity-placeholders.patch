@@ -42,10 +42,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..d4c620f 100644
+index 48ac4a6..40223d8 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,818 @@ export function interpolateToCurve(
+@@ -244,6 +244,846 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -701,20 +701,48 @@ index 48ac4a6..d4c620f 100644
 +  return -1;
 +};
 +
++const hasLiteralScheme = (text: string): boolean =>
++  /^[A-Za-z][A-Za-z0-9+.-]*(?::|&colon;)/i.test(text);
++
++const decodeHexEntitiesForCheck = (text: string): string =>
++  text.replace(/&#[xX]([0-9a-fA-F]+);?/g, (_m, hex: string) => {
++    const cp = Number.parseInt(hex, 16);
++    return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
++  });
++
++const decodedHasRelativeDelimiter = (text: string): boolean => {
++  let cur = decodeHexEntitiesForCheck(text);
++  if (firstSchemeDelimiterIsRelative(cur) >= 0) {
++    return true;
++  }
++  for (let pass = 0; pass < 8; pass++) {
++    let next = cur;
++    try {
++      next = decodeURIComponent(cur);
++    } catch {
++      break;
++    }
++    next = decodeHexEntitiesForCheck(next);
++    if (next === cur) {
++      break;
++    }
++    cur = next;
++    if (firstSchemeDelimiterIsRelative(cur) >= 0) {
++      return true;
++    }
++    if (hasLiteralScheme(cur)) {
++      return false;
++    }
++  }
++  return false;
++};
++
 +const formatRelativeWithSchemeDelimiter = (url: string): string | null => {
 +  if (url[0] === '.' || url[0] === '/') {
 +    return null;
 +  }
 +  const delimPos = firstSchemeDelimiterIsRelative(url);
-+  if (delimPos < 0 && url.match(BR_URL_SCHEME_RE) !== null) {
-+    return null;
-+  }
-+  const rawPrefix = delimPos > 0 ? url.slice(0, delimPos) : url;
-+  const rawPrefixHexDecoded = rawPrefix.replace(/&#[xX]([0-9a-fA-F]+);?/g, (_m, hex: string) => {
-+    const cp = Number.parseInt(hex, 16);
-+    return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
-+  });
-+  if (rawPrefixHexDecoded.includes(':')) {
++  if (delimPos < 0 && hasLiteralScheme(url)) {
 +    return null;
 +  }
 +  const hasPlaceholders = url.includes('ﬂ°') || url.includes('¶ß');
@@ -728,14 +756,14 @@ index 48ac4a6..d4c620f 100644
 +    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
 +  }
 +  const decoded = decodeSanitizeUrlOnly(prepared);
-+  if (!decoded || firstSchemeDelimiterIsRelative(decoded) < 0) {
++  if (!decoded || !decodedHasRelativeDelimiter(decoded)) {
 +    return null;
 +  }
 +  if (decodedValues.length > 0) {
 +    const substituted = restoreRawTokens(decoded, prefix, decodedValues)
 +      .replace(BR_CTRL_CHARS_RE, '')
 +      .trimStart();
-+    if (firstSchemeDelimiterIsRelative(substituted) < 0) {
++    if (!decodedHasRelativeDelimiter(substituted)) {
 +      return null;
 +    }
 +  }
@@ -864,7 +892,7 @@ index 48ac4a6..d4c620f 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +1064,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +1092,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -905,7 +933,7 @@ index 48ac4a6..d4c620f 100644
    }
  
    return url;
-@@ -895,23 +1739,791 @@ export default {
+@@ -895,23 +1767,894 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -1006,15 +1034,21 @@ index 48ac4a6..d4c620f 100644
 +    }
 +    return null;
 +  };
-+  const startsMultilineStateNote = (s: string, at: number): boolean => {
++  type StateNoteHeader = 'none' | 'afterNote' | 'afterSideOf' | 'afterTargetId';
++  const startsStateNoteKeyword = (s: string, at: number): boolean =>
++    /^note(?=$|\s)/i.test(s.slice(at));
++  const matchStateNoteSideOfLen = (s: string, at: number): number => {
++    const m = /^(?:left|right)[^\S\n\r\u2028\u2029]+of(?=$|[^A-Za-z0-9_])/i.exec(s.slice(at));
++    return m ? m[0].length : -1;
++  };
++  const stateNoteTargetIdLen = (s: string, at: number): number => {
 +    const rest = s.slice(at);
-+    const lineEnd = rest.search(/[\n\r\u2028\u2029]/);
-+    const line = lineEnd === -1 ? rest : rest.slice(0, lineEnd);
-+    const m =
-+      /^note[^\S\n\r\u2028\u2029]+(?:left|right)[^\S\n\r\u2028\u2029]+of[^\S\n\r\u2028\u2029]+([^:\-\s]+)[^\S\n\r\u2028\u2029]*(.*)$/i.exec(
-+        line
-+      );
-+    return m !== null && !m[2].startsWith(':');
++    const m = /^[^:\-\s]+/.exec(rest);
++    if (!m) {
++      return 0;
++    }
++    const commentIdx = m[0].indexOf('%%');
++    return commentIdx === -1 ? m[0].length : commentIdx;
 +  };
 +  const endsMultilineStateNoteLen = (s: string, at: number): number => {
 +    const rest = s.slice(at);
@@ -1101,6 +1135,7 @@ index 48ac4a6..d4c620f 100644
 +    let inBackticks = false;
 +    let inAccDescrBlock = false;
 +    let pendingAcc: PendingAcc = 'none';
++    let noteHeader: StateNoteHeader = 'none';
 +    let inNoteBlock = false;
 +    let classBodyDepth = 0;
 +    const isLineTerm = (c: string) =>
@@ -1117,6 +1152,41 @@ index 48ac4a6..d4c620f 100644
 +      let lastSemi = -1;
 +      for (let i = 0; i < line.length; i++) {
 +        const c = line[i];
++        if (noteHeader !== 'none') {
++          if (/\s/.test(c)) {
++            prevWasAlnum = false;
++            continue;
++          }
++          if (noteHeader === 'afterNote') {
++            const len = matchStateNoteSideOfLen(line, i);
++            if (len > 0) {
++              noteHeader = 'afterSideOf';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              i += len - 1;
++              continue;
++            }
++            noteHeader = 'none';
++          } else if (noteHeader === 'afterSideOf') {
++            const idLen = stateNoteTargetIdLen(line, i);
++            if (idLen > 0) {
++              noteHeader = 'afterTargetId';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              i += idLen - 1;
++              continue;
++            }
++            noteHeader = 'none';
++          } else if (noteHeader === 'afterTargetId') {
++            noteHeader = 'none';
++            if (c === ':') {
++              break;
++            }
++            inNoteBlock = true;
++          }
++        }
 +        if (inNoteBlock) {
 +          if (atLineStart) {
 +            if (/\s/.test(c)) {
@@ -1245,10 +1315,13 @@ index 48ac4a6..d4c620f 100644
 +          !inStyleOrClassDef &&
 +          (c === 'n' || c === 'N') &&
 +          (i === 0 || !isAsciiWord(line[i - 1])) &&
-+          startsMultilineStateNote(line, i)
++          startsStateNoteKeyword(line, i)
 +        ) {
-+          inNoteBlock = true;
-+          break;
++          noteHeader = 'afterNote';
++          stmtStart = false;
++          prevWasAlnum = false;
++          i += 3;
++          continue;
 +        }
 +        prevWasAlnum = isAsciiAlnum(c);
 +        if (c === ';') {
@@ -1364,6 +1437,7 @@ index 48ac4a6..d4c620f 100644
 +  let inPlainLine = false;
 +  let inAccDescrBlock = false;
 +  let pendingAcc: PendingAcc = 'none';
++  let noteHeader: StateNoteHeader = 'none';
 +  let inNoteBlock = false;
 +  let classBodyDepth = 0;
 +  let inQuotes = false;
@@ -1385,6 +1459,7 @@ index 48ac4a6..d4c620f 100644
 +          !inBackticks &&
 +          !inPlainLine &&
 +          !inAccDescrBlock &&
++          noteHeader === 'none' &&
 +          !inNoteBlock &&
 +          classBodyDepth === 0 &&
 +          stmtKind === 1 &&
@@ -1407,11 +1482,18 @@ index 48ac4a6..d4c620f 100644
 +          prevWasAlnum = false;
 +        } else {
 +          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
++          if (noteHeader === 'afterNote') {
++            noteHeader = 'none';
++          } else if (noteHeader === 'afterTargetId') {
++            noteHeader = 'none';
++            inNoteBlock = true;
++          }
 +          if (
 +            !inQuotes &&
 +            !inBackticks &&
 +            !inPlainLine &&
 +            !inAccDescrBlock &&
++            noteHeader === 'none' &&
 +            !inNoteBlock &&
 +            classBodyDepth === 0 &&
 +            stmtKind === 0
@@ -1425,6 +1507,55 @@ index 48ac4a6..d4c620f 100644
 +        copyFrom = j + 1;
 +        i = j;
 +        continue;
++      }
++    }
++    if (noteHeader !== 'none') {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (/\s/.test(ch)) {
++        prevWasAlnum = false;
++        continue;
++      }
++      if (noteHeader === 'afterNote') {
++        const len = matchStateNoteSideOfLen(txt, i);
++        if (len > 0) {
++          noteHeader = 'afterSideOf';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          i += len - 1;
++          continue;
++        }
++        noteHeader = 'none';
++      } else if (noteHeader === 'afterSideOf') {
++        const idLen = stateNoteTargetIdLen(txt, i);
++        if (idLen > 0) {
++          noteHeader = 'afterTargetId';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          i += idLen - 1;
++          continue;
++        }
++        noteHeader = 'none';
++      } else if (noteHeader === 'afterTargetId') {
++        noteHeader = 'none';
++        if (ch === ':') {
++          inPlainLine = true;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
++        inNoteBlock = true;
 +      }
 +    }
 +    if (inNoteBlock) {
@@ -1630,12 +1761,12 @@ index 48ac4a6..d4c620f 100644
 +      stmtKind !== 1 &&
 +      (ch === 'n' || ch === 'N') &&
 +      (i === 0 || !isAsciiWord(txt[i - 1])) &&
-+      startsMultilineStateNote(txt, i)
++      startsStateNoteKeyword(txt, i)
 +    ) {
-+      inNoteBlock = true;
-+      inPlainLine = true;
++      noteHeader = 'afterNote';
 +      stmtKind = 2;
 +      prevWasAlnum = false;
++      i += 3;
 +      continue;
 +    }
 +    prevWasAlnum = isAsciiAlnum(ch);

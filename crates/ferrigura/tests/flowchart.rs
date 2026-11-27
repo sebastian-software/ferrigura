@@ -791,10 +791,11 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         "{loose_class}"
     );
 
-    // Safe relative click URLs containing non-escape backslashes before `:` are preserved, while
-    // backslash whitespace-escape scheme obfuscation fails closed.
+    // Safe relative click URLs containing non-escape backslashes or percent-encoded path
+    // separators before `:` keep their original spelling, while backslash whitespace-escape scheme
+    // obfuscation fails closed.
     let rel_backslash = render(
-        "flowchart TD\nA[x]\nB[y]\nclick A \"data\\archive:2026.pdf\"\nclick B \"java\\tscript:alert(1)\"\n",
+        "flowchart TD\nA[x]\nB[y]\nC[z]\nD[w]\nclick A \"data\\archive:2026.pdf\"\nclick B \"java\\tscript:alert(1)\"\nclick C href \"data%2Freport:2026.pdf\"\nclick D href \"docs%2Freport:2026.pdf\"\n",
         &Value::empty_object(),
     )
     .expect("renders");
@@ -804,6 +805,14 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
     );
     assert!(
         rel_backslash.contains("xlink:href=\"about:blank\""),
+        "{rel_backslash}"
+    );
+    assert!(
+        rel_backslash.contains("xlink:href=\"data%2Freport:2026.pdf\""),
+        "{rel_backslash}"
+    );
+    assert!(
+        rel_backslash.contains("xlink:href=\"docs%2Freport:2026.pdf\""),
         "{rel_backslash}"
     );
 }

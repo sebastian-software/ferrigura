@@ -2254,21 +2254,24 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         "{state_inline_comment}"
     );
 
-    // State block notes opened mid-line and statements following `end note` on the same line keep
-    // hex colors literal in subsequent `style` rules.
-    let state_midline_note = ferrigura::render(
+    // State block notes opened mid-line or with headers split across lines and statements
+    // following `end note` on the same line keep hex colors literal in subsequent `style` rules.
+    for state_note_src in [
         "stateDiagram-v2\n  A --> B note right of A\n    \"draft\n  end note style A fill:#abc;\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(
-        state_midline_note.contains("fill:#abc"),
-        "{state_midline_note}"
-    );
-    assert!(
-        !state_midline_note.contains("&amp;abc;"),
-        "{state_midline_note}"
-    );
+        "stateDiagram-v2\n  A --> B\n  note\n    left of A\n    \"draft\n  end note\n  style A fill:#abc;\n",
+        "stateDiagram-v2\n  A --> B\n  note right of\n    A\n    \"draft\n  end note\n  style A fill:#abc;\n",
+    ] {
+        let state_note =
+            ferrigura::render(state_note_src, &Value::empty_object()).expect("renders");
+        assert!(
+            state_note.contains("fill:#abc"),
+            "src={state_note_src:?}: {state_note}"
+        );
+        assert!(
+            !state_note.contains("&amp;abc;"),
+            "src={state_note_src:?}: {state_note}"
+        );
+    }
 
     // Backtick-quoted class names containing `{` or `"` stay scoped to their backtick token so
     // following `style` hex colors are not corrupted.

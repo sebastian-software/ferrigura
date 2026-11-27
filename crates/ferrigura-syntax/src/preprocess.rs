@@ -538,46 +538,52 @@ fn is_single_colon(src: &str, at: usize) -> bool {
     (at == 0 || bytes[at - 1] != b':') && bytes.get(at + 1) != Some(&b':')
 }
 
-/// Whether `rest` (at a word boundary outside quotes/blocks/style statements in a `stateDiagram`)
-/// starts a multiline `note left/right of <id>` block whose body runs until a line starting with
-/// `end note`. Single-line notes (`note left of A : text`) have `:` immediately after `<id>` and
-/// are already handled as single-line plain labels.
-fn starts_multiline_state_note(rest: &str) -> bool {
-    let Some(after_note) = strip_ascii_ci_word(rest, "note") else {
-        return false;
-    };
-    let after_note_ws = trim_horizontal_ws(after_note);
-    if after_note_ws.len() == after_note.len() {
-        return false;
-    }
-    let Some(after_side) = strip_ascii_ci_word(after_note_ws, "left")
-        .or_else(|| strip_ascii_ci_word(after_note_ws, "right"))
-    else {
-        return false;
-    };
+/// Progress through a `stateDiagram` `note left/right of <id>` header, which may span line breaks
+/// because `state/scanner.rs` uses `\s+` after `note` and `\s*` before `<id>` and `:`.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum StateNoteHeader {
+    #[default]
+    None,
+    /// Saw `note\s+` (or `note` at line end); awaiting `left of` / `right of`.
+    AfterNote,
+    /// Saw `left of` / `right of`; awaiting the target state ID (`[^:\n\s\-]+`).
+    AfterSideOf,
+    /// Saw target ID; awaiting either `\s*:...` (single-line note) or any other token (block note).
+    AfterTargetId,
+}
+
+/// Whether `rest` starts with the `note` keyword (ASCII case-insensitive) followed by whitespace
+/// or line end (since line-by-line scanners strip the trailing newline).
+fn starts_state_note_keyword(rest: &str) -> bool {
+    strip_ascii_ci_word(rest, "note")
+        .is_some_and(|after| after.chars().next().is_none_or(is_js_space))
+}
+
+/// Byte length of `left <hws> of` or `right <hws> of` at the start of `rest` (ASCII
+/// case-insensitive, followed by EOF or a non-word character).
+fn match_state_note_side_of(rest: &str) -> Option<usize> {
+    let after_side =
+        strip_ascii_ci_word(rest, "left").or_else(|| strip_ascii_ci_word(rest, "right"))?;
     let after_side_ws = trim_horizontal_ws(after_side);
     if after_side_ws.len() == after_side.len() {
-        return false;
+        return None;
     }
-    let Some(after_of) = strip_ascii_ci_word(after_side_ws, "of") else {
-        return false;
-    };
-    let after_of_ws = trim_horizontal_ws(after_of);
-    if after_of_ws.len() == after_of.len() {
-        return false;
+    let after_of = strip_ascii_ci_word(after_side_ws, "of")?;
+    if after_of.chars().next().is_some_and(is_word) {
+        return None;
     }
-    let line_end = after_of_ws
-        .find(JS_LINE_TERMINATORS)
-        .unwrap_or(after_of_ws.len());
-    let tail = &after_of_ws[..line_end];
-    let id_end = tail
-        .find(|c: char| matches!(c, ':' | '-') || is_js_space(c))
-        .unwrap_or(tail.len());
-    if id_end == 0 {
-        return false;
-    }
-    let after_id = trim_horizontal_ws(&tail[id_end..]);
-    !after_id.starts_with(':')
+    Some(rest.len() - after_of.len())
+}
+
+/// Byte length of a state note target ID (`[^:\n\s\-]+`, truncated before `%%`) at the start of
+/// `rest`.
+fn state_note_target_id_len(rest: &str) -> usize {
+    let raw = rest
+        .find(|c: char| {
+            matches!(c, ':' | '\n' | '\r' | '\u{2028}' | '\u{2029}' | '-') || is_js_space(c)
+        })
+        .unwrap_or(rest.len());
+    rest[..raw].find("%%").unwrap_or(raw)
 }
 
 /// Byte length of `end <ws> note` at the start of `rest` (case-insensitive, followed by EOF or a
@@ -638,6 +644,7 @@ struct MultilineScanState {
     in_backticks: bool,
     in_acc_descr_block: bool,
     pending_acc: PendingAcc,
+    note_header: StateNoteHeader,
     in_note_block: bool,
     class_body_depth: usize,
 }
@@ -695,11 +702,50 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
     let mut in_style_stmt = false;
     let mut in_class_stmt = false;
     let mut prev_was_alnum = false;
-    let mut note_end_until = 0usize;
+    let mut skip_until = 0usize;
     for (at, ch) in line.char_indices() {
-        if at < note_end_until {
+        if at < skip_until {
             prev_was_alnum = false;
             continue;
+        }
+        if state.note_header != StateNoteHeader::None {
+            if is_js_space(ch) {
+                prev_was_alnum = false;
+                continue;
+            }
+            match state.note_header {
+                StateNoteHeader::AfterNote => {
+                    if let Some(len) = match_state_note_side_of(&line[at..]) {
+                        state.note_header = StateNoteHeader::AfterSideOf;
+                        at_line_start = false;
+                        stmt_start = false;
+                        skip_until = at + len;
+                        prev_was_alnum = false;
+                        continue;
+                    }
+                    state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::AfterSideOf => {
+                    let id_len = state_note_target_id_len(&line[at..]);
+                    if id_len > 0 {
+                        state.note_header = StateNoteHeader::AfterTargetId;
+                        at_line_start = false;
+                        stmt_start = false;
+                        skip_until = at + id_len;
+                        prev_was_alnum = false;
+                        continue;
+                    }
+                    state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::AfterTargetId => {
+                    state.note_header = StateNoteHeader::None;
+                    if ch == ':' {
+                        break;
+                    }
+                    state.in_note_block = true;
+                }
+                StateNoteHeader::None => {}
+            }
         }
         if state.in_note_block {
             if at_line_start {
@@ -712,7 +758,7 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
                     stmt_start = true;
                     in_style_stmt = false;
                     in_class_stmt = false;
-                    note_end_until = at + len;
+                    skip_until = at + len;
                     prev_was_alnum = false;
                     continue;
                 }
@@ -816,10 +862,13 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
             && !in_style_stmt
             && matches!(ch, 'n' | 'N')
             && !line[..at].chars().next_back().is_some_and(is_word)
-            && starts_multiline_state_note(&line[at..])
+            && starts_state_note_keyword(&line[at..])
         {
-            state.in_note_block = true;
-            break;
+            state.note_header = StateNoteHeader::AfterNote;
+            stmt_start = false;
+            skip_until = at + 4;
+            prev_was_alnum = false;
+            continue;
         }
         prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
@@ -1028,14 +1077,53 @@ fn color_semicolon_byte(
     let mut seen_colon = false;
     let mut seen_colon_hash = false;
     let mut prev_was_alnum = false;
-    let mut note_end_until = 0usize;
+    let mut skip_until = 0usize;
     let mut last_semi = None;
     let mut chars = line.char_indices();
 
     while let Some((at, ch)) = chars.next() {
-        if at < note_end_until {
+        if at < skip_until {
             prev_was_alnum = false;
             continue;
+        }
+        if state.note_header != StateNoteHeader::None {
+            if is_js_space(ch) {
+                prev_was_alnum = false;
+                continue;
+            }
+            match state.note_header {
+                StateNoteHeader::AfterNote => {
+                    if let Some(len) = match_state_note_side_of(&line[at..]) {
+                        state.note_header = StateNoteHeader::AfterSideOf;
+                        at_line_start = false;
+                        stmt_start = false;
+                        skip_until = at + len;
+                        prev_was_alnum = false;
+                        continue;
+                    }
+                    state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::AfterSideOf => {
+                    let id_len = state_note_target_id_len(&line[at..]);
+                    if id_len > 0 {
+                        state.note_header = StateNoteHeader::AfterTargetId;
+                        at_line_start = false;
+                        stmt_start = false;
+                        skip_until = at + id_len;
+                        prev_was_alnum = false;
+                        continue;
+                    }
+                    state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::AfterTargetId => {
+                    state.note_header = StateNoteHeader::None;
+                    if ch == ':' {
+                        break;
+                    }
+                    state.in_note_block = true;
+                }
+                StateNoteHeader::None => {}
+            }
         }
         if state.in_note_block {
             if at_line_start {
@@ -1051,7 +1139,7 @@ fn color_semicolon_byte(
                     in_class_stmt = false;
                     seen_colon = false;
                     seen_colon_hash = false;
-                    note_end_until = at + len;
+                    skip_until = at + len;
                     prev_was_alnum = false;
                     continue;
                 }
@@ -1161,10 +1249,13 @@ fn color_semicolon_byte(
             && !in_style_or_classdef
             && matches!(ch, 'n' | 'N')
             && !line[..at].chars().next_back().is_some_and(is_word)
-            && starts_multiline_state_note(&line[at..])
+            && starts_state_note_keyword(&line[at..])
         {
-            state.in_note_block = true;
-            break;
+            state.note_header = StateNoteHeader::AfterNote;
+            stmt_start = false;
+            skip_until = at + 4;
+            prev_was_alnum = false;
+            continue;
         }
         prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
@@ -1371,6 +1462,16 @@ impl StyleStmtTracker {
     }
 
     fn finish_entity(&mut self) {
+        match self.state.note_header {
+            StateNoteHeader::AfterNote => {
+                self.state.note_header = StateNoteHeader::None;
+            }
+            StateNoteHeader::AfterTargetId => {
+                self.state.note_header = StateNoteHeader::None;
+                self.state.in_note_block = true;
+            }
+            StateNoteHeader::None | StateNoteHeader::AfterSideOf => {}
+        }
         if self.kind == StmtKind::Start {
             self.kind = StmtKind::Other;
         }
@@ -1387,6 +1488,52 @@ impl StyleStmtTracker {
                 self.prev_was_alnum = false;
             }
             return;
+        }
+        if self.state.note_header != StateNoteHeader::None {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.reset_line();
+                return;
+            }
+            if is_js_space(ch) {
+                self.prev_was_alnum = false;
+                return;
+            }
+            match self.state.note_header {
+                StateNoteHeader::AfterNote => {
+                    if let Some(len) = match_state_note_side_of(&src[at..]) {
+                        self.state.note_header = StateNoteHeader::AfterSideOf;
+                        self.at_line_start = false;
+                        self.kind = StmtKind::Other;
+                        self.note_end_until = at + len;
+                        self.prev_was_alnum = false;
+                        return;
+                    }
+                    self.state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::AfterSideOf => {
+                    let id_len = state_note_target_id_len(&src[at..]);
+                    if id_len > 0 {
+                        self.state.note_header = StateNoteHeader::AfterTargetId;
+                        self.at_line_start = false;
+                        self.kind = StmtKind::Other;
+                        self.note_end_until = at + id_len;
+                        self.prev_was_alnum = false;
+                        return;
+                    }
+                    self.state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::AfterTargetId => {
+                    self.state.note_header = StateNoteHeader::None;
+                    if ch == ':' {
+                        self.in_plain_line = true;
+                        self.kind = StmtKind::Other;
+                        self.prev_was_alnum = false;
+                        return;
+                    }
+                    self.state.in_note_block = true;
+                }
+                StateNoteHeader::None => {}
+            }
         }
         if self.state.in_note_block {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
@@ -1534,11 +1681,11 @@ impl StyleStmtTracker {
             && self.kind != StmtKind::Style
             && matches!(ch, 'n' | 'N')
             && !src[..at].chars().next_back().is_some_and(is_word)
-            && starts_multiline_state_note(&src[at..])
+            && starts_state_note_keyword(&src[at..])
         {
-            self.state.in_note_block = true;
-            self.in_plain_line = true;
+            self.state.note_header = StateNoteHeader::AfterNote;
             self.kind = StmtKind::Other;
+            self.note_end_until = at + 4;
             self.prev_was_alnum = false;
             return;
         }
@@ -1618,6 +1765,7 @@ impl StyleStmtTracker {
             && !self.state.in_backticks
             && !self.in_plain_line
             && !self.state.in_acc_descr_block
+            && self.state.note_header == StateNoteHeader::None
             && !self.state.in_note_block
             && self.state.class_body_depth == 0
             && self.kind == StmtKind::Style
@@ -1760,5 +1908,18 @@ mod tests {
             encode_entities(quote_input),
             "classDiagram\n  class `A \"x`\n  class B\n  style B fill:#abc\n"
         );
+    }
+
+    #[test]
+    fn state_note_headers_split_across_lines_preserve_later_styles() {
+        for input in [
+            "stateDiagram-v2\n  A --> B\n  note\n    left of A\n    \"draft\n  end note\n  style A fill:#abc;\n",
+            "stateDiagram-v2\n  A --> B\n  note right of\n    A\n    \"draft\n  end note\n  style A fill:#abc;\n",
+            "stateDiagram-v2\n  A --> B\n  note\n    left of A\n    : \"single\n  style A fill:#abc;\n",
+            "stateDiagram-v2\n  A --> B\n  note\n    \"floating\" as N\n  style A fill:#abc;\n",
+        ] {
+            let expected = input.replace("fill:#abc;", "fill:#abc");
+            assert_eq!(encode_entities(input), expected, "input={input:?}");
+        }
     }
 }

@@ -195,8 +195,30 @@ fn has_non_percent_obfuscation(text: &str) -> bool {
         })
 }
 
-/// Handles relative URLs where a path, query, or non-entity fragment delimiter (`/`, `?`, or `#`)
-/// precedes any colon (such as `data/chart.svg?time=12:30`, `data#part:two`, or
+/// Whether `text` starts with a literal RFC-3986 scheme followed immediately by `:` or `&colon;`
+/// (such as `https:`, `mailto:`, `javascript:`, or `data:`), with no preceding percent-escape,
+/// entity, or path/query/fragment delimiter.
+fn has_literal_scheme(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    if bytes.first().is_none_or(|b| !b.is_ascii_alphabetic()) {
+        return false;
+    }
+    let mut end = 1;
+    while end < bytes.len()
+        && (bytes[end].is_ascii_alphanumeric() || matches!(bytes[end], b'+' | b'-' | b'.'))
+    {
+        end += 1;
+    }
+    let rest = &text[end..];
+    rest.starts_with(':')
+        || rest
+            .get(.."&colon;".len())
+            .is_some_and(|head| head.eq_ignore_ascii_case("&colon;"))
+}
+
+/// Handles relative URLs where a path, query, or non-entity fragment delimiter (`/`, `?`,
+/// non-escape `\`, or `#`) precedes any colon (such as `data/chart.svg?time=12:30`,
+/// `data#part:two`, `data%2Freport:2026.pdf`, `docs%2Freport:2026.pdf`, or
 /// `docs%2Freport%3A2026.pdf`), which `@braintree/sanitize-url`'s greedy scheme regex would
 /// otherwise misclassify as a blocked `data:` / `javascript:` / `vbscript:` scheme or decode into
 /// a different path.
@@ -205,7 +227,7 @@ fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
         return None;
     }
     let raw_delim = first_scheme_delimiter_is_relative(url);
-    if raw_delim.is_none() && url_scheme(url).is_some() {
+    if raw_delim.is_none() && has_literal_scheme(url) {
         return None;
     }
     let (prepared, url_tokens) = tokenize_url_entity_placeholders(url);
@@ -213,8 +235,11 @@ fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
     else {
         return Some(BLANK_URL.to_owned());
     };
+    let decoded_is_relative = first_scheme_delimiter_is_relative(&decoded).is_some()
+        || decode_sink_prefix_bounded(&decoded, MAX_DECODE_PASSES)
+            .is_some_and(|p| first_scheme_delimiter_is_relative(&p).is_some() || p.ends_with('\\'));
     if decoded.is_empty()
-        || first_scheme_delimiter_is_relative(&decoded).is_none()
+        || !decoded_is_relative
         || guard_url(url, false) == BLANK_URL
         || guard_url(&decoded, false) == BLANK_URL
     {
@@ -224,8 +249,11 @@ fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
         let substituted = substitute_token_values(&decoded, &tokens.prefix, &tokens.decoded);
         let cleaned: String = substituted.chars().filter(|&c| !is_ctrl(c)).collect();
         let head = cleaned.trim_start_matches(is_js_space);
-        if first_scheme_delimiter_is_relative(head).is_none() || guard_url(head, false) == BLANK_URL
-        {
+        let head_is_relative = first_scheme_delimiter_is_relative(head).is_some()
+            || decode_sink_prefix_bounded(head, MAX_DECODE_PASSES).is_some_and(|p| {
+                first_scheme_delimiter_is_relative(&p).is_some() || p.ends_with('\\')
+            });
+        if !head_is_relative || guard_url(head, false) == BLANK_URL {
             return None;
         }
     }
@@ -3085,6 +3113,28 @@ mod tests {
         assert_eq!(
             format_url("data%5Carchive%3A2026.pdf", false).as_deref(),
             Some("data%5Carchive%3A2026.pdf")
+        );
+        // Relative URLs with percent-encoded path separators before a literal colon preserve
+        // their original spelling instead of failing closed or decoding `%2F` into `/`.
+        assert_eq!(
+            format_url("data%2Freport:2026.pdf", false).as_deref(),
+            Some("data%2Freport:2026.pdf")
+        );
+        assert_eq!(
+            format_url("docs%2Freport:2026.pdf", false).as_deref(),
+            Some("docs%2Freport:2026.pdf")
+        );
+        assert_eq!(
+            format_url("data%5Carchive:2026.pdf", false).as_deref(),
+            Some("data%5Carchive:2026.pdf")
+        );
+        assert_eq!(
+            format_url("data%252Freport:2026.pdf", false).as_deref(),
+            Some("data%252Freport:2026.pdf")
+        );
+        assert_eq!(
+            format_url("data%253A/chart.svg", false).as_deref(),
+            Some("about:blank")
         );
         for blocked in [
             "java\\tscript:alert(1)",
