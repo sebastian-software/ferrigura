@@ -646,6 +646,26 @@ pie
             }
         }
     }
+
+    // 3. Sequence diagrams must not decode Mermaid entity placeholders inside `<style>`, which
+    // would otherwise turn `\u{00b6}` / `\u{fb02}...\u{00b6}` into `;` after stylesheet escaping.
+    for payload in [
+        "sans-serif\u{00b6} display: none",
+        "sans-serif\u{fb02}59\u{00b6} display: none",
+    ] {
+        let source = format!(
+            "---\nconfig:\n  fontFamily: \"{payload}\"\n---\nsequenceDiagram\n  A->>B: hi\n"
+        );
+        let svg = ferrigura::render(&source, &empty).expect("sequence renders");
+        roxmltree::Document::parse(&svg).expect("well-formed XML");
+        let style_start = svg.find("<style>").expect("style start");
+        let style_end = svg.find("</style>").expect("style end");
+        let style = &svg[style_start..style_end];
+        assert!(
+            !style.contains("; display: none"),
+            "sequence decoded entity placeholder inside <style>: {style}"
+        );
+    }
 }
 
 mod accessibility;
