@@ -75,9 +75,9 @@ export function buildRenderExample(): void {
  */
 export const FORCED_SETTINGS: Record<string, unknown> = {
   htmlLabels: false,
-  // Upstream's triangle shape and swimlane lane labels read `flowchart.htmlLabels`, which it leaves
-  // unset, so they draw HTML labels; ferrigura draws SVG text (decision 0009), so the reference
-  // renders them with SVG text too.
+  // Upstream's triangle shape reads `flowchart.htmlLabels`, which it leaves unset, so it draws an
+  // HTML label; ferrigura draws SVG text (decision 0009), so the reference renders it with SVG text
+  // too.
   flowchart: { htmlLabels: false },
   fontFamily: '"Lexica Ultralegible", "Noto Sans Math", "Noto Sans Symbols 2", "Twemoji Mozilla"',
   securityLevel: 'strict',
@@ -149,7 +149,6 @@ export function effectiveSettings(source: string): {
   look: unknown;
   layout: unknown;
   theme: unknown;
-  cynefin: unknown;
 } {
   const settings: Record<string, unknown> = {};
   const frontMatter = FRONT_MATTER.exec(source);
@@ -172,7 +171,6 @@ export function effectiveSettings(source: string): {
     look: settings.look,
     layout: settings.layout,
     theme: settings.theme,
-    cynefin: settings.cynefin,
   };
 }
 
@@ -201,9 +199,7 @@ export const EXCLUDED_LOOK = 'handDrawn';
 /**
  * The text of a fixture that a diagram can draw: the body, and the front matter's `title`. The rest
  * of the front matter (a `description`, the `config`) is never drawn, so a character there does not
- * exclude the fixture. In a tree view, the box-drawing characters are the tree's syntax: its
- * preprocessor (`boxDrawingPreprocessor.ts`) replaces them before anything is drawn, so they are not
- * drawn text either.
+ * exclude the fixture.
  */
 function drawnText(source: string): string {
   const frontMatter = FRONT_MATTER.exec(source);
@@ -221,12 +217,8 @@ function drawnText(source: string): string {
       // Front matter that is not YAML is the reference's error; the body decides then.
     }
   }
-  const text = `${title}\n${body}`;
-  return /^\s*treeView(?:-beta)?\b/m.test(body) ? text.replace(BOX_DRAWING, '') : text;
+  return `${title}\n${body}`;
 }
-
-/** The box-drawing block, U+2500-257F. */
-const BOX_DRAWING = /[\u2500-\u257F]/gu;
 
 /**
  * The characters of a fixture's drawn text that no bundled face covers (`labelCoverage`), as
@@ -260,47 +252,17 @@ export function uncoveredScriptReason(source: string): string | null {
   return `text no bundled face covers (${characters.join(', ')}): needs a fallback font, which ferrigura does not have`;
 }
 
-/**
- * The swimlane fixtures' own exclusions, on top of `exclusionReason`: the two layout options that the
- * swimlane engine does not port. Their fixtures are the only ones that set them (`mermaid-work` sets
- * `ignoreCrossLaneEdges: false`, `14-messy-layout` sets `automaticLaneOrdering: true`).
- */
-const SWIMLANE_OPTION_EXCLUSIONS: readonly [RegExp, string][] = [
-  [
-    /ignoreCrossLaneEdges\s*:\s*false/,
-    'swimlane.ignoreCrossLaneEdges: false (the gravity layering) is not ported',
-  ],
-  [
-    /automaticLaneOrdering\s*:\s*true/,
-    'swimlane.automaticLaneOrdering: true (the lane ordering) is not ported',
-  ],
-];
-
-/**
- * Why a fixture is excluded from the comparison, or null when it is compared. `type` is the diagram type
- * the fixtures belong to: the swimlane diagrams are laid out by the `swimlane` engine, which is layered
- * only in the sense of its own pipeline, so their `layout: swimlane` is compared (scoped to them).
- */
-export function exclusionReason(source: string, type = ''): string | null {
+/** Why a fixture is excluded from the comparison, or null when it is compared. */
+export function exclusionReason(source: string): string | null {
   const { look, layout } = effectiveSettings(source);
   if (look === EXCLUDED_LOOK) {
     return `look ${EXCLUDED_LOOK}: rough.js sketching is out of scope`;
-  }
-  const swimlanes = type === 'swimlanes';
-  if (swimlanes) {
-    for (const [option, reason] of SWIMLANE_OPTION_EXCLUSIONS) {
-      if (option.test(source)) return reason;
-    }
   }
   if (layout === 'dagre') {
     // Upstream lays these out with dagre; ferrigura has ELK only (decision 0012).
     return 'layout dagre: ferrigura lays out with ELK';
   }
-  if (
-    typeof layout === 'string' &&
-    NON_LAYERED_LAYOUTS.includes(layout) &&
-    !(swimlanes && layout === 'swimlane')
-  ) {
+  if (typeof layout === 'string' && NON_LAYERED_LAYOUTS.includes(layout)) {
     return `layout ${layout}: not layered, ferrigura falls back to layered`;
   }
   const uncovered = uncoveredScriptReason(source);
@@ -309,7 +271,7 @@ export function exclusionReason(source: string, type = ''): string | null {
   }
   // A subgraph's own algorithm, from its shape data (`grp@{ algorithm: elk.box }`).
   for (const match of source.matchAll(/algorithm\s*:\s*["']?([\w.-]+)/g)) {
-    if (NON_LAYERED_LAYOUTS.includes(match[1]) && !(swimlanes && match[1] === 'swimlane')) {
+    if (NON_LAYERED_LAYOUTS.includes(match[1])) {
       return `subgraph algorithm ${match[1]}: not layered, ferrigura falls back to layered`;
     }
   }
@@ -412,7 +374,6 @@ export function renderFerrigura(
   text: string,
   id: string,
   now?: number,
-  seed?: number,
   compat = true
 ): { svg: string } | { error: string } {
   // The site configuration goes through a file of this process, so parallel runs do not share it.
@@ -425,9 +386,6 @@ export function renderFerrigura(
   args.push('--fonts', fontsPath);
   args.push('--compat', String(compat));
   if (now !== undefined) args.push('--now', String(Math.trunc(now)));
-  // The seed of the reference's random numbers: the generated gitGraph ids (commits, merges and
-  // cherry-picks without an `id:`) are drawn from the same generator.
-  if (seed !== undefined) args.push('--seed', String(seed));
   const result = spawnSync(renderBinary, args, {
     input: text,
     cwd: root,
@@ -471,11 +429,11 @@ export type JsonValue =
  * `userMatrix`, `boxOf`), which map every box into the viewBox coordinates of the root svg.
  */
 /**
- * The font families the reference names in its own code instead of the configured font:
- * eventmodeling measures in `"trebuchet ms", verdana, arial` (the classic default), cytoscape (the
- * architecture labels) in `Helvetica Neue, Helvetica`, and C4 in `"Open Sans"`. The use-case
- * configuration fixture requests Georgia. Both hosts map these aliases onto the same explicitly
- * registered local fixture files, so each measures the same text in the same font (decision 0010).
+ * The font families that the reference's defaults and the fixtures name instead of the configured
+ * font: the classic default `"trebuchet ms", verdana, arial`, cytoscape's `Helvetica Neue, Helvetica`,
+ * `"Open Sans"` (the sequence's actor and message fonts), and Georgia, which configuration fixtures
+ * request. Both hosts map these aliases onto the same explicitly registered local fixture files, so
+ * each measures the same text in the same font (decision 0010).
  */
 export const MAPPED_FAMILIES: readonly string[] = [
   'trebuchet ms',
@@ -617,13 +575,6 @@ ${MAPPED_FAMILIES.map(mappedFaces).join('\n')}
 ${MONO_FACES}
 ${SYMBOL_FACE}
 ${NAMED_FALLBACK_FACES}
-/* The eventmodeling box text's code: the reference's code element takes the UA's monospace, which is
-   the machine's own face. ferrigura draws code in the bundled mono face (decision 0010), so the page
-   pins the reference's code of that diagram to it (eventmodeling db.ts 349-378). */
-[aria-roledescription="eventmodeling"] foreignObject code { font-family: "${MONO_FAMILY}"; }
-/* The wardley map's text: the reference sets no font, so its text takes the page's default face. The
-   page pins that default to the bundled face, which ferrigura writes for the map (wardley/mod.rs). */
-[aria-roledescription="wardley"] { font-family: ${WARDLEY_FAMILY}; }
 /* No body margin: a block the reference appends to the body (its diagram container) is then the
    1200 px viewport wide, which is the width the gantt renderer takes from the container when a
    diagram sets no useWidth (ganttRenderer.js:98). ferrigura uses the same 1200 px. */
@@ -636,12 +587,6 @@ body { margin: 0; background: #ffffff; }
 window.__elkCalls = [];
 window.__mermaidElkCapture = function (input, output) {
   window.__elkCalls.push({ input: input, output: JSON.parse(JSON.stringify(output)) });
-};
-// The fcose layout's records (architectureRenderer.ts, layoutArchitecture): the input before each of
-// the two runs and the positions after each run. Each record is already a plain JSON copy.
-window.__fcoseCalls = [];
-window.__mermaidFcoseCapture = function (record) {
-  window.__fcoseCalls.push(record);
 };
 // The tidy tree's layout call (render.ts of the reference bundle, one per render of the layout).
 window.__tidyTreeCalls = [];
@@ -711,21 +656,12 @@ const boxOf = (svg, element) => {
 ${measure}
 
 // The clock and the random numbers of a render are fixed when a clock is given: the today marker of
-// a gantt and the generated ids (gitGraph commits, rough.js strokes) read them, and two renders of
-// the same text would otherwise differ. Both get the same time and seed, so they are equal.
-window.renderReference = async function (id, text, clock, site, tidyTree, pin) {
+// a gantt and the generated ids (rough.js strokes) read them, and two renders of the same text would
+// otherwise differ. Both get the same time and seed, so they are equal.
+window.renderReference = async function (id, text, clock, site, tidyTree) {
   mermaid.initialize({ startOnLoad: false, ...(site ?? {}) });
   window.__elkCalls = [];
   window.__tidyTreeCalls = [];
-  // A family the render's own SVG takes while it draws, when the caller gives one (pin). The
-  // reference measures some text during its draw, before the SVG has the role that the page's rule
-  // matches, so the rule for the SVG's id covers the draw. It is removed when the render is done.
-  let pinned = null;
-  if (pin) {
-    pinned = document.createElement('style');
-    pinned.textContent = '#' + id + ' { font-family: ' + pin + '; }';
-    document.head.appendChild(pinned);
-  }
   // The tidy tree is registered only for the fixtures that ask for it (layout tidy-tree), so no
   // other diagram's reference is affected: the registry is shared by the page.
   if (tidyTree) {
@@ -771,7 +707,6 @@ window.renderReference = async function (id, text, clock, site, tidyTree, pin) {
   } finally {
     window.Date = RealDate;
     Math.random = realRandom;
-    if (pinned) pinned.remove();
   }
 };
 
@@ -881,9 +816,9 @@ export async function withPage<T>(measure: string, run: (page: Page) => Promise<
   const browser = await chromium.launch({ args: ['--font-render-hinting=none'] });
   try {
     // The reference reads dates in the browser's time zone and ferrigura in UTC, so the page runs in
-    // UTC. The screen is the viewport, so a renderer that reads the screen (C4's `screen.availWidth`)
-    // sees the 1200 px that ferrigura takes (`docs/LEARNINGS.md`, "The page fixes the clock, the
-    // random numbers and the environment").
+    // UTC. The screen is the viewport, so a renderer that reads the screen sees the 1200 px that
+    // ferrigura takes (`docs/LEARNINGS.md`, "The page fixes the clock, the random numbers and the
+    // environment").
     const page = await browser.newPage({
       viewport: { width: 1200, height: 900 },
       screen: { width: 1200, height: 900 },
@@ -917,15 +852,14 @@ export async function renderReference(
   page: Page,
   id: string,
   text: string,
-  clock?: RenderClock,
-  pinFamily: string | null = null
+  clock?: RenderClock
 ): Promise<ReferenceRender> {
   // A fixture that asks for the tidy tree gets the removed package registered in the page; the
   // bundle is built on first use (`tidy-tree-bundle.ts`).
   const tidyTree = effectiveSettings(text).layout === 'tidy-tree';
   if (tidyTree) await ensureTidyTreeBundle();
   return (await page.evaluate(
-    ([svgId, source, fixed, site, withTidyTree, pin]) =>
+    ([svgId, source, fixed, site, withTidyTree]) =>
       (
         window as unknown as {
           renderReference: (
@@ -933,22 +867,13 @@ export async function renderReference(
             text: string,
             clock?: RenderClock,
             site?: Record<string, unknown>,
-            tidyTree?: boolean,
-            pin?: string | null
+            tidyTree?: boolean
           ) => Promise<ReferenceRender>;
         }
-      ).renderReference(svgId, source, fixed ?? undefined, site, withTidyTree, pin),
-    [id, text, clock ?? null, forcedSiteConfig(text), tidyTree, pinFamily] as const
+      ).renderReference(svgId, source, fixed ?? undefined, site, withTidyTree),
+    [id, text, clock ?? null, forcedSiteConfig(text), tidyTree] as const
   )) as ReferenceRender;
 }
-
-/**
- * The family the wardley reference's text takes while it draws, and in the page (`pinFamily` of
- * `renderReference`, and the rule of `pageHtml`): the bundled face that ferrigura writes for the map
- * (`crates/ferrigura-render/src/wardley/mod.rs`). The reference sets no font, so its text takes the
- * page's default face, which is not the bundled one.
- */
-export const WARDLEY_FAMILY = `"Lexica Ultralegible", "Noto Sans Math", "${TEXT_SYMBOLS_FAMILY}", "${EMOJI_FAMILY}"`;
 
 /**
  * The fixture text as the e2e viewer hands it to the reference: `mermaid.run` reads the element's

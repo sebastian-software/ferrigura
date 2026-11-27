@@ -2,7 +2,7 @@
  * Canonical JSON of flowchart diagrams, from the TypeScript reference.
  *
  * The model is the flowchart DB's state after the parse, read by `flowchartModel`
- * (`flowchart-model.ts`), which the swimlane exporter shares.
+ * (`flowchart-model.ts`).
  *
  * Usage: `tsx tools/port/export-flowchart.ts inputs.json outputs.json`
  */

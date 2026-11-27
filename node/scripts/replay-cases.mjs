@@ -4,12 +4,8 @@ export const cases = [
   { name: 'flow-compat', text: flow, compat: true },
   { name: 'gantt', text: 'gantt\n dateFormat HH:mm\n section Work\n Task :a, 00:00, 30d\n' },
   {
-    name: 'venn',
-    text: 'venn-beta\n set A\n set B\n set C\n set D\n union A, B\n union C, D\n union A, B, C\n',
-  },
-  {
-    name: 'architecture',
-    text: '---\nconfig:\n  architecture:\n    randomize: true\n    seed: 7\n---\narchitecture-beta\n group g1(cloud)[Left]\n group g2(cloud)[Right]\n service a(server)[A] in g1\n service b(database)[B] in g1\n service c(disk)[C] in g2\n service d(internet)[D]\n a:R -- L:c\n b:T -- B:a\n c:B -- T:d\n d:L -[Link]- R:b\n',
+    name: 'mindmap',
+    text: 'mindmap\n root((Release))\n  Research\n   Interviews\n   Surveys\n  Build\n   Parser\n   Layout\n   SVG\n  Ship\n',
   },
   { name: 'font', text: 'flowchart LR\n A[Wide WWW narrow iii]\n', font: true },
 ];

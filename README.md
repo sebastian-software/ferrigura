@@ -8,11 +8,11 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 [![Node.js 22 (22.13.0 or later), 24, and 26](https://img.shields.io/badge/Node.js-22%20%7C%2024%20%7C%2026-339933?logo=nodedotjs&logoColor=white)](./node/ferrigura/README.md#platforms)
 
-ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0 with all 33 of its diagram types, checked against Mermaid run in Chromium. Flowcharts use adaptive port alignment and full-opacity edge-label backgrounds by default; an explicit [Mermaid-compatible rendering option](./docs/diagrams/flowchart.md#rendering-mode) preserves the reference's output.
+ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It draws ten diagram types of Mermaid 12.2.0, each one completely, checked against Mermaid run in Chromium: flowchart, state, class and ER; mindmap, sequence and gantt; XY chart, pie and quadrant chart. A text of any other Mermaid type gives an error that names it. Flowcharts use adaptive port alignment and full-opacity edge-label backgrounds by default; an explicit [Mermaid-compatible rendering option](./docs/diagrams/flowchart.md#rendering-mode) preserves the reference's output.
 
 ```mermaid
 flowchart LR
-  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, swimlane, cose-bilkent, fcose, venn] --> svg[SVG]
+  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, cose-bilkent, tidy tree] --> svg[SVG]
 ```
 
 [Website and getting started](https://sebastian-software.github.io/ferrigura/) ·

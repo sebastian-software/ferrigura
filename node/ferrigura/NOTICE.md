@@ -37,9 +37,6 @@ MIT License
 Copyright (c) 2016-2018, The Cytoscape Consortium (cytoscape-cose-bilkent 4.1.0)
 Copyright (c) 2019 - present, iVis@Bilkent (cose-base 1.0.3)
 Copyright (c) 2019 iVis@Bilkent (layout-base 1.0.2)
-Copyright (c) 2018 - present, iVis-at-Bilkent (cytoscape-fcose 2.2.0)
-Copyright (c) 2019 - present, iVis@Bilkent (cose-base 2.2.0)
-Copyright (c) 2019 iVis@Bilkent (layout-base 2.0.1)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -63,11 +60,10 @@ SOFTWARE.
 
 ## crates/ferrigura-cose/NOTICE.md
 
-# Notice: sources and licences of ferrigura-cose
+# Notice: sources and licenses of ferrigura-cose
 
-The crate is MIT-licensed, as its sources are. It ports two engines, both MIT packages at the
-versions Mermaid's bundle loads. The cose-bilkent engine (`src/` outside `fcose/`) ports the tree
-path of three packages:
+The crate is MIT-licensed, as its sources are. It ports the cose-bilkent engine, from MIT packages
+at the versions Mermaid's bundle loads: the tree path of three packages.
 
 | Package                  | Version | Copyright                                         | Ported in                                                                                                                                                                                             |
 | ------------------------ | ------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -75,19 +71,8 @@ path of three packages:
 | `cose-base`              | 1.0.3   | Copyright (c) 2019 - present, iVis@Bilkent        | `src/forest.rs`, `src/forces.rs`, `src/engine.rs` (`CoSELayout.js`, `CoSENode.js`)                                                                                                                    |
 | `layout-base`            | 1.0.2   | Copyright (c) 2019 iVis@Bilkent                   | `src/geometry.rs`, `src/graph.rs`, `src/forces.rs`, `src/forest.rs` (`Layout.js`, `LGraph.js`, `LNode.js`, `LEdge.js`, `FDLayout.js`, `util/IGeometry.js`, `util/RectangleD.js`, `util/Transform.js`) |
 
-The fcose engine (`src/fcose/`, the architecture diagram's layout) ports:
-
-| Package           | Version | Copyright                                     | Ported in                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ----------------- | ------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cytoscape-fcose` | 2.2.0   | Copyright (c) 2018 - present, iVis-at-Bilkent | `src/fcose/mod.rs` (`index.js` `run`, `cose.js` `coseLayout`, `auxiliary.js` `relocateComponent`, `processChildrenList`, `processEdges`, `calcBoundingBox`), `src/fcose/spectral.rs` (`spectral.js`, the spectral start of `randomize: true`)                                                                                                                                                                         |
-| `cose-base`       | 2.2.0   | Copyright (c) 2019 - present, iVis@Bilkent    | `src/fcose/layout.rs` (`CoSELayout.js` `classicLayout`, `tick`, `moveNodes`, `initSpringEmbedder`), `src/fcose/forces.rs` (`FDLayout` forces as cose-base uses them), `src/fcose/model.rs` (`CoSENode.js`, `LGraph` and `LGraphManager` as cose-base uses them), `src/fcose/constraints.rs` (`ConstraintHandler.js`, `initConstraintVariables`, `updateDisplacements`, and the transform block for `randomize: true`) |
-| `layout-base`     | 2.0.1   | Copyright (c) 2019 iVis@Bilkent               | `src/fcose/model.rs` (`LGraph.js`, `LGraphManager.js`, `LNode.js`, `LEdge.js`), `src/fcose/forces.rs` (`fd/FDLayout.js`), `src/fcose/linalg.rs` (`util/Matrix.js`, `util/SVD.js`, and the orthogonal Procrustes fit of `ConstraintHandler.js` 578-593), `src/geometry.rs` (`util/IGeometry.js`, `util/RectangleD.js`, `util/Transform.js`, `util/IMath.js`, the same functions as in 1.0.2)                           |
-
-`src/fcose/rng.rs` reproduces the generator of Mermaid's own `architectureSeed.ts` (not a third-party
-package).
-
-The three cose-bilkent packages are under the MIT licence, and so are the fcose packages. The text
-and the copyright notices of all six are in `LICENSE`.
+The three packages are under the MIT license. The text and their copyright notices are in
+`LICENSE`.
 
 The trigonometric and logarithm functions come from `ferrigura-jsmath`, whose notice is in its own
 `NOTICE.md`.
@@ -863,12 +848,12 @@ keeps the licence of its source. `LICENSE-LLVM`, `LICENSE-V8`, and `LICENSE-CORE
 
 ## The default functions (Chromium 151)
 
-| Function                                            | Where                                                                        | Source                                                                                                                                                                                                                                                                                                 | Licence                                         | Depends on the target's fused multiply-adds?                                                              |
-| --------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `sin`, `cos`, `tan`, `asin`, `acos`, `log`, `log10` | `src/correct.rs`, constants in `src/constants.rs` (`CR_*`)                   | Written for this crate: a correctly rounded evaluator (Ziv's method, 384-bit fixed point). The constants were computed with mpmath and Python's `decimal`. `acos` first uses the CORE-MATH fast rounding test (`src/acos_fast.rs`, commit 7457819), falling back to fixed point for ambiguous results. | MIT (this crate)                                | No. The `acos` fast path uses explicit fused operations on every target; other arithmetic is fixed point. |
-| `atan`, `atan2`                                     | `src/atan.rs` (the table `ATAN_I`, `atan_eval`, `dd_div`, the special cases) | llvm-libc: `libc/src/__support/math/atan.h`, `atan2.h`, `atan_utils.h`, and the `FPUtil` helpers they use. Reproduced step by step.                                                                                                                                                                    | Apache-2.0 WITH LLVM-exception (`LICENSE-LLVM`) | Yes. llvm-libc uses fused multiply-adds where its `LIBC_TARGET_CPU_HAS_FMA` is set, which is `CONTRACTS`. |
-| `pow`                                               | `src/pow.rs`                                                                 | V8's `src/numbers/ieee754.cc` (the special cases around `std::pow`), and the platform's `pow`                                                                                                                                                                                                          | BSD-style (`LICENSE-V8`)                        | The platform's `pow` decides it.                                                                          |
-| `hypot`                                             | `src/hypot.rs`                                                               | V8's `src/builtins/math.tq` (`FastMathHypot`, the two-argument form)                                                                                                                                                                                                                                   | BSD-style (`LICENSE-V8`)                        | No.                                                                                                       |
+| Function                                            | Where                                                                        | Source                                                                                                                                                                                                                                                                                                                                                                                             | Licence                                         | Depends on the target's fused multiply-adds?                                                              |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `sin`, `cos`, `tan`, `asin`, `acos`, `log`, `log10` | `src/correct.rs`, constants in `src/constants.rs` (`CR_*`)                   | Written for this crate: a correctly rounded evaluator (Ziv's method, 384-bit fixed point). The constants were computed with mpmath and Python's `decimal`. `sin` and `cos` first use a double-double fast path written for this crate (`src/trig_fast.rs`), and `acos` the CORE-MATH fast rounding test (`src/acos_fast.rs`, commit 7457819); both fall back to fixed point for ambiguous results. | MIT (this crate)                                | No. The `acos` fast path uses explicit fused operations on every target; other arithmetic is fixed point. |
+| `atan`, `atan2`                                     | `src/atan.rs` (the table `ATAN_I`, `atan_eval`, `dd_div`, the special cases) | llvm-libc: `libc/src/__support/math/atan.h`, `atan2.h`, `atan_utils.h`, and the `FPUtil` helpers they use. Reproduced step by step.                                                                                                                                                                                                                                                                | Apache-2.0 WITH LLVM-exception (`LICENSE-LLVM`) | Yes. llvm-libc uses fused multiply-adds where its `LIBC_TARGET_CPU_HAS_FMA` is set, which is `CONTRACTS`. |
+| `pow`                                               | `src/pow.rs`                                                                 | V8's `src/numbers/ieee754.cc` (the special cases around `std::pow`), and the platform's `pow`                                                                                                                                                                                                                                                                                                      | BSD-style (`LICENSE-V8`)                        | The platform's `pow` decides it.                                                                          |
+| `hypot`                                             | `src/hypot.rs`                                                               | V8's `src/builtins/math.tq` (`FastMathHypot`, the two-argument form)                                                                                                                                                                                                                                                                                                                               | BSD-style (`LICENSE-V8`)                        | No.                                                                                                       |
 
 ## The `node` module (V8 13.6, Node 24)
 
@@ -1123,47 +1108,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-
-
-## crates/ferrigura-swimlane/LICENSE
-
-The MIT License (MIT)
-
-Copyright (c) 2014 - 2022 Knut Sveidqvist
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-
-## crates/ferrigura-swimlane/NOTICE.md
-
-# Notice: sources and licence of ferrigura-swimlane
-
-The crate is MIT-licensed, as its sources are. It ports the swimlane layout engine of Mermaid 12.2.0,
-`packages/mermaid/src/rendering-util/layout-algorithms/swimlanes/` (default path only), which is MIT
-(Copyright (c) 2014 - 2022 Knut Sveidqvist, and the Mermaid contributors). The text of the licence is in
-`LICENSE`, copied from the repository's root.
-
-The port reads no third-party package. The floating-point helpers (`Math.hypot`, `Math.sin` and the rest)
-come from `ferrigura-jsmath`, whose notice is in its own `NOTICE.md`. The `localeCompare` of the layout is
-ICU's root collation for ASCII, written as a table in `src/js.rs` and checked against V8.
 
 
 
@@ -1753,146 +1697,5 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
-
-
-
-## crates/ferrigura-venn/LICENSE
-
-MIT License
-
-Copyright (c) 2013 Ben Frederickson (@upsetjs/venn.js 2.0.0)
-Copyright (c) 2021 Samuel Gratzl (@upsetjs/venn.js 2.0.0)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-
-## crates/ferrigura-venn/LICENSE-fmin
-
-Copyright 2016, Ben Frederickson
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-* Neither the name of the author nor the names of contributors may be used to
-  endorse or promote products derived from this software without specific prior
-  written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-
-## crates/ferrigura-venn/NOTICE.md
-
-# Notice: sources and licenses of ferrigura-venn
-
-The crate combines MIT-licensed venn.js with BSD-3-Clause-licensed fmin. It ports the layout of
-`@upsetjs/venn.js` 2.0.0, an MIT package (`LICENSE`, the copyright lines of Ben Frederickson and Samuel Gratzl), which Mermaid
-12.2.0 bundles. What runs is the package's `build/venn.esm.js`, which inlines the `fmin` functions
-the layout calls (build lines 262-622). The port follows that build, the code that runs.
-
-| Source (`build/venn.esm.js`)                                                                                                                          | Lines     | Ported in                                                                                                  |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------- |
-| `intersectionArea`, `containedInCircles`, `getIntersectionPoints`, `circleArea`, `distance`, `circleOverlap`, `circleCircleIntersection`, `getCenter` | 1-268     | `src/geometry.rs`                                                                                          |
-| `bisect`, `nelderMead`, `wolfeLineSearch`, `conjugateGradient`, `dot`, `norm2`                                                                        | 262-622   | `src/fmin.rs` (the `fmin` functions as inlined)                                                            |
-| `venn`                                                                                                                                                | 623-672   | `src/placement.rs` (`venn`)                                                                                |
-| `distanceFromIntersectArea`, `addMissingAreas`                                                                                                        | 684-768   | `src/placement.rs` (`distance_from_intersect_area`, `add_missing_areas`)                                   |
-| `getDistanceMatrices`, `constrainedMDSGradient`, `bestInitialLayout`, `constrainedMDSLayout`                                                          | 770-932   | `src/placement.rs` (`distance_matrices`, `constrained_gradient`, `best_initial_layout`, `constrained_mds`) |
-| `greedyLayout`                                                                                                                                        | 934-1077  | `src/placement.rs` (`greedy`)                                                                              |
-| `lossFunction` (the squared error only)                                                                                                               | 1079-1101 | `src/placement.rs` (`loss`)                                                                                |
-| `orientateCircles`, `disjointCluster`, `getBoundingBox`, `normalizeSolution`, `scaleSolution`, `toObjectNotation`, `fromObjectNotation`               | 1134-1447 | `src/arrange.rs`, and `src/js.rs` (`JsObject`) for the key order                                           |
-| `VennDiagram`'s pipeline: the removal of zero-size singles, `venn`, `normalizeSolution`, `scaleSolution`, `computeTextCentres`                        | 1503-1526 | `src/diagram.rs` (`chart`)                                                                                 |
-| `circleMargin`, `computeTextCentre`, `getOverlappingCircles`, `computeTextCentres`                                                                    | 1874-2042 | `src/text.rs`                                                                                              |
-| `layout`                                                                                                                                              | 2146-2212 | `src/diagram.rs` (`layout`), without the arcs and path strings                                             |
-
-The JavaScript behaviours the order of results depends on are in `src/js.rs`: `Object.keys` order,
-V8's `Array.prototype.sort` (binary insertion for arrays under 64 elements, which gives the same
-order as V8 for every comparator, NaN included), `Math.min` and `Math.max` on NaN and signed zero,
-and the UTF-16 order of strings.
-
-## Numbers
-
-`sin`, `cos`, `atan2` and `acos` come from `ferrigura-jsmath`, whose notice is in its own
-`NOTICE.md`. They are Chromium's functions, bit for bit, which is what the reference runs in.
-
-## fmin
-
-The inlined functions come from `fmin` 0.0.4, Copyright 2016 Ben Frederickson,
-under BSD-3-Clause; its complete license is in `LICENSE-fmin`. The published
-[npm tarball](https://registry.npmjs.org/fmin/-/fmin-0.0.4.tgz) has SHA-512
-`18379b05d8b35ba8351792b19bfcbf0f46ca8dcf3305e21e1845e9803b867a333279a69fb8b90a651c44cd62aa7a10d18a9c50f21d1c2e1743442b31e93d2de3`.
-The [venn.js 2.0.0 package manifest](https://github.com/upsetjs/venn.js/blob/350c835aab4a92a7570963c28f725cf9f6e5f258/package.json)
-selects that version with a [Yarn patch](https://github.com/upsetjs/venn.js/blob/350c835aab4a92a7570963c28f725cf9f6e5f258/.yarn/patches/fmin-npm-0.0.4-e439f499bd.patch).
-The patch declares the reduction loop variable in `nelderMead` and adjusts module
-metadata. The bundled `bisect`, `zeros`, `dot`, `norm2`, `scale`, `weightedSum`,
-`nelderMead`, `wolfeLineSearch`, and `conjugateGradient` match the corresponding
-published source functions after that patch, apart from removed `export` keywords.
-
-## The corpus
-
-`tests/corpus` holds the cases written by `tools/port/crates/venn/capture-corpus.ts`:
-
-- 21 fixtures: every file of `e2e/diagrams/venn`, parsed with the reference's own Jison grammar and
-  DB, and given the reference's `ensurePairwiseSubsets` (`vennRenderer.ts`). The box is the renderer's
-  default (800 by 450, less the title's 24 px), the layout's padding 8, the chart's padding 15.
-- 26 probes: hand-written texts (numeric and alphanumeric ids, duplicates, zero and negative sizes,
-  overlaps of every kind, a set named `constructor`, a set named `__proto__`) and area lists given to
-  the library directly (no areas, an area with no single, an empty area).
-- 400 generated set systems (`tools/generate-set-systems.ts`, seed 20261018): two to six sets, the
-  five id schemes, sizes of every kind, duplicated sets and unions, through the same parser and
-  renderer function. They cycle through four boxes and layout paddings.
-
-The reference runs in Chromium through the geometry harness (`withPage` in
-`tools/port/geometry/common.ts`). The library's build is served to the page with one line appended
-that exports `addMissingAreas` and `constrainedMDSLayout`; the build exports the rest. The chart's
-drawing needs d3 and is not run: its pipeline is replicated from the build's exported functions
-(the lines above). `layout()` is called as the build exports it.
-
-Random numbers: `Math.random` is replaced by the harness's generator (mulberry32, `renderReference`
-in `tools/port/geometry/common.ts`), and each draw is recorded. The stages and the chart each start
-the generator at seed 1, as a render does; the layout continues from the chart's draws, as the
-renderer's second call does, and starts again from seed 1 only when the chart throws. The tests seed
-a port of that generator the same way, and check that its draws are the recorded ones.
-
-## Not ported
-
-The options the renderer does not pass: `distinct`, `scaleToFit`, `symmetricalTextCentre`,
-`orientationOrder`, the logarithmic and custom losses, custom layouts, the weight of an area, the
-history options, `restarts` and `maxIterations` (fixed at 10 and 500, as `venn()` sets them). The
-path strings, arcs and `distinctPath` of `layout()`. The drawing. The `console.log` warnings. A set
-named `__proto__` is refused (`Error::ReservedName`).
 
 

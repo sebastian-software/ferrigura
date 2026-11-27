@@ -1,6 +1,6 @@
 # Architecture
 
-ferrigura renders Mermaid diagram text to SVG in Rust, without a browser ([0006](./decisions/0006-rust-only-no-browser.md)). This page is the map: what happens to a diagram, which crate does it, and where each part is decided. The reasons are in the [decisions](./decisions/README.md); what was learned along the way is in [LEARNINGS.md](./LEARNINGS.md); each diagram type has its page under [diagrams/](./diagrams/README.md).
+ferrigura renders Mermaid diagram text to SVG in Rust, without a browser ([0006](./decisions/0006-rust-only-no-browser.md)). It draws a fixed list of ten diagram types, each one completely, and refuses a text of any other type with an error that names it ([0024](./decisions/0024-a-fixed-list-of-diagram-types.md)). This page is the map: what happens to a diagram, which crate does it, and where each part is decided. The reasons are in the [decisions](./decisions/README.md); what was learned along the way is in [LEARNINGS.md](./LEARNINGS.md); each diagram type has its page under [diagrams/](./diagrams/README.md).
 
 ## From text to SVG
 
@@ -15,18 +15,18 @@ flowchart LR
   render --> svg[SVG with embedded font subsets]
 ```
 
-1. **Preprocess and detect** (`ferrigura-syntax`): line endings are normalized, the YAML front matter and the `%%{init}%%` directives are read, and the detector picks the diagram type from the start of the text.
+1. **Preprocess and detect** (`ferrigura-syntax`): line endings are normalized, the YAML front matter and the `%%{init}%%` directives are read, and the detector picks the diagram type from the start of the text. A header of a Mermaid type that ferrigura does not draw is recognized as such, and the facade refuses the text with `Error::Unsupported`.
 2. **Parse** (`ferrigura-syntax`): a hand-written parser per diagram type fills a DB that follows Mermaid's diagram DB ([0007](./decisions/0007-hand-written-parsers.md)).
 3. **Model** (`ferrigura-model`): the DB's state as the canonical model of the type, the form the harness compares with the reference ([0008](./decisions/0008-canonical-model-and-typed-views.md), [canonical-model.md](./canonical-model.md)).
 4. **Configuration and theme** (`ferrigura-model`, `ferrigura`): defaults per process, the site configuration and theme per `Renderer`, the diagram's front matter and directives per render, kept for the last few that a `Renderer` saw; the renderer receives a typed, read-only `Context` ([0008](./decisions/0008-canonical-model-and-typed-views.md), [0011](./decisions/0011-themes-as-css-variables.md)).
-5. **Lay out and render** (`ferrigura-render`): either a renderer of the type's own (sequence, gantt, pie, timeline and the other chart-like types) or the unified renderer, which builds the layout data as Mermaid's `getData()` does and lays it out with one of the ported engines ([0012](./decisions/0012-layout-engines-ported-exactly.md)).
+5. **Lay out and render** (`ferrigura-render`): either a renderer of the type's own (sequence, gantt and the charts: XY chart, pie, quadrant chart) or the unified renderer (flowchart, state, class, ER, and mindmap on its shapes), which builds the layout data as Mermaid's `getData()` does and lays it out with one of the ported engines ([0012](./decisions/0012-layout-engines-ported-exactly.md)).
 6. **Text** (`ferrigura-text`): every label is measured and wrapped with the render-owned supplied fonts or compatible bundled defaults, written as SVG text, with TrueType subsets or complete CFF/CFF2 faces embedded ([0009](./decisions/0009-svg-text-labels.md), [0010](./decisions/0010-text-measurement-and-fonts.md)).
 
 The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the configuration once, `renderer.render(text)` returns the SVG, and `ferrigura::render(text, config)` is the shorthand. Each diagram type is a plugin of the renderer: `Renderer::new` registers all of them, and `Renderer::builder(config).with(diagrams::sequence())` registers only the types a program draws, so that it links only those; the Node addon picks them with one cargo feature per type, all by default ([0020](./decisions/0020-diagram-types-as-plugins.md)).
 
 Render options are separate from Mermaid configuration. `compat` defaults to `false`: flowcharts use adaptive port alignment with label-aware spacing and sequence participant boxes fit their labels. `compat: true` preserves Mermaid-compatible geometry across diagram types ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Edge labels drawn by the shared renderer have full-opacity backgrounds in either mode, while preserving explicit theme color transparency. `design: true` draws flowcharts, state diagrams and class diagrams in ferrigura's own look and with its own measures: its colors are laid under the user's theme variables, the style sheet and shapes add hairline outlines, roles, rounded corners and soft shadows, and nodes, spacings and group paddings are sized anew before the unchanged layout engine runs ([0023](./decisions/0023-design-mode.md)). Render options are passed to each plugin per render and do not change the cached configuration.
 
-Flowchart, Gantt, Git graph, mind map, pie, and XY chart accept optional
+Flowchart, Gantt, mind map, pie, and XY chart accept optional
 [draw animation](./animation.md) ([0021](./decisions/0021-optional-svg-draw-animation.md)).
 Their paint steps pass final paths, bars, or arcs to `ferrigura-render::animation`,
 which computes timing and emits embedded CSS and reveal masks. The default draws
@@ -41,21 +41,19 @@ A Cargo workspace under `crates/`. Diagram types are modules inside the crates, 
 
 The implementation crates expose experimental APIs. The documented `ferrigura` facade and its plugins carry the [1.x compatibility promise](./decisions/0022-stable-public-api.md).
 
-| Crate                | Does                                                                                                                        | License                                                 |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `ferrigura`          | The facade: `Renderer`, `render`, `RenderOptions`; the repository's root package                                            | MIT                                                     |
-| `ferrigura-cli`      | The command-line tool `ferrigura`                                                                                           | MIT                                                     |
-| `ferrigura-node`     | The Node.js addon (napi-rs), published through npm, not crates.io ([0016](./decisions/0016-npm-packages-via-napi.md))       | MIT                                                     |
-| `ferrigura-syntax`   | Preprocessing, detection, the lexers and parsers of every diagram type, YAML, sanitization                                  | MIT                                                     |
-| `ferrigura-model`    | The canonical models, the configuration (generated from `schema/config.schema.yaml` by `build.rs`), themes and tokens       | MIT                                                     |
-| `ferrigura-render`   | The renderers, the unified renderer (shapes, clusters, edges, the ELK glue, the tidy tree), the Markdown reader, SVG output | MIT                                                     |
-| `ferrigura-text`     | Fonts, measurement, wrapping, subsetting; the bundled faces                                                                 | MIT AND OFL-1.1 AND CC-BY-4.0                           |
-| `ferrigura-elk`      | ELK Layered, ported from Java                                                                                               | EPL-2.0                                                 |
-| `ferrigura-cose`     | cose-bilkent and fcose                                                                                                      | MIT                                                     |
-| `ferrigura-swimlane` | Mermaid's swimlane layout                                                                                                   | MIT                                                     |
-| `ferrigura-venn`     | The layout of `@upsetjs/venn.js`                                                                                            | MIT AND BSD-3-Clause                                    |
-| `ferrigura-jsmath`   | JavaScript's `Math` as V8 computes it, bit for bit                                                                          | MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause |
-| `ferrigura-path`     | Chromium's bounding box of an SVG path, bit for bit                                                                         | MIT AND BSD-3-Clause                                    |
+| Crate              | Does                                                                                                                        | License                                                 |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `ferrigura`        | The facade: `Renderer`, `render`, `RenderOptions`; the repository's root package                                            | MIT                                                     |
+| `ferrigura-cli`    | The command-line tool `ferrigura`                                                                                           | MIT                                                     |
+| `ferrigura-node`   | The Node.js addon (napi-rs), published through npm, not crates.io ([0016](./decisions/0016-npm-packages-via-napi.md))       | MIT                                                     |
+| `ferrigura-syntax` | Preprocessing, detection, the lexers and parsers of the diagram types, YAML, sanitization                                   | MIT                                                     |
+| `ferrigura-model`  | The canonical models, the configuration (generated from `schema/config.schema.yaml` by `build.rs`), themes and tokens       | MIT                                                     |
+| `ferrigura-render` | The renderers, the unified renderer (shapes, clusters, edges, the ELK glue, the tidy tree), the Markdown reader, SVG output | MIT                                                     |
+| `ferrigura-text`   | Fonts, measurement, wrapping, subsetting; the bundled faces                                                                 | MIT AND OFL-1.1 AND CC-BY-4.0                           |
+| `ferrigura-elk`    | ELK Layered, ported from Java                                                                                               | EPL-2.0                                                 |
+| `ferrigura-cose`   | cose-bilkent, the layout of mindmaps                                                                                        | MIT                                                     |
+| `ferrigura-jsmath` | JavaScript's `Math` as V8 computes it, bit for bit                                                                          | MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause |
+| `ferrigura-path`   | Chromium's bounding box of an SVG path, bit for bit                                                                         | MIT AND BSD-3-Clause                                    |
 
 Licenses follow the sources of the ported code ([0013](./decisions/0013-licenses-of-ported-code.md)); each crate that ports or bundles anything lists it in its `NOTICE.md`.
 
@@ -77,6 +75,6 @@ What ferrigura does not do, on purpose or not yet:
 
 Rendering is synchronous. The host-controlled `maxTextSize` and `maxEdges` limits bound input size and flowchart edges, but do not impose a time or memory deadline. A service accepting untrusted diagrams can run renders in a separate process with its own time and memory limits and terminate that process when needed.
 
-- **Out of scope:** browsers and WebAssembly, raster output, Mermaid's JavaScript API and callbacks ([0006](./decisions/0006-rust-only-no-browser.md)); HTML labels and math in labels ([0009](./decisions/0009-svg-text-labels.md)); `look: handDrawn`; the dagre layout and the ELK algorithms other than Layered ([0012](./decisions/0012-layout-engines-ported-exactly.md)); Mermaid's classic themes ([0011](./decisions/0011-themes-as-css-variables.md)).
+- **Out of scope:** the diagram types of Mermaid other than the ten ferrigura draws, which give an error that names them ([0024](./decisions/0024-a-fixed-list-of-diagram-types.md)); browsers and WebAssembly, raster output, Mermaid's JavaScript API and callbacks ([0006](./decisions/0006-rust-only-no-browser.md)); HTML labels and math in labels ([0009](./decisions/0009-svg-text-labels.md)); `look: handDrawn`; the dagre layout and the ELK algorithms other than Layered ([0012](./decisions/0012-layout-engines-ported-exactly.md)); Mermaid's classic themes ([0011](./decisions/0011-themes-as-css-variables.md)).
 - **Font coverage:** hosts can register primary and fallback faces beyond the bundled compatibility defaults ([font inputs](./fonts.md)). An uncovered character is measured with the primary missing glyph; viewers may substitute another font. Character coverage alone does not establish complete shaping or bidirectional layout for every writing system.
 - **Not yet:** flowchart images and icon packs. The [diagram pages](./diagrams/README.md) list what each type still lacks.

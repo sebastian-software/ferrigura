@@ -60,8 +60,9 @@ const CLASS_KEYS_WITHOUT_DEFAULT: &[&str] = &[
 /// Keys of the railroad section that the reference's `defaultConfig.ts` leaves undefined: its
 /// `railroad` object sets the colors, the typography and the marker and comment colors to
 /// `undefined` (`railroad` keeps the schema's other defaults), so the theme supplies them, and the
-/// configuration has no value for them unless a directive gives one (`docs/diagrams/railroad.md`,
-/// Differences from Mermaid). They are fields without a default here, as the class keys are.
+/// configuration has no value for them unless a directive gives one. The configuration run compares
+/// the section's defaults with the reference's. They are fields without a default here, as the class
+/// keys are.
 const RAILROAD_KEYS_WITHOUT_DEFAULT: &[&str] = &[
     "commentFill",
     "commentStroke",

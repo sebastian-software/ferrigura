@@ -6,9 +6,9 @@
 
 The output of a render is a function of the text, the configuration and the render options, with one exception: the clock, where a gantt chart reads it and the caller does not set it. Where the reference reads the page it runs in, ferrigura takes a fixed value or an option:
 
-- **Random numbers** come from seeded generators or fixed values: the generator and the seed the reference uses where it has one (fcose's mulberry32 from the configured seed), a fixed seed for the venn layout's draws, ids derived from the sequence number where gitGraph draws random ids, and a fixed fraction for the divergence of rough.js double strokes. A configuration that asks for the page's randomness, such as an architecture seed of 0, is an error.
+- **Random numbers** come from fixed values: a fixed fraction for the divergence of rough.js double strokes, and ids derived from the input where the reference draws random ones.
 - **The clock** is read only for the dates that depend on it (the gantt's today marker and dates without a day): from `RenderOptions::now` when it is set, from the system clock otherwise. Dates are in UTC.
-- **The screen** is the harness page's: a renderer that reads the screen or its container (C4's `screen.availWidth`, the gantt's `offsetWidth`) gets 1200 px, unless the configuration sets a width.
+- **The screen** is the harness page's: a renderer that reads the screen or its container (the gantt's `offsetWidth`) gets 1200 px, unless the configuration sets a width.
 - **No state is kept between renders.** Each render starts from the resolved configuration; counters, memos and ids live for one render.
 - **The SVG id** is derived from the text and the configuration unless the caller sets one.
 

@@ -83,4 +83,4 @@ Quirks of the reference that are kept on purpose:
 - **Edge ids count relationships,** not pairs, so parallel relationships between two entities get `id_A_B_1` and `id_A_B_2`.
 - **`nodeSpacing` and `rankSpacing` are dead for ELK.** The renderer writes 140 and 80 into the flowchart section; the ELK path reads its own options.
 - **Subgraph members are phantoms.** The strings of `classDef`, `class`, `style` and the accessibility statements inside a subgraph are in `nodes` and take part in the removal of members that an earlier subgraph holds. They are not drawn; the cases of `cases.ts` pin them.
-- **`accDescr` loses blank lines.** The setter's `\n\s+` to `\n` replaces the converter of pie and info, so `line one`, a blank line and `  line two` becomes `line one\nline two`.
+- **`accDescr` loses blank lines.** The setter's `\n\s+` to `\n` replaces the converter of pie, so `line one`, a blank line and `  line two` becomes `line one\nline two`.

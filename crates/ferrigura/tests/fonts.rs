@@ -282,64 +282,6 @@ fn an_edge_declared_family_binds_the_design_that_measured_its_label() {
 }
 
 #[test]
-fn use_case_actor_and_usecase_families_resolve_their_configured_roles() {
-    let text = "usecase-beta\nactor User(\"AVATAR width\")\nUC(\"AVATAR width\")\nUser --> UC";
-    let configured = |family: &str| {
-        Renderer::builder(&Value::from(serde_json::json!({
-            "usecase":{"actorFontFamily":family,"usecaseFontFamily":family}
-        })))
-        .with_all()
-        .font("Fixture", SANS.to_vec())
-        .unwrap()
-        .font("Other", MONO.to_vec())
-        .unwrap()
-        .build()
-    };
-    let first = configured("Fixture").render(text).unwrap();
-    let second = configured("Other").render(text).unwrap();
-    assert_ne!(view_box(&first), view_box(&second));
-    let error = configured("Missing Role")
-        .render(text)
-        .unwrap_err()
-        .to_string();
-    assert!(error.contains("Missing Role"));
-}
-
-#[test]
-fn title_only_journey_retains_the_primary_for_relative_ex_size() {
-    let mut registry = ferrigura::FontRegistry::new();
-    registry
-        .register(
-            "Fixture",
-            SANS.to_vec(),
-            FontWeight::Normal,
-            FontStyle::Normal,
-        )
-        .unwrap();
-    let regular = registry
-        .resolve("Fixture", FontWeight::Normal, FontStyle::Normal)
-        .unwrap();
-    let renderer = Renderer::builder(&Value::empty_object())
-        .with_all()
-        .font("Fixture", SANS.to_vec())
-        .unwrap()
-        .font_face(
-            "Fixture",
-            MONO.to_vec(),
-            FontWeight::Bold,
-            FontStyle::Normal,
-        )
-        .unwrap()
-        .build();
-    let svg = renderer
-        .render("journey\n title AVATAR width\n section Empty")
-        .unwrap();
-    assert!(svg.contains("font-size=\"4ex\""));
-    assert!(svg.contains(&format!("{}:", regular.css_variable().unwrap())));
-    assert_eq!(svg.matches("@font-face{").count(), 2);
-}
-
-#[test]
 fn sequence_number_role_stays_regular_and_keeps_compatibility_sizes() {
     let config = Value::from(serde_json::json!({"sequence":{"messageFontWeight":700}}));
     let supplied = Renderer::builder(&config)

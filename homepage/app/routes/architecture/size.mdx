@@ -7,19 +7,19 @@ import { Measured, Size, SizeChart, SizeTable } from '../../components/size';
 
 Ferrigura is a native library, so its size is a question for anyone who ships it: in an npm package, a command-line tool, or a Rust program. This page shows where the bytes go, measured on <Measured />. The charts are Mermaid text that Ferrigura drew itself.
 
-The Node addon that draws every diagram type is <Size of="all" />. Of that, <Size of="core" /> is the core that every diagram needs, and the rest is what the 32 diagram types add. A program that draws only some of them can leave the others out: an addon for sequence diagrams alone is <Size of="sequence" />.
+The Node addon that draws every diagram type is <Size of="all" />. Of that, <Size of="core" /> is the core that every diagram needs, and the rest is what the nine other diagram types add. A program that draws only some of them can leave the others out: an addon for sequence diagrams alone is <Size of="sequence" />.
 
 ## The core and the diagram types
 
 <SizeChart id="share" />
 
-The core is the build that draws the smallest diagram type, `info`, and nothing else. It holds what every render goes through: the configuration and the themes, the bundled fonts (1.4 MB of them) and the subsetter that embeds the glyphs a drawing uses, the SVG output and, for the addon, the Node binding.
+The core is the build that draws the smallest diagram type, the quadrant chart, and nothing else. It holds what every render goes through: the configuration and the themes, the bundled fonts (1.4 MB of them) and the subsetter that embeds the glyphs a drawing uses, the SVG output and, for the addon, the Node binding.
 
 ## What each diagram type adds
 
 <SizeChart id="types" />
 
-A type's bar is what its parser, its model, its renderer and the layout engine it reaches add to the core. Most bars also hold the text measurement, about 0.6 MB: shaping with HarfRust and the glyph metrics that wrap and size the labels. The radar, quadrant and packet charts place their text without measuring it, as Mermaid does, which is why their bars are short. Several types share an engine, and each of their bars counts it: flowcharts, class, state, entity relationship, requirement, block, agent flow, use case and swimlane diagrams all lay out with the port of ELK, and mindmaps can, so a build with two of them carries ELK once and is smaller than the core plus both bars.
+A type's bar is what its parser, its model, its renderer and the layout engine it reaches add to the core. Every bar also holds the text measurement, about 0.6 MB: shaping with HarfRust and the glyph metrics that wrap and size the labels. The quadrant chart places its text without measuring it, as Mermaid does, which is why it is the smallest build. Several types share an engine, and each of their bars counts it: flowcharts, class, state and entity relationship diagrams all lay out with the port of ELK, so a build with two of them carries ELK once and is smaller than the core plus both bars.
 
 ## Building with fewer types
 

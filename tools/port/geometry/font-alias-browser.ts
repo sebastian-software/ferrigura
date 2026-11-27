@@ -39,7 +39,7 @@ const hostCss = (
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
-  for (const file of ['display', 'sequence', 'c4', 'plain', 'markdown']) {
+  for (const file of ['sequence', 'plain', 'markdown']) {
     const svg = await readFile(
       join(repositoryRoot, `target/font-alias-browser/${file}.svg`),
       'utf8'

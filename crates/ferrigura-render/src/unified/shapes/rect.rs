@@ -97,7 +97,7 @@ pub(super) fn text(input: &ShapeInput<'_>) -> Part {
 }
 
 /// `labelRect.ts`: a 0.1 by 0.1 box at the origin, with the label moved so that its center is at
-/// the origin. It only carries the label of a swimlane edge (`layout-algorithms/swimlanes`).
+/// the origin. Mermaid draws the label of a swimlane edge with it, and a flowchart node can name it.
 pub(super) fn label_rect(input: &ShapeInput<'_>) -> Part {
     let label = label_helper(input, false);
     let offset = Point::new(

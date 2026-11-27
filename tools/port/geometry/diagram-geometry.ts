@@ -8,7 +8,7 @@
  * the specialized harnesses (`pie-geometry.ts`, `flowchart-geometry.ts`).
  *
  * A type may have probes too, under `tools/port/geometry/probes/<type>`: texts the e2e fixtures do not
- * cover (the kanban items, which no kanban fixture draws). They are compared like the fixtures, under
+ * cover. They are compared like the fixtures, under
  * the keys `probes/<type>/<file>`. They are kept apart from `e2e/diagrams`, whose `.mmd` files are
  * the corpus that this harness and the Rust tests render.
  *
@@ -37,7 +37,7 @@
  * `--self` compares the reference with a second render of the same text, under the same key rule.
  * Every fixture of the type is compared, so the exclusions do not apply, and a difference is a
  * nondeterminism of the reference. Both renders get the same clock and random seed (`renderReference`
- * in `common.ts`), which takes the gantt today marker, gitGraph ids and rough.js strokes out of the
+ * in `common.ts`), which takes the gantt today marker and rough.js strokes out of the
  * differences. Its summary goes to `target/geometry/generic-<type>-self-geometry.json`. Ferrigura is
  * not run.
  *
@@ -49,7 +49,8 @@
  *   pnpm -C tools/port port:geometry <type> [--filter PATTERN] [--images DIR] [--capture] [--self]
  *   DUMP=SLUG[,SLUG...] pnpm -C tools/port port:geometry <type>   writes target/geometry/dump-SLUG.json
  *
- * `<type>`: a key of `TYPE_FOLDERS`, matched without regard to case (`treeview` names `treeView`).
+ * `<type>`: a key of `TYPE_FOLDERS`, matched without regard to case (`quadrantchart` names
+ * `quadrantChart`).
  * `--filter` takes a substring, or a glob with `*`, `**` and `?`, of the fixture's path under
  * `e2e/diagrams`, for example `class-diagram/**` or `state-diagram-v2/*note*`.
  *
@@ -65,7 +66,6 @@ import { join } from 'node:path';
 import {
   buildRenderExample,
   decodeFixtureEntities,
-  effectiveSettings,
   countClasses,
   exclusionReason,
   flagValue,
@@ -79,7 +79,6 @@ import {
   renderReference,
   root,
   slugOf,
-  WARDLEY_FAMILY,
   withPage,
   workDir,
   writeJson,
@@ -89,18 +88,12 @@ import {
 } from './common.js';
 import { placeholderCoverageWarnings, type FixtureFont } from './measurement-coverage.js';
 import { compareDiagrams, type DiagramGeometry } from './diagram-compare.js';
-import {
-  compareLabels,
-  JOURNEY_SETTINGS,
-  LABEL_LINES,
-  type LabelGeometry,
-} from './journey-labels.js';
 
 const fixtureRoot = join(root, 'e2e/diagrams');
 
 /**
  * The probe inputs of a type, under `tools/port/geometry/probes/<type>`: texts that the e2e fixtures
- * do not cover, such as kanban items (the fixtures are flat lists of sections). They are compared
+ * do not cover. They are compared
  * with the fixtures, under the key `probes/<type>/<file>`, and not added to `e2e/diagrams`, whose
  * `.mmd` files are the corpus that this harness and the Rust tests render.
  */
@@ -113,19 +106,6 @@ function pathOf(key: string): string {
     : join(fixtureRoot, key);
 }
 
-/**
- * The settings of a cynefin fixture (cynefin only). The boundary waves are drawn from `cynefin.seed`,
- * and a seed of 0 hashes the SVG id, which the reference and ferrigura share here; Mermaid's
- * Playwright suites, which rendered these fixtures until they were removed, set the seed to 1 under a
- * fixture's own (`e2e/helpers/util.ts` of Mermaid 12.2.0), so the harness does the same: the
- * fixture's own seed when it sets one, else 1. The `--self` pass then draws the same waves
- * under both of its ids.
- */
-function cynefinSettings(source: string): Record<string, unknown> {
-  const own = (effectiveSettings(source).cynefin as { seed?: unknown } | undefined)?.seed;
-  return { cynefin: { seed: own ?? 1 } };
-}
-
 /** The fixture folders of each type, under `e2e/diagrams`. */
 const TYPE_FOLDERS: Record<string, string[]> = {
   sequence: ['sequence'],
@@ -133,51 +113,22 @@ const TYPE_FOLDERS: Record<string, string[]> = {
   state: ['state-diagram', 'state-diagram-v2'],
   er: ['er-diagram'],
   gantt: ['gantt'],
-  timeline: ['timeline'],
-  gitgraph: ['git'],
-  journey: ['journey'],
-  info: ['info'],
   pie: ['pie'],
   flowchart: ['flowchart'],
   mindmap: ['mindmap'],
-  block: ['block'],
-  packet: ['packet'],
   xychart: ['xychart'],
-  sankey: ['sankey'],
   quadrantChart: ['quadrant-chart'],
-  requirement: ['requirement'],
-  c4: ['c4'],
-  kanban: ['kanban'],
-  architecture: ['architecture'],
-  treemap: ['treemap'],
-  ishikawa: ['ishikawa'],
-  eventmodeling: ['eventmodeling'],
-  agentflow: ['agentflow'],
-  cynefin: ['cynefin'],
-  radar: ['radar'],
-  railroad: ['railroad'],
-  swimlanes: ['swimlanes'],
-  treeView: ['tree-view'],
-  usecase: ['usecase'],
-  venn: ['venn'],
-  wardley: ['wardley'],
 };
 
 /**
  * The page-side measurement of one SVG, as source text for the page (`pageHtml` in `common.ts`).
  * `record` gives one element its entry; `walk` visits the children of an element, in document
- * order, with the structural key of the parent. In label mode (`labels`, the journey, the
- * eventmodeling and the venn) a label is recorded with its lines and left out of the elements: a
- * `switch` (the journey's `fo` label, which ferrigura draws), a `foreignObject` (the reference's box
- * text of eventmodeling and venn), or the venn's `text.venn-text-node`, which ferrigura draws in
- * place of the venn's `foreignObject`. Each gets the key `label[n]`, so the two sides pair
- * (`journey-labels.ts`).
+ * order, with the structural key of the parent.
  */
-function measureSource(labels: boolean): string {
+function measureSource(): string {
   return `
 const SKIPPED = new Set(['style', 'defs', 'marker', 'title', 'desc']);
 const BOXED = new Set(['rect', 'circle', 'ellipse', 'line', 'polygon', 'polyline', 'image', 'text']);
-${LABEL_LINES}
 const measure = (svg) => {
   const record = (element, key) => {
     const tag = element.tagName;
@@ -234,29 +185,22 @@ const measure = (svg) => {
     return entry;
   };
   const elements = [];
-  const labelsFound = [];
   const walk = (parent, parentKey) => {
     const seen = new Map();
     for (const child of parent.children) {
       if (SKIPPED.has(child.tagName)) continue;
       // The pie's \`pie-slot-<n>\` classes are ferrigura's own: they carry the colour slots of
       // decision 0011, which the reference has no class for, so they are not part of the key.
-      const isLabel = ${labels} && (child.tagName === 'switch' || child.tagName === 'foreignObject' || (child.tagName === 'text' && child.classList.contains('venn-text-node')));
-      const signature = isLabel
-        ? 'label'
-        : child.tagName +
-          [...child.classList]
-            .filter((name) => !/^(pie-slot-[0-9]+|cynefin-fill-[a-z]+)$/.test(name))
-            .sort()
-            .map((name) => '.' + name)
-            .join('');
+      const signature =
+        child.tagName +
+        [...child.classList]
+          .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
+          .sort()
+          .map((name) => '.' + name)
+          .join('');
       const index = seen.get(signature) ?? 0;
       seen.set(signature, index + 1);
       const key = parentKey + '/' + signature + '[' + index + ']';
-      if (isLabel) {
-        labelsFound.push({ key: key, lines: labelLines(svg, child) });
-        continue;
-      }
       elements.push(record(child, key));
       walk(child, key);
     }
@@ -267,17 +211,13 @@ const measure = (svg) => {
     viewBox: numbers(svg.getAttribute('viewBox')),
     roledescription: svg.getAttribute('aria-roledescription'),
     elements: elements,
-    labels: ${labels} ? labelsFound : null,
   };
 };
 `;
 }
 
 /** A measured SVG in the generic harness: the reference's and ferrigura's alike. */
-interface MeasuredSvg extends DiagramGeometry {
-  /** The labels of a journey or an eventmodeling; null for the other types. */
-  labels: LabelGeometry[] | null;
-}
+type MeasuredSvg = DiagramGeometry;
 
 interface Options {
   type: string;
@@ -366,25 +306,12 @@ async function main(): Promise<void> {
   );
 
   const results: DiagramResult[] = [];
-  // Journey, eventmodeling and venn: the labels are compared by their lines (the venn's text nodes
-  // are `foreignObject`s in the reference), and the journey's settings pin its title font.
-  const labelled =
-    options.type === 'journey' || options.type === 'eventmodeling' || options.type === 'venn';
-  // The wardley reference's text takes the bundled face while it draws (`WARDLEY_FAMILY`).
-  const pinFamily = options.type === 'wardley' ? WARDLEY_FAMILY : null;
-  await withPage(measureSource(labelled), async (page) => {
+  await withPage(measureSource(), async (page) => {
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
       const source = await decodeFixtureEntities(page, await readFile(pathOf(file), 'utf8'));
-      const text = patchText(
-        source,
-        options.type === 'journey'
-          ? JOURNEY_SETTINGS
-          : options.type === 'cynefin'
-            ? cynefinSettings(source)
-            : {}
-      );
+      const text = patchText(source, {});
       const result: DiagramResult = {
         fixture: file,
         id,
@@ -404,7 +331,7 @@ async function main(): Promise<void> {
       for (const warning of result.warnings) console.log(`! ${file}  ${warning}`);
 
       const clock = { now: Date.now(), seed: 1 };
-      const reference = await renderReference(page, id, text, clock, pinFamily);
+      const reference = await renderReference(page, id, text, clock);
       result.elkCalls = reference.elk.length;
       if (!reference.ok || reference.svg === null) {
         result.reason = reference.error;
@@ -418,13 +345,13 @@ async function main(): Promise<void> {
       // The other side: a second render of the same text, or ferrigura's SVG.
       const otherName = options.self ? 'the second reference render' : 'ferrigura';
       let other: { svg: string; geometry: MeasuredSvg } | null = null;
-      const excluded = options.self ? null : exclusionReason(source, options.type);
+      const excluded = options.self ? null : exclusionReason(source);
       if (excluded !== null) {
         result.class = 'excluded';
         result.reason = excluded;
         console.log(`– ${file}  excluded: ${excluded}`);
       } else if (options.self) {
-        const second = await renderReference(page, `self-${slug}`, text, clock, pinFamily);
+        const second = await renderReference(page, `self-${slug}`, text, clock);
         if (!second.ok || second.svg === null) {
           result.class = 'outside';
           result.problems = [`the second reference render failed: ${second.error}`];
@@ -436,7 +363,7 @@ async function main(): Promise<void> {
           geometry: await measureSvg<MeasuredSvg>(page, second.svg),
         };
       } else {
-        const rendered = renderFerrigura(text, id, clock.now, clock.seed);
+        const rendered = renderFerrigura(text, id, clock.now);
         if ('error' in rendered) {
           result.class = 'not rendered';
           result.reason = rendered.error;
@@ -451,16 +378,8 @@ async function main(): Promise<void> {
 
       if (other !== null) {
         const compared = compareDiagrams(referenceGeometry, other.geometry, otherName);
-        // The labels of the journey: their lines, with the same tolerance and the same worst fraction.
-        const labels =
-          referenceGeometry.labels !== null && other.geometry.labels !== null
-            ? compareLabels(referenceGeometry.labels, other.geometry.labels, otherName)
-            : { worst: null, problems: [] };
-        const problems = [...compared.problems, ...labels.problems];
-        const worst = [compared.worst, labels.worst].reduce<number | null>(
-          (most, value) => (value === null ? most : Math.max(most ?? 0, value)),
-          null
-        );
+        const problems = compared.problems;
+        const worst = compared.worst;
         result.class = problems.length === 0 ? 'within' : 'outside';
         result.worstPercent = worst === null ? null : worst * 100;
         result.problems = problems;

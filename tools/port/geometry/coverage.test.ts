@@ -75,9 +75,7 @@ describe('the exclusion by coverage', () => {
     assert.deepEqual(uncoveredCharacters('flowchart LR\r\n\tA --> B\n'), []);
   });
 
-  it('treats the box-drawing characters of a tree view as its syntax, not drawn text', () => {
-    const tree = 'treeView-beta\n  project/\n  ├── src/\n  └── README.md\n';
-    assert.deepEqual(uncoveredCharacters(tree), []);
+  it('counts the box-drawing characters of a label as drawn text', () => {
     assert.deepEqual(uncoveredCharacters('flowchart LR\n  A["├── x"] --> B\n'), [
       'U+251C ├',
       'U+2500 ─',

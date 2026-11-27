@@ -370,13 +370,7 @@ async function main(): Promise<void> {
         result.reason = excluded;
         console.log(`– ${file}  excluded: ${excluded}`);
       } else {
-        const rendered = renderFerrigura(
-          text,
-          id,
-          undefined,
-          undefined,
-          options.routing === 'mermaid'
-        );
+        const rendered = renderFerrigura(text, id, undefined, options.routing === 'mermaid');
         if ('error' in rendered) {
           result.class = 'not rendered';
           result.reason = rendered.error;

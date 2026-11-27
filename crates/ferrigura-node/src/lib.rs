@@ -7,7 +7,8 @@
 //!
 //! The crate has one cargo feature per diagram type, named as its constructor in
 //! `ferrigura::diagrams`, and `all`, the default. A build with fewer features draws fewer types and
-//! links only those (decision 0020); a text of another type is refused as not registered.
+//! links only those (decision 0020); a text of another type is refused as not registered, and a
+//! text of a type that ferrigura does not draw is refused with an error that names the type.
 
 use ferrigura::diagrams::{self, Plugin};
 use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, RendererBuilder};
@@ -71,7 +72,7 @@ pub struct RenderOptionsInput {
 }
 
 /// Options for one-time, script-free SVG draw animation.
-/// Supports flowcharts, Gantt, Git graphs, mind maps, pie charts, and XY charts.
+/// Supports flowcharts, Gantt, mind maps, pie charts, and XY charts.
 #[napi(object)]
 pub struct AnimationInput {
     /// Positive, finite multiplier of 700 SVG user units per second on average. Defaults to 1.
@@ -236,8 +237,6 @@ fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
                     Ok(now as i64)
                 })
                 .transpose()?,
-            git_graph_seed: None,
-            random_seed: None,
         },
         None => RenderOptions::default(),
     })
@@ -261,38 +260,15 @@ fn to_error(error: ferrigura::Error) -> Error {
 
 #[cfg(not(any(
     feature = "pie",
-    feature = "info",
     feature = "flowchart",
-    feature = "timeline",
-    feature = "journey",
-    feature = "git_graph",
     feature = "er",
     feature = "class",
     feature = "sequence",
     feature = "state",
     feature = "gantt",
     feature = "mindmap",
-    feature = "block",
-    feature = "packet",
     feature = "xy_chart",
-    feature = "sankey",
-    feature = "quadrant_chart",
-    feature = "requirement",
-    feature = "c4",
-    feature = "kanban",
-    feature = "architecture",
-    feature = "treemap",
-    feature = "ishikawa",
-    feature = "event_modeling",
-    feature = "agentflow",
-    feature = "cynefin",
-    feature = "radar",
-    feature = "railroad",
-    feature = "swimlanes",
-    feature = "tree_view",
-    feature = "use_case",
-    feature = "venn",
-    feature = "wardley"
+    feature = "quadrant_chart"
 )))]
 compile_error!(
     "ferrigura-node draws no diagram type: enable at least one feature, or the default `all`"
@@ -307,16 +283,8 @@ fn plugins() -> Vec<Plugin> {
     let mut plugins = Vec::new();
     #[cfg(feature = "pie")]
     plugins.push(diagrams::pie());
-    #[cfg(feature = "info")]
-    plugins.push(diagrams::info());
     #[cfg(feature = "flowchart")]
     plugins.push(diagrams::flowchart());
-    #[cfg(feature = "timeline")]
-    plugins.push(diagrams::timeline());
-    #[cfg(feature = "journey")]
-    plugins.push(diagrams::journey());
-    #[cfg(feature = "git_graph")]
-    plugins.push(diagrams::git_graph());
     #[cfg(feature = "er")]
     plugins.push(diagrams::er());
     #[cfg(feature = "class")]
@@ -329,48 +297,10 @@ fn plugins() -> Vec<Plugin> {
     plugins.push(diagrams::gantt());
     #[cfg(feature = "mindmap")]
     plugins.push(diagrams::mindmap());
-    #[cfg(feature = "block")]
-    plugins.push(diagrams::block());
-    #[cfg(feature = "packet")]
-    plugins.push(diagrams::packet());
     #[cfg(feature = "xy_chart")]
     plugins.push(diagrams::xy_chart());
-    #[cfg(feature = "sankey")]
-    plugins.push(diagrams::sankey());
     #[cfg(feature = "quadrant_chart")]
     plugins.push(diagrams::quadrant_chart());
-    #[cfg(feature = "requirement")]
-    plugins.push(diagrams::requirement());
-    #[cfg(feature = "c4")]
-    plugins.push(diagrams::c4());
-    #[cfg(feature = "kanban")]
-    plugins.push(diagrams::kanban());
-    #[cfg(feature = "architecture")]
-    plugins.push(diagrams::architecture());
-    #[cfg(feature = "treemap")]
-    plugins.push(diagrams::treemap());
-    #[cfg(feature = "ishikawa")]
-    plugins.push(diagrams::ishikawa());
-    #[cfg(feature = "event_modeling")]
-    plugins.push(diagrams::event_modeling());
-    #[cfg(feature = "agentflow")]
-    plugins.push(diagrams::agentflow());
-    #[cfg(feature = "cynefin")]
-    plugins.push(diagrams::cynefin());
-    #[cfg(feature = "radar")]
-    plugins.push(diagrams::radar());
-    #[cfg(feature = "railroad")]
-    plugins.push(diagrams::railroad());
-    #[cfg(feature = "swimlanes")]
-    plugins.push(diagrams::swimlanes());
-    #[cfg(feature = "tree_view")]
-    plugins.push(diagrams::tree_view());
-    #[cfg(feature = "use_case")]
-    plugins.push(diagrams::use_case());
-    #[cfg(feature = "venn")]
-    plugins.push(diagrams::venn());
-    #[cfg(feature = "wardley")]
-    plugins.push(diagrams::wardley());
     plugins
 }
 
@@ -388,40 +318,17 @@ mod tests {
     use super::*;
 
     /// Which features this build has, in the order of `plugins`.
-    const FEATURES: [bool; 33] = [
+    const FEATURES: [bool; 10] = [
         cfg!(feature = "pie"),
-        cfg!(feature = "info"),
         cfg!(feature = "flowchart"),
-        cfg!(feature = "timeline"),
-        cfg!(feature = "journey"),
-        cfg!(feature = "git_graph"),
         cfg!(feature = "er"),
         cfg!(feature = "class"),
         cfg!(feature = "sequence"),
         cfg!(feature = "state"),
         cfg!(feature = "gantt"),
         cfg!(feature = "mindmap"),
-        cfg!(feature = "block"),
-        cfg!(feature = "packet"),
         cfg!(feature = "xy_chart"),
-        cfg!(feature = "sankey"),
         cfg!(feature = "quadrant_chart"),
-        cfg!(feature = "requirement"),
-        cfg!(feature = "c4"),
-        cfg!(feature = "kanban"),
-        cfg!(feature = "architecture"),
-        cfg!(feature = "treemap"),
-        cfg!(feature = "ishikawa"),
-        cfg!(feature = "event_modeling"),
-        cfg!(feature = "agentflow"),
-        cfg!(feature = "cynefin"),
-        cfg!(feature = "radar"),
-        cfg!(feature = "railroad"),
-        cfg!(feature = "swimlanes"),
-        cfg!(feature = "tree_view"),
-        cfg!(feature = "use_case"),
-        cfg!(feature = "venn"),
-        cfg!(feature = "wardley"),
     ];
 
     #[test]

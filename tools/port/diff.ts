@@ -5,7 +5,7 @@
  * difference is reported with both results. The layout data, configuration, YAML and theme runs
  * have their own scripts (`diff-<type>.ts`), which this one starts.
  *
- * Usage: `pnpm -C tools/port port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | agentflow | cynefin | radar | railroad | swimlanes | treeView | usecase | venn | wardley | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme | markdown>`
+ * Usage: `pnpm -C tools/port port:diff <pie | flowchart | er | class | sequence | state | gantt | mindmap | xychart | quadrantChart | flowchart-data | er-data | state-data | class-data | config | yaml | theme | markdown>`
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
@@ -18,38 +18,15 @@ import type { PortInput, PortOutput } from './reference.ts';
 /** The types whose canonical models are compared, each through its exporter `export-<type>.ts`. */
 const modelTypes = [
   'pie',
-  'info',
   'flowchart',
-  'timeline',
-  'journey',
-  'gitgraph',
   'er',
   'class',
   'sequence',
   'state',
   'gantt',
   'mindmap',
-  'block',
-  'packet',
   'xychart',
-  'sankey',
   'quadrantChart',
-  'requirement',
-  'c4',
-  'kanban',
-  'architecture',
-  'treemap',
-  'ishikawa',
-  'eventmodeling',
-  'agentflow',
-  'cynefin',
-  'radar',
-  'railroad',
-  'swimlanes',
-  'treeView',
-  'usecase',
-  'venn',
-  'wardley',
 ];
 
 /** The runs with a script of their own, `diff-<type>.ts`. */
@@ -58,8 +35,6 @@ const ownRunTypes = [
   'er-data',
   'state-data',
   'class-data',
-  'requirement-data',
-  'kanban-data',
   'config',
   'yaml',
   'theme',

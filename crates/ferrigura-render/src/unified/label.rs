@@ -119,9 +119,6 @@ pub struct LabelLayout {
     pub title: bool,
     /// Where the lines are anchored on `x = 0`, as the spec asked.
     pub anchor: Anchor,
-    /// A class of the label's first line, besides `text-outer-tspan` and `row`: the use case's folded
-    /// stereotype, which its `querySelector` puts on the first line (`usecaseRenderer.ts` 185).
-    pub first_line_class: Option<&'static str>,
 }
 
 impl LabelLayout {
@@ -135,7 +132,6 @@ impl LabelLayout {
             font_size: 16.0,
             title: false,
             anchor: Anchor::Middle,
-            first_line_class: None,
         }
     }
 
@@ -273,15 +269,11 @@ impl LabelLayout {
             r#"<text y="-10.1" text-anchor="start" style="{}"{attributes}>"#,
             escape(&font_style)
         );
-        for (index, line) in self.lines.iter().enumerate() {
+        for line in &self.lines {
             // Every line starts at its own x, with `text-anchor` start, so the browser never
             // aligns it by its own measure (decision 0010).
-            let first_class = match (index, self.first_line_class) {
-                (0, Some(class)) => format!(" {class}"),
-                _ => String::new(),
-            };
             out.push_str(&format!(
-                r#"<tspan class="text-outer-tspan {line_class}{first_class}" x="{}" y="{}" text-anchor="start">"#,
+                r#"<tspan class="text-outer-tspan {line_class}" x="{}" y="{}" text-anchor="start">"#,
                 number(line.runs.first().map_or(0.0, |run| run.x)),
                 number(line.baseline),
             ));
@@ -522,7 +514,6 @@ fn layout_with(
         font_size,
         title: spec.title,
         anchor: spec.anchor,
-        first_line_class: None,
     })
 }
 

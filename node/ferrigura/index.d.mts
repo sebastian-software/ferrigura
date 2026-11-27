@@ -1,6 +1,6 @@
 /** Mermaid renderer configuration. Engine-specific values are validated by Ferrigura. */
 export type Config = Readonly<Record<string, unknown>>;
-/** One-time, script-free SVG draw animation for flowchart, Gantt, Git graph, mind map, pie, and XY. */
+/** One-time, script-free SVG draw animation for flowchart, Gantt, mind map, pie, and XY. */
 export type Animation = {
   /** Positive, finite multiplier of 700 SVG units per second on average. Defaults to 1.
    * Each connection, bar, or sector eases in and out independently. */

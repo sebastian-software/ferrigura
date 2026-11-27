@@ -4,8 +4,7 @@
 //! and through `paint_paths` for `rounded`, which the path builder takes by name.
 //!
 //! Ignored: the swimlane clipping of `insertEdge` (a flowchart's edges are ELK edges and are never
-//! clipped to their shapes; the swimlane branch is `swimlane_points`, tested in
-//! `swimlanes_render_spec.rs`), the config fallback of `resolveEdgeCurveType` (not ported),
+//! clipped to their shapes, and ferrigura does not draw swimlane diagrams), the config fallback of `resolveEdgeCurveType` (not ported),
 //! `computeLabelTransform` (the geometry run checks where the labels land, and HTML labels are out
 //! of scope), and `setTerminalWidth` (terminal labels are not in the flowchart model).
 
@@ -55,7 +54,7 @@ fn should_return_edge_curve_when_it_is_a_string() {
 }
 
 #[test]
-#[ignore = "port: swimlane clipping is `swimlane_points`, tested in swimlanes_render_spec.rs"]
+#[ignore = "port: swimlane clipping (ferrigura does not draw swimlane diagrams)"]
 fn takes_the_swimlane_path_when_the_layout_data_says_so_and_the_config_disagrees() {}
 
 #[test]

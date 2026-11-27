@@ -157,11 +157,7 @@ fn accessibility_across_registered_kinds() {
                 return clean.clone();
             }
             let (head, tail) = clean.split_once('\n').unwrap();
-            if mode == "eventmodeling" {
-                format!("{head} accTitle: {title}\n{tail}\ntf 99 ui X accDescr: {description}\n")
-            } else {
-                format!("{head}\naccTitle: {title}\naccDescr: {description}\n{tail}")
-            }
+            format!("{head}\naccTitle: {title}\naccDescr: {description}\n{tail}")
         };
         let first = render(
             &renderer,
@@ -192,13 +188,11 @@ fn accessibility_across_registered_kinds() {
                 "{path}"
             );
             let expected_title = match mode {
-                "unsupported" | "omitted" | "c4" => None,
-                "eventmodeling" => Some(format!("accTitle: {title}")),
+                "unsupported" | "omitted" => None,
                 _ => Some(title.to_owned()),
             };
             let expected_desc = match mode {
                 "unsupported" | "omitted" => None,
-                "eventmodeling" => Some(format!(" accDescr: {description}")),
                 _ => Some(description.to_owned()),
             };
             for (attr, tag, expected) in [
@@ -246,20 +240,5 @@ fn accessibility_across_registered_kinds() {
     assert_eq!(
         seen, registered,
         "every registered kind has an accessibility case"
-    );
-}
-
-#[test]
-fn an_explicitly_cleared_railroad_title_has_no_reference() {
-    let renderer = Renderer::new(&Value::empty_object());
-    let text = "railroad-beta\naccTitle: Named\naccTitle:\nr = terminal(\"a\") ;\n";
-    let svg = render(&renderer, text, "empty-title");
-    let parsed = Document::parse(&svg).unwrap();
-    assert_eq!(parsed.root_element().attribute("aria-labelledby"), None);
-    assert!(
-        !parsed
-            .root_element()
-            .children()
-            .any(|node| node.has_tag_name("title"))
     );
 }

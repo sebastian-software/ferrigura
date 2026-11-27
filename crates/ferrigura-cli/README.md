@@ -156,8 +156,8 @@ it does not set the whole diagram's duration. Each connection, bar, or sector
 eases in and out independently. `--animation-order flow` draws
 branches in parallel. Either setting enables animation, so `--animate` is
 optional when a speed or order is supplied. Invalid speed or order values are
-usage errors. Flowchart, Gantt, Git graph, mind map, pie (including donut), and
-XY chart support this option; other diagram types return a render error. For
+usage errors. Flowchart, Gantt, mind map, pie (including donut), and XY chart
+support this option; other diagram types return a render error. For
 charts, `flow` starts independent elements together. See
 [draw animation](../../docs/animation.md) for each type's behavior.
 

@@ -108,20 +108,20 @@ const gallery = [
 `,
   },
   {
-    id: 'gitgraph',
-    label: 'Git graph',
+    id: 'gantt',
+    label: 'Gantt',
     description:
-      'A docs branch leaves main, gains two commits and is merged back after a fix on main.',
-    source: `gitGraph
-  commit id: "Initial"
-  branch docs
-  checkout docs
-  commit id: "Add guide"
-  commit id: "Add diagrams"
-  checkout main
-  commit id: "Fix build"
-  merge docs
-  commit id: "Release"
+      'A guide is drafted and its diagrams drawn at the same time; review follows both, and the guide is published once review ends.',
+    source: `gantt
+  dateFormat YYYY-MM-DD
+  axisFormat %b %d
+  todayMarker off
+  section Writing
+    Draft the guide: draft, 2026-03-02, 5d
+    Draw the diagrams: diagrams, 2026-03-02, 4d
+  section Release
+    Review: review, after draft diagrams, 3d
+    Publish: milestone, after review, 0d
 `,
   },
 ];

@@ -59,12 +59,8 @@ function Opening() {
         actions={<Actions />}
         facts={[
           {
-            value: (
-              <>
-                <em>{coverage.types.length}</em> of {coverage.mermaidTypes}
-              </>
-            ),
-            label: `diagram types of Mermaid ${coverage.mermaid}`,
+            value: <em>{coverage.types.length}</em>,
+            label: `diagram types of Mermaid ${coverage.mermaid}, each drawn completely`,
           },
           {
             value: (

@@ -37,8 +37,7 @@ embedding old and new bytes with identical family/weight/style in one SVG is rej
 Global primary selection reaches the unified labels and titles and every custom renderer.
 Unspecified per-type family defaults inherit that primary; explicit per-type family settings
 remain strict registration requests. The diagram pages describe individual roles. These include
-sequence participant/message/note families, C4 element/boundary/message families, journey task
-families, Git graph labels, and use-case actor/use-case families. Per-node and per-edge
+the sequence participant, message and note families. Per-node and per-edge
 `font-family` declarations resolve before unified label measurement. Existing Markdown word
 weight/style rules and text memo keys are preserved.
 

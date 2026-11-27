@@ -103,9 +103,12 @@ await writeData(
  */
 async function readCoverage() {
   const source = await readFile(new URL('docs/diagrams/README.md', repository), 'utf8');
-  const [, mermaidTypes, mermaid] =
-    /renders all (\d+) diagram types of Mermaid (\d+\.\d+\.\d+)/.exec(source) ?? [];
+  const [, count, mermaid] =
+    /draws (\w+) diagram types of Mermaid (\d+\.\d+\.\d+)/.exec(source) ?? [];
   if (!mermaid) throw new Error('docs/diagrams/README.md names no Mermaid version.');
+  const drawn =
+    ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'].indexOf(count) +
+      1 || Number(count);
   const types = source
     .split('\n')
     .filter((line) => /^\| \[[a-z0-9-]+\]\(\.\/[a-z0-9-]+\.md\)/.test(line))
@@ -131,11 +134,10 @@ async function readCoverage() {
     });
   if (types.length === 0) throw new Error('docs/diagrams/README.md has no coverage rows.');
   const sum = (key) => types.reduce((total, row) => total + row[key], 0);
-  if (types.length !== Number(mermaidTypes))
-    throw new Error(`docs/diagrams/README.md lists ${types.length} of ${mermaidTypes} types.`);
+  if (types.length !== drawn)
+    throw new Error(`docs/diagrams/README.md lists ${types.length} of ${count} types.`);
   return {
     mermaid,
-    mermaidTypes: Number(mermaidTypes),
     types,
     parsed: sum('parsed'),
     agreed: sum('agreed'),

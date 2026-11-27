@@ -195,6 +195,38 @@ fn text_that_is_not_a_diagram_is_an_error_of_the_diagram() {
 }
 
 #[test]
+fn a_type_ferrigura_does_not_draw_is_an_error_of_the_diagram_that_names_it() {
+    let drawn = "it draws flowchart, state, class, ER, mindmap, sequence, gantt, XY chart, pie and \
+                 quadrant chart diagrams";
+    for (text, name) in [
+        ("sankey-beta\n  a,b,8\n", "sankey"),
+        ("gitGraph\n  commit\n", "Git graph"),
+        ("C4Context\n  title T\n", "C4"),
+        ("journey\n  title T\n", "user journey"),
+        ("kanban\n  Todo\n", "kanban"),
+        ("timeline\n  2020 : a\n", "timeline"),
+        ("block-beta\n  A\n", "block"),
+        (
+            "architecture-beta\n  service a(server)[A]\n",
+            "architecture",
+        ),
+        ("requirementDiagram\n", "requirement"),
+        ("info\n", "info"),
+    ] {
+        for mode in [&[][..], &["--compat"][..], &["--design"][..]] {
+            let output = run(mode, text);
+            assert_eq!(output.status.code(), Some(1), "{text:?} {mode:?}");
+            assert!(stdout(&output).is_empty(), "{text:?} {mode:?}");
+            assert_eq!(
+                stderr(&output),
+                format!("ferrigura: ferrigura does not draw {name} diagrams; {drawn}\n"),
+                "{text:?} {mode:?}"
+            );
+        }
+    }
+}
+
+#[test]
 fn a_configuration_that_is_not_an_object_is_refused() {
     let config = scratch("config-array.json", "[1, 2]");
     let output = run(&["--config", config.to_str().expect("UTF-8 path")], PIE);

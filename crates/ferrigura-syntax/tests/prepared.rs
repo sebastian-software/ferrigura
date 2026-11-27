@@ -43,17 +43,3 @@ fn malformed_front_matter_keeps_standalone_errors() {
     );
     assert_eq!(detect(text), None);
 }
-
-#[test]
-fn git_graph_source_options_match_the_standalone_entry() {
-    let text = "---\nconfig:\n  gitGraph:\n    mainBranchName: trunk\n    mainBranchOrder: 3\n---\ngitGraph\ncommit\n";
-    let source = preprocess::prepare(text).unwrap();
-    let directive = config::read_prepared(&source, detect_prepared(&source)).unwrap();
-    let options = ferrigura_syntax::git_graph::options_from_config(&directive);
-    assert_eq!(options.main_branch_name, "trunk");
-    assert_eq!(options.main_branch_order, 3.0);
-    assert_eq!(
-        ferrigura_syntax::git_graph::parse(text),
-        ferrigura_syntax::git_graph::parse_prepared(&source, &options)
-    );
-}

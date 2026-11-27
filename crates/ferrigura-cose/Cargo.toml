@@ -1,7 +1,7 @@
 [package]
 name = "ferrigura-cose"
 version = "0.9.0"
-description = "Force-directed layouts ported from the JavaScript sources: cytoscape-cose-bilkent 4.1.0 (the tree path Mermaid's mindmaps use) and cytoscape-fcose 2.2.0 (architecture diagrams)"
+description = "The force-directed layout of Mermaid's mindmaps, ported from the JavaScript sources: the tree path of cytoscape-cose-bilkent 4.1.0"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
 edition.workspace = true

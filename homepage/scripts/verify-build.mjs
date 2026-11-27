@@ -116,7 +116,7 @@ function verifyHomepage(html) {
     'id="homepage-scheme-light"',
     'id="homepage-scheme-dark"',
     // The figures, recomputed from the coverage table.
-    `${coverage.types.length}</em> of ${coverage.mermaidTypes}`,
+    `${coverage.types.length}</em>`,
     `${grouped(coverage.agreed)}</em> of ${grouped(coverage.compared)}`,
     `${grouped(coverage.parsed)}</em>`,
     ...coverage.types.map((row) => `${grouped(row.agreed)} of ${grouped(row.compared)}`),

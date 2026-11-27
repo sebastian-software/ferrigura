@@ -59,12 +59,7 @@ fn export_font_alias_browser_fixtures() {
     }
     let renderer = builder.font_fallbacks(["Emoji", "Arrows"]).build();
     let cases = [
-        ("display", "info"),
         ("sequence", "sequenceDiagram\n A->>B: Plain e\u{301} → 😀"),
-        (
-            "c4",
-            "C4Context\n Person(a, \"Person e\u{301} →\")\n System(b, \"System 😀\")\n Rel(a,b,\"Uses\")",
-        ),
         ("plain", "flowchart LR\n A[Plain e\u{301} → 😀] --> B[Next]"),
         (
             "markdown",

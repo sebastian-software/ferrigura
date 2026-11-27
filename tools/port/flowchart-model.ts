@@ -1,8 +1,6 @@
 /**
  * The flowchart DB's canonical model, from the TypeScript reference: the state of `FlowDB` after
- * `flowParser` has parsed a text. The flowchart exporter (`export-flowchart.ts`) and the swimlane
- * exporter (`export-swimlanes.ts`) share it: a swimlane diagram is the flowchart's factory with its
- * own styles, so its parser and its DB are the flowchart's.
+ * `flowParser` has parsed a text, as the flowchart exporter (`export-flowchart.ts`) reads it.
  *
  * The text goes through `preprocessDiagram`, then `encodeEntities` and a line break, as
  * `Diagram.fromText` gives it to the parser; the Jison parser then fills the flowchart DB, and the

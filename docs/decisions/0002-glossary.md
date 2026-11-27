@@ -9,7 +9,7 @@ These terms mean exactly what is written here, everywhere in the repository.
 ### Diagrams
 
 **Diagram type**:
-One kind of diagram with its own syntax, such as flowchart, sequence or gantt, identified by the keyword that starts the text. Mermaid 12.2.0 has 33 of them, and ferrigura renders all 33.
+One kind of diagram with its own syntax, such as flowchart, sequence or gantt, identified by the keyword that starts the text. Mermaid 12.2.0 has 33 of them; ferrigura draws ten, each one completely, and refuses a text of any other ([0024](./0024-a-fixed-list-of-diagram-types.md)).
 _Avoid_: chart, diagram kind, family
 
 **Detector**:
@@ -27,7 +27,7 @@ A set of color tokens that decides how a diagram is colored.
 _Avoid_: skin, palette (for the whole set)
 
 **Unified renderer**:
-The renderer that flowchart, class, state, ER and requirement share, and that other types such as mindmap and block build on: the port of Mermaid's `rendering-util`, with its shapes, clusters, edges and layout algorithms (`ferrigura-render`, `src/unified`).
+The renderer that flowchart, class, state and ER share, and that the mindmap builds on: the port of Mermaid's `rendering-util`, with its shapes, clusters, edges and layout algorithms (`ferrigura-render`, `src/unified`).
 
 **Compatibility mode**:
 The per-render choice between optimized geometry (`compat: false`, the default) and Mermaid-compatible geometry (`compat: true`). It controls adaptive flowchart ports and compact sequence participant boxes. Font, color and readability fixes apply in either mode ([0019](./0019-adaptive-flowchart-mode.md)).
