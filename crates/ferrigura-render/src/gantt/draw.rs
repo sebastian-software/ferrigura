@@ -63,7 +63,7 @@ struct ResolvedGanttIds {
 impl ResolvedGanttIds {
     fn remap_fragment(&self, raw_link: &str) -> Option<String> {
         use crate::unified::pipeline::{
-            canonical_attr_id, format_fragment_url_for, percent_decode_fragment,
+            canonical_xml_attr, format_fragment_url_for, percent_decode_fragment,
             strip_fragment_marker,
         };
 
@@ -83,10 +83,11 @@ impl ResolvedGanttIds {
             if let Some(target_id) = self.remapped_fragments.get(&format!("#{decoded}")) {
                 return Some(format_fragment_url_for(target_id, &self.element_owned));
             }
-            let resolved_target = canonical_attr_id(&decoded);
-            if self.element_owned.contains(&resolved_target) {
+            let resolved_decoded = ferrigura_syntax::url::resolve_url_entity_placeholders(&decoded);
+            let resolved_target = canonical_xml_attr(resolved_decoded.as_ref());
+            if self.element_owned.contains(resolved_target.as_ref()) {
                 return Some(format_fragment_url_for(
-                    &resolved_target,
+                    resolved_target.as_ref(),
                     &self.element_owned,
                 ));
             }
@@ -94,10 +95,13 @@ impl ResolvedGanttIds {
         if let Some(target_id) = self.remapped_fragments.get(&format!("#{fragment}")) {
             return Some(format_fragment_url_for(target_id, &self.element_owned));
         }
-        let resolved_target = canonical_attr_id(fragment);
-        if resolved_target != fragment && self.element_owned.contains(&resolved_target) {
+        let resolved_fragment = ferrigura_syntax::url::resolve_url_entity_placeholders(fragment);
+        let resolved_target = canonical_xml_attr(resolved_fragment.as_ref());
+        if resolved_target.as_ref() != fragment
+            && self.element_owned.contains(resolved_target.as_ref())
+        {
             return Some(format_fragment_url_for(
-                &resolved_target,
+                resolved_target.as_ref(),
                 &self.element_owned,
             ));
         }
@@ -438,7 +442,7 @@ impl Chart<'_> {
                     .as_ref()
                     .and_then(|ids| ids.remap_fragment(url))
                     .unwrap_or_else(|| {
-                        crate::common::resolve_entity_placeholders(url).into_owned()
+                        ferrigura_syntax::url::resolve_url_entity_placeholders(url).into_owned()
                     });
                 let guarded = ferrigura_syntax::url::guard_url(&resolved, self.loose);
                 group.push_str(&format!(

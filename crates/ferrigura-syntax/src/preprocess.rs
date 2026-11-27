@@ -538,18 +538,45 @@ fn is_single_colon(src: &str, at: usize) -> bool {
     (at == 0 || bytes[at - 1] != b':') && bytes.get(at + 1) != Some(&b':')
 }
 
-/// Progress through a `stateDiagram` `note left/right of <id>` header, which may span line breaks
-/// because `state/scanner.rs` uses `\s+` after `note` and `\s*` before `<id>` and `:`.
+/// Progress through a `stateDiagram` `note` header (`note left/right of <id>` or floating
+/// `note "..." as <id>`), which may span line breaks because `state/scanner.rs` uses `\s+` after
+/// `note` and `\s*` around `as`, `<id>`, and `:`.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 enum StateNoteHeader {
     #[default]
     None,
-    /// Saw `note\s+` (or `note` at line end); awaiting `left of` / `right of`.
+    /// Saw `note\s+` (or `note` at line end); awaiting `left of`, `right of`, or `"`.
     AfterNote,
     /// Saw `left of` / `right of`; awaiting the target state ID (`[^:\n\s\-]+`).
     AfterSideOf,
     /// Saw target ID; awaiting either `\s*:...` (single-line note) or any other token (block note).
     AfterTargetId,
+    /// Inside the quoted text of a floating note (`note "..." as <id>`).
+    FloatingText,
+    /// Immediately after the closing `"` of a floating note; awaiting `\s*as\s*`.
+    FloatingAfterQuote,
+    /// After `as` in a floating note; awaiting the first non-whitespace token of the alias line
+    /// (`[^\n]*` runs to end of line as plain text).
+    FloatingAsId,
+}
+
+/// Byte length of the `stateDiagram-v2` or `stateDiagram` header keyword when it starts `rest`
+/// (ASCII case-insensitive) and is followed by whitespace (`state/scanner.rs:810-816`).
+fn match_state_diagram_header(rest: &str) -> Option<usize> {
+    for kw in ["stateDiagram-v2", "stateDiagram"] {
+        if let Some(after) = strip_ascii_ci_word(rest, kw)
+            && after.chars().next().is_some_and(is_js_space)
+        {
+            return Some(kw.len());
+        }
+    }
+    None
+}
+
+/// Whether `rest` starts with the `as` keyword (ASCII case-insensitive) followed by EOF or a
+/// non-word character (`state/scanner.rs:756`).
+fn starts_state_as_keyword(rest: &str) -> bool {
+    strip_ascii_ci_word(rest, "as").is_some_and(|after| !after.chars().next().is_some_and(is_word))
 }
 
 /// Whether `rest` starts with the `note` keyword (ASCII case-insensitive) followed by whitespace
@@ -708,6 +735,13 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
             prev_was_alnum = false;
             continue;
         }
+        if state.note_header == StateNoteHeader::FloatingText {
+            if ch == '"' {
+                state.note_header = StateNoteHeader::FloatingAfterQuote;
+            }
+            prev_was_alnum = false;
+            continue;
+        }
         if state.note_header != StateNoteHeader::None {
             if is_js_space(ch) {
                 prev_was_alnum = false;
@@ -715,6 +749,13 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
             }
             match state.note_header {
                 StateNoteHeader::AfterNote => {
+                    if ch == '"' {
+                        state.note_header = StateNoteHeader::FloatingText;
+                        at_line_start = false;
+                        stmt_start = false;
+                        prev_was_alnum = false;
+                        continue;
+                    }
                     if let Some(len) = match_state_note_side_of(&line[at..]) {
                         state.note_header = StateNoteHeader::AfterSideOf;
                         at_line_start = false;
@@ -744,7 +785,22 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
                     }
                     state.in_note_block = true;
                 }
-                StateNoteHeader::None => {}
+                StateNoteHeader::FloatingAfterQuote => {
+                    if starts_state_as_keyword(&line[at..]) {
+                        state.note_header = StateNoteHeader::FloatingAsId;
+                        at_line_start = false;
+                        stmt_start = false;
+                        skip_until = at + 2;
+                        prev_was_alnum = false;
+                        continue;
+                    }
+                    state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::FloatingAsId => {
+                    state.note_header = StateNoteHeader::None;
+                    break;
+                }
+                StateNoteHeader::None | StateNoteHeader::FloatingText => {}
             }
         }
         if state.in_note_block {
@@ -881,8 +937,15 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
             if is_js_space(ch) {
                 continue;
             }
-            stmt_start = false;
             let rest = &line[at..];
+            if dialects.state_diagram_dialect
+                && let Some(len) = match_state_diagram_header(rest)
+            {
+                skip_until = at + len;
+                prev_was_alnum = false;
+                continue;
+            }
+            stmt_start = false;
             match classify_acc_line_start(rest, dialects.state_diagram_dialect) {
                 Some(AccLineStart::DescrBlock) => {
                     if let Some(brace) = rest.find('{')
@@ -1086,6 +1149,13 @@ fn color_semicolon_byte(
             prev_was_alnum = false;
             continue;
         }
+        if state.note_header == StateNoteHeader::FloatingText {
+            if ch == '"' {
+                state.note_header = StateNoteHeader::FloatingAfterQuote;
+            }
+            prev_was_alnum = false;
+            continue;
+        }
         if state.note_header != StateNoteHeader::None {
             if is_js_space(ch) {
                 prev_was_alnum = false;
@@ -1093,6 +1163,13 @@ fn color_semicolon_byte(
             }
             match state.note_header {
                 StateNoteHeader::AfterNote => {
+                    if ch == '"' {
+                        state.note_header = StateNoteHeader::FloatingText;
+                        at_line_start = false;
+                        stmt_start = false;
+                        prev_was_alnum = false;
+                        continue;
+                    }
                     if let Some(len) = match_state_note_side_of(&line[at..]) {
                         state.note_header = StateNoteHeader::AfterSideOf;
                         at_line_start = false;
@@ -1122,7 +1199,22 @@ fn color_semicolon_byte(
                     }
                     state.in_note_block = true;
                 }
-                StateNoteHeader::None => {}
+                StateNoteHeader::FloatingAfterQuote => {
+                    if starts_state_as_keyword(&line[at..]) {
+                        state.note_header = StateNoteHeader::FloatingAsId;
+                        at_line_start = false;
+                        stmt_start = false;
+                        skip_until = at + 2;
+                        prev_was_alnum = false;
+                        continue;
+                    }
+                    state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::FloatingAsId => {
+                    state.note_header = StateNoteHeader::None;
+                    break;
+                }
+                StateNoteHeader::None | StateNoteHeader::FloatingText => {}
             }
         }
         if state.in_note_block {
@@ -1285,8 +1377,15 @@ fn color_semicolon_byte(
             if is_js_space(ch) {
                 continue;
             }
-            stmt_start = false;
             let rest = &line[at..];
+            if dialects.state_diagram_dialect
+                && let Some(len) = match_state_diagram_header(rest)
+            {
+                skip_until = at + len;
+                prev_was_alnum = false;
+                continue;
+            }
+            stmt_start = false;
             match classify_acc_line_start(rest, dialects.state_diagram_dialect) {
                 Some(AccLineStart::DescrBlock) => {
                     if let Some(brace) = rest.find('{')
@@ -1463,14 +1562,20 @@ impl StyleStmtTracker {
 
     fn finish_entity(&mut self) {
         match self.state.note_header {
-            StateNoteHeader::AfterNote => {
+            StateNoteHeader::AfterNote | StateNoteHeader::FloatingAfterQuote => {
                 self.state.note_header = StateNoteHeader::None;
             }
             StateNoteHeader::AfterTargetId => {
                 self.state.note_header = StateNoteHeader::None;
                 self.state.in_note_block = true;
             }
-            StateNoteHeader::None | StateNoteHeader::AfterSideOf => {}
+            StateNoteHeader::FloatingAsId => {
+                self.state.note_header = StateNoteHeader::None;
+                self.in_plain_line = true;
+            }
+            StateNoteHeader::None
+            | StateNoteHeader::AfterSideOf
+            | StateNoteHeader::FloatingText => {}
         }
         if self.kind == StmtKind::Start {
             self.kind = StmtKind::Other;
@@ -1489,6 +1594,15 @@ impl StyleStmtTracker {
             }
             return;
         }
+        if self.state.note_header == StateNoteHeader::FloatingText {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.reset_line();
+            } else if ch == '"' {
+                self.state.note_header = StateNoteHeader::FloatingAfterQuote;
+            }
+            self.prev_was_alnum = false;
+            return;
+        }
         if self.state.note_header != StateNoteHeader::None {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
                 self.reset_line();
@@ -1500,6 +1614,13 @@ impl StyleStmtTracker {
             }
             match self.state.note_header {
                 StateNoteHeader::AfterNote => {
+                    if ch == '"' {
+                        self.state.note_header = StateNoteHeader::FloatingText;
+                        self.at_line_start = false;
+                        self.kind = StmtKind::Other;
+                        self.prev_was_alnum = false;
+                        return;
+                    }
                     if let Some(len) = match_state_note_side_of(&src[at..]) {
                         self.state.note_header = StateNoteHeader::AfterSideOf;
                         self.at_line_start = false;
@@ -1532,7 +1653,25 @@ impl StyleStmtTracker {
                     }
                     self.state.in_note_block = true;
                 }
-                StateNoteHeader::None => {}
+                StateNoteHeader::FloatingAfterQuote => {
+                    if starts_state_as_keyword(&src[at..]) {
+                        self.state.note_header = StateNoteHeader::FloatingAsId;
+                        self.at_line_start = false;
+                        self.kind = StmtKind::Other;
+                        self.note_end_until = at + 2;
+                        self.prev_was_alnum = false;
+                        return;
+                    }
+                    self.state.note_header = StateNoteHeader::None;
+                }
+                StateNoteHeader::FloatingAsId => {
+                    self.state.note_header = StateNoteHeader::None;
+                    self.in_plain_line = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                StateNoteHeader::None | StateNoteHeader::FloatingText => {}
             }
         }
         if self.state.in_note_block {
@@ -1707,6 +1846,13 @@ impl StyleStmtTracker {
                 return;
             }
             let rest = &src[at..];
+            if self.dialects.state_diagram_dialect
+                && let Some(len) = match_state_diagram_header(rest)
+            {
+                self.note_end_until = at + len;
+                self.prev_was_alnum = false;
+                return;
+            }
             match classify_acc_line_start(rest, self.dialects.state_diagram_dialect) {
                 Some(AccLineStart::DescrBlock) => {
                     self.state.in_acc_descr_block = true;
@@ -1917,6 +2063,19 @@ mod tests {
             "stateDiagram-v2\n  A --> B\n  note right of\n    A\n    \"draft\n  end note\n  style A fill:#abc;\n",
             "stateDiagram-v2\n  A --> B\n  note\n    left of A\n    : \"single\n  style A fill:#abc;\n",
             "stateDiagram-v2\n  A --> B\n  note\n    \"floating\" as N\n  style A fill:#abc;\n",
+        ] {
+            let expected = input.replace("fill:#abc;", "fill:#abc");
+            assert_eq!(encode_entities(input), expected, "input={input:?}");
+        }
+    }
+
+    #[test]
+    fn state_header_line_styles_and_floating_note_alias_quotes_preserve_hex_colors() {
+        for input in [
+            "stateDiagram-v2 classDef hot fill:#abc;\n  A:::hot\n",
+            "stateDiagram style A fill:#abc;\n  A --> B\n",
+            "stateDiagram-v2\n  A --> B\n  note \"foo\" as Some \"odd text\n  style A fill:#abc;\n",
+            "stateDiagram-v2\n  A --> B\n  note \"foo\" as\n    Some \"odd text\n  style A fill:#abc;\n",
         ] {
             let expected = input.replace("fill:#abc;", "fill:#abc");
             assert_eq!(encode_entities(input), expected, "input={input:?}");

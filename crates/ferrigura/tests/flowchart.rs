@@ -815,4 +815,24 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         rel_backslash.contains("xlink:href=\"docs%2Freport:2026.pdf\""),
         "{rel_backslash}"
     );
+
+    // Relative filenames with spaces before `:` stay intact, and flowchart image URLs resolve
+    // HTML numeric references without inserting a stray `&`.
+    let space_and_img_ref = render(
+        "flowchart TD\nA[x]\nB@{ img: \"https://example.org/word&#169;.png\", w: 48, h: 48 }\nclick A \"version 1: release notes.html\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        space_and_img_ref.contains("xlink:href=\"version 1: release notes.html\""),
+        "{space_and_img_ref}"
+    );
+    assert!(
+        space_and_img_ref.contains("<image href=\"https://example.org/word©.png\""),
+        "{space_and_img_ref}"
+    );
+    assert!(
+        !space_and_img_ref.contains("word&amp;©.png"),
+        "{space_and_img_ref}"
+    );
 }

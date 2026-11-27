@@ -2260,6 +2260,8 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         "stateDiagram-v2\n  A --> B note right of A\n    \"draft\n  end note style A fill:#abc;\n",
         "stateDiagram-v2\n  A --> B\n  note\n    left of A\n    \"draft\n  end note\n  style A fill:#abc;\n",
         "stateDiagram-v2\n  A --> B\n  note right of\n    A\n    \"draft\n  end note\n  style A fill:#abc;\n",
+        "stateDiagram-v2 classDef hot fill:#abc;\n  A:::hot\n",
+        "stateDiagram-v2\n  A --> B\n  note \"foo\" as Some \"odd text\n  style A fill:#abc;\n",
     ] {
         let state_note =
             ferrigura::render(state_note_src, &Value::empty_object()).expect("renders");
@@ -2272,6 +2274,46 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
             "src={state_note_src:?}: {state_note}"
         );
     }
+
+    // State click links resolve HTML numeric references cleanly without adding a stray `&`, while
+    // numeric-encoded `javascript:` schemes still fail closed.
+    let state_num_link = ferrigura::render(
+        "stateDiagram-v2\n  A --> B\n  click A href \"https://example.org/word&#169;.pdf\"\n  click B href \"&#106;avascript:alert(1)\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        state_num_link.contains("xlink:href=\"https://example.org/word©.pdf\""),
+        "{state_num_link}"
+    );
+    assert!(
+        !state_num_link.contains("word&amp;©.pdf"),
+        "{state_num_link}"
+    );
+    assert!(
+        state_num_link.contains("xlink:href=\"about:blank\""),
+        "{state_num_link}"
+    );
+
+    // Strict-mode Gantt fragment links preserve percent-escapes (`#graph-Foo%2541`) until task ID
+    // lookup so they target `graph-Foo%41` instead of prematurely decoding to `#graph-FooA`.
+    let gantt_strict_pct = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : Foo#37;41, 2024-01-01, 1d\n  T2 : FooA, 2024-01-02, 1d\n  click FooA href \"#graph-Foo%2541\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        gantt_strict_pct.contains("id=\"graph-Foo%41\""),
+        "{gantt_strict_pct}"
+    );
+    assert!(
+        gantt_strict_pct.contains("xlink:href=\"#graph-Foo%2541\""),
+        "{gantt_strict_pct}"
+    );
 
     // Backtick-quoted class names containing `{` or `"` stay scoped to their backtick token so
     // following `style` hex colors are not corrupted.

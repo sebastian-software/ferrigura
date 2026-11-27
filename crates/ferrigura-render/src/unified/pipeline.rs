@@ -735,11 +735,11 @@ pub(crate) fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
     if let Some(rest) = trimmed.strip_prefix('#') {
         return Some(rest);
     }
-    if trimmed.starts_with("ﬂ°")
+    if (trimmed.starts_with("ﬂ°") || trimmed.starts_with("&ﬂ°"))
         && let Some(close) = trimmed.find("¶ß")
     {
         let end = close + "¶ß".len();
-        if crate::common::resolve_entity_placeholders(&trimmed[..end]) == "#" {
+        if ferrigura_syntax::url::resolve_url_entity_placeholders(&trimmed[..end]) == "#" {
             return Some(&trimmed[end..]);
         }
     }
@@ -792,10 +792,11 @@ impl ResolvedDomIds {
                     &self.element_owned,
                 )));
             }
-            let resolved_target = canonical_attr_id(&decoded);
-            if self.element_owned.contains(&resolved_target) {
+            let resolved_decoded = ferrigura_syntax::url::resolve_url_entity_placeholders(&decoded);
+            let resolved_target = canonical_xml_attr(resolved_decoded.as_ref());
+            if self.element_owned.contains(resolved_target.as_ref()) {
                 return Some(Cow::Owned(format_fragment_url_for(
-                    &resolved_target,
+                    resolved_target.as_ref(),
                     &self.element_owned,
                 )));
             }
@@ -810,10 +811,13 @@ impl ResolvedDomIds {
                 &self.element_owned,
             )));
         }
-        let resolved_target = canonical_attr_id(fragment);
-        if resolved_target != fragment && self.element_owned.contains(&resolved_target) {
+        let resolved_fragment = ferrigura_syntax::url::resolve_url_entity_placeholders(fragment);
+        let resolved_target = canonical_xml_attr(resolved_fragment.as_ref());
+        if resolved_target.as_ref() != fragment
+            && self.element_owned.contains(resolved_target.as_ref())
+        {
             return Some(Cow::Owned(format_fragment_url_for(
-                &resolved_target,
+                resolved_target.as_ref(),
                 &self.element_owned,
             )));
         }

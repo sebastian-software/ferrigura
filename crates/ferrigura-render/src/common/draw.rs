@@ -193,7 +193,7 @@ pub fn draw_image(x: f64, y: f64, link: &str) -> Element {
 #[must_use]
 pub(crate) fn draw_image_with_security(x: f64, y: f64, link: &str, loose: bool) -> Element {
     let sanitized = sanitize_url(link);
-    let resolved = crate::common::resolve_entity_placeholders(&sanitized);
+    let resolved = ferrigura_syntax::url::resolve_url_entity_placeholders(&sanitized);
     let guarded = ferrigura_syntax::url::guard_image_url(&resolved, loose);
     Element::new("image")
         .with("x", number(x))
@@ -206,7 +206,7 @@ pub(crate) fn draw_image_with_security(x: f64, y: f64, link: &str, loose: bool) 
 #[must_use]
 pub fn draw_embedded_image(x: f64, y: f64, link: &str) -> Element {
     let sanitized = sanitize_url(link);
-    let resolved = crate::common::resolve_entity_placeholders(&sanitized);
+    let resolved = ferrigura_syntax::url::resolve_url_entity_placeholders(&sanitized);
     Element::new("use")
         .with("x", number(x))
         .with("y", number(y))

@@ -22,15 +22,24 @@ index 86220b2..941a0df 100644
  import type { SVG, SVGGroup } from '../../diagram-api/types.js';
  import { lineBreakRegex } from './common.js';
 diff --git a/packages/mermaid/src/diagrams/gantt/ganttDb.js b/packages/mermaid/src/diagrams/gantt/ganttDb.js
-index 0ca8f3f..1159c71 100644
+index 0ca8f3f..df2f108 100644
 --- a/packages/mermaid/src/diagrams/gantt/ganttDb.js
 +++ b/packages/mermaid/src/diagrams/gantt/ganttDb.js
 @@ -1,4 +1,4 @@
 -import { sanitizeUrl } from '@braintree/sanitize-url';
-+import { sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
++import { formatUrl, sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
  import dayjs from 'dayjs';
  import dayjsIsoWeek from 'dayjs/plugin/isoWeek.js';
  import dayjsCustomParseFormat from 'dayjs/plugin/customParseFormat.js';
+@@ -712,7 +712,7 @@ const compileTasks = function () {
+ export const setLink = function (ids, _linkStr) {
+   let linkStr = _linkStr;
+   if (getConfig().securityLevel !== 'loose') {
+-    linkStr = sanitizeUrl(_linkStr);
++    linkStr = formatUrl(_linkStr, getConfig()) ?? sanitizeUrl(_linkStr);
+   }
+   ids.split(',').forEach(function (id) {
+     let rawTask = findTaskById(id);
 diff --git a/packages/mermaid/src/diagrams/sequence/svgDraw.js b/packages/mermaid/src/diagrams/sequence/svgDraw.js
 index c6cb9d5..5e20321 100644
 --- a/packages/mermaid/src/diagrams/sequence/svgDraw.js
@@ -42,7 +51,7 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..40223d8 100644
+index 48ac4a6..47f1ada 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
 @@ -244,6 +244,846 @@ export function interpolateToCurve(
@@ -933,7 +942,7 @@ index 48ac4a6..40223d8 100644
    }
  
    return url;
-@@ -895,23 +1767,894 @@ export default {
+@@ -895,23 +1767,991 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -1034,7 +1043,20 @@ index 48ac4a6..40223d8 100644
 +    }
 +    return null;
 +  };
-+  type StateNoteHeader = 'none' | 'afterNote' | 'afterSideOf' | 'afterTargetId';
++  type StateNoteHeader =
++    | 'none'
++    | 'afterNote'
++    | 'afterSideOf'
++    | 'afterTargetId'
++    | 'floatingText'
++    | 'floatingAfterQuote'
++    | 'floatingAsId';
++  const matchStateDiagramHeaderLen = (s: string, at: number): number => {
++    const m = /^stateDiagram(?:-v2)?(?=\s)/i.exec(s.slice(at));
++    return m ? m[0].length : -1;
++  };
++  const startsStateAsKeyword = (s: string, at: number): boolean =>
++    /^as(?=$|[^A-Za-z0-9_])/i.test(s.slice(at));
 +  const startsStateNoteKeyword = (s: string, at: number): boolean =>
 +    /^note(?=$|\s)/i.test(s.slice(at));
 +  const matchStateNoteSideOfLen = (s: string, at: number): number => {
@@ -1152,12 +1174,26 @@ index 48ac4a6..40223d8 100644
 +      let lastSemi = -1;
 +      for (let i = 0; i < line.length; i++) {
 +        const c = line[i];
++        if (noteHeader === 'floatingText') {
++          if (c === '"') {
++            noteHeader = 'floatingAfterQuote';
++          }
++          prevWasAlnum = false;
++          continue;
++        }
 +        if (noteHeader !== 'none') {
 +          if (/\s/.test(c)) {
 +            prevWasAlnum = false;
 +            continue;
 +          }
 +          if (noteHeader === 'afterNote') {
++            if (c === '"') {
++              noteHeader = 'floatingText';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              continue;
++            }
 +            const len = matchStateNoteSideOfLen(line, i);
 +            if (len > 0) {
 +              noteHeader = 'afterSideOf';
@@ -1185,6 +1221,19 @@ index 48ac4a6..40223d8 100644
 +              break;
 +            }
 +            inNoteBlock = true;
++          } else if (noteHeader === 'floatingAfterQuote') {
++            if (startsStateAsKeyword(line, i)) {
++              noteHeader = 'floatingAsId';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              i += 1;
++              continue;
++            }
++            noteHeader = 'none';
++          } else if (noteHeader === 'floatingAsId') {
++            noteHeader = 'none';
++            break;
 +          }
 +        }
 +        if (inNoteBlock) {
@@ -1349,6 +1398,14 @@ index 48ac4a6..40223d8 100644
 +          if (/\s/.test(c)) {
 +            continue;
 +          }
++          if (stateDiagramDialect) {
++            const hdrLen = matchStateDiagramHeaderLen(line, i);
++            if (hdrLen > 0) {
++              prevWasAlnum = false;
++              i += hdrLen - 1;
++              continue;
++            }
++          }
 +          stmtStart = false;
 +          const accKind = classifyAccLineStart(line, i, stateDiagramDialect);
 +          if (accKind === 'block') {
@@ -1482,11 +1539,14 @@ index 48ac4a6..40223d8 100644
 +          prevWasAlnum = false;
 +        } else {
 +          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
-+          if (noteHeader === 'afterNote') {
++          if (noteHeader === 'afterNote' || noteHeader === 'floatingAfterQuote') {
 +            noteHeader = 'none';
 +          } else if (noteHeader === 'afterTargetId') {
 +            noteHeader = 'none';
 +            inNoteBlock = true;
++          } else if (noteHeader === 'floatingAsId') {
++            noteHeader = 'none';
++            inPlainLine = true;
 +          }
 +          if (
 +            !inQuotes &&
@@ -1509,6 +1569,21 @@ index 48ac4a6..40223d8 100644
 +        continue;
 +      }
 +    }
++    if (noteHeader === 'floatingText') {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '"') {
++        noteHeader = 'floatingAfterQuote';
++      }
++      prevWasAlnum = false;
++      continue;
++    }
 +    if (noteHeader !== 'none') {
 +      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
 +        stmtKind = 0;
@@ -1526,6 +1601,13 @@ index 48ac4a6..40223d8 100644
 +        continue;
 +      }
 +      if (noteHeader === 'afterNote') {
++        if (ch === '"') {
++          noteHeader = 'floatingText';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
 +        const len = matchStateNoteSideOfLen(txt, i);
 +        if (len > 0) {
 +          noteHeader = 'afterSideOf';
@@ -1556,6 +1638,22 @@ index 48ac4a6..40223d8 100644
 +          continue;
 +        }
 +        inNoteBlock = true;
++      } else if (noteHeader === 'floatingAfterQuote') {
++        if (startsStateAsKeyword(txt, i)) {
++          noteHeader = 'floatingAsId';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          i += 1;
++          continue;
++        }
++        noteHeader = 'none';
++      } else if (noteHeader === 'floatingAsId') {
++        noteHeader = 'none';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
 +      }
 +    }
 +    if (inNoteBlock) {
@@ -1786,6 +1884,14 @@ index 48ac4a6..40223d8 100644
 +    if (stmtKind === 0) {
 +      if (/\s/.test(ch)) {
 +        continue;
++      }
++      if (stateDiagramDialect) {
++        const hdrLen = matchStateDiagramHeaderLen(txt, i);
++        if (hdrLen > 0) {
++          prevWasAlnum = false;
++          i += hdrLen - 1;
++          continue;
++        }
 +      }
 +      const accKind = classifyAccLineStart(txt, i, stateDiagramDialect);
 +      if (accKind === 'block') {

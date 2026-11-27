@@ -861,19 +861,12 @@ fn is_sink_ignored(c: char) -> bool {
         )
 }
 
-/// Whether `candidate` is non-empty after stripping ignored whitespace/controls and has either no
-/// RFC-3986 scheme or a scheme in [`ALLOWED_SINK_SCHEMES`].
-///
-/// Colons after path, query, or fragment delimiters (for example `data/chart.svg?time=12:30`) do
-/// not form a scheme. A `&colon;` entity immediately after a scheme-shaped prefix is rejected.
-fn is_allowed_sink_candidate(candidate: &str) -> bool {
-    let stripped: String = candidate.chars().filter(|&c| !is_sink_ignored(c)).collect();
-    if stripped.is_empty() {
-        return false;
-    }
-    let bytes = stripped.as_bytes();
-    if !bytes[0].is_ascii_alphabetic() {
-        return true;
+/// Extracts the leading RFC-3986 scheme name if `text` starts with `[A-Za-z][A-Za-z0-9+.-]*`
+/// immediately followed by `:` or ASCII-case-insensitive `&colon;`.
+fn leading_scheme(text: &str) -> Option<&str> {
+    let bytes = text.as_bytes();
+    if bytes.first().is_none_or(|b| !b.is_ascii_alphabetic()) {
+        return None;
     }
     let mut end = 1;
     while end < bytes.len()
@@ -881,19 +874,42 @@ fn is_allowed_sink_candidate(candidate: &str) -> bool {
     {
         end += 1;
     }
-    let rest = &stripped[end..];
+    let rest = &text[end..];
     let has_colon = rest.starts_with(':')
         || rest
             .get(.."&colon;".len())
             .is_some_and(|head| head.eq_ignore_ascii_case("&colon;"));
-    if has_colon {
-        let scheme = &stripped[..end];
-        ALLOWED_SINK_SCHEMES
-            .iter()
-            .any(|allowed| scheme.eq_ignore_ascii_case(allowed))
-    } else {
-        true
+    has_colon.then_some(&text[..end])
+}
+
+/// Whether `candidate` is non-empty after stripping ignored whitespace/controls and has either no
+/// RFC-3986 scheme or a scheme in [`ALLOWED_SINK_SCHEMES`].
+///
+/// Leading/trailing whitespace and embedded control characters (such as tab, LF, CR, and C0/C1
+/// controls) are stripped before checking for a scheme, while internal spaces are preserved so
+/// relative filenames such as `version 1: release notes.html` are not turned into unknown schemes.
+/// As defense in depth (matching DOMPurify), space-separated active schemes (`javascript:`,
+/// `vbscript:`, `data:`) are still rejected.
+fn is_allowed_sink_candidate(candidate: &str) -> bool {
+    let trimmed = candidate.trim_matches(is_sink_ignored);
+    let stripped: String = trimmed.chars().filter(|&c| !is_ctrl(c)).collect();
+    if stripped.is_empty() {
+        return false;
     }
+    if let Some(scheme) = leading_scheme(&stripped) {
+        return ALLOWED_SINK_SCHEMES
+            .iter()
+            .any(|allowed| scheme.eq_ignore_ascii_case(allowed));
+    }
+    let collapsed: String = stripped.chars().filter(|&c| !is_sink_ignored(c)).collect();
+    if let Some(scheme) = leading_scheme(&collapsed)
+        && (scheme.eq_ignore_ascii_case("javascript")
+            || scheme.eq_ignore_ascii_case("vbscript")
+            || scheme.eq_ignore_ascii_case("data"))
+    {
+        return false;
+    }
+    true
 }
 
 /// `sanitizeUrl` of `@braintree/sanitize-url` 7.1.2.
@@ -1272,6 +1288,59 @@ fn decode_encoded_html_numeric_at(segment: &str, pos: usize) -> Option<(usize, S
         }
     }
     None
+}
+
+/// Resolves Mermaid entity placeholders in a URL at a render sink, consuming complete HTML numeric
+/// character references that `encode_entities` split into `&ﬂ°°<digits>¶ß` or `&ﬂ°x<hex>¶ß`
+/// together with their leading `&` so sinks that bypass [`format_url`] keep the URL's intended
+/// destination without inserting a stray `&`.
+#[must_use]
+pub fn resolve_url_entity_placeholders(url: &str) -> std::borrow::Cow<'_, str> {
+    if !url.contains("ﬂ°") && !url.contains("¶ß") {
+        return std::borrow::Cow::Borrowed(url);
+    }
+    let mut out = String::with_capacity(url.len());
+    let mut cursor = 0;
+    let mut next_open = url.find("ﬂ°");
+    let mut next_close = url.find("¶ß");
+    while cursor < url.len() {
+        if let Some(pos) = next_open
+            && pos < cursor
+        {
+            next_open = url[cursor..].find("ﬂ°").map(|rel| cursor + rel);
+        }
+        if let Some(pos) = next_close
+            && pos < cursor
+        {
+            next_close = url[cursor..].find("¶ß").map(|rel| cursor + rel);
+        }
+        let pos = match (next_open, next_close) {
+            (Some(o), Some(c)) if o <= c => o,
+            (Some(o), None) => o,
+            (_, Some(c)) => c,
+            (None, None) => {
+                out.push_str(&url[cursor..]);
+                break;
+            }
+        };
+        if pos > cursor
+            && url.as_bytes()[pos - 1] == b'&'
+            && let Some((end, _, decoded)) = decode_encoded_html_numeric_at(url, pos)
+        {
+            out.push_str(&url[cursor..pos - 1]);
+            out.push_str(&decoded);
+            cursor = end;
+            continue;
+        }
+        out.push_str(&url[cursor..pos]);
+        let Some((end, decoded)) = decode_mermaid_placeholder_at(url, pos) else {
+            out.push_str(&url[pos..]);
+            break;
+        };
+        out.push_str(&decoded);
+        cursor = end;
+    }
+    std::borrow::Cow::Owned(out)
 }
 
 /// Whether substituting all tokenized entity placeholders in `trimmed` with their Unicode decoded
@@ -3135,6 +3204,29 @@ mod tests {
         assert_eq!(
             format_url("data%253A/chart.svg", false).as_deref(),
             Some("about:blank")
+        );
+        // Internal spaces keep relative filenames like `version 1: release notes.html` from being
+        // misclassified as unknown schemes, while active space-separated schemes still fail closed.
+        assert_eq!(
+            guard_url("version 1: release notes.html", false),
+            "version 1: release notes.html"
+        );
+        assert_eq!(
+            guard_url("chapter two: intro.html", false),
+            "chapter two: intro.html"
+        );
+        assert_eq!(guard_url("data :text/html,x", false), "about:blank");
+        assert_eq!(
+            super::resolve_url_entity_placeholders("https://example.org/word&ﬂ°°169¶ß.pdf"),
+            "https://example.org/word©.pdf"
+        );
+        assert_eq!(
+            super::resolve_url_entity_placeholders("https://example.org/word&ﬂ°xA9¶ß.pdf"),
+            "https://example.org/word©.pdf"
+        );
+        assert_eq!(
+            super::resolve_url_entity_placeholders("&ﬂ°°106¶ßavascript:alert(1)"),
+            "javascript:alert(1)"
         );
         for blocked in [
             "java\\tscript:alert(1)",

@@ -13,7 +13,7 @@ use ferrigura_model::gantt::{GanttDiagram, GanttTask};
 use super::date::{self, Time, Unit};
 use crate::sanitize::sanitize_text;
 use crate::text::{is_js_space, js_trim, newline_then_space_to_newline, strip_leading_space};
-use crate::url::{SecurityLevel, sanitize_url};
+use crate::url::{SecurityLevel, format_url, sanitize_url};
 
 /// A rejection of the diagram by the DB, with the offset of the statement it comes from.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -270,13 +270,13 @@ impl Db {
         self.set_class(ids, "clickable");
     }
 
-    /// `setLink`: the address of each task that exists (sanitized unless `securityLevel` is
-    /// `loose`), and the `clickable` class.
+    /// `setLink`: the address of each task that exists (formatted with fragment preservation and
+    /// URL sanitization unless `securityLevel` is `loose`), and the `clickable` class.
     pub(crate) fn set_link(&mut self, ids: &str, url: &str) {
         let link = if self.security_level == SecurityLevel::Loose {
             url.to_owned()
         } else {
-            sanitize_url(url)
+            format_url(url, false).unwrap_or_else(|| sanitize_url(url))
         };
         for id in ids.split(',') {
             if self.find_task(id).is_some() {
