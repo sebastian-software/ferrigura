@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.10.0](https://github.com/sebastian-software/ferrigura/compare/v0.9.0...v0.10.0) (2026-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* ferrigura no longer draws requirement, block, use case, agentflow, swimlane, tree view, ishikawa, treemap, Git graph, C4, architecture, sankey, venn, radar, packet, cynefin, event modeling, railroad, wardley, timeline, user journey, kanban and info diagrams. A text of one of these types gives `Error::Unsupported`. The constructors of these types in `diagrams`, the addon features of the same names, and the hidden `RenderOptions` fields `git_graph_seed` and `random_seed` are removed.
+
+### Features
+
+* center a node over its fan and keep a chain straight in the design mode ([#263](https://github.com/sebastian-software/ferrigura/issues/263)) ([00fbdad](https://github.com/sebastian-software/ferrigura/commit/00fbdadc389bd55ad5c78a9ba8206e30201abe91))
+* draw a flat decision and take its side branches out of its side tips in the design mode ([#234](https://github.com/sebastian-software/ferrigura/issues/234)) ([7542a1b](https://github.com/sebastian-software/ferrigura/commit/7542a1bae42fbad46b0e912188db3662fcd09f9a))
+* draw class diagrams in the design mode ([#257](https://github.com/sebastian-software/ferrigura/issues/257)) ([9db42f2](https://github.com/sebastian-software/ferrigura/commit/9db42f2ecddc36d5b7f4f780b078c41bbc76d7fd))
+* draw self-loops beside their node in the design mode ([#258](https://github.com/sebastian-software/ferrigura/issues/258)) ([7abd935](https://github.com/sebastian-software/ferrigura/commit/7abd93518816877d974b01d1583db5ecac689b35))
+* draw state diagrams in the design mode ([#236](https://github.com/sebastian-software/ferrigura/issues/236)) ([210986c](https://github.com/sebastian-software/ferrigura/commit/210986cac14507dd343179dc1dca09ecb4f4e41b))
+* draw ten diagram types and remove the others ([#282](https://github.com/sebastian-software/ferrigura/issues/282)) ([f0c87da](https://github.com/sebastian-software/ferrigura/commit/f0c87da37b0bbd489515d9371393ad507d8575a5))
+* keep a word whole in a label in the design mode ([#259](https://github.com/sebastian-software/ferrigura/issues/259)) ([e238f45](https://github.com/sebastian-software/ferrigura/commit/e238f45062928842638a96f19d84315f35c56546))
+
+
+### Bug Fixes
+
+* **cli,node:** harden font/file loading and remove duplicate reads, copies, and config coercions ([#288](https://github.com/sebastian-software/ferrigura/issues/288)) ([e732b01](https://github.com/sebastian-software/ferrigura/commit/e732b01347846e399695bcf2634fd093b38898e1))
+* **deps:** update rust crate napi-build to v2.7.0 ([e4f309d](https://github.com/sebastian-software/ferrigura/commit/e4f309d7413217971d674871ea45a1b4454d6c48))
+* **deps:** update rust crate sha2 to v0.11.2 ([#265](https://github.com/sebastian-software/ferrigura/issues/265)) ([3438cb8](https://github.com/sebastian-software/ferrigura/commit/3438cb84084e37a25c77dd896bde2ee6574c9b7a))
+* **deps:** update rust crates ([#289](https://github.com/sebastian-software/ferrigura/issues/289)) ([43939a4](https://github.com/sebastian-software/ferrigura/commit/43939a4bd41fa950efb2b2f376a45fc3ffbfc92d))
+* **deps:** update rust napi to v3.16.3 ([3991e23](https://github.com/sebastian-software/ferrigura/commit/3991e2390928088b4b5b2e3be597d249e791e75b))
+* **model,syntax,render,elk,cose:** eliminate infinite loops, ReDoS, OOMs, and edge-case panics ([#293](https://github.com/sebastian-software/ferrigura/issues/293)) ([c351677](https://github.com/sebastian-software/ferrigura/commit/c3516773bd011a890eb3f3556f8406d6dd4ac05c))
+* **pie:** emit valid 7-parameter SVG arc commands for full-circle slices ([#264](https://github.com/sebastian-software/ferrigura/issues/264)) ([6d3aa08](https://github.com/sebastian-software/ferrigura/commit/6d3aa0884f40959c069f6220f356bdd4456a89b9)), closes [#245](https://github.com/sebastian-software/ferrigura/issues/245)
+* **render:** escape user-controlled CSS and IDs in &lt;style&gt; blocks and prevent unscoped classDef injection ([#290](https://github.com/sebastian-software/ferrigura/issues/290)) ([c0e175e](https://github.com/sebastian-software/ferrigura/commit/c0e175e2982d90468ec9495cdd1c7a2e13818062))
+* **render:** sanitize link and image URLs according to securityLevel ([#266](https://github.com/sebastian-software/ferrigura/issues/266)) ([b82dbbc](https://github.com/sebastian-software/ferrigura/commit/b82dbbcf6f4edf6f5829e582f5ad6eab351c957c))
+* **syntax,model,elk,render:** guard unbounded recursion and convert ELK DFS passes to iterative stacks ([#292](https://github.com/sebastian-software/ferrigura/issues/292)) ([ae0c000](https://github.com/sebastian-software/ferrigura/commit/ae0c0005ba2986fc9a58f0d26330b1548a8b4877))
+* **syntax:** bound YAML alias expansion and eliminate cyclic anchor leak ([#262](https://github.com/sebastian-software/ferrigura/issues/262)) ([3d0217b](https://github.com/sebastian-software/ferrigura/commit/3d0217b3fc3877e96ed3cd33f21668bf82e32527))
+* **xychart:** remove duplicate embedded [@font-face](https://github.com/font-face) rules ([#261](https://github.com/sebastian-software/ferrigura/issues/261)) ([a148288](https://github.com/sebastian-software/ferrigura/commit/a148288269390c099ebdd3eba5fc9f4d3e8402fd))
+
+
+### Performance Improvements
+
+* **cose:** eliminate hot-loop allocations and precompute cooling exponent in classic CoSE ([#294](https://github.com/sebastian-software/ferrigura/issues/294)) ([cc08ca7](https://github.com/sebastian-software/ferrigura/commit/cc08ca7d095d479d40eb014fee79611a7aff65ee)), closes [#255](https://github.com/sebastian-software/ferrigura/issues/255)
+* **elk:** eliminate hot-sweep allocations, LNode bloat, and NetworkSimplex O(N²) overhead ([#286](https://github.com/sebastian-software/ferrigura/issues/286)) ([d6bd856](https://github.com/sebastian-software/ferrigura/commit/d6bd85617558894bbec5926904f9ce8ce96b77aa)), closes [#249](https://github.com/sebastian-software/ferrigura/issues/249)
+* **jsmath,path:** add bit-exact math fast paths and zero-allocation path bounding boxes ([#284](https://github.com/sebastian-software/ferrigura/issues/284)) ([674213f](https://github.com/sebastian-software/ferrigura/commit/674213f3dc7e946c3af10a23b85f43da5138a73d)), closes [#253](https://github.com/sebastian-software/ferrigura/issues/253)
+* **model,ferrigura:** cache resolved views, theme tokens, and directive configs across renders ([#287](https://github.com/sebastian-software/ferrigura/issues/287)) ([70fbb4d](https://github.com/sebastian-software/ferrigura/commit/70fbb4d498555a88ce8d125632d14fa485bbea67)), closes [#188](https://github.com/sebastian-software/ferrigura/issues/188)
+* **render,syntax:** eliminate remaining O(N²) hotspots and redundant full-document copies ([#296](https://github.com/sebastian-software/ferrigura/issues/296)) ([2bcb47d](https://github.com/sebastian-software/ferrigura/commit/2bcb47d31fad5bdc2bb8a23acd15b7e35b5f35f3)), closes [#254](https://github.com/sebastian-software/ferrigura/issues/254)
+* **render:** eliminate redundant base64 font CSS copies and static Element attribute key allocations ([#291](https://github.com/sebastian-software/ferrigura/issues/291)) ([113ca21](https://github.com/sebastian-software/ferrigura/commit/113ca2157e9536192558c09cea6c80c8cf651a48))
+* **text,render:** optimize font embedding, measurement, wrapping, and font resolution ([#285](https://github.com/sebastian-software/ferrigura/issues/285)) ([05bdb7d](https://github.com/sebastian-software/ferrigura/commit/05bdb7dc92a328a7664931f7d4415294121c4414))
+
 ## [0.9.0](https://github.com/sebastian-software/ferrigura/compare/v0.8.2...v0.9.0) (2026-11-23)
 
 

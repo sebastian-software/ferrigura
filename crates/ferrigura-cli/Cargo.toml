@@ -6,7 +6,7 @@ include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*"]
 keywords = ["ferrigura", "mermaid", "diagram", "svg", "cli"]
 categories = ["command-line-utilities", "visualization"]
 documentation = "https://docs.rs/ferrigura-cli"
-version = "0.9.0"
+version = "0.10.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -20,8 +20,8 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-ferrigura = { path = "../..", version = "0.9.0" }
-ferrigura-model = { path = "../ferrigura-model", version = "0.9.0" }
+ferrigura = { path = "../..", version = "0.10.0" }
+ferrigura-model = { path = "../ferrigura-model", version = "0.10.0" }
 serde_json.workspace = true
 sha2 = "0.11.1"
 ureq = { version = "3.5.2", default-features = false, features = ["rustls"] }
