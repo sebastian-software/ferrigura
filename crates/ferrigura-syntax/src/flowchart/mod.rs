@@ -93,7 +93,7 @@ pub fn parse_grammar(text: &str) -> Result<FlowchartDiagram, FlowchartError> {
 /// (not `%%{`), and the leading blanks of the text.
 #[must_use]
 pub fn clean_comments(text: &str) -> String {
-    cleanup_comments(text)
+    cleanup_comments(text).into_owned()
 }
 
 /// Parses a flowchart and returns the warnings the reference would log while parsing, such as a
@@ -122,7 +122,8 @@ pub fn parse_prepared_with_warnings_and_security(
 ) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     // `Diagram.fromText` encodes the entities and adds a line break before the parser sees the
     // text; the parser's own wrapper then closes the braces.
-    let cleaned = cleanup_comments(&remove_directives(&prepared.text));
+    let without_directives = remove_directives(&prepared.text);
+    let cleaned = cleanup_comments(&without_directives);
     let text = close_braces(&(encode_entities(&cleaned) + "\n"));
     let title = prepared.title.clone().unwrap_or_default();
     grammar::parse_text(&text, prepared.line_offset, title, options, security_level)

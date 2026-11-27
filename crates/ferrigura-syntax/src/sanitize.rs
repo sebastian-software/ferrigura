@@ -54,6 +54,8 @@
 //! the tests hold the reference's output for the cases the subset covers: `DOMPURIFY_CORPUS` for
 //! the cases without an anchor, `HOOKED_CORPUS` for the anchors.
 
+use std::collections::HashSet;
+
 use crate::entities;
 use crate::text::js_trim;
 
@@ -126,13 +128,17 @@ fn dompurify(text: &str, forbid_style: bool) -> String {
     if !text.contains('<') {
         return text.to_owned();
     }
-    let normalized: Vec<char> = text
-        .replace("\r\n", "\n")
-        .replace('\r', "\n")
-        .chars()
-        .collect();
+    let normalized: Vec<char> = if text.contains('\r') {
+        text.replace("\r\n", "\n")
+            .replace('\r', "\n")
+            .chars()
+            .collect()
+    } else {
+        text.chars().collect()
+    };
     let body = parse(&normalized, forbid_style);
-    let kept = sanitize_children(body, BODY, forbid_style);
+    let mut kept = Vec::with_capacity(body.len());
+    sanitize_children_into(body, BODY, forbid_style, &mut kept);
     let mut out = String::with_capacity(text.len());
     serialize(&kept, false, &mut out);
     out
@@ -321,8 +327,35 @@ impl Parser<'_> {
                 self.character_text(&decoded);
             }
             _ => {
-                self.position += 1;
-                self.character_text(&c.to_string());
+                if self.in_head {
+                    while self.position < self.chars.len()
+                        && is_html_space(self.chars[self.position])
+                    {
+                        self.position += 1;
+                    }
+                    if self.position >= self.chars.len()
+                        || matches!(self.chars[self.position], '<' | '&')
+                    {
+                        return;
+                    }
+                    self.enter_body();
+                }
+                let start = self.position;
+                while self.position < self.chars.len()
+                    && !matches!(self.chars[self.position], '<' | '&')
+                {
+                    self.position += 1;
+                }
+                let slice = &self.chars[start..self.position];
+                if self.overflow_discards > 0 {
+                    return;
+                }
+                let children = self.children();
+                if let Some(Node::Text(previous)) = children.last_mut() {
+                    previous.extend(slice);
+                } else {
+                    children.push(Node::Text(slice.iter().collect()));
+                }
             }
         }
     }
@@ -419,7 +452,7 @@ impl Parser<'_> {
             _ => self.current_namespace(),
         };
         let leaves_foreign_content = namespace != Namespace::Html
-            && (FOREIGN_BREAKOUT.contains(&name.as_str())
+            && (has_sorted(FOREIGN_BREAKOUT, &name)
                 || (name == "font"
                     && tag.attributes.iter().any(|(attribute, _)| {
                         matches!(attribute.as_str(), "color" | "face" | "size")
@@ -453,10 +486,10 @@ impl Parser<'_> {
             return;
         }
         if self.in_head && namespace == Namespace::Html {
-            if HEAD_VOID.contains(&name.as_str()) {
+            if has_sorted(HEAD_VOID, &name) {
                 return;
             }
-            if HEAD_RAW.contains(&name.as_str()) {
+            if has_sorted(HEAD_RAW, &name) {
                 let _ = self.raw_content(&name, false);
                 return;
             }
@@ -466,10 +499,9 @@ impl Parser<'_> {
             }
         }
         self.enter_body();
-        let is_void = namespace == Namespace::Html && VOID_ELEMENTS.contains(&name.as_str());
+        let is_void = namespace == Namespace::Html && has_sorted(VOID_ELEMENTS, &name);
         let is_raw = namespace == Namespace::Html
-            && (RAW_TEXT_ELEMENTS.contains(&name.as_str())
-                || RCDATA_ELEMENTS.contains(&name.as_str()));
+            && (has_sorted(RAW_TEXT_ELEMENTS, &name) || has_sorted(RCDATA_ELEMENTS, &name));
         let mut element = Element {
             name,
             namespace,
@@ -480,7 +512,7 @@ impl Parser<'_> {
             self.insert(element);
         } else if is_raw {
             // The content is text up to the element's end tag (RCDATA also decodes references).
-            let rcdata = RCDATA_ELEMENTS.contains(&element.name.as_str());
+            let rcdata = has_sorted(RCDATA_ELEMENTS, &element.name);
             let content = self.raw_content(&element.name.clone(), rcdata);
             if !content.is_empty() {
                 element.children.push(Node::Text(content));
@@ -498,7 +530,7 @@ impl Parser<'_> {
             let forbidden = self.forbid_style && element.name == "style";
             let allowed = !forbidden && is_allowed_element(&element.name);
             let discards = if !allowed {
-                FORBID_CONTENTS.contains(&element.name.as_str())
+                has_sorted(FORBID_CONTENTS, &element.name)
             } else {
                 !namespace_allowed(element.namespace, &element.name, parent)
             };
@@ -605,6 +637,7 @@ impl Parser<'_> {
             .collect::<String>()
             .to_ascii_lowercase();
         let mut attributes: Vec<(String, String)> = Vec::new();
+        let mut seen_attributes: Option<HashSet<String>> = None;
         let mut self_closing = false;
         loop {
             while index < chars.len() && is_html_space(chars[index]) {
@@ -685,10 +718,25 @@ impl Parser<'_> {
                     }
                 }
             }
-            if !attributes
+            let is_new = if let Some(seen) = &mut seen_attributes {
+                seen.insert(attribute_name.clone())
+            } else if !attributes
                 .iter()
                 .any(|(existing, _)| *existing == attribute_name)
             {
+                if attributes.len() >= 16 {
+                    let mut set: HashSet<String> = attributes
+                        .iter()
+                        .map(|(existing, _)| existing.clone())
+                        .collect();
+                    set.insert(attribute_name.clone());
+                    seen_attributes = Some(set);
+                }
+                true
+            } else {
+                false
+            };
+            if is_new {
                 attributes.push((attribute_name, value));
             }
         }
@@ -858,14 +906,19 @@ fn numeric_character(value: u32) -> char {
 }
 
 /// DOMPurify's `_sanitizeElements` and `_sanitizeAttributes` over a list of nodes, whose parent is
-/// `parent`: the nodes that are kept, with their attributes filtered. `forbid_style` is the
-/// `FORBID_TAGS: ['style']` of the second pass.
-fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>, forbid_style: bool) -> Vec<Node> {
-    let mut kept = Vec::with_capacity(nodes.len());
+/// `parent`: the nodes that are kept, with their attributes filtered, written directly into `out`
+/// so deeply nested disallowed elements do not re-copy their descendants at every level.
+/// `forbid_style` is the `FORBID_TAGS: ['style']` of the second pass.
+fn sanitize_children_into(
+    nodes: Vec<Node>,
+    parent: Parent<'_>,
+    forbid_style: bool,
+    out: &mut Vec<Node>,
+) {
     for node in nodes {
         let mut element = match node {
             Node::Text(text) => {
-                kept.push(Node::Text(text));
+                out.push(Node::Text(text));
                 continue;
             }
             Node::Element(element) => element,
@@ -873,12 +926,13 @@ fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>, forbid_style: bool) -
         let forbidden = forbid_style && element.name == "style";
         if forbidden || !is_allowed_element(&element.name) {
             // `_sanitizeDisallowedNode`: the children move up unless the content is forbidden.
-            if !FORBID_CONTENTS.contains(&element.name.as_str()) {
-                kept.extend(sanitize_children(
+            if !has_sorted(FORBID_CONTENTS, &element.name) {
+                sanitize_children_into(
                     std::mem::take(&mut element.children),
                     parent,
                     forbid_style,
-                ));
+                    out,
+                );
             }
             continue;
         }
@@ -891,22 +945,24 @@ fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>, forbid_style: bool) -
         } else {
             sanitize_attributes(&element.name, attributes)
         };
-        let children = sanitize_children(
-            std::mem::take(&mut element.children),
+        let raw_children = std::mem::take(&mut element.children);
+        let mut children = Vec::with_capacity(raw_children.len());
+        sanitize_children_into(
+            raw_children,
             Parent {
                 namespace: element.namespace,
                 name: &element.name,
             },
             forbid_style,
+            &mut children,
         );
-        kept.push(Node::Element(Element {
+        out.push(Node::Element(Element {
             name: std::mem::take(&mut element.name),
             namespace: element.namespace,
             attributes,
             children,
         }));
     }
-    kept
 }
 
 /// The attribute that `setupDompurifyHooks` (`common.ts`) keeps a `target` in while DOMPurify runs.
@@ -951,9 +1007,16 @@ fn set_attribute(attributes: &mut Vec<(String, String)>, name: &str, value: Stri
     }
 }
 
+/// Membership test in a strictly sorted static table.
+fn has_sorted(table: &[&str], value: &str) -> bool {
+    table.binary_search(&value).is_ok()
+}
+
 /// `ALLOWED_TAGS`: the union of the HTML, SVG and MathML lists.
 fn is_allowed_element(name: &str) -> bool {
-    HTML_ELEMENTS.contains(&name) || SVG_ELEMENTS.contains(&name) || MATHML_ELEMENTS.contains(&name)
+    has_sorted(HTML_ELEMENTS, name)
+        || has_sorted(SVG_ELEMENTS, name)
+        || has_sorted(MATHML_ELEMENTS, name)
 }
 
 /// `_checkValidNamespace`: whether an element of `namespace` may sit under `parent`.
@@ -993,12 +1056,12 @@ const COMMON_SVG_AND_HTML: &[&str] = &["title", "style", "font", "a", "script"];
 
 /// `ALL_SVG_TAGS`: the SVG elements, allowed or not.
 fn in_svg(name: &str) -> bool {
-    SVG_ELEMENTS.contains(&name) || SVG_DISALLOWED_ELEMENTS.contains(&name)
+    has_sorted(SVG_ELEMENTS, name) || has_sorted(SVG_DISALLOWED_ELEMENTS, name)
 }
 
 /// `ALL_MATHML_TAGS`: the MathML elements, allowed or not.
 fn in_mathml(name: &str) -> bool {
-    MATHML_ELEMENTS.contains(&name) || MATHML_DISALLOWED_ELEMENTS.contains(&name)
+    has_sorted(MATHML_ELEMENTS, name) || has_sorted(MATHML_DISALLOWED_ELEMENTS, name)
 }
 
 /// The start tags that leave foreign content (SVG and MathML) for HTML, as the parser's "in foreign
@@ -1039,8 +1102,8 @@ const FOREIGN_BREAKOUT: &[&str] = &[
     "s",
     "small",
     "span",
-    "strong",
     "strike",
+    "strong",
     "sub",
     "sup",
     "table",
@@ -1080,12 +1143,21 @@ fn has_unsafe_markup(value: &str) -> bool {
     if value.contains("-->") || value.contains("--!>") || value.contains("]>") {
         return true;
     }
-    let lower = value.to_ascii_lowercase();
-    [
+    const FORBID_END_TAGS: &[&str] = &[
         "style", "script", "title", "xmp", "textarea", "noscript", "iframe", "noembed", "noframes",
-    ]
-    .iter()
-    .any(|name| lower.contains(&format!("</{name}")))
+    ];
+    for (pos, _) in value.match_indices("</") {
+        let after = &value[pos + 2..];
+        if FORBID_END_TAGS.iter().any(|name| {
+            after
+                .as_bytes()
+                .get(..name.len())
+                .is_some_and(|head| head.eq_ignore_ascii_case(name.as_bytes()))
+        }) {
+            return true;
+        }
+    }
+    false
 }
 
 /// `_isValidAttribute`, for an attribute name and value that are already trimmed.
@@ -1093,10 +1165,10 @@ fn attribute_is_valid(tag: &str, name: &str, value: &str) -> bool {
     if is_data_attribute(name) || is_aria_attribute(name) {
         return true;
     }
-    if !ALLOWED_ATTRIBUTES.contains(&name) {
+    if !has_sorted(ALLOWED_ATTRIBUTES, name) {
         return false;
     }
-    if URI_SAFE_ATTRIBUTES.contains(&name) {
+    if has_sorted(URI_SAFE_ATTRIBUTES, name) {
         return true;
     }
     let stripped: String = value.chars().filter(|&c| !is_uri_whitespace(c)).collect();
@@ -1106,7 +1178,7 @@ fn attribute_is_valid(tag: &str, name: &str, value: &str) -> bool {
     if matches!(name, "src" | "xlink:href" | "href")
         && tag != "script"
         && value.starts_with("data:")
-        && DATA_URI_TAGS.contains(&tag)
+        && has_sorted(DATA_URI_TAGS, tag)
     {
         return true;
     }
@@ -1141,12 +1213,16 @@ fn is_uri_whitespace(c: char) -> bool {
 /// `IS_ALLOWED_URI`: a known scheme, a value that does not start with an ASCII letter, or a run of
 /// scheme characters that ends the value or is not followed by `:`.
 fn is_allowed_uri(value: &str) -> bool {
-    let lower = value.to_ascii_lowercase();
     const SCHEMES: &[&str] = &[
         "ftp:", "ftps:", "http:", "https:", "mailto:", "tel:", "callto:", "sms:", "cid:", "xmpp:",
         "matrix:",
     ];
-    if SCHEMES.iter().any(|scheme| lower.starts_with(scheme)) {
+    let bytes = value.as_bytes();
+    if SCHEMES.iter().any(|scheme| {
+        bytes
+            .get(..scheme.len())
+            .is_some_and(|head| head.eq_ignore_ascii_case(scheme.as_bytes()))
+    }) {
         return true;
     }
     let mut chars = value.chars();
@@ -1201,13 +1277,12 @@ fn serialize(nodes: &[Node], raw_text: bool, out: &mut String) {
                     out.push('"');
                 }
                 out.push('>');
-                if element.namespace == Namespace::Html
-                    && VOID_ELEMENTS.contains(&element.name.as_str())
+                if element.namespace == Namespace::Html && has_sorted(VOID_ELEMENTS, &element.name)
                 {
                     continue;
                 }
                 let raw = element.namespace == Namespace::Html
-                    && RAW_TEXT_PARENTS.contains(&element.name.as_str());
+                    && has_sorted(RAW_TEXT_PARENTS, &element.name);
                 serialize(&element.children, raw, out);
                 out.push_str("</");
                 out.push_str(&element.name);
@@ -2560,5 +2635,46 @@ mod tests {
         assert_eq!(sanitize_text("a=b &amp; c"), "a=b &amp; c");
         assert_eq!(sanitize_text("<tag>"), "");
         assert_eq!(sanitize_text("<b>a"), "<b>a</b>");
+    }
+
+    #[test]
+    fn binary_searched_lookup_tables_are_strictly_sorted() {
+        let tables: &[(&str, &[&str])] = &[
+            ("VOID_ELEMENTS", super::VOID_ELEMENTS),
+            ("RAW_TEXT_ELEMENTS", super::RAW_TEXT_ELEMENTS),
+            ("RCDATA_ELEMENTS", super::RCDATA_ELEMENTS),
+            ("RAW_TEXT_PARENTS", super::RAW_TEXT_PARENTS),
+            ("HEAD_VOID", super::HEAD_VOID),
+            ("HEAD_RAW", super::HEAD_RAW),
+            ("FOREIGN_BREAKOUT", super::FOREIGN_BREAKOUT),
+            ("HTML_ELEMENTS", super::HTML_ELEMENTS),
+            ("SVG_ELEMENTS", super::SVG_ELEMENTS),
+            ("SVG_DISALLOWED_ELEMENTS", super::SVG_DISALLOWED_ELEMENTS),
+            ("MATHML_ELEMENTS", super::MATHML_ELEMENTS),
+            (
+                "MATHML_DISALLOWED_ELEMENTS",
+                super::MATHML_DISALLOWED_ELEMENTS,
+            ),
+            ("ALLOWED_ATTRIBUTES", super::ALLOWED_ATTRIBUTES),
+            ("FORBID_CONTENTS", super::FORBID_CONTENTS),
+            ("DATA_URI_TAGS", super::DATA_URI_TAGS),
+            ("URI_SAFE_ATTRIBUTES", super::URI_SAFE_ATTRIBUTES),
+        ];
+        for &(name, table) in tables {
+            for pair in table.windows(2) {
+                assert!(
+                    pair[0] < pair[1],
+                    "{name} is not strictly sorted: {:?} >= {:?}",
+                    pair[0],
+                    pair[1]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn deeply_nested_disallowed_elements_flatten_in_linear_time() {
+        let input = format!("{}{}", "<foo>".repeat(250), "<b>a</b>".repeat(500));
+        assert_eq!(sanitize_text(&input), "<b>a</b>".repeat(500));
     }
 }

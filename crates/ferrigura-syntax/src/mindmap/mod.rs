@@ -35,7 +35,8 @@ pub fn parse_prepared(
     directive: &Value,
 ) -> Result<MindmapDiagram, ParseError> {
     let settings = settings_of(directive);
-    let cleaned = cleanup_comments(&remove_directives(&prepared.text));
+    let without_directives = remove_directives(&prepared.text);
+    let cleaned = cleanup_comments(&without_directives);
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);
 

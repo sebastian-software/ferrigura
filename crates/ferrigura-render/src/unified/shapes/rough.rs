@@ -395,7 +395,11 @@ fn arc_to_flat(
 
 /// `Math.parseFloat(x.toFixed(9))`, which `arcToCubicCurves` applies to its asin arguments.
 fn round9(value: f64) -> f64 {
-    format!("{value:.9}").parse().unwrap_or(value)
+    const SCALE: f64 = 1_000_000_000.0;
+    if !value.is_finite() || value.abs() >= 4_500_000.0 {
+        return value;
+    }
+    (value * SCALE).round_ties_even() / SCALE
 }
 
 /// Upper bound on ellipse sample steps so huge or overflowing dimensions cannot OOM or loop.

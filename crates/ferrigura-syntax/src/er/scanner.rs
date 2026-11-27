@@ -107,11 +107,130 @@ fn silent(len: usize) -> Option<Hit> {
     Some(Hit { len, kind: None })
 }
 
+/// The direction words of `.*direction\s+WORD[^\n]*`, in the grammar's order.
+const DIRECTION_WORDS: [(&str, Kind); 4] = [
+    ("TB", Kind::DirectionTb),
+    ("BT", Kind::DirectionBt),
+    ("RL", Kind::DirectionRl),
+    ("LR", Kind::DirectionLr),
+];
+
+/// Precomputed line boundaries, `direction\s+WORD` occurrences, and tilde/space positions so
+/// per-token rules run in O(log N) instead of rescanning the rest of the line.
+struct Index {
+    len: usize,
+    line_breaks: Vec<usize>,
+    directions: [Vec<(usize, usize)>; 4],
+    spaces: Vec<usize>,
+    tildes: Vec<usize>,
+}
+
+impl Index {
+    fn new(text: &str) -> Self {
+        let has_tilde = text.contains('~');
+        let mut line_breaks = Vec::new();
+        let mut directions: [Vec<(usize, usize)>; 4] = Default::default();
+        let mut spaces = Vec::new();
+        let mut tildes = Vec::new();
+        let bytes = text.as_bytes();
+        for (index, c) in text.char_indices() {
+            if is_line_term(c) {
+                line_breaks.push(index);
+            }
+            if has_tilde {
+                if is_js_space(c) {
+                    spaces.push(index);
+                } else if c == '~' {
+                    tildes.push(index);
+                }
+            }
+            if matches!(c, 'd' | 'D')
+                && bytes
+                    .get(index..index + 9)
+                    .is_some_and(|slice| slice.eq_ignore_ascii_case(b"direction"))
+            {
+                let after = index + 9;
+                let ws = space_len(&text[after..]);
+                if ws > 0 {
+                    let word_start = after + ws;
+                    for ((word, _), occ) in DIRECTION_WORDS.iter().zip(directions.iter_mut()) {
+                        if starts_with_ci(&text[word_start..], word) {
+                            occ.push((index, word_start + word.len()));
+                        }
+                    }
+                }
+            }
+        }
+        Self {
+            len: text.len(),
+            line_breaks,
+            directions,
+            spaces,
+            tildes,
+        }
+    }
+
+    fn next_line_term(&self, pos: usize) -> usize {
+        self.line_breaks
+            .get(self.line_breaks.partition_point(|&b| b < pos))
+            .copied()
+            .unwrap_or(self.len)
+    }
+
+    /// `.*direction\s+WORD[^\n]*` at byte offset `pos`.
+    fn direction_len(&self, pos: usize, rest: &str, word_index: usize) -> Option<usize> {
+        let occurrences = &self.directions[word_index];
+        if occurrences.is_empty() {
+            return None;
+        }
+        let line_end = self.next_line_term(pos);
+        let upper = occurrences.partition_point(|&(start, _)| start < line_end);
+        let &(start, end) = occurrences[..upper].last()?;
+        if start < pos {
+            return None;
+        }
+        let rel_end = end - pos;
+        Some(rel_end + line_len(&rest[rel_end..]))
+    }
+
+    /// `([^\s]*)[~].*[~]([^\s]*)` at byte offset `pos`.
+    fn generic_len(&self, pos: usize) -> Option<usize> {
+        if self.tildes.len() < 2 {
+            return None;
+        }
+        let run_end = self
+            .spaces
+            .get(self.spaces.partition_point(|&s| s < pos))
+            .copied()
+            .unwrap_or(self.len);
+        let first_lo = self.tildes.partition_point(|&t| t < pos);
+        let first_hi = self.tildes.partition_point(|&t| t < run_end);
+        for &first in self.tildes[first_lo..first_hi].iter().rev() {
+            let line_end = self.next_line_term(first + 1);
+            let second_hi = self.tildes.partition_point(|&t| t < line_end);
+            let Some(&second) = self.tildes[..second_hi].last() else {
+                continue;
+            };
+            if second <= first {
+                continue;
+            }
+            let tail_end = self
+                .spaces
+                .get(self.spaces.partition_point(|&s| s < second + 1))
+                .copied()
+                .unwrap_or(self.len);
+            return Some(tail_end - pos);
+        }
+        None
+    }
+}
+
 /// Tokenizes the ER text. The last token is always [`Kind::End`].
 pub(crate) fn tokenize(text: &str) -> Result<Vec<Token>, LexError> {
     let mut lexer = Lexer {
         states: StateStack::new(State::Initial),
         done: false,
+        index: Index::new(text),
     };
     let mut tokens = Vec::new();
     let mut pos = 0;
@@ -125,7 +244,7 @@ pub(crate) fn tokenize(text: &str) -> Result<Vec<Token>, LexError> {
         }
         let rest = &text[pos..];
         let state = lexer.states.top();
-        let Some(hit) = lexer.rule(rest, state) else {
+        let Some(hit) = lexer.rule(pos, rest, state) else {
             if rest.is_empty() {
                 tokens.push(end_token(text.len()));
                 return Ok(tokens);
@@ -156,6 +275,7 @@ struct Lexer {
     states: StateStack<State>,
     /// Set once the input is used up, as Jison's `done`: the next call returns the end marker.
     done: bool,
+    index: Index,
 }
 
 /// The rules after the accessibility, direction and whitespace rules of `INITIAL`, for the
@@ -195,9 +315,9 @@ const SYMBOL_WORDS: &[(&str, bool, Kind)] = &[
 
 impl Lexer {
     /// The first rule of the current state that matches at the start of `rest`.
-    fn rule(&mut self, rest: &str, state: State) -> Option<Hit> {
+    fn rule(&mut self, pos: usize, rest: &str, state: State) -> Option<Hit> {
         match state {
-            State::Initial => self.initial(rest),
+            State::Initial => self.initial(pos, rest),
             State::AccTitle => {
                 self.states.pop();
                 hit(line_len(rest), Kind::AccTitleValue)
@@ -214,7 +334,7 @@ impl Lexer {
                 let len = rest.find('}').unwrap_or(rest.len());
                 hit(len, Kind::AccDescrMultiValue)
             }
-            State::Block => self.block(rest),
+            State::Block => self.block(pos, rest),
             State::BlockBq => {
                 if rest.starts_with('`') {
                     self.states.pop();
@@ -231,7 +351,7 @@ impl Lexer {
     }
 
     /// The rules of `INITIAL`, in the order of the grammar.
-    fn initial(&mut self, rest: &str) -> Option<Hit> {
+    fn initial(&mut self, pos: usize, rest: &str) -> Option<Hit> {
         if let Some(len) = delimited_len(rest, "accTitle", ':') {
             self.states.push(State::AccTitle);
             return hit(len, Kind::AccTitle);
@@ -244,13 +364,8 @@ impl Lexer {
             self.states.push(State::AccDescrMulti);
             return silent(len);
         }
-        for (word, kind) in [
-            ("TB", Kind::DirectionTb),
-            ("BT", Kind::DirectionBt),
-            ("RL", Kind::DirectionRl),
-            ("LR", Kind::DirectionLr),
-        ] {
-            if let Some(len) = direction_len(rest, word) {
+        for (word_index, &(_, kind)) in DIRECTION_WORDS.iter().enumerate() {
+            if let Some(len) = self.index.direction_len(pos, rest, word_index) {
                 return hit(len, kind);
             }
         }
@@ -387,7 +502,7 @@ impl Lexer {
 
 impl Lexer {
     /// The rules of the `block` state: names, keys, comments, and the closing brace.
-    fn block(&mut self, rest: &str) -> Option<Hit> {
+    fn block(&mut self, pos: usize, rest: &str) -> Option<Hit> {
         let blanks = rest.len() - rest.trim_start_matches(is_js_space).len();
         if blanks > 0 {
             return silent(blanks);
@@ -397,7 +512,7 @@ impl Lexer {
                 return hit(len, Kind::AttributeKey);
             }
         }
-        if let Some(len) = generic_len(rest) {
+        if let Some(len) = self.index.generic_len(pos) {
             return hit(len, Kind::AttributeWord);
         }
         if let Some(len) = attribute_word_len(rest) {
@@ -429,29 +544,6 @@ fn delimited_len(rest: &str, word: &str, delimiter: char) -> Option<usize> {
     let after_delimiter = after_word[spaces..].strip_prefix(delimiter)?;
     let trailing = space_len(after_delimiter);
     Some(word.len() + spaces + delimiter.len_utf8() + trailing)
-}
-
-/// `.*direction\s+WORD[^\n]*` for one word: the last `direction` on the line whose word follows,
-/// with the rest of the line. The `.` does not cross a line terminator, but `\s+` does.
-fn direction_len(rest: &str, word: &str) -> Option<usize> {
-    let dot_end = rest.find(is_line_term).unwrap_or(rest.len());
-    let mut best = None;
-    for (start, _) in rest[..dot_end].char_indices() {
-        if !starts_with_ci(&rest[start..], "direction") {
-            continue;
-        }
-        let after = start + "direction".len();
-        let spaces = space_len(&rest[after..]);
-        if spaces == 0 {
-            continue;
-        }
-        let word_start = after + spaces;
-        if starts_with_ci(&rest[word_start..], word) {
-            best = Some(word_start + word.len());
-        }
-    }
-    let word_end = best?;
-    Some(word_end + line_len(&rest[word_end..]))
 }
 
 /// `"[^"%\r\n\v\b\\]+"`: a quoted name without the characters that would break the parser.
@@ -562,31 +654,6 @@ fn style_text_len(rest: &str) -> usize {
     rest.char_indices()
         .find(|&(_, c)| !(!c.is_ascii() || is_word(c) || matches!(c, '-' | '*')))
         .map_or(rest.len(), |(index, _)| index)
-}
-
-/// `([^\s]*)[~].*[~]([^\s]*)`: a generic type. The first part is the longest run of blank-free
-/// text that ends before a tilde with another tilde after it on the line; the second tilde is the
-/// last one on the line; the last part runs to the next blank.
-fn generic_len(rest: &str) -> Option<usize> {
-    let run = rest.find(is_js_space).unwrap_or(rest.len());
-    let candidates: Vec<usize> = rest[..run]
-        .char_indices()
-        .filter(|&(_, c)| c == '~')
-        .map(|(index, _)| index)
-        .collect();
-    for &first in candidates.iter().rev() {
-        let line_end = rest[first + 1..]
-            .find(is_line_term)
-            .map_or(rest.len(), |offset| first + 1 + offset);
-        let Some(second) = rest[first + 1..line_end].rfind('~').map(|i| first + 1 + i) else {
-            continue;
-        };
-        let tail = rest[second + 1..]
-            .find(is_js_space)
-            .unwrap_or(rest.len() - second - 1);
-        return Some(second + 1 + tail);
-    }
-    None
 }
 
 /// `[\*A-Za-z_À-￿][A-Za-z0-9\-\_\[\]\(\)\.,À-￿\*]*`.

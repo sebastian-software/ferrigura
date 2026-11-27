@@ -7,6 +7,7 @@
 //! configuration merged with the directives, not yet sanitized. The sanitizing and the layers of
 //! the configuration are in `ferrigura_model::config::effective`.
 
+use std::borrow::Cow;
 use std::collections::BTreeMap as Map;
 
 use ferrigura_model::config::{assign_with_depth, deep_merge, sanitize_directive};
@@ -31,9 +32,16 @@ pub fn read_prepared(
 ) -> Result<Value, ParseError> {
     let front_matter = front_matter_config(&prepared.front_matter);
     let diagram = diagram.map(DiagramType::config_key);
-    let mut directive =
-        detect_init(&prepared.text, diagram)?.unwrap_or_else(|| Value::Object(Map::new()));
-    if let (Some(wrap), Value::Object(map)) = (detect_wrap(&prepared.text), &mut directive) {
+    let found = directives(&prepared.text).ok();
+    let mut directive = found
+        .as_deref()
+        .map(|list| detect_init_from(list, diagram))
+        .transpose()?
+        .flatten()
+        .unwrap_or_else(|| Value::Object(Map::new()));
+    if let (Some(wrap), Value::Object(map)) =
+        (found.as_deref().and_then(detect_wrap_from), &mut directive)
+    {
         map.insert("wrap".to_owned(), Value::Bool(wrap));
     }
 
@@ -77,10 +85,10 @@ fn front_matter_config(fields: &[(String, Yaml)]) -> Value {
 /// The reference calls `detectType` on the text whenever the arguments are truthy (or several
 /// directives are given), and `detectType` throws when no diagram type is detected: then the text
 /// has no configuration, and this is an error, as `preprocessDiagram` makes it.
-fn detect_init(text: &str, diagram: Option<&str>) -> Result<Option<Value>, ParseError> {
-    let Ok(found) = directives(text) else {
-        return Ok(None);
-    };
+fn detect_init_from(
+    found: &[Directive],
+    diagram: Option<&str>,
+) -> Result<Option<Value>, ParseError> {
     let inits: Vec<&Directive> = found
         .iter()
         .filter(|directive| is_init_type(&directive.kind))
@@ -132,8 +140,7 @@ fn is_truthy(value: &Value) -> bool {
 
 /// `wrap` as `processDirectives` sets it: `Some(true)` for a `%%{wrap}%%` directive, `Some(false)`
 /// when several directives named like `wrap` appear and none is exactly `wrap`, `None` otherwise.
-fn detect_wrap(text: &str) -> Option<bool> {
-    let found = directives(text).ok()?;
+fn detect_wrap_from(found: &[Directive]) -> Option<bool> {
     let wraps: Vec<&Directive> = found
         .iter()
         .filter(|directive| directive.kind.contains("wrap"))
@@ -166,8 +173,19 @@ struct Directive {
 /// `detectDirective(text)`: every `%%{ … }%%` directive in the text, in order. `Err` when the
 /// arguments of any directive are not JSON; the reference then reports no directive at all.
 fn directives(text: &str) -> Result<Vec<Directive>, ()> {
-    let text = remove_comment_lines(text.trim()).replace('\'', "\"");
-    let chars: Vec<char> = text.chars().collect();
+    if !text.contains("%%{") && !text.contains("%%}%%") {
+        return Ok(Vec::new());
+    }
+    let cleaned = remove_comment_lines(text.trim());
+    if !cleaned.contains("%%{") {
+        return Ok(Vec::new());
+    }
+    let replaced: Cow<'_, str> = if cleaned.contains('\'') {
+        Cow::Owned(cleaned.replace('\'', "\""))
+    } else {
+        cleaned
+    };
+    let chars: Vec<char> = replaced.chars().collect();
     let mut found = Vec::new();
     let mut from = 0;
     while let Some(next) = next_directive(&chars, from) {
@@ -279,22 +297,30 @@ fn json_content_end(chars: &[char], from: usize) -> usize {
 }
 
 /// `commentWithoutDirectives` of `detectDirective`: a `%%}%%` line is removed with its line break.
-fn remove_comment_lines(text: &str) -> String {
-    let chars: Vec<char> = text.chars().collect();
-    let mut out = String::with_capacity(text.len());
-    let mut i = 0;
-    while i < chars.len() {
-        if starts_with(&chars, i, &['%', '%', '}', '%', '%']) {
-            let line_end = (i + 2..chars.len()).find(|&k| is_line_term(chars[k]));
-            if let Some(end) = line_end.filter(|&k| chars[k] == '\n') {
-                i = end + 1;
-                continue;
-            }
-        }
-        out.push(chars[i]);
-        i += 1;
+fn remove_comment_lines(text: &str) -> Cow<'_, str> {
+    if !text.contains("%%}%%") {
+        return Cow::Borrowed(text);
     }
-    out
+    let mut out = String::with_capacity(text.len());
+    let mut pos = 0;
+    while pos < text.len() {
+        let rest = &text[pos..];
+        let (line_end, next_pos, ends_with_lf) = match rest.find(is_line_term) {
+            Some(rel) => {
+                let ch = rest[rel..].chars().next().unwrap_or('\n');
+                (pos + rel, pos + rel + ch.len_utf8(), ch == '\n')
+            }
+            None => (text.len(), text.len(), false),
+        };
+        let line = &text[pos..line_end];
+        if ends_with_lf && let Some(comment_rel) = line.find("%%}%%") {
+            out.push_str(&line[..comment_rel]);
+        } else {
+            out.push_str(&text[pos..next_pos]);
+        }
+        pos = next_pos;
+    }
+    Cow::Owned(out)
 }
 
 fn starts_with(chars: &[char], at: usize, pattern: &[char]) -> bool {

@@ -150,15 +150,107 @@ fn crossing_sits_in_rounded_corner(edge: &EdgeGeom, seg_index: usize, t: f64) ->
     leaving.is_some_and(|corner| seg_len - d < corner.cut_len)
 }
 
+/// Edge-level axis-aligned bounding box for fast pairwise rejection.
+#[derive(Debug, Clone, Copy)]
+enum EdgeBounds {
+    Empty,
+    Finite {
+        min_x: f64,
+        max_x: f64,
+        min_y: f64,
+        max_y: f64,
+    },
+    NonFinite,
+}
+
+impl EdgeBounds {
+    fn of(points: &[Point]) -> Self {
+        if points.len() < 2 {
+            return Self::Empty;
+        }
+        let mut min_x = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        for &p in points {
+            if !p.x.is_finite() || !p.y.is_finite() {
+                return Self::NonFinite;
+            }
+            min_x = min_x.min(p.x);
+            max_x = max_x.max(p.x);
+            min_y = min_y.min(p.y);
+            max_y = max_y.max(p.y);
+        }
+        Self::Finite {
+            min_x,
+            max_x,
+            min_y,
+            max_y,
+        }
+    }
+}
+
 /// `findEdgeIntersections`: every crossing of every pair of edges that is not in a rounded corner.
 /// For an orthogonal pair the horizontal segment jumps; otherwise the later edge does.
 #[must_use]
 pub fn find_edge_intersections(edges: &[EdgeGeom]) -> Vec<Crossing> {
+    let bounds: Vec<EdgeBounds> = edges
+        .iter()
+        .map(|edge| EdgeBounds::of(&edge.points))
+        .collect();
     let mut crossings = Vec::new();
     for i in 0..edges.len() {
+        let bi = bounds[i];
+        if matches!(bi, EdgeBounds::Empty) {
+            continue;
+        }
         for j in i + 1..edges.len() {
+            let bj = bounds[j];
+            if matches!(bj, EdgeBounds::Empty) {
+                continue;
+            }
+            let both_finite = match (bi, bj) {
+                (
+                    EdgeBounds::Finite {
+                        min_x: ax0,
+                        max_x: ax1,
+                        min_y: ay0,
+                        max_y: ay1,
+                    },
+                    EdgeBounds::Finite {
+                        min_x: bx0,
+                        max_x: bx1,
+                        min_y: by0,
+                        max_y: by1,
+                    },
+                ) => {
+                    if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
+                        continue;
+                    }
+                    true
+                }
+                _ => false,
+            };
             for (si, &[a1, a2]) in edges[i].points.array_windows::<2>().enumerate() {
+                let (ax0, ax1, ay0, ay1) = if both_finite {
+                    (
+                        a1.x.min(a2.x),
+                        a1.x.max(a2.x),
+                        a1.y.min(a2.y),
+                        a1.y.max(a2.y),
+                    )
+                } else {
+                    (0.0, 0.0, 0.0, 0.0)
+                };
                 for (sj, &[b1, b2]) in edges[j].points.array_windows::<2>().enumerate() {
+                    if both_finite
+                        && (ax1 < b1.x.min(b2.x)
+                            || b1.x.max(b2.x) < ax0
+                            || ay1 < b1.y.min(b2.y)
+                            || b1.y.max(b2.y) < ay0)
+                    {
+                        continue;
+                    }
                     let seg_a = (a1, a2);
                     let seg_b = (b1, b2);
                     let Some((point, t_a, t_b)) =
@@ -280,7 +372,7 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
 
     let min_useful_radius = config.jump_radius * MIN_USEFUL_RADIUS_RATIO;
     let mut parts = vec![format!("M{}", point_text(points[0]))];
-    for (i, &(a, b)) in segs.iter().enumerate() {
+    for (i, (&(a, b), seg_jumps)) in segs.iter().zip(&mut by_segment).enumerate() {
         let seg_len = a.distance(b);
         let (ux, uy) = if seg_len == 0.0 {
             (0.0, 0.0)
@@ -307,7 +399,6 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
             }
         }
 
-        let mut seg_jumps: Vec<JumpOnSegment> = by_segment[i].clone();
         seg_jumps.sort_by(|x, y| x.t.total_cmp(&y.t));
         seg_jumps.retain_mut(|jump| {
             let room = (jump.d - consumed).min(stop - jump.d) - CORNER_JUMP_CLEARANCE;
@@ -323,7 +414,7 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
             }
         }
 
-        for jump in &seg_jumps {
+        for jump in seg_jumps.iter() {
             if jump.r < min_useful_radius {
                 continue;
             }
@@ -525,6 +616,14 @@ fn collapse_semicolons(style: &str) -> String {
 /// not in the result.
 #[must_use]
 pub fn apply_jumps(edges: &[EdgeGeom], config: &LineJumpConfig) -> Vec<Rewrite> {
+    let all_finite = edges.iter().all(|edge| {
+        edge.points
+            .iter()
+            .all(|p| p.x.is_finite() && p.y.is_finite())
+    });
+    if all_finite {
+        return apply_jumps_normalized(edges, config);
+    }
     let rendered: Vec<EdgeGeom> = edges
         .iter()
         .map(|edge| EdgeGeom {
@@ -532,17 +631,36 @@ pub fn apply_jumps(edges: &[EdgeGeom], config: &LineJumpConfig) -> Vec<Rewrite> 
             ..edge.clone()
         })
         .collect();
-    let crossings = find_edge_intersections(&rendered);
+    apply_jumps_normalized(&rendered, config)
+}
+
+/// Owned variant of [`apply_jumps`] that normalizes non-finite points in place without cloning the
+/// edge geometries.
+#[must_use]
+pub(crate) fn apply_jumps_owned(mut edges: Vec<EdgeGeom>, config: &LineJumpConfig) -> Vec<Rewrite> {
+    for edge in &mut edges {
+        if edge
+            .points
+            .iter()
+            .any(|p| !p.x.is_finite() || !p.y.is_finite())
+        {
+            edge.points = rendered_points(&edge.points);
+        }
+    }
+    apply_jumps_normalized(&edges, config)
+}
+
+fn apply_jumps_normalized(rendered: &[EdgeGeom], config: &LineJumpConfig) -> Vec<Rewrite> {
+    let crossings = find_edge_intersections(rendered);
     if crossings.is_empty() {
         return Vec::new();
     }
+    let mut jumps_by_edge: Vec<Vec<Crossing>> = vec![Vec::new(); rendered.len()];
+    for crossing in crossings {
+        jumps_by_edge[crossing.jump_edge].push(crossing);
+    }
     let mut rewrites = Vec::new();
-    for (index, edge) in rendered.iter().enumerate() {
-        let jumps: Vec<Crossing> = crossings
-            .iter()
-            .filter(|crossing| crossing.jump_edge == index)
-            .cloned()
-            .collect();
+    for (index, (edge, jumps)) in rendered.iter().zip(&jumps_by_edge).enumerate() {
         if jumps.is_empty() {
             continue;
         }
@@ -552,7 +670,7 @@ pub fn apply_jumps(edges: &[EdgeGeom], config: &LineJumpConfig) -> Vec<Rewrite> 
             Some(curve) if curve_supports_line_hops(curve) => {}
             _ => continue,
         }
-        let d = rewrite_edge_path(edge, &jumps, config);
+        let d = rewrite_edge_path(edge, jumps, config);
         let style = rewrite_dash_array(&edge.style, path_length(&d));
         rewrites.push(Rewrite { index, d, style });
     }
@@ -687,5 +805,34 @@ mod tests {
         assert_eq!(rewrites.len(), 1);
         assert_eq!(rewrites[0].index, 0);
         assert_eq!(rewrites[0].d, "M0,50 L44,50 A6,6 0 0 1 56,50 L100,50");
+    }
+
+    #[test]
+    fn aabb_rejection_and_bucketing_preserve_crossing_order_with_many_disjoint_edges() {
+        let mut edges = Vec::new();
+        for i in 0..200 {
+            let offset = f64::from(i) * 200.0;
+            edges.push(edge(
+                &format!("h{i}"),
+                vec![p(offset, 50.0), p(offset + 100.0, 50.0)],
+                Some("linear"),
+            ));
+            edges.push(edge(
+                &format!("v{i}"),
+                vec![p(offset + 50.0, 0.0), p(offset + 50.0, 100.0)],
+                Some("linear"),
+            ));
+        }
+        let crossings = find_edge_intersections(&edges);
+        assert_eq!(crossings.len(), 200);
+        for (i, crossing) in crossings.iter().enumerate() {
+            assert_eq!(crossing.jump_edge, i * 2);
+            assert_eq!(crossing.other_edge, i * 2 + 1);
+        }
+        let rewrites = apply_jumps_owned(edges, &config(JumpStyle::Arc));
+        assert_eq!(rewrites.len(), 200);
+        for (i, rewrite) in rewrites.iter().enumerate() {
+            assert_eq!(rewrite.index, i * 2);
+        }
     }
 }

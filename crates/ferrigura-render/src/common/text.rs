@@ -376,20 +376,15 @@ impl TextMemo {
         }
         let mut hyphenated = Vec::new();
         let mut current = String::new();
-        let characters: Vec<char> = word.chars().collect();
-        for (index, character) in characters.iter().enumerate() {
-            let next = format!("{current}{character}");
-            let line_width = self.width(&next, style)?;
+        let mut chars = word.chars().peekable();
+        while let Some(character) = chars.next() {
+            current.push(character);
+            let line_width = text_dimensions(&current, style)?.width;
             if line_width >= max_width {
-                let is_last = index + 1 == characters.len();
-                hyphenated.push(if is_last {
-                    next
-                } else {
-                    format!("{next}{hyphen}")
-                });
-                current.clear();
-            } else {
-                current = next;
+                if chars.peek().is_some() {
+                    current.push_str(hyphen);
+                }
+                hyphenated.push(std::mem::take(&mut current));
             }
         }
         let result = BreakString {

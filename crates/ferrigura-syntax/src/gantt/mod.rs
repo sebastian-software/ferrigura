@@ -88,7 +88,8 @@ pub fn parse_prepared_with_security(
 ) -> Result<GanttDiagram, ParseError> {
     // `Diagram.fromText`: the directives and comment lines go, then the entities are encoded and a
     // line break is added for the grammar.
-    let cleaned = cleanup_comments(&remove_directives(&prepared.text));
+    let without_directives = remove_directives(&prepared.text);
+    let cleaned = cleanup_comments(&without_directives);
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);
 

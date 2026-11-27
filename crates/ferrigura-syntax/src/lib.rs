@@ -178,10 +178,20 @@ pub fn detect_prepared(prepared: &preprocess::Prepared) -> Option<DiagramType> {
 /// Calls `read` with the text from the diagram's header on: the prepared text without its
 /// directives, comment lines and front matter, from its first line that is not one of them.
 fn with_header<T>(prepared: &preprocess::Prepared, read: impl FnOnce(&str) -> T) -> T {
+    // Fast path: when the first non-whitespace line has no `%%` (directive/comment) and does not
+    // start with `---` (front matter), removing directives/comments/front matter cannot change the
+    // leading header line that every detector inspects.
+    let trimmed = prepared.text.trim_start_matches(text::is_js_space);
+    let first_line_end = trimmed.find(text::is_line_term).unwrap_or(trimmed.len());
+    let first_line = &trimmed[..first_line_end];
+    if !first_line.contains("%%") && !first_line.starts_with("---") {
+        return read(trimmed);
+    }
     // `preprocessDiagram` removes the directives and the comment lines and trims the start
     // (`preprocess.ts` 58-65); `detectType` then strips a front matter block once more
     // (`detectType.ts` 15-18), which finds one that blank lines or comments kept from the start.
-    let cleaned = preprocess::cleanup_comments(&preprocess::remove_directives(&prepared.text));
+    let without_directives = preprocess::remove_directives(&prepared.text);
+    let cleaned = preprocess::cleanup_comments(&without_directives);
     let body = preprocess::strip_front_matter(&cleaned);
     read(skip_hidden_prefix(&body))
 }

@@ -157,22 +157,80 @@ fn is_line_terminator(c: char) -> bool {
     matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
 }
 
-/// `.*direction\s+WORD[^\n]*` (INITIAL): the length of the match at the start of `rest`, if there
-/// is one. The `.*` may not cross a line terminator, but `\s+` may. Among the possible starts the
-/// last one wins, as the greedy `.*` takes it.
-fn direction_len(rest: &str, word: &str) -> Option<usize> {
-    let line_end = rest.find(is_line_terminator).unwrap_or(rest.len());
-    let mut end = None;
-    for (position, _) in rest[..line_end].match_indices("direction") {
-        let after = &rest[position + "direction".len()..];
-        let spaces = space_len(after);
-        if spaces > 0 && after[spaces..].starts_with(word) {
-            end = Some(position + "direction".len() + spaces + word.len());
+/// The direction words of `.*direction\s+WORD[^\n]*`, in the grammar's order.
+const DIRECTION_WORDS: [(&str, Kind); 4] = [
+    ("TB", Kind::DirectionTb),
+    ("BT", Kind::DirectionBt),
+    ("RL", Kind::DirectionRl),
+    ("LR", Kind::DirectionLr),
+];
+
+/// Precomputed line boundaries and `direction\s+WORD` positions so each token checks direction
+/// rules in O(log N) instead of rescanning to end of line.
+struct Index {
+    len: usize,
+    line_breaks: Vec<usize>,
+    directions: [Vec<(usize, usize)>; 4],
+}
+
+impl Index {
+    fn new(text: &str) -> Self {
+        let mut directions: [Vec<(usize, usize)>; 4] = Default::default();
+        if !text.contains("direction") {
+            return Self {
+                len: text.len(),
+                line_breaks: Vec::new(),
+                directions,
+            };
+        }
+        for (start, _) in text.match_indices("direction") {
+            let after = start + "direction".len();
+            let spaces = space_len(&text[after..]);
+            if spaces == 0 {
+                continue;
+            }
+            let word_start = after + spaces;
+            for ((word, _), occurrences) in DIRECTION_WORDS.iter().zip(directions.iter_mut()) {
+                if text[word_start..].starts_with(word) {
+                    occurrences.push((start, word_start + word.len()));
+                }
+            }
+        }
+        let line_breaks = if directions.iter().any(|occ| !occ.is_empty()) {
+            text.char_indices()
+                .filter(|&(_, c)| is_line_terminator(c))
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        Self {
+            len: text.len(),
+            line_breaks,
+            directions,
         }
     }
-    let end = end?;
-    let tail = &rest[end..];
-    Some(end + tail.find('\n').unwrap_or(tail.len()))
+
+    /// `.*direction\s+WORD[^\n]*` at byte offset `pos` in `text`.
+    fn direction_len(&self, pos: usize, rest: &str, word_index: usize) -> Option<usize> {
+        let occurrences = &self.directions[word_index];
+        if occurrences.is_empty() {
+            return None;
+        }
+        let line_end = self
+            .line_breaks
+            .get(self.line_breaks.partition_point(|&b| b < pos))
+            .copied()
+            .unwrap_or(self.len);
+        let upper = occurrences.partition_point(|&(start, _)| start < line_end);
+        let &(start, end) = occurrences[..upper].last()?;
+        if start < pos {
+            return None;
+        }
+        let rel_end = end - pos;
+        let tail = &rest[rel_end..];
+        Some(rel_end + tail.find('\n').unwrap_or(tail.len()))
+    }
 }
 
 /// `%%[^\n]*(\r?\n)*`-like comment: the text after `%%` up to a line break, then all the line
@@ -257,16 +315,11 @@ fn is_punctuation(c: char) -> bool {
 
 /// The rules of the lexer for the current start condition and text, in the order of the grammar.
 /// `rest` is the text from the current position. Returns `None` when no rule matches.
-fn rule(state: State, rest: &str) -> Option<Hit<'_>> {
+fn rule<'a>(state: State, pos: usize, rest: &'a str, index: &Index) -> Option<Hit<'a>> {
     let initial = state == State::Initial;
     if initial {
-        for (word, kind) in [
-            ("TB", Kind::DirectionTb),
-            ("BT", Kind::DirectionBt),
-            ("RL", Kind::DirectionRl),
-            ("LR", Kind::DirectionLr),
-        ] {
-            if let Some(len) = direction_len(rest, word) {
+        for (word_index, &(_, kind)) in DIRECTION_WORDS.iter().enumerate() {
+            if let Some(len) = index.direction_len(pos, rest, word_index) {
                 return token(len, kind, &rest[..len], Action::Keep);
             }
         }
@@ -617,6 +670,7 @@ struct Lexer<'a> {
     pos: usize,
     states: StateStack<State>,
     done: bool,
+    index: Index,
 }
 
 impl Lexer<'_> {
@@ -636,7 +690,7 @@ impl Lexer<'_> {
             }
             let start = self.pos;
             let rest = &self.text[start..];
-            let Some(hit) = rule(self.states.top(), rest) else {
+            let Some(hit) = rule(self.states.top(), start, rest, &self.index) else {
                 if rest.is_empty() {
                     return Ok(Token {
                         kind: Kind::Eof,
@@ -679,6 +733,7 @@ pub(crate) fn tokenize(text: &str) -> Result<Vec<Token>, LexError> {
         pos: 0,
         states: StateStack::new(State::Initial),
         done: false,
+        index: Index::new(text),
     };
     let mut tokens = Vec::new();
     loop {

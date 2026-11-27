@@ -456,11 +456,14 @@ impl<'a> Lexer<'a> {
         // 37: a name with blanks, when a line break, `;` or `#` follows it (the longest such).
         let line_name = run_while(rest, is_line_name_char);
         if line_name > 0 {
-            let ends: Vec<usize> = rest[..line_name]
-                .char_indices()
-                .map(|(index, c)| index + c.len_utf8())
-                .collect();
-            if let Some(&end) = ends.iter().rev().find(|&&end| ends_name(&rest[end..])) {
+            let matched_end = if ends_name(&rest[line_name..]) {
+                Some(line_name)
+            } else {
+                // `rest[..line_name]` contains neither `\n` nor `;`, so any shorter prefix that
+                // satisfies `ends_name` must end right before the last `#` inside it.
+                rest[..line_name].rfind('#').filter(|&pos| pos > 0)
+            };
+            if let Some(end) = matched_end {
                 self.states.pop();
                 self.take(start, end, Tok::Actor(js_trim(&rest[..end]).to_owned()));
                 return Ok(());

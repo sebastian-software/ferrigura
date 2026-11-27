@@ -289,42 +289,121 @@ fn word_then_space(rest: &str, word: &str) -> Option<usize> {
     (spaces > 0).then_some(word.len() + spaces)
 }
 
-/// `.*direction\s+WORD[^\n]*`: a `direction` on the line, followed by whitespace (which may cross
-/// lines) and the word, ends the match at the next line break. The `.` cannot cross a line
-/// terminator, and the match takes the last `direction` that fits, as the greedy `.*` does.
-fn direction_len(rest: &str, word: &str) -> Option<usize> {
-    let line = rest.find(is_line_term).unwrap_or(rest.len());
-    let mut last = None;
-    for start in 0..line {
-        if rest
-            .get(start..start + 9)
-            .is_none_or(|word| !word.eq_ignore_ascii_case("direction"))
-        {
-            continue;
-        }
-        let after = start + 9;
-        let spaces = ws_len(&rest[after..]);
-        if spaces == 0 {
-            continue;
-        }
-        let word_at = after + spaces;
-        if ci_prefix(&rest[word_at..], word) {
-            last = Some(word_at + word.len());
-        }
-    }
-    last.map(|end| end + line_len(&rest[end..]))
+/// Precomputed line boundaries, `direction\s+WORD` occurrences, state marker occurrences, and
+/// opening brace offsets so per-token rules run in O(log N) instead of rescanning to end of line.
+struct Index {
+    len: usize,
+    line_breaks: Vec<usize>,
+    directions: [Vec<(usize, usize)>; 4],
+    markers: [Vec<usize>; 6],
+    open_braces: Vec<usize>,
 }
 
-/// `.*MARKER`: the length up to the end of the last marker on the line, when there is one.
-fn marker_len(rest: &str, marker: &str) -> Option<usize> {
-    let line = rest.find(is_line_term).unwrap_or(rest.len());
-    (0..line)
-        .rev()
-        .find(|&start| {
-            rest.get(start..start + marker.len())
-                .is_some_and(|text| text.eq_ignore_ascii_case(marker))
-        })
-        .map(|start| start + marker.len())
+impl Index {
+    fn new(text: &str) -> Self {
+        let mut line_breaks = Vec::new();
+        let mut directions: [Vec<(usize, usize)>; 4] = Default::default();
+        let mut markers: [Vec<usize>; 6] = Default::default();
+        let mut open_braces = Vec::new();
+        let bytes = text.as_bytes();
+        for (index, c) in text.char_indices() {
+            if is_line_term(c) {
+                line_breaks.push(index);
+            } else if c == '{' {
+                open_braces.push(index);
+            } else if matches!(c, 'd' | 'D')
+                && bytes
+                    .get(index..index + 9)
+                    .is_some_and(|slice| slice.eq_ignore_ascii_case(b"direction"))
+            {
+                let after = index + 9;
+                let spaces = ws_len(&text[after..]);
+                if spaces > 0 {
+                    let word_at = after + spaces;
+                    for ((word, _), occ) in DIRECTIONS.iter().zip(directions.iter_mut()) {
+                        if ci_prefix(&text[word_at..], word) {
+                            occ.push((index, word_at + word.len()));
+                        }
+                    }
+                }
+            } else if matches!(c, '<' | '[') {
+                for ((marker, _), occ) in MARKERS.iter().zip(markers.iter_mut()) {
+                    if ci_prefix(&text[index..], marker) {
+                        occ.push(index);
+                    }
+                }
+            }
+        }
+        Self {
+            len: text.len(),
+            line_breaks,
+            directions,
+            markers,
+            open_braces,
+        }
+    }
+
+    fn next_line_term(&self, pos: usize) -> usize {
+        self.line_breaks
+            .get(self.line_breaks.partition_point(|&b| b < pos))
+            .copied()
+            .unwrap_or(self.len)
+    }
+
+    /// `.*direction\s+WORD[^\n]*` at byte offset `pos`.
+    fn direction_len(&self, pos: usize, rest: &str, word_index: usize) -> Option<usize> {
+        let occurrences = &self.directions[word_index];
+        if occurrences.is_empty() {
+            return None;
+        }
+        let line_end = self.next_line_term(pos);
+        let upper = occurrences.partition_point(|&(start, _)| start < line_end);
+        let &(start, end) = occurrences[..upper].last()?;
+        if start < pos {
+            return None;
+        }
+        let rel_end = end - pos;
+        Some(rel_end + line_len(&rest[rel_end..]))
+    }
+
+    /// `.*MARKER` at byte offset `pos`.
+    fn marker_len(&self, pos: usize, marker_index: usize) -> Option<usize> {
+        let occurrences = &self.markers[marker_index];
+        if occurrences.is_empty() {
+            return None;
+        }
+        let line_end = self.next_line_term(pos);
+        let upper = occurrences.partition_point(|&start| start < line_end);
+        let &start = occurrences[..upper].last()?;
+        if start < pos {
+            return None;
+        }
+        Some((start - pos) + MARKERS[marker_index].0.len())
+    }
+
+    /// `\w+\s+\w+.*?\{` in the `STATE` condition at byte offset `pos`.
+    fn two_word_name_len(&self, pos: usize, rest: &str) -> Option<usize> {
+        if self.open_braces.is_empty() {
+            return None;
+        }
+        let first = word_len(rest);
+        if first == 0 {
+            return None;
+        }
+        let spaces = ws_len(&rest[first..]);
+        if spaces == 0 {
+            return None;
+        }
+        let second_at = first + spaces;
+        if word_len(&rest[second_at..]) == 0 {
+            return None;
+        }
+        let abs_second = pos + second_at;
+        let line_end = self.next_line_term(abs_second);
+        let idx = self.open_braces.partition_point(|&b| b < abs_second);
+        let &brace = self.open_braces.get(idx)?;
+        (brace < line_end).then_some((brace - pos) + 1)
+    }
 }
 
 /// `\s*":"(?:[^:\n;]|":"[^:\n;])+`: a description, from the colon on. A colon is taken only with
@@ -352,29 +431,6 @@ fn descr_len(rest: &str) -> Option<usize> {
     (taken > 0).then_some(spaces + 1 + taken)
 }
 
-/// `\w+\s+\w+.*?\{` in the `STATE` condition: the first word, blanks (which may cross a line), a
-/// second word on the same line, and a brace later on that line. Returns the length to the brace.
-fn two_word_name_len(rest: &str) -> Option<usize> {
-    let first = word_len(rest);
-    if first == 0 {
-        return None;
-    }
-    let spaces = ws_len(&rest[first..]);
-    if spaces == 0 {
-        return None;
-    }
-    let second_at = first + spaces;
-    if word_len(&rest[second_at..]) == 0 {
-        return None;
-    }
-    let line = rest[second_at..]
-        .find(is_line_term)
-        .map_or(rest.len(), |end| second_at + end);
-    rest[second_at..line]
-        .find('{')
-        .map(|brace| second_at + brace + 1)
-}
-
 /// `[\s\S]*?\n\s*"end note"`: the lazy match up to the first line break that is followed by blanks
 /// and the words `end note`. Returns the length, which ends with `end note`.
 fn end_note_len(rest: &str) -> Option<usize> {
@@ -393,6 +449,7 @@ struct Lexer {
     states: StateStack<State>,
     done: bool,
     tokens: Vec<Token>,
+    index: Index,
 }
 
 /// Wraps the result of a rule that matched.
@@ -476,8 +533,8 @@ impl Lexer {
                 return found(Hit::token(len, Kind::Default, &rest[..len]));
             }
             // 75-78: .*direction\s+TB|BT|RL|LR[^\n]*
-            for (word, kind) in DIRECTIONS {
-                if let Some(len) = direction_len(rest, word) {
+            for (word_index, &(_, kind)) in DIRECTIONS.iter().enumerate() {
+                if let Some(len) = self.index.direction_len(self.pos, rest, word_index) {
                     return found(Hit::token(len, kind, &rest[..len]));
                 }
             }
@@ -654,8 +711,8 @@ impl Lexer {
         }
         // 116-121: .*MARKER, the text before the last marker on the line
         if when(state, &[Line]) {
-            for (marker, kind) in MARKERS {
-                if let Some(len) = marker_len(rest, marker) {
+            for (marker_index, &(marker, kind)) in MARKERS.iter().enumerate() {
+                if let Some(len) = self.index.marker_len(self.pos, marker_index) {
                     let value = js_trim(&rest[..len - marker.len()]);
                     return found(Hit::token(len, kind, value).and_then(|h| h.leave()));
                 }
@@ -663,8 +720,8 @@ impl Lexer {
         }
         // 123-126: .*direction\s+WORD[^\n]* in a composite
         if when(state, &[Struct]) {
-            for (word, kind) in DIRECTIONS {
-                if let Some(len) = direction_len(rest, word) {
+            for (word_index, &(_, kind)) in DIRECTIONS.iter().enumerate() {
+                if let Some(len) = self.index.direction_len(self.pos, rest, word_index) {
                     return found(Hit::token(len, kind, &rest[..len]));
                 }
             }
@@ -696,7 +753,7 @@ impl Lexer {
         }
         // 133: \w+\s+\w+.*?\{ is an error
         if when(state, &[Line])
-            && let Some(len) = two_word_name_len(rest)
+            && let Some(len) = self.index.two_word_name_len(self.pos, rest)
         {
             return Err(ScanError::TwoWordName {
                 offset: self.pos,
@@ -897,6 +954,7 @@ pub(crate) fn tokenize(text: &str) -> Result<Vec<Token>, ScanError> {
         states: StateStack::new(State::Initial),
         done: false,
         tokens: Vec::new(),
+        index: Index::new(text),
     };
     loop {
         if lexer.done {
