@@ -182,23 +182,35 @@ pub fn draw_text(data: &TextData) -> Element {
     )
 }
 
-/// `drawImage(elem, x, y, link)`: an `<image>` whose `xlink:href` is the sanitized link.
+/// `drawImage(elem, x, y, link)`: an `<image>` whose `xlink:href` is the sanitized link, validated
+/// with strict image URL rules.
 #[must_use]
 pub fn draw_image(x: f64, y: f64, link: &str) -> Element {
+    draw_image_with_security(x, y, link, false)
+}
+
+/// `drawImage(elem, x, y, link)` with explicit `securityLevel` (`loose` skips allowlist validation).
+#[must_use]
+pub(crate) fn draw_image_with_security(x: f64, y: f64, link: &str, loose: bool) -> Element {
+    let sanitized = sanitize_url(link);
+    let resolved = ferrigura_syntax::url::resolve_url_entity_placeholders(&sanitized);
+    let guarded = ferrigura_syntax::url::guard_image_url(&resolved, loose);
     Element::new("image")
         .with("x", number(x))
         .with("y", number(y))
-        .with("xlink:href", sanitize_url(link))
+        .with("xlink:href", guarded)
 }
 
 /// `drawEmbeddedImage(element, x, y, link)`: a `<use>` of the element with the id `link`, which is
 /// sanitized and written as `#` followed by the result.
 #[must_use]
 pub fn draw_embedded_image(x: f64, y: f64, link: &str) -> Element {
+    let sanitized = sanitize_url(link);
+    let resolved = ferrigura_syntax::url::resolve_url_entity_placeholders(&sanitized);
     Element::new("use")
         .with("x", number(x))
         .with("y", number(y))
-        .with("xlink:href", format!("#{}", sanitize_url(link)))
+        .with("xlink:href", format!("#{resolved}"))
 }
 
 /// `getNoteRect()`: the rectangle of a note, at the origin, 100 by 100, in the note colors. The

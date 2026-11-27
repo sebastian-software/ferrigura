@@ -288,7 +288,7 @@ await runExporter(loadModules, (input, modules) => {
   };
 
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

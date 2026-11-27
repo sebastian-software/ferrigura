@@ -31,13 +31,12 @@ export interface FlowchartModules {
   flowParser: { default: { parser: { yy: unknown }; parse(text: string): unknown } };
   flowDb: { FlowDB: new () => FlowDb };
   common: { default: { sanitizeText: (text: string, config: unknown) => string } };
-  utils: { default: { formatUrl: (link: string, config: unknown) => string | undefined } };
 }
 
 export async function loadFlowchartModules(reference: Reference): Promise<FlowchartModules> {
   provideDomForSanitizing();
   await registerDetectors(reference);
-  const [preprocess, encode, flowParser, flowDb, common, utils] = await Promise.all([
+  const [preprocess, encode, flowParser, flowDb, common] = await Promise.all([
     reference.load<FlowchartModules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
     reference.load<FlowchartModules['encode']>('/packages/mermaid/src/utils.ts'),
     reference.load<FlowchartModules['flowParser']>(
@@ -47,11 +46,9 @@ export async function loadFlowchartModules(reference: Reference): Promise<Flowch
       '/packages/mermaid/src/diagrams/flowchart/flowDb.ts'
     ),
     reference.load<FlowchartModules['common']>('/packages/mermaid/src/diagrams/common/common.ts'),
-    reference.load<FlowchartModules['utils']>('/packages/mermaid/src/utils.ts'),
   ]);
-  // The header setters are replaced below; the flowchart texts keep the reference's sanitizing.
-  utils.default.formatUrl = (link: string) => link.trim() || undefined;
-  return { preprocess, encode, flowParser, flowDb, common, utils };
+  // The header setters are replaced below; the flowchart texts and links keep the reference's sanitizing.
+  return { preprocess, encode, flowParser, flowDb, common };
 }
 
 /** The header texts as the grammar gives them, with the DB's whitespace rules applied. */
@@ -83,7 +80,7 @@ export function flowchartModel(text: string, modules: FlowchartModules): unknown
   const edges = db.getEdges();
 
   return {
-    version: 1,
+    version: 2,
     title: title ?? '',
     accTitle: header.accTitle,
     accDescr: header.accDescr,

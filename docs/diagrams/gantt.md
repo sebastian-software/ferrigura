@@ -12,7 +12,7 @@ when the viewer requests reduced motion.
 
 ## Model
 
-`GanttDiagram` (`crates/ferrigura-model/src/gantt.rs`), version 1, is the DB's state after `getTasks()`, with the dates resolved.
+`GanttDiagram` (`crates/ferrigura-model/src/gantt.rs`), version 2, is the DB's state after `getTasks()`, with the dates resolved.
 
 - `title`, `accTitle`, `accDescr`: sanitized, with the DB's whitespace rules. A `title` statement replaces the front matter title even when it sanitizes to empty. `title` keeps its blanks.
 - `dateFormat`, `axisFormat`, `todayMarker`: the text after the keyword, blanks included. `tickInterval` is that text, or `null` when the statement is absent.
@@ -20,7 +20,7 @@ when the viewer requests reduced motion.
 - `weekday`, `weekend`: lower-case day names, `sunday` and `saturday` by default.
 - `includes`, `excludes`: lower case, without duplicates, in first-seen order.
 - `sections`: the section names as written, duplicates kept.
-- `links`: task id to the URL of its `click … href` statement, after `sanitizeUrl`, for the tasks that exist when the line is read.
+- `links`: task id to the URL of its `click … href` statement (after `sanitizeUrl`, or as written when `securityLevel` is `loose`), for the tasks that exist when the line is read.
 - `tasks`, in the DB's order, each with `id` (given or `task1`, `task2`, …), `task` (the text as written, untrimmed), `section` (`""` before the first section), `order` (the position among the non-vertical tasks, `-1` for a vertical one), the flags `vert`, `milestone`, `active`, `done`, `crit`, `classes` (in order, duplicates kept; `clickable` comes from `click`), `manualEndTime`, and `startTime`, `endTime` and `renderEndTime`.
 
 Dates are epoch milliseconds in UTC. A date the DB leaves unresolved or holds as an Invalid Date is `null`. `renderEndTime` is the end the bar is drawn to, and is `null` when `excludes` do not apply.

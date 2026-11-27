@@ -13,7 +13,7 @@ use ferrigura_model::gantt::{GanttDiagram, GanttTask};
 use super::date::{self, Time, Unit};
 use crate::sanitize::sanitize_text;
 use crate::text::{is_js_space, js_trim, newline_then_space_to_newline, strip_leading_space};
-use crate::url::sanitize_url;
+use crate::url::{SecurityLevel, format_url, sanitize_url};
 
 /// A rejection of the diagram by the DB, with the offset of the statement it comes from.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -63,6 +63,7 @@ struct RawTask {
 #[derive(Debug, Clone)]
 pub(crate) struct Db {
     now: Time,
+    security_level: SecurityLevel,
     title: String,
     acc_title: String,
     acc_descr: String,
@@ -88,9 +89,10 @@ pub(crate) struct Db {
 
 impl Db {
     /// An empty DB whose clock reads `now` (milliseconds since the epoch, as a JS number).
-    pub(crate) fn new(now: Time) -> Self {
+    pub(crate) fn new(now: Time, security_level: SecurityLevel) -> Self {
         Self {
             now,
+            security_level,
             title: String::new(),
             acc_title: String::new(),
             acc_descr: String::new(),
@@ -268,9 +270,14 @@ impl Db {
         self.set_class(ids, "clickable");
     }
 
-    /// `setLink`: the sanitized address of each task that exists, and the `clickable` class.
+    /// `setLink`: the address of each task that exists (formatted with fragment preservation and
+    /// URL sanitization unless `securityLevel` is `loose`), and the `clickable` class.
     pub(crate) fn set_link(&mut self, ids: &str, url: &str) {
-        let link = sanitize_url(url);
+        let link = if self.security_level == SecurityLevel::Loose {
+            url.to_owned()
+        } else {
+            format_url(url, false).unwrap_or_else(|| sanitize_url(url))
+        };
         for id in ids.split(',') {
             if self.find_task(id).is_some() {
                 self.links.insert(id.to_owned(), link.clone());

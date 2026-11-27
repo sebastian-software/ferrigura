@@ -20,12 +20,13 @@
 //! ferrigura does not check that, so it draws an image whose sizes it was given.
 
 use ferrigura_model::value::Value;
+use ferrigura_syntax::url::guard_image_url;
 
 use super::rough::{self, Outline};
 use super::util::{self, Part, Styles, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::RenderError;
-use crate::svg::{escape, number};
+use crate::svg::{escape_url_attr, number};
 use crate::unified::data::Node;
 use crate::unified::geom::{BBox, Point};
 use crate::unified::label::LabelLayout;
@@ -128,7 +129,8 @@ fn icon_element(input: &ShapeInput<'_>, styles: &Styles, at: Point) -> String {
             _ => String::new(),
         });
     format!(
-        "<g style=\"color: {colour};\" transform=\"translate({}, {})\"><g>{}</g></g>",
+        "<g style=\"{}\" transform=\"translate({}, {})\"><g>{}</g></g>",
+        crate::svg::escape(&format!("color: {colour};")),
         number(at.x),
         number(at.y),
         fallback_icon_svg(icon_size(input.node)),
@@ -520,6 +522,9 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
     .union(label.bbox.translate(label_offset.x, label_offset.y));
     let mut after_label = outline_group(&outer, &stroke_width);
     if let Some(img) = node.img.as_deref().filter(|img| !img.is_empty()) {
+        let loose = input.config.globals.security_level == "loose";
+        let resolved = ferrigura_syntax::url::resolve_url_entity_placeholders(img);
+        let href = guard_image_url(&resolved, loose);
         let image_y = if top {
             outer_height / 2.0 - image_height
         } else {
@@ -527,7 +532,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         };
         after_label.push_str(&format!(
             "<image href=\"{}\" width=\"{}\" height=\"{}\" preserveAspectRatio=\"none\" transform=\"translate({}, {})\"/>",
-            escape(img),
+            escape_url_attr(href),
             number(image_width),
             number(image_height),
             number(-image_width / 2.0),
@@ -660,5 +665,94 @@ mod tests {
             dir: Some("TB"),
         });
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn an_image_href_is_sanitized_under_default_security_and_preserved_when_loose() {
+        let label = LabelLayout::of_box(BBox::default());
+        for unsafe_url in [
+            "javascript:alert(1)",
+            "vbscript:msgbox(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "data:image/svg+xml,<svg onload=alert(1)>",
+            "&#106;avascript:alert(1)",
+            "javascript&colon;alert(1)",
+            "%6aavascript:alert(1)",
+        ] {
+            let mut image = node("imageSquare", "neo");
+            image.img = Some(unsafe_url.to_owned());
+            image.asset_width = Some(48.0);
+            image.asset_height = Some(48.0);
+            let shape = draw_box(&image, &label);
+            assert!(
+                shape.after_label.contains("<image href=\"about:blank\""),
+                "url={unsafe_url:?}: {}",
+                shape.after_label
+            );
+        }
+
+        let mut valid = node("imageSquare", "neo");
+        valid.img = Some("https://example.com/logo.png".to_owned());
+        valid.asset_width = Some(48.0);
+        valid.asset_height = Some(48.0);
+        let valid_shape = draw_box(&valid, &label);
+        assert!(
+            valid_shape
+                .after_label
+                .contains("<image href=\"https://example.com/logo.png\""),
+            "{}",
+            valid_shape.after_label
+        );
+
+        let mut encoded = node("imageSquare", "neo");
+        encoded.img = Some("https://example.com/A%23B.png".to_owned());
+        encoded.asset_width = Some(48.0);
+        encoded.asset_height = Some(48.0);
+        let encoded_shape = draw_box(&encoded, &label);
+        assert!(
+            encoded_shape
+                .after_label
+                .contains("<image href=\"https://example.com/A%23B.png\""),
+            "{}",
+            encoded_shape.after_label
+        );
+
+        let mut raster_data = node("imageSquare", "neo");
+        raster_data.img = Some("data:image/png;base64,iVBORw0KGgo=".to_owned());
+        raster_data.asset_width = Some(48.0);
+        raster_data.asset_height = Some(48.0);
+        let raster_shape = draw_box(&raster_data, &label);
+        assert!(
+            raster_shape
+                .after_label
+                .contains("<image href=\"data:image/png;base64,iVBORw0KGgo=\""),
+            "{}",
+            raster_shape.after_label
+        );
+
+        let loose_config = MermaidConfig {
+            security_level: "loose".to_owned(),
+            ..MermaidConfig::default()
+        };
+        let fixture = Fixture::new(loose_config, &theme());
+        let config = fixture.config();
+        let mut loose_image = node("imageSquare", "neo");
+        loose_image.img = Some("javascript:alert(1)".to_owned());
+        loose_image.asset_width = Some(48.0);
+        loose_image.asset_height = Some(48.0);
+        let loose_shape = draw(&ShapeInput {
+            node: &loose_image,
+            label: Some(&label),
+            config: &config,
+            dir: Some("TB"),
+        })
+        .expect("image draws");
+        assert!(
+            loose_shape
+                .after_label
+                .contains("<image href=\"javascript:alert(1)\""),
+            "{}",
+            loose_shape.after_label
+        );
     }
 }

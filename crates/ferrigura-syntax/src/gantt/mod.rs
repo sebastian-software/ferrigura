@@ -18,6 +18,7 @@ use ferrigura_model::gantt::GanttDiagram;
 use crate::error::{ParseError, Source};
 use crate::preprocess::prepare;
 use crate::preprocess::{cleanup_comments, encode_entities, remove_directives};
+use crate::url::SecurityLevel;
 
 /// Options of the parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,13 +77,22 @@ pub fn parse_prepared(
     prepared: &crate::preprocess::Prepared,
     options: Options,
 ) -> Result<GanttDiagram, ParseError> {
+    parse_prepared_with_security(prepared, options, SecurityLevel::Strict)
+}
+
+/// Parses an already prepared source with the given options and host `securityLevel`.
+pub fn parse_prepared_with_security(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+    security_level: SecurityLevel,
+) -> Result<GanttDiagram, ParseError> {
     // `Diagram.fromText`: the directives and comment lines go, then the entities are encoded and a
     // line break is added for the grammar.
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);
 
-    let mut db = db::Db::new(options.now as f64);
+    let mut db = db::Db::new(options.now as f64, security_level);
     if let Some(title) = &prepared.title {
         db.set_diagram_title(title);
     }

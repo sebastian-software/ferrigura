@@ -51,6 +51,8 @@ fn typed_entities() -> Vec<String> {
             "gantt\ndateFormat YYYY-MM-DD\ntitle {TYPED}\nsection s\ntask :t1, 2024-01-01, 1d\n"
         ),
         format!("flowchart LR\nA[{TYPED}] --> B\n"),
+        "flowchart LR\nA@{ icon: \"fa:user\", label: \"User\" }\nstyle A stroke:red\"x&y\n"
+            .to_owned(),
     ]
 }
 

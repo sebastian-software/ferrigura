@@ -1,0 +1,982 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs/decisions/0014-upstream-reference-at-a-pin.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(security): reserve renderer-owned SVG IDs and remap colliding fragment links
+
+User-controlled node, subgraph, class, state, and Gantt task IDs can collide with
+renderer-owned SVG IDs (such as arrowhead markers, pattern fills, or Gantt exclude-range
+bars), hijacking url(#...) references or fragment links. This patch reserves
+renderer-owned IDs, disambiguates colliding user IDs across unified and Gantt renderers,
+and remaps same-document fragment hrefs without shadowing literal DOM IDs. Drop or
+re-check when bumping the Mermaid pin if upstream namespaces or reserves renderer IDs.
+
+diff --git a/packages/mermaid/src/diagrams/gantt/ganttRenderer.js b/packages/mermaid/src/diagrams/gantt/ganttRenderer.js
+index 22a0562..b193c92 100644
+--- a/packages/mermaid/src/diagrams/gantt/ganttRenderer.js
++++ b/packages/mermaid/src/diagrams/gantt/ganttRenderer.js
+@@ -28,6 +28,11 @@ import {
+ import common from '../common/common.js';
+ import { getConfig } from '../../diagram-api/diagramAPI.js';
+ import { configureSvgSize } from '../../setupGraphViewbox.js';
++import {
++  allocateGanttTaskIds,
++  protectGanttSvgIds,
++  remapGanttFragment,
++} from '../../rendering-util/render.js';
+ 
+ dayjs.extend(dayjsDuration);
+ 
+@@ -280,13 +285,23 @@ export const draw = function (text, id, version, diagObj) {
+     const rectangles = svg.append('g').selectAll('rect').data(theArray).enter();
+ 
+     const links = diagObj.db.getLinks();
++    const excludeIds = Array.from(
++      svg.node()?.querySelectorAll('rect.exclude-range[id]') ?? [],
++      (el) => el.getAttribute('id') ?? ''
++    ).filter(Boolean);
++    const ganttIds = allocateGanttTaskIds(
++      theArray.map((d) => d.id),
++      id,
++      excludeIds
++    );
++    const taskDomIdByObj = new Map(theArray.map((d, i) => [d, ganttIds.domIds[i]]));
+ 
+     // Render the tasks with links
+     // Render the other tasks
+     rectangles
+       .append('rect')
+-      .attr('id', function (d) {
+-        return id + '-' + d.id;
++      .attr('id', function (d, i) {
++        return id + '-' + ganttIds.domIds[i];
+       })
+       .attr('rx', 3)
+       .attr('ry', 3)
+@@ -394,8 +409,8 @@ export const draw = function (text, id, version, diagObj) {
+     // Append task labels
+     rectangles
+       .append('text')
+-      .attr('id', function (d) {
+-        return id + '-' + d.id + '-text';
++      .attr('id', function (d, i) {
++        return id + '-' + ganttIds.domIds[i] + '-text';
+       })
+       .text(function (d) {
+         return d.task;
+@@ -522,17 +537,24 @@ export const draw = function (text, id, version, diagObj) {
+           return links.has(d.id);
+         })
+         .each(function (o) {
+-          var taskRect = doc.querySelector('#' + CSS.escape(id + '-' + o.id));
+-          var taskText = doc.querySelector('#' + CSS.escape(id + '-' + o.id + '-text'));
++          const domId = taskDomIdByObj.get(o) ?? o.id;
++          var taskRect = doc.querySelector('#' + CSS.escape(id + '-' + domId));
++          var taskText = doc.querySelector('#' + CSS.escape(id + '-' + domId + '-text'));
+           const oldParent = taskRect.parentNode;
+           var Link = doc.createElement('a');
+-          Link.setAttribute('xlink:href', links.get(o.id));
++          const href = remapGanttFragment(
++            links.get(o.id),
++            ganttIds.elementOwned,
++            ganttIds.remappedFragments
++          );
++          Link.setAttribute('xlink:href', href);
+           Link.setAttribute('target', '_top');
+           oldParent.appendChild(Link);
+           Link.appendChild(taskRect);
+           Link.appendChild(taskText);
+         });
+     }
++    protectGanttSvgIds(svg.node(), ganttIds.protectedIds);
+   }
+   /**
+    * @param theGap
+diff --git a/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts b/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
+index ea730b3..f826dce 100644
+--- a/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
++++ b/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
+@@ -2,7 +2,11 @@ import { getConfig } from '../../diagram-api/diagramAPI.js';
+ import type { DiagramStyleClassDef } from '../../diagram-api/types.js';
+ import { log } from '../../logger.js';
+ import { getDiagramElement } from '../../rendering-util/insertElementsForSize.js';
+-import { getRegisteredLayoutAlgorithm, render } from '../../rendering-util/render.js';
++import {
++  getRegisteredLayoutAlgorithm,
++  remapFragmentForSvg,
++  render,
++} from '../../rendering-util/render.js';
+ import { setupViewPortForSVG } from '../../rendering-util/setupViewPortForSVG.js';
+ import type { LayoutData } from '../../rendering-util/types.js';
+ import utils from '../../utils.js';
+@@ -115,7 +119,8 @@ export const draw = async function (text: string, id: string, _version: string,
+ 
+       const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+       const cleanedUrl = linkInfo.url.replace(/^"+|"+$/g, ''); // remove leading/trailing quotes
+-      a.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', cleanedUrl);
++      const finalUrl = remapFragmentForSvg(svg.node() as Element | null, cleanedUrl);
++      a.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', finalUrl);
+       a.setAttribute('target', '_blank');
+       if (linkInfo.tooltip) {
+         const tooltip = linkInfo.tooltip.replace(/^"+|"+$/g, '');
+diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
+index 64d8255..7e22f45 100644
+--- a/packages/mermaid/src/mermaidAPI.ts
++++ b/packages/mermaid/src/mermaidAPI.ts
+@@ -43,6 +43,11 @@ import type {
+   RenderResult,
+ } from './types.js';
+ import { decodeEntities, getErrorMessage } from './utils.js';
++import {
++  restoreProtectedSvgIds,
++  setReservedA11yIds,
++  swapProtectedSvgIds,
++} from './rendering-util/render.js';
+ import { toBase64 } from './utils/base64.js';
+ import { sanitizeCss } from './utils/sanitizeDirective.js';
+ 
+@@ -608,6 +613,9 @@ const renderDiagram = async function (
+ 
+   // -------------------------------------------------------------------------------
+   // Draw the diagram with the renderer
++  const preA11yTitle: string | undefined = diag.db.getAccTitle?.();
++  const preA11yDescr: string | undefined = diag.db.getAccDescription?.();
++  setReservedA11yIds(id, Boolean(preA11yTitle), Boolean(preA11yDescr));
+   try {
+     if (injected.profiling) {
+       await profiler.span('draw', () => diag.renderer.draw(text, id, injected.version, diag));
+@@ -621,6 +629,8 @@ const renderDiagram = async function (
+       errorRenderer.draw(text, id, injected.version);
+     }
+     throw e;
++  } finally {
++    setReservedA11yIds(id, false, false);
+   }
+ 
+   // This is the d3 node for the svg element
+@@ -636,13 +646,17 @@ const renderDiagram = async function (
+   const serializeSvg = (): string => {
+     // -------------------------------------------------------------------------------
+     // Clean up SVG code
+-    root.select(`[id="${id}"]`).selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
++    const svgRootSelection = root.select(`[id="${id}"]`);
++    const svgRootEl = svgRootSelection.node() as Element | null;
++    svgRootSelection.selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
++    const protectedTokens = swapProtectedSvgIds(svgRootEl);
+ 
+     // Fix for when the base tag is used
+     let code: string = root.select<HTMLDivElement>(enclosingDivID_selector).node()!.innerHTML;
+ 
+     log.debug('config.arrowMarkerAbsolute', config.arrowMarkerAbsolute);
+     code = cleanUpSvgCode(code, isSandboxed, evaluate(config.arrowMarkerAbsolute));
++    code = restoreProtectedSvgIds(code, protectedTokens);
+ 
+     if (isSandboxed) {
+       const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
+diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
+index 49145b2..5225ede 100644
+--- a/packages/mermaid/src/rendering-util/render.ts
++++ b/packages/mermaid/src/rendering-util/render.ts
+@@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
+ import { log } from '../logger.js';
+ import { insertLookDefs } from './insertLookDefs.js';
+ import type { LayoutData } from './types.js';
++import { decodeEntities } from '../utils.js';
+ import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
+ 
+ // console.log('MUST be removed, this only for keeping dev server working');
+@@ -97,6 +98,484 @@ const registerDefaultLayoutLoaders = () => {
+ 
+ registerDefaultLayoutLoaders();
+ 
++const reservedA11yBySvgId = new Map<string, { title: boolean; descr: boolean }>();
++
++export const setReservedA11yIds = (svgId: string, title: boolean, descr: boolean): void => {
++  if (title || descr) {
++    reservedA11yBySvgId.set(svgId, { title, descr });
++  } else {
++    reservedA11yBySvgId.delete(svgId);
++  }
++};
++
++const isXmlChar = (cp: number): boolean =>
++  cp === 0x9 ||
++  cp === 0xa ||
++  cp === 0xd ||
++  (cp >= 0x20 && cp <= 0xd7ff) ||
++  (cp >= 0xe000 && cp <= 0xfffd) ||
++  cp >= 0x10000;
++
++const canonicalXmlAttr = (raw: string): string => {
++  let out = '';
++  for (let i = 0; i < raw.length; ) {
++    const cp = raw.codePointAt(i)!;
++    const step = cp > 0xffff ? 2 : 1;
++    if (cp === 0xd) {
++      if (raw.codePointAt(i + step) === 0xa) {
++        i += step + 1;
++      } else {
++        i += step;
++      }
++      out += ' ';
++    } else if (cp === 0x9 || cp === 0xa) {
++      out += ' ';
++      i += step;
++    } else if (!isXmlChar(cp)) {
++      out += '\uFFFD';
++      i += step;
++    } else {
++      out += String.fromCodePoint(cp);
++      i += step;
++    }
++  }
++  return out;
++};
++
++const resolvePlaceholdersAttr = (raw: string): string => {
++  if (!raw.includes('ﬂ°') && !raw.includes('¶ß')) {
++    return raw;
++  }
++  const normalized = raw
++    .replace(/&ﬂ°°(\d+)¶ß/g, 'ﬂ°°$1¶ß')
++    .replace(/&ﬂ°[xX]([0-9a-fA-F]+)¶ß/g, (_m, hex: string) => {
++      const cp = Number.parseInt(hex, 16);
++      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? `ﬂ°°${cp}¶ß` : 'ﬂ°°65533¶ß';
++    });
++  const escaped = normalized
++    .replace(/&/g, '&amp;')
++    .replace(/</g, '&lt;')
++    .replace(/>/g, '&gt;')
++    .replace(/"/g, '&quot;');
++  const decodedMarkup = decodeEntities(escaped);
++  const holder = document.createElement('div');
++  holder.innerHTML = `<a data-v="${decodedMarkup}"></a>`;
++  return holder.firstElementChild?.getAttribute('data-v') ?? raw;
++};
++
++export const canonicalAttrId = (raw: string): string => canonicalXmlAttr(resolvePlaceholdersAttr(raw));
++export const canonicalSvgIdAttr = canonicalXmlAttr;
++
++const protectedAttrsBySvgRoot = new WeakMap<Element, Map<Element, { id?: string; dataId?: string }>>();
++const fragmentRemapperBySvgRoot = new WeakMap<Element, (rawLink: string) => string>();
++
++export const remapFragmentForSvg = (svgRoot: Element | null, rawLink: string): string => {
++  if (!svgRoot) {
++    return rawLink;
++  }
++  const remap = fragmentRemapperBySvgRoot.get(svgRoot);
++  return remap ? remap(rawLink) : rawLink;
++};
++
++const xmlEscapeAttr = (value: string): string =>
++  value
++    .replace(/&/g, '&amp;')
++    .replace(/</g, '&lt;')
++    .replace(/>/g, '&gt;')
++    .replace(/"/g, '&quot;');
++
++interface ProtectedSvgTokens {
++  prefix: string;
++  originals: string[];
++}
++
++export const swapProtectedSvgIds = (svgRoot: Element | null): ProtectedSvgTokens | null => {
++  if (!svgRoot) {
++    return null;
++  }
++  const entries = protectedAttrsBySvgRoot.get(svgRoot);
++  if (!entries || entries.size === 0) {
++    return null;
++  }
++  const rawHtml = svgRoot.outerHTML;
++  const used = new Set<number>();
++  const re = /__fgp([0-9a-f]{8})(?=_)/gi;
++  let match: RegExpExecArray | null;
++  while ((match = re.exec(rawHtml)) !== null) {
++    used.add(Number.parseInt(match[1], 16));
++  }
++  let id = 0;
++  while (used.has(id)) {
++    id += 1;
++  }
++  const prefix = `__fgp${id.toString(16).padStart(8, '0')}_`;
++  const originals: string[] = [];
++  for (const [el, attrs] of entries) {
++    if (attrs.id !== undefined && el.getAttribute('id') === attrs.id) {
++      const token = `${prefix}${originals.length}__`;
++      el.setAttribute('id', token);
++      originals.push(xmlEscapeAttr(attrs.id));
++    }
++    if (attrs.dataId !== undefined && el.getAttribute('data-id') === attrs.dataId) {
++      const token = `${prefix}${originals.length}__`;
++      el.setAttribute('data-id', token);
++      originals.push(xmlEscapeAttr(attrs.dataId));
++    }
++  }
++  protectedAttrsBySvgRoot.delete(svgRoot);
++  fragmentRemapperBySvgRoot.delete(svgRoot);
++  return originals.length > 0 ? { prefix, originals } : null;
++};
++
++export const restoreProtectedSvgIds = (
++  svg: string,
++  tokens: ProtectedSvgTokens | null
++): string => {
++  if (!tokens || tokens.originals.length === 0) {
++    return svg;
++  }
++  const { prefix, originals } = tokens;
++  let out = '';
++  let cursor = 0;
++  while (cursor < svg.length) {
++    const pos = svg.indexOf(prefix, cursor);
++    if (pos === -1) {
++      return out + svg.slice(cursor);
++    }
++    out += svg.slice(cursor, pos);
++    const digitsStart = pos + prefix.length;
++    let digitsEnd = digitsStart;
++    while (digitsEnd < svg.length && svg[digitsEnd] >= '0' && svg[digitsEnd] <= '9') {
++      digitsEnd++;
++    }
++    if (digitsEnd > digitsStart && svg.startsWith('__', digitsEnd)) {
++      const idx = Number.parseInt(svg.slice(digitsStart, digitsEnd), 10);
++      if (idx >= 0 && idx < originals.length) {
++        out += originals[idx];
++        cursor = digitsEnd + 2;
++        continue;
++      }
++    }
++    out += prefix;
++    cursor = digitsStart;
++  }
++  return out;
++};
++
++const needsDecodeProtection = (value: string): boolean =>
++  value.includes('ﬂ°') || value.includes('¶ß');
++
++const stripFragmentMarker = (rawLink: string): string | undefined => {
++  const trimmed = rawLink.replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, '');
++  if (trimmed.startsWith('#')) {
++    return trimmed.slice(1);
++  }
++  if (trimmed.startsWith('ﬂ°')) {
++    const close = trimmed.indexOf('¶ß');
++    if (close !== -1) {
++      const end = close + 2;
++      if (resolvePlaceholdersAttr(trimmed.slice(0, end)) === '#') {
++        return trimmed.slice(end);
++      }
++    }
++  }
++  return undefined;
++};
++
++const formatFragmentUrl = (id: string): string => {
++  let out = '#';
++  for (const byte of new TextEncoder().encode(id)) {
++    if (
++      byte <= 0x20 ||
++      byte === 0x22 ||
++      byte === 0x25 ||
++      byte === 0x3c ||
++      byte === 0x3e ||
++      byte === 0x60 ||
++      byte >= 0x7f
++    ) {
++      out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++    } else {
++      out += String.fromCharCode(byte);
++    }
++  }
++  return out;
++};
++
++const formatFragmentUrlFor = (id: string, elementOwned: Set<string>): string => {
++  const defaultUrl = formatFragmentUrl(id);
++  const defaultFrag = defaultUrl.slice(1);
++  if (defaultFrag === id || !elementOwned.has(defaultFrag)) {
++    return defaultUrl;
++  }
++  const bytes = new TextEncoder().encode(id);
++  for (let extra = 0; extra < bytes.length; extra++) {
++    let candidate = '';
++    for (let idx = 0; idx < bytes.length; idx++) {
++      const byte = bytes[idx];
++      if (
++        idx === extra ||
++        byte <= 0x20 ||
++        byte === 0x22 ||
++        byte === 0x25 ||
++        byte === 0x3c ||
++        byte === 0x3e ||
++        byte === 0x60 ||
++        byte >= 0x7f
++      ) {
++        candidate += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++      } else {
++        candidate += String.fromCharCode(byte);
++      }
++    }
++    if (!elementOwned.has(candidate)) {
++      return `#${candidate}`;
++    }
++  }
++  let all = '#';
++  for (const byte of bytes) {
++    all += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++  }
++  return all;
++};
++
++const percentDecodeFragment = (fragment: string): string | undefined => {
++  const bytes: number[] = [];
++  const encoder = new TextEncoder();
++  for (let i = 0; i < fragment.length; ) {
++    if (
++      fragment[i] === '%' &&
++      i + 2 < fragment.length &&
++      /^[0-9A-Fa-f]{2}$/.test(fragment.slice(i + 1, i + 3))
++    ) {
++      bytes.push(Number.parseInt(fragment.slice(i + 1, i + 3), 16));
++      i += 3;
++    } else {
++      const cp = fragment.codePointAt(i)!;
++      const ch = String.fromCodePoint(cp);
++      for (const b of encoder.encode(ch)) {
++        bytes.push(b);
++      }
++      i += ch.length;
++    }
++  }
++  try {
++    return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
++  } catch {
++    return undefined;
++  }
++};
++
++export const allocateGanttTaskIds = (
++  rawIds: string[],
++  svgId: string,
++  extraReservedIds: string[] = []
++): {
++  domIds: string[];
++  elementOwned: Set<string>;
++  remappedFragments: Map<string, string>;
++  protectedIds: Set<string>;
++} => {
++  const canonicalSvgId = canonicalXmlAttr(svgId);
++  const a11y = reservedA11yBySvgId.get(svgId);
++  const rendererOwned = new Set<string>([canonicalSvgId]);
++  if (a11y?.title) {
++    rendererOwned.add(`chart-title-${canonicalSvgId}`);
++  }
++  if (a11y?.descr) {
++    rendererOwned.add(`chart-desc-${canonicalSvgId}`);
++  }
++  for (const exId of extraReservedIds) {
++    rendererOwned.add(canonicalXmlAttr(exId));
++  }
++  const plans = rawIds.map((raw) => {
++    const hadPlaceholder = raw.includes('ﬂ°') || raw.includes('¶ß');
++    const canonicalLocal = canonicalAttrId(raw);
++    const canonicalBar = `${canonicalSvgId}-${canonicalLocal}`;
++    const canonicalText = `${canonicalBar}-text`;
++    const unchanged = !hadPlaceholder && canonicalLocal === raw && canonicalSvgId === svgId;
++    return { raw, hadPlaceholder, canonicalLocal, canonicalBar, canonicalText, unchanged };
++  });
++  const reserved = new Set<string>();
++  for (const p of plans) {
++    reserved.add(p.canonicalBar);
++    reserved.add(p.canonicalText);
++  }
++  const seen = new Set<string>();
++  const elementOwned = new Set<string>();
++  const claimed = plans.map(() => false);
++  for (let i = 0; i < plans.length; i++) {
++    const p = plans[i];
++    if (
++      p.unchanged &&
++      !rendererOwned.has(p.canonicalBar) &&
++      !rendererOwned.has(p.canonicalText)
++    ) {
++      seen.add(p.canonicalBar);
++      seen.add(p.canonicalText);
++      elementOwned.add(p.canonicalBar);
++      elementOwned.add(p.canonicalText);
++      claimed[i] = true;
++    }
++  }
++  const nextSuffix = new Map<string, number>();
++  const domIds: string[] = [];
++  const remapCandidates: Array<{
++    raw: string;
++    canonicalBar: string;
++    canonicalText: string;
++    targetBar: string;
++    targetText: string;
++    rawPrefixDiffers: boolean;
++  }> = [];
++  const protectedIds = new Set<string>();
++  for (let i = 0; i < plans.length; i++) {
++    const p = plans[i];
++    if (claimed[i]) {
++      domIds.push(p.raw);
++      continue;
++    }
++    const canonicalDiffers = p.canonicalLocal !== p.raw;
++    const collided =
++      rendererOwned.has(p.canonicalBar) ||
++      rendererOwned.has(p.canonicalText) ||
++      seen.has(p.canonicalBar) ||
++      seen.has(p.canonicalText);
++    let finalLocal = p.canonicalLocal;
++    if (!collided) {
++      seen.add(p.canonicalBar);
++      seen.add(p.canonicalText);
++      elementOwned.add(p.canonicalBar);
++      elementOwned.add(p.canonicalText);
++    } else {
++      let suffix = nextSuffix.get(p.canonicalBar) ?? 2;
++      while (true) {
++        const candidateLocal = `${p.canonicalLocal}-${suffix}`;
++        const candidateBar = `${canonicalSvgId}-${candidateLocal}`;
++        const candidateText = `${candidateBar}-text`;
++        suffix += 1;
++        if (
++          !rendererOwned.has(candidateBar) &&
++          !rendererOwned.has(candidateText) &&
++          !reserved.has(candidateBar) &&
++          !reserved.has(candidateText) &&
++          !seen.has(candidateBar) &&
++          !seen.has(candidateText)
++        ) {
++          nextSuffix.set(p.canonicalBar, suffix);
++          seen.add(candidateBar);
++          seen.add(candidateText);
++          elementOwned.add(candidateBar);
++          elementOwned.add(candidateText);
++          finalLocal = candidateLocal;
++          break;
++        }
++      }
++    }
++    const normalizedChanged = p.hadPlaceholder || finalLocal !== p.raw || canonicalSvgId !== svgId;
++    if (normalizedChanged) {
++      const rawPrefixDiffers = p.hadPlaceholder || canonicalDiffers || canonicalSvgId !== svgId;
++      const targetBar = `${canonicalSvgId}-${finalLocal}`;
++      const targetText = `${targetBar}-text`;
++      remapCandidates.push({
++        raw: p.raw,
++        canonicalBar: p.canonicalBar,
++        canonicalText: p.canonicalText,
++        targetBar,
++        targetText,
++        rawPrefixDiffers,
++      });
++    }
++    if (collided || p.hadPlaceholder || canonicalDiffers) {
++      const fullBar = `${svgId}-${finalLocal}`;
++      const fullText = `${fullBar}-text`;
++      if (needsDecodeProtection(fullBar)) {
++        protectedIds.add(fullBar);
++      }
++      if (needsDecodeProtection(fullText)) {
++        protectedIds.add(fullText);
++      }
++      domIds.push(finalLocal);
++    } else {
++      domIds.push(p.raw);
++    }
++  }
++  const remappedFragments = new Map<string, string>();
++  for (const c of remapCandidates) {
++    if (c.rawPrefixDiffers || !elementOwned.has(c.canonicalBar)) {
++      const rawBarKey = `#${svgId}-${c.raw}`;
++      if (!remappedFragments.has(rawBarKey)) {
++        remappedFragments.set(rawBarKey, c.targetBar);
++      }
++    }
++    if (c.rawPrefixDiffers || !elementOwned.has(c.canonicalText)) {
++      const rawTextKey = `#${svgId}-${c.raw}-text`;
++      if (!remappedFragments.has(rawTextKey)) {
++        remappedFragments.set(rawTextKey, c.targetText);
++      }
++    }
++  }
++  return { domIds, elementOwned, remappedFragments, protectedIds };
++};
++
++export const remapGanttFragment = (
++  rawLink: string,
++  elementOwned: Set<string>,
++  remappedFragments: Map<string, string>
++): string => {
++  const fragment = stripFragmentMarker(rawLink);
++  if (fragment === undefined || elementOwned.has(fragment)) {
++    return rawLink;
++  }
++  if (fragment.includes('%')) {
++    const decoded = percentDecodeFragment(fragment);
++    if (decoded !== undefined) {
++      if (elementOwned.has(decoded)) {
++        if (!fragment.includes('ﬂ°') && !fragment.includes('¶ß')) {
++          return rawLink;
++        }
++        return formatFragmentUrlFor(decoded, elementOwned);
++      }
++      const remapped = remappedFragments.get(`#${decoded}`);
++      if (remapped !== undefined) {
++        return formatFragmentUrlFor(remapped, elementOwned);
++      }
++      const resolved = canonicalAttrId(decoded);
++      if (elementOwned.has(resolved)) {
++        return formatFragmentUrlFor(resolved, elementOwned);
++      }
++    }
++  }
++  const direct = remappedFragments.get(`#${fragment}`);
++  if (direct !== undefined) {
++    return formatFragmentUrlFor(direct, elementOwned);
++  }
++  const resolved = canonicalAttrId(fragment);
++  if (resolved !== fragment && elementOwned.has(resolved)) {
++    return formatFragmentUrlFor(resolved, elementOwned);
++  }
++  return rawLink;
++};
++
++export const protectGanttSvgIds = (svgEl: Element | null, protectedIds: Set<string>): void => {
++  if (!svgEl || protectedIds.size === 0) {
++    return;
++  }
++  let protectedMap = protectedAttrsBySvgRoot.get(svgEl);
++  for (const el of svgEl.querySelectorAll('[id]')) {
++    const val = el.getAttribute('id');
++    if (val !== null && protectedIds.has(val)) {
++      if (!protectedMap) {
++        protectedMap = new Map();
++        protectedAttrsBySvgRoot.set(svgEl, protectedMap);
++      }
++      const current = protectedMap.get(el) ?? {};
++      current.id = val;
++      protectedMap.set(el, current);
++    }
++  }
++};
++
+ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+   if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
+     throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
+@@ -105,10 +584,286 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+   // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
+   // across multiple diagrams on the same page.
+   if (data4Layout.diagramId) {
+-    for (const node of data4Layout.nodes) {
++    const svgId = data4Layout.diagramId;
++    const canonicalSvgId = canonicalXmlAttr(svgId);
++    const a11y = reservedA11yBySvgId.get(svgId);
++    const rendererOwned = new Set<string>([
++      canonicalSvgId,
++      `${canonicalSvgId}-drop-shadow`,
++      `${canonicalSvgId}-drop-shadow-small`,
++    ]);
++    if (data4Layout.config.themeVariables?.useGradient) {
++      rendererOwned.add(`${canonicalSvgId}-gradient`);
++    }
++    if (a11y?.title) {
++      rendererOwned.add(`chart-title-${canonicalSvgId}`);
++    }
++    if (a11y?.descr) {
++      rendererOwned.add(`chart-desc-${canonicalSvgId}`);
++    }
++
++    const nodePlans = data4Layout.nodes.map((node) => {
+       const originalDomId = node.domId || node.id;
+-      node.domId = `${data4Layout.diagramId}-${originalDomId}`;
++      const hadPlaceholder = (originalDomId.includes('ﬂ°') || originalDomId.includes('¶ß'));
++      const canonicalLocal = canonicalAttrId(originalDomId);
++      const canonicalFull = `${canonicalSvgId}-${canonicalLocal}`;
++      const unchanged =
++        !hadPlaceholder && canonicalLocal === originalDomId && canonicalSvgId === svgId;
++      return { node, originalDomId, hadPlaceholder, canonicalLocal, canonicalFull, unchanged };
++    });
++    const edgePlans = (data4Layout.edges ?? []).map((edge) => {
++      const originalEdgeId = edge.id ?? '';
++      const edgeHadPlaceholder = (originalEdgeId.includes('ﬂ°') || originalEdgeId.includes('¶ß'));
++      const canonicalEdgeId = canonicalAttrId(originalEdgeId);
++      const explicitPathId = (edge as { pathId?: string }).pathId;
++      const rawPath = explicitPathId ?? `${svgId}-${originalEdgeId}`;
++      const pathHadPlaceholder = explicitPathId ? (explicitPathId.includes('ﬂ°') || explicitPathId.includes('¶ß')) : edgeHadPlaceholder;
++      const canonicalPath = explicitPathId
++        ? canonicalAttrId(explicitPathId)
++        : `${canonicalSvgId}-${canonicalEdgeId}`;
++      const unchanged = !pathHadPlaceholder && canonicalPath === rawPath;
++      return {
++        edge,
++        originalEdgeId,
++        edgeHadPlaceholder,
++        canonicalEdgeId,
++        rawPath,
++        pathHadPlaceholder,
++        canonicalPath,
++        unchanged,
++      };
++    });
++
++    const reserved = new Set<string>([
++      ...nodePlans.map((p) => p.canonicalFull),
++      ...edgePlans.map((p) => p.canonicalPath),
++    ]);
++    const seen = new Set<string>();
++    const elementOwned = new Set<string>();
++    const nodeClaimed = nodePlans.map(() => false);
++    for (let i = 0; i < nodePlans.length; i++) {
++      const p = nodePlans[i];
++      if (p.unchanged && !rendererOwned.has(p.canonicalFull) && !seen.has(p.canonicalFull)) {
++        seen.add(p.canonicalFull);
++        elementOwned.add(p.canonicalFull);
++        nodeClaimed[i] = true;
++      }
++    }
++    const edgeClaimed = edgePlans.map(() => false);
++    for (let i = 0; i < edgePlans.length; i++) {
++      const p = edgePlans[i];
++      if (p.unchanged && !rendererOwned.has(p.canonicalPath) && !seen.has(p.canonicalPath)) {
++        seen.add(p.canonicalPath);
++        elementOwned.add(p.canonicalPath);
++        edgeClaimed[i] = true;
++      }
++    }
++
++    const nextSuffix = new Map<string, number>();
++    const remapped = new Map<string, string>();
++    const protectedIds = new Set<string>();
++    const edgeDataIdMap = new Map<string, string>();
++    for (let i = 0; i < nodePlans.length; i++) {
++      const p = nodePlans[i];
++      if (nodeClaimed[i]) {
++        p.node.domId = `${svgId}-${p.originalDomId}`;
++        continue;
++      }
++      const collided = rendererOwned.has(p.canonicalFull) || seen.has(p.canonicalFull);
++      let finalLocal = p.canonicalLocal;
++      if (!collided) {
++        seen.add(p.canonicalFull);
++        elementOwned.add(p.canonicalFull);
++      } else {
++        let suffix = nextSuffix.get(p.canonicalFull) ?? 1;
++        while (true) {
++          const candidateLocal = `${p.canonicalLocal}-${suffix}`;
++          const candidateFull = `${canonicalSvgId}-${candidateLocal}`;
++          suffix += 1;
++          if (
++            !rendererOwned.has(candidateFull) &&
++            !reserved.has(candidateFull) &&
++            !seen.has(candidateFull)
++          ) {
++            nextSuffix.set(p.canonicalFull, suffix);
++            seen.add(candidateFull);
++            elementOwned.add(candidateFull);
++            finalLocal = candidateLocal;
++            break;
++          }
++        }
++      }
++      const normalizedChanged =
++        p.hadPlaceholder || finalLocal !== p.originalDomId || canonicalSvgId !== svgId;
++      const rawDistinctFromOwner =
++        p.hadPlaceholder ||
++        p.canonicalLocal !== p.originalDomId ||
++        canonicalSvgId !== svgId ||
++        !elementOwned.has(p.canonicalFull);
++      if (normalizedChanged && rawDistinctFromOwner) {
++        const key = `#${svgId}-${p.originalDomId}`;
++        if (!remapped.has(key)) {
++          remapped.set(key, `${canonicalSvgId}-${finalLocal}`);
++        }
++      }
++      if (collided || p.hadPlaceholder) {
++        const resolvedDomId = `${svgId}-${finalLocal}`;
++        p.node.domId = resolvedDomId;
++        if (needsDecodeProtection(resolvedDomId)) {
++          protectedIds.add(resolvedDomId);
++        }
++      } else {
++        p.node.domId = `${svgId}-${p.originalDomId}`;
++      }
+     }
++
++    for (let i = 0; i < edgePlans.length; i++) {
++      const p = edgePlans[i];
++      if (edgeClaimed[i]) {
++        continue;
++      }
++      const collided = rendererOwned.has(p.canonicalPath) || seen.has(p.canonicalPath);
++      let finalPath = p.canonicalPath;
++      if (!collided) {
++        seen.add(p.canonicalPath);
++        elementOwned.add(p.canonicalPath);
++      } else {
++        let suffix = nextSuffix.get(p.canonicalPath) ?? 1;
++        while (true) {
++          const candidate = `${p.canonicalPath}-${suffix}`;
++          suffix += 1;
++          if (
++            !rendererOwned.has(candidate) &&
++            !reserved.has(candidate) &&
++            !seen.has(candidate)
++          ) {
++            nextSuffix.set(p.canonicalPath, suffix);
++            seen.add(candidate);
++            elementOwned.add(candidate);
++            finalPath = candidate;
++            break;
++          }
++        }
++      }
++      const rawDistinctFromOwner =
++        p.pathHadPlaceholder ||
++        p.canonicalPath !== p.rawPath ||
++        !elementOwned.has(p.canonicalPath);
++      if (finalPath !== p.rawPath && rawDistinctFromOwner) {
++        const key = `#${p.rawPath}`;
++        if (!remapped.has(key)) {
++          remapped.set(key, finalPath);
++        }
++      }
++      if (collided || p.pathHadPlaceholder) {
++        (p.edge as { pathId?: string }).pathId = finalPath;
++        if (needsDecodeProtection(finalPath)) {
++          protectedIds.add(finalPath);
++        }
++      }
++      if (p.edgeHadPlaceholder) {
++        (p.edge as { dataId?: string }).dataId = p.canonicalEdgeId;
++        edgeDataIdMap.set(p.originalEdgeId, p.canonicalEdgeId);
++      }
++    }
++
++    const remapFragment = (rawLink: string): string => {
++      const fragment = stripFragmentMarker(rawLink);
++      if (fragment === undefined || elementOwned.has(fragment)) {
++        return rawLink;
++      }
++      let target: string | undefined;
++      if (fragment.includes('%')) {
++        const decoded = percentDecodeFragment(fragment);
++        if (decoded !== undefined) {
++          if (elementOwned.has(decoded)) {
++            if (!fragment.includes('ﬂ°') && !fragment.includes('¶ß')) {
++              return rawLink;
++            }
++            target = formatFragmentUrlFor(decoded, elementOwned);
++          } else {
++            const remappedId = remapped.get(`#${decoded}`);
++            if (remappedId !== undefined) {
++              target = formatFragmentUrlFor(remappedId, elementOwned);
++            } else {
++              const resolvedTarget = canonicalAttrId(decoded);
++              if (elementOwned.has(resolvedTarget)) {
++                target = formatFragmentUrlFor(resolvedTarget, elementOwned);
++              }
++            }
++          }
++        }
++      }
++      if (target === undefined) {
++        const directId = remapped.get(`#${fragment}`);
++        if (directId !== undefined) {
++          target = formatFragmentUrlFor(directId, elementOwned);
++        }
++      }
++      if (target === undefined) {
++        const resolvedTarget = canonicalAttrId(fragment);
++        if (resolvedTarget !== fragment && elementOwned.has(resolvedTarget)) {
++          target = formatFragmentUrlFor(resolvedTarget, elementOwned);
++        }
++      }
++      return target ?? rawLink;
++    };
++
++    for (const node of data4Layout.nodes) {
++      if (typeof node.link === 'string') {
++        node.link = remapFragment(node.link);
++      }
++    }
++
++    const layoutDefinition = layoutAlgorithms[data4Layout.layoutAlgorithm];
++    const layoutRenderer = await layoutDefinition.loader();
++
++    insertLookDefs(svg, data4Layout.config);
++
++    const rendered = await layoutRenderer.render(data4Layout, svg, internalHelpers, {
++      algorithm: layoutDefinition.algorithm,
++    });
++
++    const svgEl = svg.node() as Element | null;
++    if (svgEl) {
++      fragmentRemapperBySvgRoot.set(svgEl, remapFragment);
++    }
++    if (svgEl && (edgeDataIdMap.size > 0 || protectedIds.size > 0)) {
++      let protectedMap = protectedAttrsBySvgRoot.get(svgEl);
++      const mark = (el: Element, key: 'id' | 'dataId', value: string) => {
++        if (!protectedMap) {
++          protectedMap = new Map();
++          protectedAttrsBySvgRoot.set(svgEl, protectedMap);
++        }
++        const current = protectedMap.get(el) ?? {};
++        current[key] = value;
++        protectedMap.set(el, current);
++      };
++      if (edgeDataIdMap.size > 0) {
++        for (const el of svgEl.querySelectorAll('[data-id]')) {
++          const raw = el.getAttribute('data-id');
++          if (raw !== null) {
++            const resolved = edgeDataIdMap.get(raw);
++            if (resolved !== undefined) {
++              el.setAttribute('data-id', resolved);
++              if (needsDecodeProtection(resolved)) {
++                mark(el, 'dataId', resolved);
++              }
++            }
++          }
++        }
++      }
++      if (protectedIds.size > 0) {
++        for (const el of svgEl.querySelectorAll('[id]')) {
++          const val = el.getAttribute('id');
++          if (val !== null && protectedIds.has(val)) {
++            mark(el, 'id', val);
++          }
++        }
++      }
++    }
++
++    return rendered;
+   }
+ 
+   const layoutDefinition = layoutAlgorithms[data4Layout.layoutAlgorithm];
+diff --git a/packages/mermaid/src/rendering-util/rendering-elements/edges.js b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
+index 1f88ca4..436d2cf 100644
+--- a/packages/mermaid/src/rendering-util/rendering-elements/edges.js
++++ b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
+@@ -834,7 +834,7 @@ export const insertEdge = function (
+ 
+     svgPath = select(svgPathNode)
+       .select('path')
+-      .attr('id', `${diagramId}-${edge.id}`)
++      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
+       .attr(
+         'class',
+         ' ' +
+@@ -857,7 +857,7 @@ export const insertEdge = function (
+     svgPath = elem
+       .append('path')
+       .attr('d', linePath)
+-      .attr('id', `${diagramId}-${edge.id}`)
++      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
+       .attr(
+         'class',
+         ' ' +

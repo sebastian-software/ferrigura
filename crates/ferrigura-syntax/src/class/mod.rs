@@ -3,8 +3,8 @@
 //! `docs/diagrams/class.md#parsing`.
 //!
 //! The text goes through the same steps as the reference before the grammar sees it: front matter
-//! (the shared preparation), directives, and comment lines. The class grammar takes no other
-//! change: no entity encoding and no line break at the end.
+//! (the shared preparation), directives, comment lines, and `encodeEntities`. The class grammar
+//! takes no other change: no closing-brace rewrite and no trailing line break.
 
 mod db;
 mod grammar;
@@ -14,28 +14,13 @@ mod member;
 /// `parseGenericTypes` of `diagrams/common/common.ts`, which the ER and class renderers share.
 pub use member::parse_generic_types;
 
+pub use crate::url::SecurityLevel;
+
 use ferrigura_model::class::{ClassDiagram, ClassMember};
 
 use crate::error::ParseError;
 use crate::flowchart::clean_comments;
-use crate::preprocess::prepare;
-use crate::preprocess::remove_directives;
-
-/// The `securityLevel` of the configuration, as far as the class DB looks at it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum SecurityLevel {
-    /// `strict`, the default.
-    #[default]
-    Strict,
-    /// `antiscript`.
-    Antiscript,
-    /// `sandbox`: link targets are `_top`.
-    Sandbox,
-    /// `loose`: URLs are not sanitized.
-    Loose,
-    /// Any other value: the reference treats it as neither strict nor loose.
-    Other,
-}
+use crate::preprocess::{encode_entities, prepare, remap_encoded_error, remove_directives};
 
 /// The options of the parser, which change how the DB sanitizes its texts. The defaults are the
 /// reference's defaults: `htmlLabels` is on and `securityLevel` is `strict`.
@@ -74,12 +59,14 @@ pub fn parse_prepared(
     options: Options,
 ) -> Result<ClassDiagram, ParseError> {
     let cleaned = clean_comments(&remove_directives(&prepared.text));
+    let encoded = encode_entities(&cleaned);
     let mut db = db::ClassDb::new(options);
     // `Diagram.ts` sets the front matter's title before the parser runs, and only when it is set.
     if let Some(title) = prepared.title.as_deref().filter(|title| !title.is_empty()) {
         db.set_diagram_title(title);
     }
-    grammar::parse(&cleaned, prepared.line_offset, db)
+    grammar::parse(&encoded, prepared.line_offset, db)
+        .map_err(|error| remap_encoded_error(&cleaned, prepared.line_offset, error))
 }
 
 /// `new ClassMember(input, type)` of the reference, with the default options: the text is

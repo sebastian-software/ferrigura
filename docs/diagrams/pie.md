@@ -12,7 +12,7 @@ when the viewer requests reduced motion.
 
 ## Model
 
-`PieDiagram` (`crates/ferrigura-model/src/pie.rs`), version 1, with these fields:
+`PieDiagram` (`crates/ferrigura-model/src/pie.rs`), version 2, with these fields:
 
 - `title`: the grammar's `title` when it is not empty, else the front matter's title, else `""`.
 - `accTitle`, `accDescr`: the header texts, `""` when absent. `accTitle` has no leading blanks, and an indented continuation of `accDescr` is joined, as the DB's setters do.

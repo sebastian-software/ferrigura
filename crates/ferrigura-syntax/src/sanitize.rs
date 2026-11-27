@@ -646,12 +646,23 @@ fn decode_attribute(chars: &[char]) -> String {
 /// reference the parser does not know is left as it is.
 #[must_use]
 pub fn decode_references(text: &str) -> String {
+    decode_references_in(text, false)
+}
+
+/// Decodes HTML character references in attribute-value context (legacy semicolonless named
+/// entities followed by `=` or ASCII alphanumerics, such as `&notebook_1;`, are left literal).
+#[must_use]
+pub fn decode_attribute_references(text: &str) -> String {
+    decode_references_in(text, true)
+}
+
+fn decode_references_in(text: &str, in_attribute: bool) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
     let mut index = 0;
     while index < chars.len() {
         if chars[index] == '&'
-            && let Some((decoded, length)) = reference_at(&chars, index, false)
+            && let Some((decoded, length)) = reference_at(&chars, index, in_attribute)
         {
             out.push_str(&decoded);
             index += length;
@@ -705,8 +716,9 @@ fn reference_at(chars: &[char], start: usize, in_attribute: bool) -> Option<(Str
         end += 1;
     }
     let name: String = chars[start + 1..end].iter().collect();
-    if chars.get(end) == Some(&';') {
-        let value = named_character(&name)?;
+    if chars.get(end) == Some(&';')
+        && let Some(value) = named_character(&name)
+    {
         return Some((value.to_owned(), end + 1 - start));
     }
     // Without `;`, only the legacy names are decoded, and a legacy name may be the start of a longer

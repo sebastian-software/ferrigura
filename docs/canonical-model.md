@@ -6,7 +6,7 @@ The model is ours, not a dump of the JS DB: where the DB holds something that th
 
 ## Shape
 
-- Every model has `"version": 1`, the constant `CANONICAL_VERSION`. It changes when a field is added, removed or changes meaning; the change is described in this page before the code changes.
+- Every model has `"version": 2`, the constant `CANONICAL_VERSION`. It changes when a field is added, removed or changes meaning; the change is described in this page before the code changes.
 - Keys are camelCase (`showData`, `accTitle`, `accDescr`), as serde writes them with `rename_all = "camelCase"`.
 - Strings are always present. An absent header text is `""`, not `null`, because the DB defaults to `''` and the JS exporters read it that way.
 - Numbers are JSON numbers. The differential run compares them with `===`, so `-0` and `0` agree.
@@ -71,7 +71,7 @@ The flowchart model is the DB state after parsing (`flowDb.ts`), with the names 
 - **Undefined is `null`.** A DB field the input never sets is `null` (`shape`, `link`, `linkTarget`, `style`, `interpolate`, `animate`, `animation`, `dir`, `length` of an `INVALID` link, the shape data fields). An empty list is `[]`.
 - **Order.** Vertices are in creation order, edges in creation order (the order of the DB's `edges` array), subgraphs in closing order (a nested subgraph closes first), with a repeated id merged into its first position. Subgraph `nodes` keep the grammar's order, in which a chain's later nodes come first (`A --> B --> C` gives `[C, B, A]`).
 - **Edge ids.** The `id` is always present: the user's `e1@` id, or the generated `L_<start>_<end>_<n>`, where `n` counts the edges already drawn between the same pair. Tooltips are kept by id even when no vertex has that id.
-- **Config is not in the model.** `maxEdges` is a parser option (default 500). `securityLevel`, `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
+- **Config is not in the model.** `maxEdges` (default 500) and `securityLevel` (default `strict`, used by `formatUrl` when storing `click` links) are parser options. `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
 
 ## XyChart
 
@@ -109,7 +109,7 @@ The gantt model is the DB state after `getTasks()` (`ganttDb.js`), with the fiel
 
 - **Dates are numbers.** `startTime`, `endTime` and `renderEndTime` are epoch milliseconds in UTC, and `null` is a date the DB leaves unresolved or an Invalid Date. The parser takes the current time as an option (`now`), for the dates that take missing parts from the clock; the differential run gives both sides the same fixed clock under `TZ=UTC`.
 - **Sanitized texts.** `title`, `accTitle` and `accDescr` are the DB values after the sanitizer of the flowchart ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules. A `title` statement overrides the front matter title even when it sanitizes to empty. Task texts and section names are raw.
-- **Links** map a task id to the URL of its `click … href` statement after `sanitizeUrl`, for the tasks that exist when the line is read. Callbacks are not in the model (decision 0006).
+- **Links** map a task id to the URL of its `click … href` statement (after `sanitizeUrl`, or as written when `securityLevel` is `loose`), for the tasks that exist when the line is read. Callbacks are not in the model (decision 0006).
 - **Statements are raw.** `dateFormat`, `axisFormat`, `tickInterval` and `todayMarker` keep the text after their keyword, blanks included; `includes` and `excludes` are lower case and de-duplicated in first-seen order.
 
 ## Sequence

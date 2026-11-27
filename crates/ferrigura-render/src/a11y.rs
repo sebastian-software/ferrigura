@@ -50,10 +50,11 @@ pub fn root_attributes(
     out
 }
 
-/// The `<title>` and `<desc>` children of the root element, the title first, for the texts that are
-/// not empty.
+/// The `<title>` and `<desc>` children of the root element without decoding Mermaid entity
+/// placeholders, for renderers (such as sequence diagrams) that decode entities once across the
+/// complete SVG output.
 #[must_use]
-pub fn children(base_id: &str, title: &str, description: &str) -> String {
+pub(crate) fn children_raw(base_id: &str, title: &str, description: &str) -> String {
     let mut out = String::new();
     if !title.is_empty() {
         out.push_str(&format!(
@@ -67,6 +68,38 @@ pub fn children(base_id: &str, title: &str, description: &str) -> String {
             "<desc id=\"{}\">{}</desc>",
             description_id(base_id),
             escape(description)
+        ));
+    }
+    out
+}
+
+/// The `<title>` and `<desc>` children of the root element, the title first, for the texts that are
+/// not empty.
+#[must_use]
+pub fn children(base_id: &str, title: &str, description: &str) -> String {
+    let mut out = String::new();
+    if !title.is_empty() {
+        let resolved = if title.contains("ﬂ°") || title.contains("¶ß") {
+            std::borrow::Cow::Owned(crate::common::shown_text(title))
+        } else {
+            std::borrow::Cow::Borrowed(title)
+        };
+        out.push_str(&format!(
+            "<title id=\"{}\">{}</title>",
+            title_id(base_id),
+            escape(&resolved)
+        ));
+    }
+    if !description.is_empty() {
+        let resolved = if description.contains("ﬂ°") || description.contains("¶ß") {
+            std::borrow::Cow::Owned(crate::common::shown_text(description))
+        } else {
+            std::borrow::Cow::Borrowed(description)
+        };
+        out.push_str(&format!(
+            "<desc id=\"{}\">{}</desc>",
+            description_id(base_id),
+            escape(&resolved)
         ));
     }
     out

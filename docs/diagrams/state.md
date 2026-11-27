@@ -82,13 +82,14 @@ Quirks of the reference that are kept on purpose:
 
 **Style sheet** (`state/style.rs`, `styles.js` and the shared rules). Colors are custom properties on the diagram id ([0011](../decisions/0011-themes-as-css-variables.md)); the palette rules of `genColor` come first, for the two color themes. The selectors that match nothing in the reference (`g.stateGroup`) are not written, and neither are the reference's `//` comments, which are not CSS; the nested `text {}` inside `.state-note` is written flat as `.state-note text`, as stylis writes it. The sheet has no rule for a node's paths, so the rough outlines of a note, a choice and an end state carry their colors as presentation attributes, as the reference's shapes write them: the note's `noteBkgColor` and `noteBorderColor`, the choice's `mainBkg` and `nodeBorder`, and the end state's `mainBkg` ring stroked with `lineColor` around a `stateBorder` dot.
 
-**Links.** After the render, a clicked state's node is wrapped as `<a xlink:href title>` around its `<g>`, with no transform on the anchor and the surrounding quotes stripped; only leaves are wrapped.
+**Links.** After the render, a clicked state's node is wrapped as `<a xlink:href title>` around its `<g>`, with no transform on the anchor and the surrounding quotes stripped; unless `securityLevel` is `loose`, disallowed schemes are replaced with `about:blank` while accepted URLs are kept verbatim; only leaves are wrapped.
 
 ## Differences from Mermaid
 
 - **Labels are SVG text**, also with `htmlLabels: true` ([0009](../decisions/0009-svg-text-labels.md)).
 - **`layout: dagre`** is laid out with ELK ([0012](../decisions/0012-layout-engines-ported-exactly.md)); `look: handDrawn` takes the classic geometry.
 - **One `extract`.** The reference runs `extract` at the parse and again when it draws, and `docTranslator` twice during the parse; the second runs give the same states, relations, classes and links, so the port runs it once. The exception is the trimmed-id case above, which the parse reproduces.
+- **Clicked state links.** Unless `securityLevel` is `loose`, disallowed URL schemes are replaced with `about:blank` at render time while accepted URLs stay verbatim; Mermaid leaves `stateRenderer-v3-unified`'s unquoted URLs to its post-render `DOMPurify.sanitize` pass ([0014](../decisions/0014-upstream-reference-at-a-pin.md)).
 - **Callbacks** are not kept ([0006](../decisions/0006-rust-only-no-browser.md)).
 
 ## Known gaps

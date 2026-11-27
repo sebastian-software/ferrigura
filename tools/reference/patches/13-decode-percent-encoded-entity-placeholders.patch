@@ -1,0 +1,1982 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs/decisions/0014-upstream-reference-at-a-pin.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(security): harden entity encoding and URL sanitization against entity-encoded schemes
+
+Upstream encodeEntities strips color semicolons with greedy regexes across lines and
+splits HTML numeric references inside URLs, while upstream formatUrl and sanitizeUrl
+do not validate entity-spelled or percent-encoded URL schemes consistently. This patch
+aligns the pinned reference's encodeEntities, formatUrl, and sanitizeUrl wrappers with
+ferrigura's entity-aware URL sanitization and dialect-aware entity scanner. Drop or
+re-check when bumping the Mermaid pin if upstream adopts equivalent URL and entity
+hardening.
+
+diff --git a/packages/mermaid/src/diagrams/common/svgDrawCommon.ts b/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
+index 86220b2..941a0df 100644
+--- a/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
++++ b/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
+@@ -1,4 +1,4 @@
+-import { sanitizeUrl } from '@braintree/sanitize-url';
++import { sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
+ import { select } from 'd3';
+ import type { SVG, SVGGroup } from '../../diagram-api/types.js';
+ import { lineBreakRegex } from './common.js';
+diff --git a/packages/mermaid/src/diagrams/gantt/ganttDb.js b/packages/mermaid/src/diagrams/gantt/ganttDb.js
+index 0ca8f3f..df2f108 100644
+--- a/packages/mermaid/src/diagrams/gantt/ganttDb.js
++++ b/packages/mermaid/src/diagrams/gantt/ganttDb.js
+@@ -1,4 +1,4 @@
+-import { sanitizeUrl } from '@braintree/sanitize-url';
++import { formatUrl, sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
+ import dayjs from 'dayjs';
+ import dayjsIsoWeek from 'dayjs/plugin/isoWeek.js';
+ import dayjsCustomParseFormat from 'dayjs/plugin/customParseFormat.js';
+@@ -712,7 +712,7 @@ const compileTasks = function () {
+ export const setLink = function (ids, _linkStr) {
+   let linkStr = _linkStr;
+   if (getConfig().securityLevel !== 'loose') {
+-    linkStr = sanitizeUrl(_linkStr);
++    linkStr = formatUrl(_linkStr, getConfig()) ?? sanitizeUrl(_linkStr);
+   }
+   ids.split(',').forEach(function (id) {
+     let rawTask = findTaskById(id);
+diff --git a/packages/mermaid/src/diagrams/sequence/svgDraw.js b/packages/mermaid/src/diagrams/sequence/svgDraw.js
+index c6cb9d5..5e20321 100644
+--- a/packages/mermaid/src/diagrams/sequence/svgDraw.js
++++ b/packages/mermaid/src/diagrams/sequence/svgDraw.js
+@@ -1,4 +1,4 @@
+-import { sanitizeUrl } from '@braintree/sanitize-url';
++import { sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
+ import * as configApi from '../../config.js';
+ import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
+ import common, {
+diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
+index 48ac4a6..1f5f85b 100644
+--- a/packages/mermaid/src/utils.ts
++++ b/packages/mermaid/src/utils.ts
+@@ -244,6 +244,844 @@ export function interpolateToCurve(
+  * @param config - Configuration passed to MermaidJS
+  * @returns The formatted URL or `undefined`.
+  */
++const decodeHtmlAttrRef = (ref: string): string => {
++  if (typeof document !== 'undefined') {
++    const holder = document.createElement('div');
++    holder.innerHTML = `<a data-v="${ref}"></a>`;
++    return holder.firstElementChild?.getAttribute('data-v') ?? ref;
++  }
++  const named: Record<string, string> = {
++    '&colon;': ':',
++    '&sol;': '/',
++    '&bsol;': '\\',
++    '&tab;': '\t',
++    '&newline;': '\n',
++    '&copy;': '\u00a9',
++    '&amp;': '&',
++    '&lt;': '<',
++    '&gt;': '>',
++    '&quot;': '"',
++    '&apos;': "'",
++  };
++  const lower = ref.toLowerCase();
++  if (lower in named) {
++    return named[lower];
++  }
++  return ref
++    .replace(/&#[xX]([0-9a-fA-F]+);/g, (_m, hex: string) => {
++      const cp = Number.parseInt(hex, 16);
++      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
++    })
++    .replace(/&#(\+?\d+);/g, (_m, digits: string) => {
++      const cp = Number.parseInt(digits, 10);
++      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
++    });
++};
++
++type UrlEncodeComponent = 'userinfo' | 'path' | 'query' | 'fragment';
++
++const percentEncodeComponent = (decoded: string, component: UrlEncodeComponent): string => {
++  const encoder = new TextEncoder();
++  let out = '';
++  for (const byte of encoder.encode(decoded)) {
++    let encode = byte <= 0x20 || byte >= 0x7f;
++    if (!encode) {
++      if (component === 'userinfo') {
++        encode =
++          byte === 0x22 ||
++          byte === 0x23 ||
++          byte === 0x2f ||
++          byte === 0x3a ||
++          byte === 0x3b ||
++          byte === 0x3c ||
++          byte === 0x3d ||
++          byte === 0x3e ||
++          byte === 0x3f ||
++          byte === 0x40 ||
++          byte === 0x5b ||
++          byte === 0x5c ||
++          byte === 0x5d ||
++          byte === 0x5e ||
++          byte === 0x60 ||
++          byte === 0x7b ||
++          byte === 0x7c ||
++          byte === 0x7d;
++      } else if (component === 'path') {
++        encode =
++          byte === 0x22 ||
++          byte === 0x23 ||
++          byte === 0x3c ||
++          byte === 0x3e ||
++          byte === 0x3f ||
++          byte === 0x5e ||
++          byte === 0x60 ||
++          byte === 0x7b ||
++          byte === 0x7d;
++      } else if (component === 'query') {
++        encode =
++          byte === 0x22 || byte === 0x23 || byte === 0x27 || byte === 0x3c || byte === 0x3e;
++      } else {
++        encode = byte === 0x22 || byte === 0x3c || byte === 0x3e || byte === 0x60;
++      }
++    }
++    out += encode ? `%${byte.toString(16).toUpperCase().padStart(2, '0')}` : String.fromCharCode(byte);
++  }
++  return out;
++};
++
++const substituteComponentTokens = (
++  segment: string,
++  prefix: string,
++  values: string[],
++  component: UrlEncodeComponent
++): string => {
++  let out = '';
++  let cursor = 0;
++  while (cursor < segment.length) {
++    const pos = segment.indexOf(prefix, cursor);
++    if (pos === -1) {
++      return out + segment.slice(cursor);
++    }
++    out += segment.slice(cursor, pos);
++    const digitsStart = pos + prefix.length;
++    let digitsEnd = digitsStart;
++    while (digitsEnd < segment.length && segment[digitsEnd] >= '0' && segment[digitsEnd] <= '9') {
++      digitsEnd++;
++    }
++    if (digitsEnd > digitsStart && segment.startsWith('__', digitsEnd)) {
++      const idx = Number.parseInt(segment.slice(digitsStart, digitsEnd), 10);
++      if (idx >= 0 && idx < values.length) {
++        out += percentEncodeComponent(values[idx], component);
++        cursor = digitsEnd + 2;
++        continue;
++      }
++    }
++    out += prefix;
++    cursor = digitsStart;
++  }
++  return out;
++};
++
++const restoreHttpTokensByComponent = (url: string, prefix: string, values: string[]): string => {
++  const schemeMatch = /^https?:/i.exec(url);
++  if (!schemeMatch) {
++    return url;
++  }
++  let authorityStart = schemeMatch[0].length;
++  while (authorityStart < url.length && url[authorityStart] === '/') {
++    authorityStart += 1;
++  }
++  const rest = url.slice(authorityStart);
++  const endOffset = rest.search(/[/?#]/);
++  const authorityEnd = endOffset === -1 ? url.length : authorityStart + endOffset;
++  const authority = url.slice(authorityStart, authorityEnd);
++  const atIndex = authority.lastIndexOf('@');
++  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++
++  const hashOffset = url.indexOf('#', authorityEnd);
++  const fragStart = hashOffset === -1 ? url.length : hashOffset;
++  const queryOffset = url.indexOf('?', authorityEnd);
++  const queryStart = queryOffset === -1 || queryOffset > fragStart ? fragStart : queryOffset;
++
++  return (
++    url.slice(0, authorityStart) +
++    substituteComponentTokens(url.slice(authorityStart, hostStart), prefix, values, 'userinfo') +
++    url.slice(hostStart, authorityEnd) +
++    substituteComponentTokens(url.slice(authorityEnd, queryStart), prefix, values, 'path') +
++    substituteComponentTokens(url.slice(queryStart, fragStart), prefix, values, 'query') +
++    substituteComponentTokens(url.slice(fragStart), prefix, values, 'fragment')
++  );
++};
++
++const reencodeDecodedPlaceholders = (s: string): string => {
++  if (!s.includes('ﬂ°') && !s.includes('¶ß')) {
++    return s;
++  }
++  return s.replace(/ﬂ°/g, '%EF%AC%82%C2%B0').replace(/¶ß/g, '%C2%B6%C3%9F');
++};
++
++const collectUsedTokenIds = (s: string, used: Set<number>): void => {
++  const re = /__fg([0-9a-f]{8})(?=_)/gi;
++  let match: RegExpExecArray | null;
++  while ((match = re.exec(s)) !== null) {
++    used.add(Number.parseInt(match[1], 16));
++  }
++};
++
++const pickTokenPrefix = (...sources: string[]): string => {
++  const used = new Set<number>();
++  for (const s of sources) {
++    collectUsedTokenIds(s, used);
++  }
++  let id = 0;
++  while (used.has(id)) {
++    id += 1;
++  }
++  return `__fg${id.toString(16).padStart(8, '0')}_`;
++};
++
++const decodeMermaidPlaceholderAt = (
++  segment: string,
++  pos: number
++): [end: number, decoded: string] | null => {
++  if (segment.startsWith('ﬂ°', pos)) {
++    const numeric = segment.startsWith('ﬂ°°', pos);
++    const bodyStart = pos + (numeric ? 3 : 2);
++    let end = bodyStart;
++    while (end < segment.length && /[A-Za-z0-9_]/.test(segment[end])) {
++      end++;
++    }
++    if (end > bodyStart && segment.startsWith('¶ß', end)) {
++      const body = segment.slice(bodyStart, end);
++      const ref = numeric ? `&#${body};` : `&${body};`;
++      return [end + 2, decodeHtmlAttrRef(ref)];
++    }
++    return [bodyStart, numeric ? '&#' : '&'];
++  }
++  if (segment.startsWith('¶ß', pos)) {
++    return [pos + 2, ';'];
++  }
++  return null;
++};
++
++const isCtrlChar = (code: number): boolean => code <= 0x1f || (code >= 0x7f && code <= 0x9f);
++
++const matchTokenAt = (
++  segment: string,
++  pos: number,
++  prefix: string,
++  values: string[]
++): [end: number, value: string] | null => {
++  if (!segment.startsWith(prefix, pos)) {
++    return null;
++  }
++  const digitsStart = pos + prefix.length;
++  let digitsEnd = digitsStart;
++  while (digitsEnd < segment.length && segment[digitsEnd] >= '0' && segment[digitsEnd] <= '9') {
++    digitsEnd++;
++  }
++  if (digitsEnd > digitsStart && segment.startsWith('__', digitsEnd)) {
++    const idx = Number.parseInt(segment.slice(digitsStart, digitsEnd), 10);
++    if (idx >= 0 && idx < values.length) {
++      return [digitsEnd + 2, values[idx]];
++    }
++  }
++  return null;
++};
++
++const restoreRawTokens = (segment: string, prefix: string, values: string[]): string => {
++  let out = '';
++  let cursor = 0;
++  while (cursor < segment.length) {
++    const pos = segment.indexOf(prefix, cursor);
++    if (pos === -1) {
++      return out + segment.slice(cursor);
++    }
++    out += segment.slice(cursor, pos);
++    const matched = matchTokenAt(segment, pos, prefix, values);
++    if (matched) {
++      out += matched[1];
++      cursor = matched[0];
++      continue;
++    }
++    out += prefix;
++    cursor = pos + prefix.length;
++  }
++  return out;
++};
++
++const decodeEncodedHtmlNumericAt = (
++  segment: string,
++  pos: number
++): [end: number, raw: string, decoded: string] | null => {
++  if (!segment.startsWith('ﬂ°', pos)) {
++    return null;
++  }
++  if (segment.startsWith('ﬂ°°', pos)) {
++    const bodyStart = pos + 3;
++    let end = bodyStart;
++    while (end < segment.length && segment[end] >= '0' && segment[end] <= '9') {
++      end++;
++    }
++    if (end > bodyStart && segment.startsWith('¶ß', end)) {
++      const digits = segment.slice(bodyStart, end);
++      const decoded = decodeHtmlAttrRef(`&#${digits};`);
++      return [end + 2, segment.slice(pos, end + 2), decoded];
++    }
++    return null;
++  }
++  const first = segment[pos + 2];
++  if (first === 'x' || first === 'X') {
++    const bodyStart = pos + 3;
++    let end = bodyStart;
++    while (end < segment.length && /[0-9a-fA-F]/.test(segment[end])) {
++      end++;
++    }
++    if (end > bodyStart && segment.startsWith('¶ß', end)) {
++      const xHex = segment.slice(pos + 2, end);
++      const decoded = decodeHtmlAttrRef(`&#${xHex};`);
++      const cp = decoded.codePointAt(0) ?? 0xfffd;
++      return [end + 2, `ﬂ°°${cp}¶ß`, decoded];
++    }
++  }
++  return null;
++};
++
++const tokenizeAllPlaceholders = (
++  segment: string,
++  prefix: string,
++  rawValues: string[],
++  decodedValues: string[]
++): string => {
++  let out = '';
++  let cursor = 0;
++  let nextOpen = segment.indexOf('ﬂ°', 0);
++  let nextClose = segment.indexOf('¶ß', 0);
++  while (cursor < segment.length) {
++    if (nextOpen !== -1 && nextOpen < cursor) {
++      nextOpen = segment.indexOf('ﬂ°', cursor);
++    }
++    if (nextClose !== -1 && nextClose < cursor) {
++      nextClose = segment.indexOf('¶ß', cursor);
++    }
++    if (nextOpen === -1 && nextClose === -1) {
++      return out + segment.slice(cursor);
++    }
++    const pos =
++      nextOpen !== -1 && (nextClose === -1 || nextOpen <= nextClose) ? nextOpen : nextClose;
++    if (pos > cursor && segment[pos - 1] === '&') {
++      const numRef = decodeEncodedHtmlNumericAt(segment, pos);
++      if (numRef) {
++        const [end, raw, decoded] = numRef;
++        out += segment.slice(cursor, pos - 1);
++        const token = `${prefix}${rawValues.length}__`;
++        rawValues.push(raw);
++        decodedValues.push(decoded);
++        out += token;
++        cursor = end;
++        continue;
++      }
++    }
++    out += segment.slice(cursor, pos);
++    const placeholder = decodeMermaidPlaceholderAt(segment, pos)!;
++    const [end, decoded] = placeholder;
++    const token = `${prefix}${rawValues.length}__`;
++    rawValues.push(segment.slice(pos, end));
++    decodedValues.push(decoded);
++    out += token;
++    cursor = end;
++  }
++  return out;
++};
++
++const resolveDecodedHttpSchemeTokens = (
++  trimmed: string,
++  prefix: string,
++  decodedValues: string[]
++): { text: string; changed: boolean } => {
++  let pos = 0;
++  let acc = '';
++  let usedTokenInScheme = false;
++  while (pos < trimmed.length) {
++    const matched = matchTokenAt(trimmed, pos, prefix, decodedValues);
++    if (matched) {
++      usedTokenInScheme = true;
++      for (const ch of matched[1]) {
++        if (!isCtrlChar(ch.codePointAt(0) ?? 0)) {
++          acc += ch;
++        }
++      }
++      pos = matched[0];
++    } else {
++      const code = trimmed.charCodeAt(pos);
++      if (!isCtrlChar(code)) {
++        acc += trimmed[pos];
++      }
++      pos += 1;
++    }
++    if (acc.length > 6) {
++      return { text: trimmed, changed: false };
++    }
++    const lower = acc.toLowerCase();
++    if (lower === 'http:' || lower === 'https:') {
++      let slashPos = pos;
++      let slashCount = 0;
++      let usedTokenInSlashes = false;
++      while (slashPos < trimmed.length) {
++        if (trimmed[slashPos] === '/' || trimmed[slashPos] === '\\') {
++          slashPos += 1;
++          slashCount += 1;
++        } else {
++          const slashTok = matchTokenAt(trimmed, slashPos, prefix, decodedValues);
++          if (slashTok && slashTok[1].length > 0 && /^[/\\]+$/.test(slashTok[1])) {
++            usedTokenInSlashes = true;
++            slashCount += slashTok[1].length;
++            slashPos = slashTok[0];
++          } else {
++            break;
++          }
++        }
++      }
++      if (!usedTokenInScheme && !usedTokenInSlashes) {
++        return { text: trimmed, changed: false };
++      }
++      const schemeOut = usedTokenInScheme ? lower : trimmed.slice(0, pos);
++      return {
++        text: schemeOut + '/'.repeat(slashCount) + trimmed.slice(slashPos),
++        changed: true,
++      };
++    }
++    if (!'http:'.startsWith(lower) && !'https:'.startsWith(lower)) {
++      return { text: trimmed, changed: false };
++    }
++  }
++  return { text: trimmed, changed: false };
++};
++
++const BR_INVALID_PROTOCOL_RE = /^([^\w]*)(javascript|data|vbscript)/im;
++const BR_HTML_ENTITIES_RE = /&#(\w+)(^\w|;)?/g;
++const BR_HTML_CTRL_ENTITY_RE = /&(newline|tab);/gi;
++const BR_CTRL_CHARS_RE = /[\u0000-\u001F\u007F-\u009F\u2000-\u200D\uFEFF]/gim;
++const BR_URL_SCHEME_RE = /^.+(:|&colon;)/gim;
++const BR_WHITESPACE_ESCAPE_RE = /(\\|%5[cC])((%(6[eE]|72|74))|[nrt])/g;
++
++const decodeSanitizeUrlOnly = (raw: string): string => {
++  const decodeUriSafe = (uri: string): string => {
++    try {
++      return decodeURIComponent(uri);
++    } catch {
++      return uri;
++    }
++  };
++  let decodedUrl = decodeUriSafe(raw.trim());
++  let charsToDecode: RegExpMatchArray | null;
++  do {
++    decodedUrl = decodedUrl
++      .replace(BR_CTRL_CHARS_RE, '')
++      .replace(BR_HTML_ENTITIES_RE, (_m, dec: string) => String.fromCharCode(Number(dec)))
++      .replace(BR_HTML_CTRL_ENTITY_RE, '')
++      .replace(BR_CTRL_CHARS_RE, '')
++      .replace(BR_WHITESPACE_ESCAPE_RE, '')
++      .trim();
++    decodedUrl = decodeUriSafe(decodedUrl);
++    charsToDecode =
++      decodedUrl.match(BR_CTRL_CHARS_RE) ||
++      decodedUrl.match(BR_HTML_ENTITIES_RE) ||
++      decodedUrl.match(BR_HTML_CTRL_ENTITY_RE) ||
++      decodedUrl.match(BR_WHITESPACE_ESCAPE_RE);
++  } while (charsToDecode && charsToDecode.length > 0);
++  return decodedUrl;
++};
++
++const resolveHttpHostTokens = (url: string, prefix: string, decodedValues: string[]): string => {
++  const schemeMatch = /^https?:/i.exec(url);
++  if (!schemeMatch) {
++    return url;
++  }
++  let authorityStart = schemeMatch[0].length;
++  while (authorityStart < url.length && url[authorityStart] === '/') {
++    authorityStart += 1;
++  }
++  const rest = url.slice(authorityStart);
++  const endOffset = rest.search(/[/?#]/);
++  const authorityEnd = endOffset === -1 ? url.length : authorityStart + endOffset;
++  const authority = url.slice(authorityStart, authorityEnd);
++  const atIndex = authority.lastIndexOf('@');
++  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++  const hostPort = url.slice(hostStart, authorityEnd);
++  if (!hostPort.includes(prefix)) {
++    return url;
++  }
++  let out = url.slice(0, hostStart);
++  let cursor = 0;
++  while (cursor < hostPort.length) {
++    const pos = hostPort.indexOf(prefix, cursor);
++    if (pos === -1) {
++      out += hostPort.slice(cursor);
++      break;
++    }
++    out += hostPort.slice(cursor, pos);
++    const matched = matchTokenAt(hostPort, pos, prefix, decodedValues);
++    if (matched) {
++      const [end, value] = matched;
++      if (/[\\/?#]/.test(value)) {
++        out += value.replace(/\\/g, '/');
++        out += hostPort.slice(end);
++        break;
++      }
++      out += value;
++      cursor = end;
++      continue;
++    }
++    out += prefix;
++    cursor = pos + prefix.length;
++  }
++  return out + url.slice(authorityEnd);
++};
++
++const hasInvalidDecodedScheme = (
++  trimmed: string,
++  prefix: string,
++  decodedValues: string[]
++): boolean => {
++  if (decodedValues.length === 0) {
++    return false;
++  }
++  const substituted = restoreRawTokens(trimmed, prefix, decodedValues);
++  const cleaned = substituted.replace(BR_CTRL_CHARS_RE, '').trimStart();
++  if (
++    cleaned[0] === '.' ||
++    cleaned[0] === '/' ||
++    firstSchemeDelimiterIsRelative(cleaned) >= 0
++  ) {
++    return false;
++  }
++  const match = cleaned.match(BR_URL_SCHEME_RE);
++  return match !== null && BR_INVALID_PROTOCOL_RE.test(match[0].toLowerCase().trim());
++};
++
++export const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
++  if (!rawUrl) {
++    return 'about:blank';
++  }
++  if (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß')) {
++    const sanitized = sanitizeUrl(rawUrl);
++    if (/^https?:/i.test(sanitized) && !URL.canParse(sanitized)) {
++      return 'about:blank';
++    }
++    return reencodeDecodedPlaceholders(sanitized);
++  }
++  const probe = decodeSanitizeUrlOnly(rawUrl);
++  const prefix = pickTokenPrefix(rawUrl, probe);
++  const rawValues: string[] = [];
++  const decodedValues: string[] = [];
++  const tokenized = tokenizeAllPlaceholders(rawUrl, prefix, rawValues, decodedValues);
++  const decoded = decodeSanitizeUrlOnly(tokenized);
++  if (!decoded) {
++    return 'about:blank';
++  }
++  const finalizeRaw = (s: string): string => {
++    const safe = reencodeDecodedPlaceholders(s);
++    return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
++  };
++  if (decoded[0] === '.' || decoded[0] === '/') {
++    return finalizeRaw(decoded);
++  }
++  const trimmed = decoded.trimStart();
++  if (hasInvalidDecodedScheme(trimmed, prefix, decodedValues)) {
++    return 'about:blank';
++  }
++  const effectiveTrimmed = resolveDecodedHttpSchemeTokens(trimmed, prefix, decodedValues).text;
++  const urlSchemeParseResults = effectiveTrimmed.match(BR_URL_SCHEME_RE);
++  if (!urlSchemeParseResults) {
++    return finalizeRaw(decoded);
++  }
++  const urlScheme = urlSchemeParseResults[0].toLowerCase().trim();
++  if (BR_INVALID_PROTOCOL_RE.test(urlScheme)) {
++    return 'about:blank';
++  }
++  const backSanitized = effectiveTrimmed.replace(/\\/g, '/');
++  if (urlScheme === 'mailto:' || urlScheme.includes('://')) {
++    if (/^https?:/i.test(backSanitized)) {
++      const resolved = resolveHttpHostTokens(backSanitized, prefix, decodedValues);
++      if (!URL.canParse(resolved)) {
++        return 'about:blank';
++      }
++      const safe = reencodeDecodedPlaceholders(resolved);
++      return restoreHttpTokensByComponent(safe, prefix, decodedValues);
++    }
++    return finalizeRaw(backSanitized);
++  }
++  if (urlScheme === 'http:' || urlScheme === 'https:') {
++    const resolved = resolveHttpHostTokens(backSanitized, prefix, decodedValues);
++    if (!URL.canParse(resolved)) {
++      return 'about:blank';
++    }
++    const parsed = new URL(resolved);
++    parsed.protocol = parsed.protocol.toLowerCase();
++    parsed.hostname = parsed.hostname.toLowerCase();
++    const safe = reencodeDecodedPlaceholders(parsed.toString());
++    return restoreHttpTokensByComponent(safe, prefix, decodedValues);
++  }
++  return finalizeRaw(backSanitized);
++};
++
++const startsWithFragmentMarker = (url: string): boolean => {
++  if (url.startsWith('#')) {
++    return true;
++  }
++  const placeholder = decodeMermaidPlaceholderAt(url, 0);
++  return placeholder !== null && placeholder[1] === '#';
++};
++
++const ALLOWED_NON_HTTP_SCHEMES = new Set([
++  'ftp',
++  'ftps',
++  'mailto',
++  'tel',
++  'callto',
++  'sms',
++  'cid',
++  'xmpp',
++  'matrix',
++]);
++
++const BR_LITERAL_WS_ESCAPE_RE = /\\[nrt]/;
++
++const hasNonPercentObfuscation = (text: string): boolean =>
++  text.match(BR_CTRL_CHARS_RE) !== null ||
++  text.match(BR_HTML_ENTITIES_RE) !== null ||
++  text.match(BR_HTML_CTRL_ENTITY_RE) !== null ||
++  BR_LITERAL_WS_ESCAPE_RE.test(text);
++
++const startsWithSinkEntityBody = (afterHash: string): boolean => {
++  let i = 0;
++  while (i < afterHash.length && isCtrlChar(afterHash.charCodeAt(i))) {
++    i += 1;
++  }
++  if (i >= afterHash.length) {
++    return false;
++  }
++  const ch = afterHash[i];
++  if ((ch >= '0' && ch <= '9') || ch === '%' || ch === '&' || ch === '\\') {
++    return true;
++  }
++  if (ch === 'x' || ch === 'X') {
++    i += 1;
++    while (i < afterHash.length && isCtrlChar(afterHash.charCodeAt(i))) {
++      i += 1;
++    }
++    return i < afterHash.length && /^[0-9a-fA-F%&\\]$/.test(afterHash[i]);
++  }
++  return false;
++};
++
++const isNonEscapeBackslash = (text: string, idx: number): boolean => {
++  if (idx + 1 >= text.length) {
++    return false;
++  }
++  const next = text[idx + 1];
++  return (
++    next !== 'n' &&
++    next !== 'r' &&
++    next !== 't' &&
++    next !== '%' &&
++    next !== '&' &&
++    next !== '\\' &&
++    !isCtrlChar(text.charCodeAt(idx + 1))
++  );
++};
++
++const firstSchemeDelimiterIsRelative = (text: string): number => {
++  let hasEscapeOrCtrl = false;
++  for (let i = 0; i < text.length; i++) {
++    const ch = text[i];
++    if (ch === '/' || ch === '?' || (ch === '\\' && isNonEscapeBackslash(text, i))) {
++      return i;
++    }
++    if (ch === ':') {
++      return -1;
++    }
++    if (ch === '&' && text.slice(i, i + 7).toLowerCase() === '&colon;') {
++      return -1;
++    }
++    if (ch === '#') {
++      if (!startsWithSinkEntityBody(text.slice(i + 1)) || !hasEscapeOrCtrl) {
++        return i;
++      }
++    } else if (ch === '&' || ch === '%' || ch === '\\' || isCtrlChar(text.charCodeAt(i))) {
++      hasEscapeOrCtrl = true;
++    }
++  }
++  return -1;
++};
++
++const hasLiteralScheme = (text: string): boolean =>
++  /^[A-Za-z][A-Za-z0-9+.-]*(?::|&colon;)/i.test(text);
++
++const decodeHexEntitiesForCheck = (text: string): string =>
++  text.replace(/&#[xX]([0-9a-fA-F]+);?/g, (_m, hex: string) => {
++    const cp = Number.parseInt(hex, 16);
++    return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
++  });
++
++const decodedHasRelativeDelimiter = (text: string): boolean => {
++  let cur = decodeHexEntitiesForCheck(text);
++  if (firstSchemeDelimiterIsRelative(cur) >= 0) {
++    return true;
++  }
++  for (let pass = 0; pass < 8; pass++) {
++    let next = cur;
++    try {
++      next = decodeURIComponent(cur);
++    } catch {
++      break;
++    }
++    next = decodeHexEntitiesForCheck(next);
++    if (next === cur) {
++      break;
++    }
++    cur = next;
++    if (firstSchemeDelimiterIsRelative(cur) >= 0) {
++      return true;
++    }
++    if (hasLiteralScheme(cur)) {
++      return false;
++    }
++  }
++  return false;
++};
++
++const formatRelativeWithSchemeDelimiter = (url: string): string | null => {
++  if (url[0] === '.' || url[0] === '/') {
++    return null;
++  }
++  const delimPos = firstSchemeDelimiterIsRelative(url);
++  if (delimPos < 0 && hasLiteralScheme(url)) {
++    return null;
++  }
++  const hasPlaceholders = url.includes('ﬂ°') || url.includes('¶ß');
++  let prefix = '';
++  const rawValues: string[] = [];
++  const decodedValues: string[] = [];
++  let prepared = url;
++  if (hasPlaceholders) {
++    const probe = decodeSanitizeUrlOnly(url);
++    prefix = pickTokenPrefix(url, probe);
++    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
++  }
++  const decoded = decodeSanitizeUrlOnly(prepared);
++  if (!decoded || !decodedHasRelativeDelimiter(decoded)) {
++    return null;
++  }
++  if (decodedValues.length > 0) {
++    const substituted = restoreRawTokens(decoded, prefix, decodedValues)
++      .replace(BR_CTRL_CHARS_RE, '')
++      .trimStart();
++    if (!decodedHasRelativeDelimiter(substituted)) {
++      return null;
++    }
++  }
++  if (!hasNonPercentObfuscation(url)) {
++    const safe = reencodeDecodedPlaceholders(prepared);
++    return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
++  }
++  const safe = reencodeDecodedPlaceholders(decoded);
++  return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
++};
++
++const literalAllowedNonHttpScheme = (text: string): string | null => {
++  const m = /^([A-Za-z][A-Za-z0-9+.-]*):/.exec(text);
++  if (!m) {
++    return null;
++  }
++  const lower = m[1].toLowerCase();
++  return ALLOWED_NON_HTTP_SCHEMES.has(lower) ? lower : null;
++};
++
++const preserveEncodedUrl = (url: string, sanitized: string): string | null => {
++  const hasPlaceholders = url.includes('ﬂ°') || url.includes('¶ß');
++  let prefix = '';
++  const rawValues: string[] = [];
++  const decodedValues: string[] = [];
++  let prepared = url;
++  if (hasPlaceholders) {
++    const probe = decodeSanitizeUrlOnly(url);
++    prefix = pickTokenPrefix(url, probe);
++    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
++  }
++  const finalizeRaw = (s: string): string => {
++    const safe = reencodeDecodedPlaceholders(s);
++    return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
++  };
++  if (url[0] === '.' || url[0] === '/') {
++    return finalizeRaw(prepared);
++  }
++  const effective =
++    rawValues.length > 0
++      ? resolveDecodedHttpSchemeTokens(prepared, prefix, decodedValues).text
++      : prepared;
++  if (/^https?:/i.test(effective) && /^https?:/i.test(sanitized)) {
++    const backSanitized = effective.replace(/\\/g, '/');
++    const resolved =
++      rawValues.length > 0
++        ? resolveHttpHostTokens(backSanitized, prefix, decodedValues)
++        : backSanitized;
++    if (!URL.canParse(resolved)) {
++      return null;
++    }
++    const urlSchemeMatch = backSanitized.match(BR_URL_SCHEME_RE);
++    const urlScheme = urlSchemeMatch ? urlSchemeMatch[0].toLowerCase().trim() : '';
++    if (urlScheme.includes('://')) {
++      return rawValues.length > 0
++        ? restoreHttpTokensByComponent(resolved, prefix, decodedValues)
++        : resolved;
++    }
++    const parsed = new URL(resolved);
++    parsed.protocol = parsed.protocol.toLowerCase();
++    parsed.hostname = parsed.hostname.toLowerCase();
++    return rawValues.length > 0
++      ? restoreHttpTokensByComponent(parsed.toString(), prefix, decodedValues)
++      : parsed.toString();
++  }
++  const rawScheme = literalAllowedNonHttpScheme(url);
++  if (rawScheme !== null && literalAllowedNonHttpScheme(sanitized) === rawScheme) {
++    return finalizeRaw(prepared.replace(/\\/g, '/'));
++  }
++  if (
++    !/^https?:/i.test(sanitized) &&
++    !hasLiteralScheme(url) &&
++    (url.match(BR_URL_SCHEME_RE) === null || firstSchemeDelimiterIsRelative(url) >= 0)
++  ) {
++    return finalizeRaw(prepared);
++  }
++  return null;
++};
++
++const preserveValidHttpEncodedUrl = (url: string): string | null => {
++  const hasPlaceholders = url.includes('ﬂ°') || url.includes('¶ß');
++  let prefix = '';
++  const rawValues: string[] = [];
++  const decodedValues: string[] = [];
++  let prepared = url;
++  if (hasPlaceholders) {
++    const probe = decodeSanitizeUrlOnly(url);
++    prefix = pickTokenPrefix(url, probe);
++    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
++  }
++  const effective =
++    rawValues.length > 0
++      ? resolveDecodedHttpSchemeTokens(prepared, prefix, decodedValues).text
++      : prepared;
++  if (!/^https?:/i.test(effective)) {
++    return null;
++  }
++  if (hasInvalidDecodedScheme(effective, prefix, decodedValues)) {
++    return 'about:blank';
++  }
++  const backSanitized = effective.replace(/\\/g, '/');
++  const resolved =
++    rawValues.length > 0
++      ? resolveHttpHostTokens(backSanitized, prefix, decodedValues)
++      : backSanitized;
++  if (!URL.canParse(resolved)) {
++    return null;
++  }
++  const urlSchemeMatch = backSanitized.match(BR_URL_SCHEME_RE);
++  const urlScheme = urlSchemeMatch ? urlSchemeMatch[0].toLowerCase().trim() : '';
++  if (urlScheme.includes('://')) {
++    return rawValues.length > 0
++      ? restoreHttpTokensByComponent(resolved, prefix, decodedValues)
++      : resolved;
++  }
++  const parsed = new URL(resolved);
++  parsed.protocol = parsed.protocol.toLowerCase();
++  parsed.hostname = parsed.hostname.toLowerCase();
++  return rawValues.length > 0
++    ? restoreHttpTokensByComponent(parsed.toString(), prefix, decodedValues)
++    : parsed.toString();
++};
++
+ export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
+   const url = linkStr.trim();
+ 
+@@ -252,7 +1090,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+   }
+ 
+   if (config.securityLevel !== 'loose') {
+-    return sanitizeUrl(url);
++    if (startsWithFragmentMarker(url)) {
++      let finalized = url;
++      if (url.includes('ﬂ°') || url.includes('¶ß')) {
++        const probe = decodeSanitizeUrlOnly(url);
++        const prefix = pickTokenPrefix(url, probe);
++        const rawValues: string[] = [];
++        const decodedValues: string[] = [];
++        const prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
++        finalized = rawValues.length === 0 ? prepared : restoreRawTokens(prepared, prefix, rawValues);
++      }
++      return finalized.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
++    }
++    const relative = formatRelativeWithSchemeDelimiter(url);
++    if (relative !== null) {
++      return relative;
++    }
++    if (url.includes('%') && !hasNonPercentObfuscation(url)) {
++      const preservedHttp = preserveValidHttpEncodedUrl(url);
++      if (preservedHttp !== null) {
++        return preservedHttp;
++      }
++    }
++    const sanitized = sanitizeHttpUrlWithEntities(url);
++    if (sanitized === 'about:blank') {
++      return sanitized;
++    }
++    if (url.includes('%') && !hasNonPercentObfuscation(url)) {
++      const preserved = preserveEncodedUrl(url, sanitized);
++      if (preserved !== null) {
++        return preserved;
++      }
++    }
++    return sanitized;
+   }
+ 
+   return url;
+@@ -895,23 +1765,1023 @@ export default {
+ export const encodeEntities = function (text: string): string {
+   let txt = text;
+ 
+-  txt = txt.replace(/style.*:\S*#.*;/g, function (s): string {
+-    return s.substring(0, s.length - 1);
+-  });
+-  txt = txt.replace(/classDef.*:\S*#.*;/g, function (s): string {
+-    return s.substring(0, s.length - 1);
+-  });
+-
+-  txt = txt.replace(/#\w+;/g, function (s) {
+-    const innerTxt = s.substring(1, s.length - 1);
+-
+-    const isInt = /^\+?\d+$/.test(innerTxt);
+-    if (isInt) {
+-      return 'ﬂ°°' + innerTxt + '¶ß';
+-    } else {
+-      return 'ﬂ°' + innerTxt + '¶ß';
++  const allowsClassDefSemicolonCss = (s: string): boolean => {
++    for (const line of s.split(/[\n\r\u2028\u2029]/)) {
++      const trimmed = line.trimStart();
++      if (!trimmed || trimmed.startsWith('%%')) {
++        continue;
++      }
++      return /^stateDiagram(?:$|\s|-)/.test(trimmed);
+     }
+-  });
++    return false;
++  };
++  const isClassDiagramDialect = (s: string): boolean => {
++    for (const line of s.split(/[\n\r\u2028\u2029]/)) {
++      const trimmed = line.trimStart();
++      if (!trimmed || trimmed.startsWith('%%')) {
++        continue;
++      }
++      return /^classDiagram(?:$|\s|-)/.test(trimmed);
++    }
++    return false;
++  };
++  const isColonLabelDialect = (s: string): boolean => {
++    for (const line of s.split(/[\n\r\u2028\u2029]/)) {
++      const trimmed = line.trimStart();
++      if (!trimmed || trimmed.startsWith('%%')) {
++        continue;
++      }
++      return /^(?:classDiagram|stateDiagram)(?:$|\s|-)/.test(trimmed);
++    }
++    return false;
++  };
++  type PendingAcc = 'none' | 'descr' | 'title';
++  const matchesAccKeyword = (s: string, at: number, kw: string, ci: boolean): boolean => {
++    const slice = s.slice(at, at + kw.length);
++    return ci ? slice.toLowerCase() === kw.toLowerCase() : slice === kw;
++  };
++  const classifyAccLineStart = (
++    s: string,
++    at: number,
++    ci: boolean
++  ): 'block' | 'plain' | 'pendingDescr' | 'pendingTitle' | null => {
++    if (matchesAccKeyword(s, at, 'accDescr', ci)) {
++      let k = at + 8;
++      while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++        k++;
++      }
++      if (s[k] === '{') {
++        return 'block';
++      }
++      if (s[k] === ':') {
++        return 'plain';
++      }
++      if (
++        k >= s.length ||
++        s[k] === '\n' ||
++        s[k] === '\r' ||
++        s[k] === '\u2028' ||
++        s[k] === '\u2029'
++      ) {
++        return 'pendingDescr';
++      }
++    }
++    if (matchesAccKeyword(s, at, 'accTitle', ci)) {
++      let k = at + 8;
++      while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++        k++;
++      }
++      if (s[k] === ':') {
++        return 'plain';
++      }
++      if (
++        k >= s.length ||
++        s[k] === '\n' ||
++        s[k] === '\r' ||
++        s[k] === '\u2028' ||
++        s[k] === '\u2029'
++      ) {
++        return 'pendingTitle';
++      }
++    }
++    return null;
++  };
++  type StateNoteHeader =
++    | 'none'
++    | 'afterNote'
++    | 'afterSideOf'
++    | 'afterTargetId'
++    | 'floatingText'
++    | 'floatingAfterQuote'
++    | 'floatingAsId';
++  const matchStateDiagramHeaderLen = (s: string, at: number): number => {
++    const m = /^stateDiagram(?:-v2)?(?=\s)/i.exec(s.slice(at));
++    return m ? m[0].length : -1;
++  };
++  const startsStateAsKeyword = (s: string, at: number): boolean =>
++    /^as(?=$|[^A-Za-z0-9_])/i.test(s.slice(at));
++  const isStateCommentBoundary = (s: string, at: number): boolean =>
++    at === 0 || /[\s;{}]/.test(s[at - 1]);
++  const startsStateNoteKeyword = (s: string, at: number): boolean =>
++    /^note(?=$|\s)/i.test(s.slice(at));
++  const matchStateNoteSideOfLen = (s: string, at: number): number => {
++    const m = /^(?:left|right)[^\S\n\r\u2028\u2029]+of(?=$|[^A-Za-z0-9_])/i.exec(s.slice(at));
++    return m ? m[0].length : -1;
++  };
++  const stateNoteTargetIdLen = (s: string, at: number): number => {
++    const rest = s.slice(at);
++    const m = /^[^:\-\s]+/.exec(rest);
++    if (!m) {
++      return 0;
++    }
++    const commentIdx = m[0].indexOf('%%');
++    return commentIdx === -1 ? m[0].length : commentIdx;
++  };
++  const endsMultilineStateNoteLen = (s: string, at: number): number => {
++    const rest = s.slice(at);
++    const m = /^end[^\S\n\r\u2028\u2029]+note(?=$|[^A-Za-z0-9_])/i.exec(rest);
++    return m ? m[0].length : -1;
++  };
++  const startsStyleOrClassDef = (s: string, at: number): boolean => {
++    for (const kw of ['style', 'classDef']) {
++      if (s.startsWith(kw, at) && at + kw.length < s.length && /\s/.test(s[at + kw.length])) {
++        return true;
++      }
++    }
++    return false;
++  };
++  const startsClassDef = (s: string, at: number): boolean =>
++    s.startsWith('classDef', at) && at + 8 < s.length && /\s/.test(s[at + 8]);
++  const startsClassStmt = (s: string, at: number): boolean =>
++    s.startsWith('class', at) && at + 5 < s.length && /\s/.test(s[at + 5]);
++  const isSingleColon = (s: string, at: number): boolean =>
++    (at === 0 || s[at - 1] !== ':') && s[at + 1] !== ':';
++  const isAsciiAlnum = (c: string): boolean =>
++    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
++  const isAsciiWord = (c: string): boolean => isAsciiAlnum(c) || c === '_';
++
++  const allowClassDefCssSemi = allowsClassDefSemicolonCss(txt);
++  const stateDiagramDialect = allowClassDefCssSemi;
++  const classDiagramDialect = isClassDiagramDialect(txt);
++  const colonLabelDialect = isColonLabelDialect(txt);
++
++  const isHorizontalWsToEol = (s: string, start: number): boolean => {
++    for (let k = start; k < s.length; k++) {
++      const c = s[k];
++      if (c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029') {
++        return true;
++      }
++      if (!/\s/.test(c)) {
++        return false;
++      }
++    }
++    return true;
++  };
++  const startsWithCssProp = (s: string, start: number): boolean => {
++    let k = start;
++    while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++      k++;
++    }
++    let letterCount = 0;
++    let afterColonIdx = -1;
++    while (k < s.length) {
++      const c = s[k];
++      if (c >= 'a' && c <= 'z') {
++        letterCount++;
++      } else if (c === '-' && letterCount > 0) {
++        // continue
++      } else {
++        if (letterCount >= 2 && c === ':' && s[k + 1] !== ':') {
++          afterColonIdx = k + 1;
++        }
++        break;
++      }
++      k++;
++    }
++    if (afterColonIdx === -1) {
++      return false;
++    }
++    let stmtEnd = afterColonIdx;
++    while (
++      stmtEnd < s.length &&
++      s[stmtEnd] !== ';' &&
++      s[stmtEnd] !== '\n' &&
++      s[stmtEnd] !== '\r' &&
++      s[stmtEnd] !== '\u2028' &&
++      s[stmtEnd] !== '\u2029'
++    ) {
++      stmtEnd++;
++    }
++    const afterColon = s.slice(afterColonIdx, stmtEnd);
++    return !/(?:-->|---|==>|-\.|<--|~~~|:::|o--|x--|--o|--x|\[|\{)/.test(afterColon);
++  };
++  const dropColorSemicolons = (input: string, word: string): string => {
++    let result = '';
++    let lineStart = 0;
++    let inQuotes = false;
++    let inBackticks = false;
++    let inAccDescrBlock = false;
++    let pendingAcc: PendingAcc = 'none';
++    let noteHeader: StateNoteHeader = 'none';
++    let inNoteBlock = false;
++    let classBodyDepth = 0;
++    const isLineTerm = (c: string) =>
++      c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
++    const processLine = (line: string): string => {
++      let atLineStart = true;
++      let stmtStart = true;
++      let inTarget = false;
++      let inStyleOrClassDef = false;
++      let inClassStmt = false;
++      let seenColon = false;
++      let seenColonHash = false;
++      let prevWasAlnum = false;
++      let lastSemi = -1;
++      for (let i = 0; i < line.length; i++) {
++        const c = line[i];
++        if (noteHeader === 'floatingText') {
++          if (c === '"') {
++            noteHeader = 'floatingAfterQuote';
++          }
++          prevWasAlnum = false;
++          continue;
++        }
++        if (noteHeader !== 'none') {
++          if (/\s/.test(c)) {
++            prevWasAlnum = false;
++            continue;
++          }
++          if (noteHeader === 'afterNote') {
++            if (c === '"') {
++              noteHeader = 'floatingText';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              continue;
++            }
++            const len = matchStateNoteSideOfLen(line, i);
++            if (len > 0) {
++              noteHeader = 'afterSideOf';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              i += len - 1;
++              continue;
++            }
++            noteHeader = 'none';
++          } else if (noteHeader === 'afterSideOf') {
++            const idLen = stateNoteTargetIdLen(line, i);
++            if (idLen > 0) {
++              noteHeader = 'afterTargetId';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              i += idLen - 1;
++              continue;
++            }
++            noteHeader = 'none';
++          } else if (noteHeader === 'afterTargetId') {
++            noteHeader = 'none';
++            if (c === ':') {
++              break;
++            }
++            inNoteBlock = true;
++          } else if (noteHeader === 'floatingAfterQuote') {
++            if (startsStateAsKeyword(line, i)) {
++              noteHeader = 'floatingAsId';
++              atLineStart = false;
++              stmtStart = false;
++              prevWasAlnum = false;
++              i += 1;
++              continue;
++            }
++            noteHeader = 'none';
++          } else if (noteHeader === 'floatingAsId') {
++            noteHeader = 'none';
++            break;
++          }
++        }
++        if (inNoteBlock) {
++          if (atLineStart) {
++            if (/\s/.test(c)) {
++              continue;
++            }
++            atLineStart = false;
++            const endLen = endsMultilineStateNoteLen(line, i);
++            if (endLen > 0) {
++              inNoteBlock = false;
++              stmtStart = true;
++              inTarget = false;
++              inStyleOrClassDef = false;
++              inClassStmt = false;
++              seenColon = false;
++              seenColonHash = false;
++              prevWasAlnum = false;
++              i += endLen - 1;
++              continue;
++            }
++          }
++          break;
++        }
++        if (inAccDescrBlock) {
++          if (c === '}') {
++            inAccDescrBlock = false;
++            stmtStart = true;
++            inStyleOrClassDef = false;
++            inClassStmt = false;
++          }
++          prevWasAlnum = false;
++          continue;
++        }
++        if (classBodyDepth > 0) {
++          if (c === '{') {
++            classBodyDepth++;
++          } else if (c === '}') {
++            classBodyDepth--;
++            if (classBodyDepth === 0) {
++              stmtStart = true;
++              inStyleOrClassDef = false;
++              inClassStmt = false;
++            }
++          }
++          prevWasAlnum = false;
++          continue;
++        }
++        if (inQuotes) {
++          if (c === '"') {
++            inQuotes = false;
++          }
++          prevWasAlnum = false;
++          continue;
++        }
++        if (inBackticks) {
++          if (c === '`') {
++            inBackticks = false;
++          }
++          prevWasAlnum = false;
++          continue;
++        }
++        if (atLineStart) {
++          if (/\s/.test(c)) {
++            prevWasAlnum = false;
++            continue;
++          }
++          atLineStart = false;
++          if (pendingAcc !== 'none') {
++            const pending = pendingAcc;
++            pendingAcc = 'none';
++            if (pending === 'descr' && c === '{') {
++              if (line.indexOf('}', i + 1) === -1) {
++                inAccDescrBlock = true;
++              }
++              break;
++            }
++            if (c === ':') {
++              break;
++            }
++          }
++          if (line.startsWith('%%', i)) {
++            break;
++          }
++          const accKind = classifyAccLineStart(line, i, stateDiagramDialect);
++          if (accKind === 'block') {
++            const brace = line.indexOf('{', i);
++            if (brace !== -1 && line.indexOf('}', brace + 1) === -1) {
++              inAccDescrBlock = true;
++            }
++            break;
++          }
++          if (accKind === 'plain') {
++            break;
++          }
++          if (accKind === 'pendingDescr') {
++            pendingAcc = 'descr';
++            break;
++          }
++          if (accKind === 'pendingTitle') {
++            pendingAcc = 'title';
++            break;
++          }
++        }
++        if (c === '%' && line[i + 1] === '%') {
++          break;
++        }
++        if (
++          stateDiagramDialect &&
++          !inStyleOrClassDef &&
++          c === '#' &&
++          isStateCommentBoundary(line, i)
++        ) {
++          break;
++        }
++        if (c === '"' && !prevWasAlnum) {
++          inQuotes = true;
++          stmtStart = false;
++          prevWasAlnum = false;
++          if (inTarget) {
++            seenColon = false;
++          }
++          continue;
++        }
++        if (classDiagramDialect && c === '`') {
++          inBackticks = true;
++          stmtStart = false;
++          prevWasAlnum = false;
++          if (inTarget) {
++            seenColon = false;
++          }
++          continue;
++        }
++        if (
++          stateDiagramDialect &&
++          !inStyleOrClassDef &&
++          (c === 'n' || c === 'N') &&
++          (i === 0 || !isAsciiWord(line[i - 1])) &&
++          startsStateNoteKeyword(line, i)
++        ) {
++          noteHeader = 'afterNote';
++          stmtStart = false;
++          prevWasAlnum = false;
++          i += 3;
++          continue;
++        }
++        prevWasAlnum = isAsciiAlnum(c);
++        if (c === ';') {
++          if (inTarget && seenColonHash && isHorizontalWsToEol(line, i + 1)) {
++            lastSemi = i;
++          }
++          if (
++            inTarget &&
++            allowClassDefCssSemi &&
++            word === 'classDef' &&
++            startsWithCssProp(line, i + 1)
++          ) {
++            seenColon = false;
++            continue;
++          }
++          stmtStart = true;
++          inTarget = false;
++          inStyleOrClassDef = false;
++          inClassStmt = false;
++          seenColon = false;
++          seenColonHash = false;
++          continue;
++        }
++        if (stateDiagramDialect && !inStyleOrClassDef && (c === '{' || c === '}')) {
++          stmtStart = true;
++          inTarget = false;
++          inStyleOrClassDef = false;
++          inClassStmt = false;
++          seenColon = false;
++          seenColonHash = false;
++          continue;
++        }
++        if (stmtStart) {
++          if (/\s/.test(c)) {
++            continue;
++          }
++          if (stateDiagramDialect) {
++            const hdrLen = matchStateDiagramHeaderLen(line, i);
++            if (hdrLen > 0) {
++              prevWasAlnum = false;
++              i += hdrLen - 1;
++              continue;
++            }
++          }
++          stmtStart = false;
++          const accKind = classifyAccLineStart(line, i, stateDiagramDialect);
++          if (accKind === 'block') {
++            const brace = line.indexOf('{', i);
++            if (brace !== -1 && line.indexOf('}', brace + 1) === -1) {
++              inAccDescrBlock = true;
++            }
++            break;
++          }
++          if (accKind === 'plain') {
++            break;
++          }
++          if (accKind === 'pendingDescr') {
++            pendingAcc = 'descr';
++            break;
++          }
++          if (accKind === 'pendingTitle') {
++            pendingAcc = 'title';
++            break;
++          }
++          inStyleOrClassDef = startsStyleOrClassDef(line, i);
++          inClassStmt = classDiagramDialect && startsClassStmt(line, i);
++          if (
++            line.startsWith(word, i) &&
++            i + word.length < line.length &&
++            /\s/.test(line[i + word.length])
++          ) {
++            inTarget = true;
++          }
++          continue;
++        }
++        if (classDiagramDialect && inClassStmt && c === '{') {
++          classBodyDepth = 1;
++          inClassStmt = false;
++          prevWasAlnum = false;
++          continue;
++        }
++        if (colonLabelDialect && !inStyleOrClassDef && c === ':' && isSingleColon(line, i)) {
++          break;
++        }
++        if (inTarget) {
++          if (c === ':') {
++            seenColon = true;
++          } else if (/\s/.test(c)) {
++            seenColon = false;
++          } else if (c === '#') {
++            if (seenColon) {
++              seenColonHash = true;
++            }
++            let j = i + 1;
++            while (j < line.length && /[A-Za-z0-9_]/.test(line[j])) {
++              j++;
++            }
++            if (j > i + 1 && line[j] === ';') {
++              const name = line.slice(i + 1, j);
++              if (
++                !/^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(name)
++              ) {
++                i = j;
++                prevWasAlnum = false;
++              }
++            }
++          }
++        }
++      }
++      return lastSemi === -1 ? line : line.slice(0, lastSemi) + line.slice(lastSemi + 1);
++    };
++    for (let i = 0; i < input.length; i++) {
++      if (isLineTerm(input[i])) {
++        result += processLine(input.slice(lineStart, i)) + input[i];
++        lineStart = i + 1;
++      }
++    }
++    return result + processLine(input.slice(lineStart));
++  };
++  txt = dropColorSemicolons(txt, 'style');
++  txt = dropColorSemicolons(txt, 'classDef');
++
++  let out = '';
++  let stmtKind: 0 | 1 | 2 = 0; // 0 = start, 1 = style/classDef, 2 = other
++  let inClassDef = false;
++  let inClassStmt = false;
++  let seenColon = false;
++  let lastAllowsHex = false;
++  let atLineStart = true;
++  let inPlainLine = false;
++  let inAccDescrBlock = false;
++  let pendingAcc: PendingAcc = 'none';
++  let noteHeader: StateNoteHeader = 'none';
++  let inNoteBlock = false;
++  let classBodyDepth = 0;
++  let inQuotes = false;
++  let inBackticks = false;
++  let prevWasAlnum = false;
++  let copyFrom = 0;
++  for (let i = 0; i < txt.length; i++) {
++    const ch = txt[i];
++    if (ch === '#') {
++      let j = i + 1;
++      while (j < txt.length && /[A-Za-z0-9_]/.test(txt[j])) {
++        j++;
++      }
++      if (j > i + 1 && txt[j] === ';') {
++        const innerTxt = txt.slice(i + 1, j);
++        out += txt.slice(copyFrom, i);
++        if (
++          !inQuotes &&
++          !inBackticks &&
++          !inPlainLine &&
++          !inAccDescrBlock &&
++          noteHeader === 'none' &&
++          !inNoteBlock &&
++          classBodyDepth === 0 &&
++          stmtKind === 1 &&
++          seenColon &&
++          lastAllowsHex &&
++          /^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(innerTxt)
++        ) {
++          out += isHorizontalWsToEol(txt, j + 1) ? `#${innerTxt}` : `#${innerTxt};`;
++          if (allowClassDefCssSemi && inClassDef && startsWithCssProp(txt, j + 1)) {
++            seenColon = false;
++            lastAllowsHex = false;
++          } else {
++            stmtKind = 0;
++            inClassDef = false;
++            inClassStmt = false;
++            seenColon = false;
++            lastAllowsHex = false;
++          }
++          atLineStart = false;
++          prevWasAlnum = false;
++        } else {
++          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
++          if (noteHeader === 'afterNote' || noteHeader === 'floatingAfterQuote') {
++            noteHeader = 'none';
++          } else if (noteHeader === 'afterTargetId') {
++            noteHeader = 'none';
++            inNoteBlock = true;
++          } else if (noteHeader === 'floatingAsId') {
++            noteHeader = 'none';
++            inPlainLine = true;
++          }
++          if (
++            !inQuotes &&
++            !inBackticks &&
++            !inPlainLine &&
++            !inAccDescrBlock &&
++            noteHeader === 'none' &&
++            !inNoteBlock &&
++            classBodyDepth === 0 &&
++            stmtKind === 0
++          ) {
++            stmtKind = 2;
++          }
++          atLineStart = false;
++          lastAllowsHex = false;
++          prevWasAlnum = false;
++        }
++        copyFrom = j + 1;
++        i = j;
++        continue;
++      }
++    }
++    if (noteHeader === 'floatingText') {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '"') {
++        noteHeader = 'floatingAfterQuote';
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (noteHeader !== 'none') {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (/\s/.test(ch)) {
++        prevWasAlnum = false;
++        continue;
++      }
++      if (noteHeader === 'afterNote') {
++        if (ch === '"') {
++          noteHeader = 'floatingText';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
++        const len = matchStateNoteSideOfLen(txt, i);
++        if (len > 0) {
++          noteHeader = 'afterSideOf';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          i += len - 1;
++          continue;
++        }
++        noteHeader = 'none';
++      } else if (noteHeader === 'afterSideOf') {
++        const idLen = stateNoteTargetIdLen(txt, i);
++        if (idLen > 0) {
++          noteHeader = 'afterTargetId';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          i += idLen - 1;
++          continue;
++        }
++        noteHeader = 'none';
++      } else if (noteHeader === 'afterTargetId') {
++        noteHeader = 'none';
++        if (ch === ':') {
++          inPlainLine = true;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
++        inNoteBlock = true;
++      } else if (noteHeader === 'floatingAfterQuote') {
++        if (startsStateAsKeyword(txt, i)) {
++          noteHeader = 'floatingAsId';
++          atLineStart = false;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          i += 1;
++          continue;
++        }
++        noteHeader = 'none';
++      } else if (noteHeader === 'floatingAsId') {
++        noteHeader = 'none';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++    }
++    if (inNoteBlock) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (atLineStart) {
++        if (/\s/.test(ch)) {
++          continue;
++        }
++        atLineStart = false;
++        const endLen = endsMultilineStateNoteLen(txt, i);
++        if (endLen > 0) {
++          inNoteBlock = false;
++          stmtKind = 0;
++          inClassDef = false;
++          inClassStmt = false;
++          seenColon = false;
++          lastAllowsHex = false;
++          prevWasAlnum = false;
++          i += endLen - 1;
++          continue;
++        }
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (inAccDescrBlock) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '}') {
++        inAccDescrBlock = false;
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (classBodyDepth > 0) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '{') {
++        classBodyDepth++;
++      } else if (ch === '}') {
++        classBodyDepth--;
++        if (classBodyDepth === 0) {
++          stmtKind = 0;
++          inClassDef = false;
++          inClassStmt = false;
++          seenColon = false;
++          lastAllowsHex = false;
++        }
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (inQuotes) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '"') {
++        inQuotes = false;
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (inBackticks) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '`') {
++        inBackticks = false;
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++      stmtKind = 0;
++      inClassDef = false;
++      inClassStmt = false;
++      seenColon = false;
++      lastAllowsHex = false;
++      atLineStart = true;
++      inPlainLine = false;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (inPlainLine) {
++      prevWasAlnum = false;
++      continue;
++    }
++    if (atLineStart) {
++      if (/\s/.test(ch)) {
++        prevWasAlnum = false;
++        continue;
++      }
++      atLineStart = false;
++      if (pendingAcc !== 'none') {
++        const pending = pendingAcc;
++        pendingAcc = 'none';
++        if (pending === 'descr' && ch === '{') {
++          inAccDescrBlock = true;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
++        if (ch === ':') {
++          inPlainLine = true;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
++      }
++      if (txt.startsWith('%%', i)) {
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      const accKind = classifyAccLineStart(txt, i, stateDiagramDialect);
++      if (accKind === 'block') {
++        inAccDescrBlock = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'plain') {
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingDescr') {
++        pendingAcc = 'descr';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingTitle') {
++        pendingAcc = 'title';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++    }
++    if (ch === '%' && txt[i + 1] === '%') {
++      inPlainLine = true;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (stateDiagramDialect && stmtKind !== 1 && ch === '#' && isStateCommentBoundary(txt, i)) {
++      inPlainLine = true;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (ch === '"' && !prevWasAlnum) {
++      inQuotes = true;
++      if (stmtKind === 0) {
++        stmtKind = 2;
++      }
++      lastAllowsHex = false;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (classDiagramDialect && ch === '`') {
++      inBackticks = true;
++      if (stmtKind === 0) {
++        stmtKind = 2;
++      }
++      lastAllowsHex = false;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (
++      stateDiagramDialect &&
++      stmtKind !== 1 &&
++      (ch === 'n' || ch === 'N') &&
++      (i === 0 || !isAsciiWord(txt[i - 1])) &&
++      startsStateNoteKeyword(txt, i)
++    ) {
++      noteHeader = 'afterNote';
++      stmtKind = 2;
++      prevWasAlnum = false;
++      i += 3;
++      continue;
++    }
++    prevWasAlnum = isAsciiAlnum(ch);
++    if (ch === ';') {
++      if (allowClassDefCssSemi && inClassDef && startsWithCssProp(txt, i + 1)) {
++        seenColon = false;
++        lastAllowsHex = false;
++        continue;
++      }
++      stmtKind = 0;
++      inClassDef = false;
++      inClassStmt = false;
++      seenColon = false;
++      lastAllowsHex = false;
++      continue;
++    }
++    if (stateDiagramDialect && stmtKind !== 1 && (ch === '{' || ch === '}')) {
++      stmtKind = 0;
++      inClassDef = false;
++      inClassStmt = false;
++      seenColon = false;
++      lastAllowsHex = false;
++      continue;
++    }
++    if (stmtKind === 0) {
++      if (/\s/.test(ch)) {
++        continue;
++      }
++      if (stateDiagramDialect) {
++        const hdrLen = matchStateDiagramHeaderLen(txt, i);
++        if (hdrLen > 0) {
++          prevWasAlnum = false;
++          i += hdrLen - 1;
++          continue;
++        }
++      }
++      const accKind = classifyAccLineStart(txt, i, stateDiagramDialect);
++      if (accKind === 'block') {
++        inAccDescrBlock = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'plain') {
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingDescr') {
++        pendingAcc = 'descr';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingTitle') {
++        pendingAcc = 'title';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (startsStyleOrClassDef(txt, i)) {
++        stmtKind = 1;
++        inClassDef = startsClassDef(txt, i);
++      } else {
++        stmtKind = 2;
++        inClassStmt = classDiagramDialect && startsClassStmt(txt, i);
++      }
++    }
++    if (classDiagramDialect && inClassStmt && ch === '{') {
++      classBodyDepth = 1;
++      inClassStmt = false;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (colonLabelDialect && stmtKind === 2 && ch === ':' && isSingleColon(txt, i)) {
++      inPlainLine = true;
++      prevWasAlnum = false;
++      continue;
++    }
++    if (stmtKind === 1) {
++      if (ch === ':') {
++        seenColon = true;
++      }
++      lastAllowsHex = ch === ':' || ch === ',' || ch === '(' || /\s/.test(ch);
++    }
++  }
++  txt = out + txt.slice(copyFrom);
+ 
+   return txt;
+ };

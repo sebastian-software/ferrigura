@@ -198,6 +198,33 @@ fn read_class(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_jso
     Ok(())
 }
 
+/// `getEffectiveHtmlLabels(config)` of Mermaid's `config.ts`: root `htmlLabels` wins, falling
+/// back to the legacy `flowchart.htmlLabels`, then `true`, evaluated with Mermaid's `evaluate()`.
+fn effective_html_labels(effective: &Value) -> bool {
+    let Some(raw) = effective
+        .get("htmlLabels")
+        .filter(|value| !value.is_null())
+        .or_else(|| {
+            effective
+                .get("flowchart")
+                .and_then(|flowchart| flowchart.get("htmlLabels"))
+                .filter(|value| !value.is_null())
+        })
+    else {
+        return true;
+    };
+    if matches!(raw, Value::Bool(false)) {
+        return false;
+    }
+    let text = ferrigura_render::common::template_text(raw);
+    !matches!(
+        ferrigura_render::common::js_trim(&text)
+            .to_ascii_lowercase()
+            .as_str(),
+        "false" | "null" | "0"
+    )
+}
+
 fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<String, RenderError> {
     let id = prepared.id.as_str();
     let mut section = Section::of(&prepared.view.config);
@@ -205,7 +232,15 @@ fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<Str
     section.roles = ferrigura_render::design::Roles::Class;
     class_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &class::parse_prepared(&prepared.source, class::Options::default())?,
+        diagram: &class::parse_prepared(
+            &prepared.source,
+            class::Options {
+                html_labels: effective_html_labels(&prepared.view.effective),
+                security_level: ferrigura_syntax::url::SecurityLevel::from_config(
+                    &prepared.view.globals.security_level,
+                ),
+            },
+        )?,
         section: &section,
         globals: &prepared.view.globals,
         theme: prepared.theme(),
@@ -304,7 +339,13 @@ fn render_gantt(prepared: &Prepared<'_>, options: &RenderOptions) -> Result<Stri
     gantt_render::render_with_animation(
         &Context {
             fonts: prepared.fonts,
-            diagram: &gantt::parse_prepared(&prepared.source, gantt::Options { now })?,
+            diagram: &gantt::parse_prepared_with_security(
+                &prepared.source,
+                gantt::Options { now },
+                ferrigura_syntax::url::SecurityLevel::from_config(
+                    &prepared.view.globals.security_level,
+                ),
+            )?,
             section: &gantt_render::GanttSection {
                 config: &typed_config.gantt,
                 now,

@@ -73,7 +73,8 @@ pub struct FlowVertex {
     pub styles: Vec<String>,
     /// Classes applied to the vertex, in order; `clickable` is added by interactions.
     pub classes: Vec<String>,
-    /// Link from `click … href`, trimmed; `None` if none or if empty.
+    /// Link from `click … href`, trimmed and passed through `sanitizeUrl` unless `securityLevel`
+    /// is `loose`; `None` if none or if empty.
     pub link: Option<String>,
     /// Target of the link, `None` if none was given.
     pub link_target: Option<String>,

@@ -41,6 +41,7 @@ mod util;
 mod wave;
 
 use ferrigura_syntax::sanitize::sanitize_text;
+use ferrigura_syntax::url::guard_url;
 
 use super::Config;
 use super::clusters;
@@ -50,7 +51,7 @@ use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::RenderError;
 use crate::common::decode_entities;
 use crate::design::{Role, Roles};
-use crate::svg::{escape, number};
+use crate::svg::{escape, escape_url_attr, number};
 use registry::Kind;
 
 /// Whether the shape uses its resolved layout direction.
@@ -284,13 +285,45 @@ pub fn node_label(
 
 /// The node's `<g>` for the diagram `svg_id`, positioned at its center, as `insertNode` and
 /// `positionNode` leave it: the shape's elements, then the label; inside an `<a>` when the node
-/// has a link.
+/// has a link (sanitized under strict security).
 #[must_use]
 pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm) -> String {
+    node_svg_with_security(node, shape, svg_id, links, false)
+}
+
+/// [`node_svg`], validating the node's link with [`guard_url`] (`loose` is
+/// `securityLevel === 'loose'`).
+#[must_use]
+pub fn node_svg_with_security(
+    node: &Node,
+    shape: &ShapeOutput,
+    svg_id: &str,
+    links: LinkForm,
+    loose: bool,
+) -> String {
+    let dom_id = ferrigura_syntax::url::resolve_url_entity_placeholders(&node.dom_id);
+    node_svg_with_resolved(node, shape, svg_id, links, loose, &dom_id, None)
+}
+
+/// [`node_svg_with_security`] using an already-resolved, disambiguated `dom_id` (emitted verbatim
+/// without a second placeholder decode) and an optional pre-remapped fragment link.
+#[must_use]
+pub(crate) fn node_svg_with_resolved(
+    node: &Node,
+    shape: &ShapeOutput,
+    svg_id: &str,
+    links: LinkForm,
+    loose: bool,
+    dom_id: &str,
+    remapped_link: Option<&str>,
+) -> String {
     let kind = registry::resolve_node(node);
     let styles = util::styles2string(node);
-    let shape_svg = shape.svg.replace(SVG_ID_TOKEN, svg_id);
-    let after_label = shape.after_label.replace(SVG_ID_TOKEN, svg_id);
+    let shape_svg = shape.svg.replace(
+        &format!("filter:url(#{SVG_ID_TOKEN}-drop-shadow-small)"),
+        &format!("filter:url(#{svg_id}-drop-shadow-small)"),
+    );
+    let after_label = &shape.after_label;
 
     let mut label_svg = String::new();
     if let (Some(label), Some(offset)) = (&shape.label, shape.label_offset) {
@@ -315,34 +348,39 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
         );
     }
 
-    let class = kind.map_or_else(|| util::node_classes(node), |kind| kind.group_class(node));
-    let id = format!("{svg_id}-{}", node.dom_id);
+    let raw_class = kind.map_or_else(|| util::node_classes(node), |kind| kind.group_class(node));
+    let class = crate::common::resolve_entity_placeholders(&raw_class);
+    let id = format!("{svg_id}-{dom_id}");
     let x = node.x.unwrap_or(0.0);
     let y = node.y.unwrap_or(0.0);
     let transform = format!("translate({}, {})", number(x), number(y));
     let data_look = util::attribute("data-look", &node.look);
     let group_attributes = &shape.group_attributes;
     let colour_slot = &shape.colour_slot;
-    let title = node
-        .tooltip
-        .as_deref()
-        .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
+    let title = node.tooltip.as_deref().map_or_else(String::new, |tooltip| {
+        let resolved = crate::common::resolve_entity_placeholders(tooltip);
+        format!(" title=\"{}\"", escape_url_attr(&resolved))
+    });
 
-    match node.link.as_deref() {
+    let resolved_link = if remapped_link.is_some() {
+        None
+    } else {
+        node.link
+            .as_deref()
+            .map(ferrigura_syntax::url::resolve_url_entity_placeholders)
+    };
+    let link = remapped_link
+        .or(resolved_link.as_deref())
+        .map(|link| guard_url(link, loose));
+    match link {
         // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
         // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.
-        Some(link) if links == LinkForm::PostRender => {
-            let tooltip = node
-                .tooltip
-                .as_deref()
-                .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
-            format!(
-                "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{tooltip}>{shape_svg}{label_svg}{after_label}</g></a>",
-                escape(link),
-                escape(&class),
-                escape(&id),
-            )
-        }
+        Some(link) if links == LinkForm::PostRender => format!(
+            "<a xlink:href=\"{}\"{title}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{title}>{shape_svg}{label_svg}{after_label}</g></a>",
+            escape_url_attr(link),
+            escape(&class),
+            escape(&id),
+        ),
         // With a link the `<a>` takes the look and the position, and the `<g>` the class and id.
         Some(link) => {
             let target = node
@@ -351,7 +389,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
                 .map_or_else(String::new, |target| util::attribute("target", target));
             format!(
                 "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{colour_slot}{group_attributes}{title}>{shape_svg}{label_svg}{after_label}</g></a>",
-                escape(link),
+                escape_url_attr(link),
                 escape(&class),
                 escape(&id),
             )
@@ -669,6 +707,79 @@ mod tests {
         assert!(
             error.to_string().contains("No such shape: no-such-shape"),
             "{error}"
+        );
+    }
+
+    #[test]
+    fn node_svg_sanitizes_unsafe_links_by_default_and_respects_loose_mode() {
+        for form in [LinkForm::Flowchart, LinkForm::PostRender] {
+            for unsafe_url in [
+                "javascript:alert(1)",
+                "vbscript:msgbox(1)",
+                "data:text/html,<script>alert(1)</script>",
+                "&#106;avascript:alert(1)",
+                "javascript&colon;alert(1)",
+                "%6aavascript:alert(1)",
+            ] {
+                let mut node = node("f-circ", "neo");
+                node.dom_id = "flowchart-A-0".to_owned();
+                node.link = Some(unsafe_url.to_owned());
+                let shape = draw_box(&node, &LabelLayout::of_box(BBox::default()));
+                let svg = node_svg(&node, &shape, "svg-id", form);
+                assert!(
+                    svg.contains("xlink:href=\"about:blank\""),
+                    "form={form:?} url={unsafe_url:?}: {svg}"
+                );
+            }
+
+            let mut encoded_node = node("f-circ", "neo");
+            encoded_node.dom_id = "flowchart-A-0".to_owned();
+            encoded_node.link = Some("https://example.com/files?q=A%26B".to_owned());
+            let encoded_shape = draw_box(&encoded_node, &LabelLayout::of_box(BBox::default()));
+            let encoded_svg = node_svg(&encoded_node, &encoded_shape, "svg-id", form);
+            assert!(
+                encoded_svg.contains("xlink:href=\"https://example.com/files?q=A%26B\""),
+                "form={form:?}: {encoded_svg}"
+            );
+
+            let mut loose_node = node("f-circ", "neo");
+            loose_node.dom_id = "flowchart-A-0".to_owned();
+            loose_node.link = Some("javascript:alert(1)".to_owned());
+            let shape = draw_box(&loose_node, &LabelLayout::of_box(BBox::default()));
+            let loose_svg = node_svg_with_security(&loose_node, &shape, "svg-id", form, true);
+            assert!(
+                loose_svg.contains("xlink:href=\"javascript:alert(1)\""),
+                "form={form:?}: {loose_svg}"
+            );
+        }
+
+        // `{svg-id}` substitution only rewrites the generated drop-shadow filter and must never
+        // mutate validated `<image href="...">` URLs in `after_label`.
+        let mut image_node = node("imageSquare", "neo");
+        image_node.dom_id = "flowchart-IMG-0".to_owned();
+        image_node.img = Some("{svg-id}:alert(1)".to_owned());
+        image_node.asset_width = Some(48.0);
+        image_node.asset_height = Some(48.0);
+        let image_shape = draw_box(&image_node, &LabelLayout::of_box(BBox::default()));
+        let image_svg = node_svg(&image_node, &image_shape, "javascript", LinkForm::Flowchart);
+        assert!(
+            image_svg.contains("<image href=\"{svg-id}:alert(1)\""),
+            "{image_svg}"
+        );
+        assert!(
+            !image_svg.contains("href=\"javascript:alert(1)\""),
+            "{image_svg}"
+        );
+
+        // Decoded quotes in `stroke-width` are XML-escaped on stacked rectangles (`st-rect`).
+        let mut stacked = node("st-rect", "neo");
+        stacked.dom_id = "flowchart-STACK-0".to_owned();
+        stacked.css_styles = vec!["stroke-width:2ﬂ°quot¶ßx".to_owned()];
+        let stacked_shape = draw_box(&stacked, &LabelLayout::of_box(BBox::default()));
+        let stacked_svg = node_svg(&stacked, &stacked_shape, "svg-id", LinkForm::Flowchart);
+        assert!(
+            stacked_svg.contains("stroke-width=\"2&quot;x\""),
+            "{stacked_svg}"
         );
     }
 }

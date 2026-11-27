@@ -81,9 +81,9 @@ pub fn render_with_animation(
     let mut body = String::new();
     // `appendDivSvgG` leaves an empty group before the chart's own elements (`mermaidAPI.ts:418`).
     body.push_str("<g></g>");
-    chart.exclude_group(&mut body)?;
+    let exclude_ids = chart.exclude_group(&mut body)?;
     chart.grid(&mut body, &mut texts)?;
-    chart.draw_rects(&mut body, &mut texts, drawing.as_mut())?;
+    chart.draw_rects(&mut body, &mut texts, drawing.as_mut(), &exclude_ids)?;
     chart.section_labels(&mut body, &mut texts)?;
     chart.today(&mut body);
     chart.title(&mut body, &mut texts);
@@ -188,6 +188,8 @@ pub(super) struct Chart<'a> {
     pub(super) regular: crate::fonts::FontFace,
     /// The id of the SVG element.
     pub(super) id: &'a str,
+    /// Whether `securityLevel` is `loose`, skipping render-sink URL allowlist enforcement.
+    pub(super) loose: bool,
     /// The theme the chart draws with.
     pub(super) theme: ThemeView<'a>,
     /// The time of the render, for the today marker.
@@ -306,6 +308,7 @@ impl<'a> Chart<'a> {
                 .text_fonts()
                 .face(FontWeight::Normal, FontStyle::Normal)?,
             id: input.id,
+            loose: input.globals.security_level == "loose",
             theme: input.theme,
             now: input.section.now,
             model,

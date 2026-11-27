@@ -85,6 +85,7 @@ interface Modules {
   preprocess: {
     preprocessDiagram(code: string): { code: { cleaned: string }; title?: string };
   };
+  encode: { encodeEntities(text: string): string };
   parser: { default: { parser: { yy: unknown }; parse(text: string): unknown } };
   classDb: { ClassDB: new () => ClassDb };
 }
@@ -92,14 +93,15 @@ interface Modules {
 async function loadModules(reference: Reference): Promise<Modules> {
   provideDomForSanitizing();
   await registerDetectors(reference);
-  const [preprocess, parser, classDb] = await Promise.all([
+  const [preprocess, encode, parser, classDb] = await Promise.all([
     reference.load<Modules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
+    reference.load<Modules['encode']>('/packages/mermaid/src/utils.ts'),
     reference.load<Modules['parser']>(
       '/packages/mermaid/src/diagrams/class/parser/classDiagram.jison'
     ),
     reference.load<Modules['classDb']>('/packages/mermaid/src/diagrams/class/classDb.ts'),
   ]);
-  return { preprocess, parser, classDb };
+  return { preprocess, encode, parser, classDb };
 }
 
 /** The name of a relation end, by `getArrowMarker` of the DB; `none` for the sentinel. */
@@ -118,7 +120,7 @@ const memberOf = (member: ClassMemberJs) => ({
   text: member.text,
 });
 
-await runExporter(loadModules, (input, { preprocess, parser, classDb }) => {
+await runExporter(loadModules, (input, { preprocess, encode, parser, classDb }) => {
   const { code, title } = preprocess.preprocessDiagram(input.text);
   const db = new classDb.ClassDB();
   db.clear();
@@ -126,10 +128,10 @@ await runExporter(loadModules, (input, { preprocess, parser, classDb }) => {
     db.setDiagramTitle(title);
   }
   parser.default.parser.yy = db;
-  parser.default.parse(code.cleaned);
+  parser.default.parse(encode.encodeEntities(code.cleaned));
 
   return {
-    version: 1,
+    version: 2,
     title: db.getDiagramTitle(),
     accTitle: db.getAccTitle(),
     accDescr: db.getAccDescription(),

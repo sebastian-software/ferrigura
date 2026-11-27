@@ -88,3 +88,256 @@ fn the_nested_text_rule_of_a_state_note_is_written_flat() {
     let svg = render("stateDiagram-v2\n  A --> B\n", &Value::empty_object()).expect("renders");
     assert!(svg.contains(" .state-note text{"), "{svg}");
 }
+
+#[test]
+fn state_click_urls_are_sanitized_under_default_security_level() {
+    for unsafe_url in [
+        "javascript:alert(1)",
+        "JAVASCRIPT:alert(1)",
+        "vbscript:msgbox(1)",
+        "data:text/html,<script>alert(1)</script>",
+        "javascript&colon;alert(1)",
+        "%6aavascript:alert(1)",
+        "java\tscript:alert(1)",
+        "java\\tscript:alert(1)",
+    ] {
+        let href_input = format!("stateDiagram-v2\n  s1\n  click s1 href \"{unsafe_url}\"\n");
+        let href_svg = render(&href_input, &Value::empty_object()).expect("renders");
+        assert!(
+            href_svg.contains("xlink:href=\"about:blank\""),
+            "href url={unsafe_url:?}: {href_svg}"
+        );
+        assert!(
+            !href_svg.contains("javascript:") && !href_svg.contains("vbscript:"),
+            "href url={unsafe_url:?}: {href_svg}"
+        );
+
+        let tooltip_input =
+            format!("stateDiagram-v2\n  s1\n  click s1 \"{unsafe_url}\" \"Open\"\n");
+        let tooltip_svg = render(&tooltip_input, &Value::empty_object()).expect("renders");
+        assert!(
+            tooltip_svg.contains("xlink:href=\"about:blank\""),
+            "tooltip url={unsafe_url:?}: {tooltip_svg}"
+        );
+    }
+
+    let valid = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https://google.com\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        valid.contains("xlink:href=\"https://google.com\""),
+        "{valid}"
+    );
+
+    let encoded = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https://example.com/A%23B\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        encoded.contains("xlink:href=\"https://example.com/A%23B\""),
+        "{encoded}"
+    );
+
+    let relative_colon = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"data/chart.svg?time=12:30\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        relative_colon.contains("xlink:href=\"data/chart.svg?time=12:30\""),
+        "{relative_colon}"
+    );
+
+    for unsupported in [
+        "notes://do-your-thing/id",
+        "javascript%25253Aalert(1)",
+        "data%3Afoo%FF",
+        "notes#58;meeting",
+        "javascript#58;alert(1)",
+    ] {
+        let unsupported_scheme = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{unsupported}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            unsupported_scheme.contains("xlink:href=\"about:blank\""),
+            "url={unsupported:?}: {unsupported_scheme}"
+        );
+    }
+
+    let entity_https = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https#58;//example.org/\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        entity_https.contains("xlink:href=\"https://example.org/\""),
+        "{entity_https}"
+    );
+
+    let named_colon_https = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https&colon;//example.org\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        named_colon_https.contains("xlink:href=\"https&amp;colon;//example.org\""),
+        "{named_colon_https}"
+    );
+
+    // Placeholders are resolved only once at the SVG sink, not re-interpreted by a second pass.
+    let single_pass = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"/docs/#64258;°copy;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        single_pass.contains("xlink:href=\"/docs/ﬂ°copy;\""),
+        "{single_pass}"
+    );
+    assert!(
+        !single_pass.contains("xlink:href=\"/docs/©\""),
+        "{single_pass}"
+    );
+
+    // HTML attribute-value entity rules keep legacy prefixes like `&not` literal when followed by
+    // ASCII alphanumerics.
+    let attr_entity = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"/docs/#notebook_1;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        attr_entity.contains("xlink:href=\"/docs/&amp;notebook_1;\""),
+        "{attr_entity}"
+    );
+    assert!(!attr_entity.contains("¬ebook_1;"), "{attr_entity}");
+
+    // Decoded tab/newline/CR characters in URLs are serialized as numeric XML references so XML
+    // attribute normalization preserves them rather than turning them into spaces.
+    let tab_svg = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https://example.org/a#9;b\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let tab_doc = roxmltree::Document::parse(&tab_svg).expect("well-formed SVG XML");
+    let anchor = tab_doc
+        .descendants()
+        .find(|n| n.has_tag_name("a"))
+        .expect("anchor");
+    let href = anchor
+        .attribute(("http://www.w3.org/1999/xlink", "href"))
+        .expect("xlink:href");
+    assert_eq!(href, "https://example.org/a\tb");
+
+    // Encoded delimiters revealed during sink decoding stop decoding before the query or fragment.
+    for encoded_rel in [
+        "item%3Fq=A%2525252525252525252541",
+        "item%3Fq=A%2525252525252525252541#123",
+        "item%23section%2525252525252525252541",
+        "item%23section%2525252525252525252541#123",
+        "rate%25x%23123%2525252525252525252541",
+        "rate%25%23123%2525252525252525252541",
+        "foo%2525252525252523123%2525252525252525252541",
+    ] {
+        let rendered = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{encoded_rel}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            rendered.contains(&format!("xlink:href=\"{encoded_rel}\"")),
+            "url={encoded_rel:?}: {rendered}"
+        );
+    }
+
+    for (raw, escaped) in [
+        (
+            "cid:asset%2525252525252525252541@example.com",
+            "cid:asset%2525252525252525252541@example.com",
+        ),
+        (
+            "cid&colon;asset%2525252525252525252541@example.org",
+            "cid&amp;colon;asset%2525252525252525252541@example.org",
+        ),
+    ] {
+        let opaque_cid = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{raw}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            opaque_cid.contains(&format!("xlink:href=\"{escaped}\"")),
+            "raw={raw:?}: {opaque_cid}"
+        );
+    }
+
+    for (raw, escaped) in [
+        ("R&#section:1", "R&amp;#section:1"),
+        (
+            "R&D#A%2525252525252525252541",
+            "R&amp;D#A%2525252525252525252541",
+        ),
+        (
+            "my%20notes#A%2525252525252525252541",
+            "my%20notes#A%2525252525252525252541",
+        ),
+        ("%20", "%20"),
+    ] {
+        let fragment = render(
+            &format!("stateDiagram-v2\n  s1\n  click s1 href \"{raw}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            fragment.contains(&format!("xlink:href=\"{escaped}\"")),
+            "raw={raw:?}: {fragment}"
+        );
+    }
+
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let loose = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"javascript:alert(1)\"\n",
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose.contains("xlink:href=\"javascript:alert(1)\""),
+        "{loose}"
+    );
+
+    // An empty state link still declares xmlns:xlink whenever an anchor is emitted.
+    for config in [Value::empty_object(), loose_cfg] {
+        let empty =
+            render("stateDiagram-v2\n  s1\n  click s1 href \"\"\n", &config).expect("renders");
+        assert!(empty.contains("xmlns:xlink="), "{empty}");
+        roxmltree::Document::parse(&empty).expect("well-formed SVG XML");
+    }
+
+    // Leading/trailing URL whitespace in state click links still remaps to resolved node IDs.
+    let ws_fragment = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "stateDiagram-v2\n  state \"A\" as A#37;41\n  click A#37;41 href \" #graph-state-A#37;41-0\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let ws_doc = roxmltree::Document::parse(&ws_fragment).expect("well-formed SVG XML");
+    assert!(
+        ws_doc
+            .descendants()
+            .any(|n| n.attribute("id") == Some("graph-state-A%41-0")),
+        "{ws_fragment}"
+    );
+    let ws_href = ws_doc
+        .descendants()
+        .find_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("xlink:href");
+    assert_eq!(ws_href, "#graph-state-A%2541-0");
+}

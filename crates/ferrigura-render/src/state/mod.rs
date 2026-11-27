@@ -121,7 +121,15 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
         pipeline::lay_out_for_render(&mut measured, &config)?;
     }
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_for_diagram(
+        &measured,
+        id,
+        &config,
+        pipeline::A11yIds {
+            title: !input.diagram.acc_title.is_empty(),
+            description: !input.diagram.acc_descr.is_empty(),
+        },
+    )?;
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centered over everything drawn so far, `titleTopMargin` above the origin.
@@ -231,7 +239,8 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
 
 /// The links of the clicked states (`stateRenderer-v3-unified.ts` 80-133): each link wraps the node of
 /// its state, if that node is a state and not a composite. The quotes around an address and a tooltip
-/// are removed, as the reference removes them.
+/// are removed, as the reference removes them; entity placeholder resolution and URL validation run
+/// once at the SVG anchor sink in `shapes::node_svg_with_security`.
 fn apply_links(data: &mut LayoutData, links: &[Link]) {
     for link in links {
         let Some(node) = data.nodes.iter_mut().find(|node| node.id == link.id) else {
@@ -312,5 +321,32 @@ mod tests {
             ]
         );
         assert!(data.nodes[4..].iter().all(|node| node.shape == "stateEnd"));
+    }
+
+    #[test]
+    fn apply_links_unquotes_urls_and_tooltips_for_leaf_states() {
+        let mut data = LayoutData {
+            nodes: vec![node("s1", "rect"), node("s2", "rect")],
+            ..LayoutData::default()
+        };
+        let links = vec![
+            Link {
+                id: "s1".to_owned(),
+                url: "\"javascript:alert(1)\"".to_owned(),
+                tooltip: "\"tip\"".to_owned(),
+            },
+            Link {
+                id: "s2".to_owned(),
+                url: "\"https://example.com/page\"".to_owned(),
+                tooltip: String::new(),
+            },
+        ];
+        apply_links(&mut data, &links);
+        assert_eq!(data.nodes[0].link.as_deref(), Some("javascript:alert(1)"));
+        assert_eq!(data.nodes[0].tooltip.as_deref(), Some("tip"));
+        assert_eq!(
+            data.nodes[1].link.as_deref(),
+            Some("https://example.com/page")
+        );
     }
 }

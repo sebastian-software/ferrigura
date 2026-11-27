@@ -110,7 +110,7 @@ A vertex has:
 - `id`, `text` (the id when no label is given) and `labelType` (`text`, `string` for a double-quoted label, `markdown` for a quoted label between backticks);
 - `shape` as written in the source (`square`, `round`, `db`, a name from `@{ shape: … }`), `null` when none was given;
 - `styles` from `style` statements and `classes` (the `clickable` class that `click` adds is among them), both in order;
-- `link` and `linkTarget` from `click … href`, `null` when absent or empty after trimming;
+- `link` (routed through `formatUrl`, respecting `securityLevel`) and `linkTarget` from `click … href`, `null` when absent or empty after trimming;
 - `props` from `[|key:value|text]`;
 - `icon`, `form`, `pos`, `img`, `constraint`, `assetWidth` and `assetHeight` from the shape data (`w` and `h` are read as JavaScript's `Number` reads them).
 
@@ -128,7 +128,7 @@ What the model keeps from the DB's quirks, so that the differential run sees the
 - **`dir` is subgraph-only.** The grammar never passes a direction to a vertex.
 - **`click`.** A link is kept for the vertices that exist when the statement runs, so a `click` before the node is declared sets no link. A callback is not in the model, and only the `clickable` class it adds is.
 
-Left out of the model: `maxEdges`, which is a parser option (`Options::max_edges`, 500), and `securityLevel`, `htmlLabels`, `inheritDir` and `curve`, which act at render time and are read from the configuration.
+Left out of the model: `maxEdges` (`Options::max_edges`, 500) and `securityLevel` (`parse_with_security`, `strict` by default), which are parser options, and `htmlLabels`, `inheritDir` and `curve`, which act at render time and are read from the configuration.
 
 ## Parsing
 
@@ -296,6 +296,7 @@ Terminal labels, `slideTerminalLabelsOffFrames` and the like are in `terminal.rs
 - **Layout.** ELK Layered only: `layout: dagre`, the other `elk.*` algorithms and a container's `algorithm` other than layered are laid out with Layered, with a warning ([0012](../decisions/0012-layout-engines-ported-exactly.md)).
 - **Inherited shape names** such as `constructor` are rejected. Unpatched Mermaid accepts them, so the reference carries a patch that rejects them too ([0014](../decisions/0014-upstream-reference-at-a-pin.md)).
 - **Error messages** from the grammar are ferrigura's own ([0007](../decisions/0007-hand-written-parsers.md)).
+- **Image URLs** (`imageSquare` `href`) are validated at render time against `securityLevel`: unless `securityLevel` is `loose`, permitted URI schemes, relative URLs, and embedded raster `data:image/...` URIs stay verbatim while disallowed schemes and active `data:` payloads (such as `data:image/svg+xml` and `data:text/html`) are replaced with `about:blank`; Mermaid leaves `imageSquare`'s `href` to its post-render `DOMPurify.sanitize` pass ([0014](../decisions/0014-upstream-reference-at-a-pin.md)).
 - **Callbacks** of `click` are not run: the SVG is static ([0006](../decisions/0006-rust-only-no-browser.md)).
 
 ## Known gaps

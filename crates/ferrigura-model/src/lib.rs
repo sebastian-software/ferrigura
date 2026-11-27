@@ -26,4 +26,4 @@ pub mod xychart;
 
 /// Version of the canonical model, written as `"version"` into every model. It is bumped when a
 /// field is added, removed or changes meaning; see `docs/canonical-model.md`.
-pub const CANONICAL_VERSION: u32 = 1;
+pub const CANONICAL_VERSION: u32 = 2;

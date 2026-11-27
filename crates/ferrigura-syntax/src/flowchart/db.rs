@@ -18,8 +18,10 @@ use ferrigura_model::value::Value;
 
 use crate::sanitize::sanitize_text;
 use crate::text::{is_js_space, js_trim};
+use crate::url::{SecurityLevel, format_url};
 use crate::yaml::Yaml;
 
+use super::Options;
 use super::shapes::is_valid_shape;
 
 /// A text with its kind, as the grammar's `text`, `edgeText` and `textNoTags` rules give it.
@@ -65,6 +67,7 @@ pub(crate) const DEFAULT_MAX_EDGES: usize = 500;
 #[derive(Debug)]
 pub(crate) struct Db {
     max_edges: usize,
+    security_level: SecurityLevel,
     direction: String,
     acc_title: String,
     acc_descr: String,
@@ -90,9 +93,10 @@ pub(crate) struct Db {
 }
 
 impl Db {
-    pub(crate) fn new(max_edges: usize) -> Self {
+    pub(crate) fn new(options: Options, security_level: SecurityLevel) -> Self {
         Self {
-            max_edges,
+            max_edges: options.max_edges,
+            security_level,
             direction: String::from("TB"),
             acc_title: String::new(),
             acc_descr: String::new(),
@@ -451,11 +455,10 @@ impl Db {
         self.set_class(ids, "clickable");
     }
 
-    /// `setLink`: the link and its target, for the vertices that exist now, then the `clickable`
-    /// class. A link that is empty after trimming is no link.
+    /// `setLink`: the link (through `formatUrl`) and its target, for the vertices that exist now,
+    /// then the `clickable` class. A link that is empty after trimming is no link.
     pub(crate) fn set_link(&mut self, ids: &str, link: &str, target: Option<&str>) {
-        let trimmed = js_trim(link);
-        let url = (!trimmed.is_empty()).then(|| trimmed.to_owned());
+        let url = format_url(link, self.security_level.is_loose());
         for id in ids.split(',') {
             if let Some(&index) = self.vertex_index.get(id) {
                 self.vertices[index].link = url.clone();
