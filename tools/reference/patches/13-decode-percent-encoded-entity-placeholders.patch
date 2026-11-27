@@ -29,10 +29,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..6a4e6e3 100644
+index 48ac4a6..2186605 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,681 @@ export function interpolateToCurve(
+@@ -244,6 +244,753 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -282,6 +282,43 @@ index 48ac4a6..6a4e6e3 100644
 +  return out;
 +};
 +
++const decodeEncodedHtmlNumericAt = (
++  segment: string,
++  pos: number
++): [end: number, raw: string, decoded: string] | null => {
++  if (!segment.startsWith('ﬂ°', pos)) {
++    return null;
++  }
++  if (segment.startsWith('ﬂ°°', pos)) {
++    const bodyStart = pos + 3;
++    let end = bodyStart;
++    while (end < segment.length && segment[end] >= '0' && segment[end] <= '9') {
++      end++;
++    }
++    if (end > bodyStart && segment.startsWith('¶ß', end)) {
++      const digits = segment.slice(bodyStart, end);
++      const decoded = decodeHtmlAttrRef(`&#${digits};`);
++      return [end + 2, segment.slice(pos, end + 2), decoded];
++    }
++    return null;
++  }
++  const first = segment[pos + 2];
++  if (first === 'x' || first === 'X') {
++    const bodyStart = pos + 3;
++    let end = bodyStart;
++    while (end < segment.length && /[0-9a-fA-F]/.test(segment[end])) {
++      end++;
++    }
++    if (end > bodyStart && segment.startsWith('¶ß', end)) {
++      const xHex = segment.slice(pos + 2, end);
++      const decoded = decodeHtmlAttrRef(`&#${xHex};`);
++      const cp = decoded.codePointAt(0) ?? 0xfffd;
++      return [end + 2, `ﬂ°°${cp}¶ß`, decoded];
++    }
++  }
++  return null;
++};
++
 +const tokenizeAllPlaceholders = (
 +  segment: string,
 +  prefix: string,
@@ -304,6 +341,19 @@ index 48ac4a6..6a4e6e3 100644
 +    }
 +    const pos =
 +      nextOpen !== -1 && (nextClose === -1 || nextOpen <= nextClose) ? nextOpen : nextClose;
++    if (pos > cursor && segment[pos - 1] === '&') {
++      const numRef = decodeEncodedHtmlNumericAt(segment, pos);
++      if (numRef) {
++        const [end, raw, decoded] = numRef;
++        out += segment.slice(cursor, pos - 1);
++        const token = `${prefix}${rawValues.length}__`;
++        rawValues.push(raw);
++        decodedValues.push(decoded);
++        out += token;
++        cursor = end;
++        continue;
++      }
++    }
 +    out += segment.slice(cursor, pos);
 +    const placeholder = decodeMermaidPlaceholderAt(segment, pos)!;
 +    const [end, decoded] = placeholder;
@@ -461,20 +511,31 @@ index 48ac4a6..6a4e6e3 100644
 +  return out + url.slice(authorityEnd);
 +};
 +
-+const restoreEncodedHtmlNumericRefs = (url: string): string => {
-+  if (!url.includes('&ﬂ°')) {
-+    return url;
++const hasInvalidDecodedScheme = (
++  trimmed: string,
++  prefix: string,
++  decodedValues: string[]
++): boolean => {
++  if (decodedValues.length === 0) {
++    return false;
 +  }
-+  return url
-+    .replace(/&ﬂ°°(\d+)¶ß/g, '&#$1;')
-+    .replace(/&ﬂ°([xX][0-9a-fA-F]+)¶ß/g, '&#$1;');
++  const substituted = restoreRawTokens(trimmed, prefix, decodedValues);
++  const cleaned = substituted.replace(BR_CTRL_CHARS_RE, '').trimStart();
++  if (
++    cleaned[0] === '.' ||
++    cleaned[0] === '/' ||
++    firstSchemeDelimiterIsRelative(cleaned) >= 0
++  ) {
++    return false;
++  }
++  const match = cleaned.match(BR_URL_SCHEME_RE);
++  return match !== null && BR_INVALID_PROTOCOL_RE.test(match[0].toLowerCase().trim());
 +};
 +
 +export const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
 +  if (!rawUrl) {
 +    return 'about:blank';
 +  }
-+  rawUrl = restoreEncodedHtmlNumericRefs(rawUrl);
 +  if (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß')) {
 +    const sanitized = sanitizeUrl(rawUrl);
 +    if (/^https?:/i.test(sanitized) && !URL.canParse(sanitized)) {
@@ -499,6 +560,9 @@ index 48ac4a6..6a4e6e3 100644
 +    return finalizeRaw(decoded);
 +  }
 +  const trimmed = decoded.trimStart();
++  if (hasInvalidDecodedScheme(trimmed, prefix, decodedValues)) {
++    return 'about:blank';
++  }
 +  const effectiveTrimmed = resolveDecodedHttpSchemeTokens(trimmed, prefix, decodedValues).text;
 +  const urlSchemeParseResults = effectiveTrimmed.match(BR_URL_SCHEME_RE);
 +  if (!urlSchemeParseResults) {
@@ -642,7 +706,8 @@ index 48ac4a6..6a4e6e3 100644
 +    return null;
 +  }
 +  if (!hasNonPercentObfuscation(url)) {
-+    return url;
++    const safe = reencodeDecodedPlaceholders(prepared);
++    return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
 +  }
 +  const safe = reencodeDecodedPlaceholders(decoded);
 +  return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
@@ -658,20 +723,27 @@ index 48ac4a6..6a4e6e3 100644
 +};
 +
 +const preserveEncodedUrl = (url: string, sanitized: string): string | null => {
-+  if (url[0] === '.' || url[0] === '/') {
-+    return url;
-+  }
 +  const hasPlaceholders = url.includes('ﬂ°') || url.includes('¶ß');
 +  let prefix = '';
 +  const rawValues: string[] = [];
 +  const decodedValues: string[] = [];
-+  let effective = url;
++  let prepared = url;
 +  if (hasPlaceholders) {
 +    const probe = decodeSanitizeUrlOnly(url);
 +    prefix = pickTokenPrefix(url, probe);
-+    const tokenized = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
-+    effective = resolveDecodedHttpSchemeTokens(tokenized, prefix, decodedValues).text;
++    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
 +  }
++  const finalizeRaw = (s: string): string => {
++    const safe = reencodeDecodedPlaceholders(s);
++    return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
++  };
++  if (url[0] === '.' || url[0] === '/') {
++    return finalizeRaw(prepared);
++  }
++  const effective =
++    rawValues.length > 0
++      ? resolveDecodedHttpSchemeTokens(prepared, prefix, decodedValues).text
++      : prepared;
 +  if (/^https?:/i.test(effective) && /^https?:/i.test(sanitized)) {
 +    const backSanitized = effective.replace(/\\/g, '/');
 +    const resolved =
@@ -697,16 +769,16 @@ index 48ac4a6..6a4e6e3 100644
 +  }
 +  const rawScheme = literalAllowedNonHttpScheme(url);
 +  if (rawScheme !== null && literalAllowedNonHttpScheme(sanitized) === rawScheme) {
-+    return url.replace(/\\/g, '/');
++    return finalizeRaw(prepared.replace(/\\/g, '/'));
 +  }
 +  if (url.match(BR_URL_SCHEME_RE) === null && sanitized.match(BR_URL_SCHEME_RE) === null) {
-+    return url;
++    return finalizeRaw(prepared);
 +  }
 +  if (
 +    firstSchemeDelimiterIsRelative(url) >= 0 &&
 +    firstSchemeDelimiterIsRelative(sanitized) >= 0
 +  ) {
-+    return url.replace(/\\/g, '/');
++    return finalizeRaw(prepared.replace(/\\/g, '/'));
 +  }
 +  return null;
 +};
@@ -714,7 +786,7 @@ index 48ac4a6..6a4e6e3 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +927,25 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +999,24 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -722,17 +794,16 @@ index 48ac4a6..6a4e6e3 100644
 +    if (startsWithFragmentMarker(url)) {
 +      return url.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
 +    }
-+    const restored = restoreEncodedHtmlNumericRefs(url);
-+    const relative = formatRelativeWithSchemeDelimiter(restored);
++    const relative = formatRelativeWithSchemeDelimiter(url);
 +    if (relative !== null) {
 +      return relative;
 +    }
-+    const sanitized = sanitizeHttpUrlWithEntities(restored);
++    const sanitized = sanitizeHttpUrlWithEntities(url);
 +    if (sanitized === 'about:blank') {
 +      return sanitized;
 +    }
-+    if (restored.includes('%') && !hasNonPercentObfuscation(restored)) {
-+      const preserved = preserveEncodedUrl(restored, sanitized);
++    if (url.includes('%') && !hasNonPercentObfuscation(url)) {
++      const preserved = preserveEncodedUrl(url, sanitized);
 +      if (preserved !== null) {
 +        return preserved;
 +      }
@@ -741,7 +812,7 @@ index 48ac4a6..6a4e6e3 100644
    }
  
    return url;
-@@ -895,23 +1588,570 @@ export default {
+@@ -895,23 +1659,658 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -791,32 +862,56 @@ index 48ac4a6..6a4e6e3 100644
 +    }
 +    return false;
 +  };
-+  const startsAccDescrBlock = (s: string, at: number): boolean => {
-+    if (!s.startsWith('accDescr', at)) {
-+      return false;
-+    }
-+    let k = at + 8;
-+    while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
-+      k++;
-+    }
-+    return s[k] === '{';
++  type PendingAcc = 'none' | 'descr' | 'title';
++  const matchesAccKeyword = (s: string, at: number, kw: string, ci: boolean): boolean => {
++    const slice = s.slice(at, at + kw.length);
++    return ci ? slice.toLowerCase() === kw.toLowerCase() : slice === kw;
 +  };
-+  const isPlainTextLine = (s: string, at: number): boolean => {
-+    if (s.startsWith('%%', at)) {
-+      return true;
-+    }
-+    for (const kw of ['accTitle', 'accDescr']) {
-+      if (s.startsWith(kw, at)) {
-+        let k = at + kw.length;
-+        while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
-+          k++;
-+        }
-+        if (s[k] === ':') {
-+          return true;
-+        }
++  const classifyAccLineStart = (
++    s: string,
++    at: number,
++    ci: boolean
++  ): 'block' | 'plain' | 'pendingDescr' | 'pendingTitle' | null => {
++    if (matchesAccKeyword(s, at, 'accDescr', ci)) {
++      let k = at + 8;
++      while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++        k++;
++      }
++      if (s[k] === '{') {
++        return 'block';
++      }
++      if (s[k] === ':') {
++        return 'plain';
++      }
++      if (
++        k >= s.length ||
++        s[k] === '\n' ||
++        s[k] === '\r' ||
++        s[k] === '\u2028' ||
++        s[k] === '\u2029'
++      ) {
++        return 'pendingDescr';
 +      }
 +    }
-+    return false;
++    if (matchesAccKeyword(s, at, 'accTitle', ci)) {
++      let k = at + 8;
++      while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++        k++;
++      }
++      if (s[k] === ':') {
++        return 'plain';
++      }
++      if (
++        k >= s.length ||
++        s[k] === '\n' ||
++        s[k] === '\r' ||
++        s[k] === '\u2028' ||
++        s[k] === '\u2029'
++      ) {
++        return 'pendingTitle';
++      }
++    }
++    return null;
 +  };
 +  const startsMultilineStateNote = (s: string, at: number): boolean => {
 +    const rest = s.slice(at);
@@ -907,6 +1002,7 @@ index 48ac4a6..6a4e6e3 100644
 +    let lineStart = 0;
 +    let inQuotes = false;
 +    let inAccDescrBlock = false;
++    let pendingAcc: PendingAcc = 'none';
 +    let inNoteBlock = false;
 +    let classBodyDepth = 0;
 +    const isLineTerm = (c: string) =>
@@ -971,18 +1067,43 @@ index 48ac4a6..6a4e6e3 100644
 +            continue;
 +          }
 +          atLineStart = false;
-+          if (startsAccDescrBlock(line, i)) {
++          if (pendingAcc !== 'none') {
++            const pending = pendingAcc;
++            pendingAcc = 'none';
++            if (pending === 'descr' && c === '{') {
++              if (line.indexOf('}', i + 1) === -1) {
++                inAccDescrBlock = true;
++              }
++              break;
++            }
++            if (c === ':') {
++              break;
++            }
++          }
++          if (line.startsWith('%%', i)) {
++            break;
++          }
++          const accKind = classifyAccLineStart(line, i, stateDiagramDialect);
++          if (accKind === 'block') {
 +            const brace = line.indexOf('{', i);
 +            if (brace !== -1 && line.indexOf('}', brace + 1) === -1) {
 +              inAccDescrBlock = true;
 +            }
 +            break;
 +          }
-+          if (stateDiagramDialect && startsMultilineStateNote(line, i)) {
-+            inNoteBlock = true;
++          if (accKind === 'plain') {
 +            break;
 +          }
-+          if (isPlainTextLine(line, i)) {
++          if (accKind === 'pendingDescr') {
++            pendingAcc = 'descr';
++            break;
++          }
++          if (accKind === 'pendingTitle') {
++            pendingAcc = 'title';
++            break;
++          }
++          if (stateDiagramDialect && startsMultilineStateNote(line, i)) {
++            inNoteBlock = true;
 +            break;
 +          }
 +        }
@@ -1089,6 +1210,7 @@ index 48ac4a6..6a4e6e3 100644
 +  let atLineStart = true;
 +  let inPlainLine = false;
 +  let inAccDescrBlock = false;
++  let pendingAcc: PendingAcc = 'none';
 +  let inNoteBlock = false;
 +  let classBodyDepth = 0;
 +  let inQuotes = false;
@@ -1251,20 +1373,57 @@ index 48ac4a6..6a4e6e3 100644
 +        continue;
 +      }
 +      atLineStart = false;
-+      if (startsAccDescrBlock(txt, i)) {
++      if (pendingAcc !== 'none') {
++        const pending = pendingAcc;
++        pendingAcc = 'none';
++        if (pending === 'descr' && ch === '{') {
++          inAccDescrBlock = true;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
++        if (ch === ':') {
++          inPlainLine = true;
++          stmtKind = 2;
++          prevWasAlnum = false;
++          continue;
++        }
++      }
++      if (txt.startsWith('%%', i)) {
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      const accKind = classifyAccLineStart(txt, i, stateDiagramDialect);
++      if (accKind === 'block') {
 +        inAccDescrBlock = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'plain') {
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingDescr') {
++        pendingAcc = 'descr';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingTitle') {
++        pendingAcc = 'title';
++        inPlainLine = true;
 +        stmtKind = 2;
 +        prevWasAlnum = false;
 +        continue;
 +      }
 +      if (stateDiagramDialect && startsMultilineStateNote(txt, i)) {
 +        inNoteBlock = true;
-+        inPlainLine = true;
-+        stmtKind = 2;
-+        prevWasAlnum = false;
-+        continue;
-+      }
-+      if (isPlainTextLine(txt, i)) {
 +        inPlainLine = true;
 +        stmtKind = 2;
 +        prevWasAlnum = false;

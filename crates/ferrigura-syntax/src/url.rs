@@ -92,48 +92,6 @@ fn starts_with_fragment_marker(url: &str) -> bool {
         || decode_mermaid_placeholder_at(url, 0).is_some_and(|(_, decoded)| decoded == "#")
 }
 
-/// Restores complete HTML numeric character references (`&#169;`, `&#xA9;`) that `encode_entities`
-/// split into `&ﬂ°°169¶ß` / `&ﬂ°xA9¶ß` so lexers (such as `sequenceDiagram`) never see raw `#`/`;`,
-/// while URL sanitization decodes them as HTML numeric references instead of leaving a stray `&`.
-fn restore_encoded_html_numeric_refs(url: &str) -> std::borrow::Cow<'_, str> {
-    if !url.contains("&ﬂ°") {
-        return std::borrow::Cow::Borrowed(url);
-    }
-    let mut out = String::with_capacity(url.len());
-    let mut cursor = 0;
-    while let Some(rel) = url[cursor..].find("&ﬂ°") {
-        let pos = cursor + rel;
-        out.push_str(&url[cursor..pos]);
-        let after_open = &url[pos + "&ﬂ°".len()..];
-        if let Some(after_deg) = after_open.strip_prefix('°') {
-            let digits_len = after_deg.bytes().take_while(u8::is_ascii_digit).count();
-            if digits_len > 0 && after_deg[digits_len..].starts_with("¶ß") {
-                out.push_str("&#");
-                out.push_str(&after_deg[..digits_len]);
-                out.push(';');
-                cursor = pos + "&ﬂ°°".len() + digits_len + "¶ß".len();
-                continue;
-            }
-        } else if matches!(after_open.as_bytes().first(), Some(b'x' | b'X')) {
-            let hex_len = after_open[1..]
-                .bytes()
-                .take_while(u8::is_ascii_hexdigit)
-                .count();
-            if hex_len > 0 && after_open[1 + hex_len..].starts_with("¶ß") {
-                out.push_str("&#");
-                out.push_str(&after_open[..1 + hex_len]);
-                out.push(';');
-                cursor = pos + "&ﬂ°".len() + 1 + hex_len + "¶ß".len();
-                continue;
-            }
-        }
-        out.push_str("&ﬂ°");
-        cursor = pos + "&ﬂ°".len();
-    }
-    out.push_str(&url[cursor..]);
-    std::borrow::Cow::Owned(out)
-}
-
 /// `formatUrl` of the reference.
 ///
 /// The link is trimmed with JavaScript's `trim`, and an empty result gives `None`. `loose` is
@@ -161,8 +119,6 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
             .collect();
         Some(cleaned)
     } else {
-        let restored = restore_encoded_html_numeric_refs(url);
-        let url = restored.as_ref();
         if let Some(relative) = format_relative_with_scheme_delimiter(url) {
             return Some(relative);
         }
@@ -221,7 +177,7 @@ fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
         return None;
     }
     if !has_non_percent_obfuscation(url) {
-        return Some(url.to_owned());
+        return Some(finalize_raw(prepared.into_owned(), url_tokens.as_ref()));
     }
     Some(finalize_raw(decoded, url_tokens.as_ref()))
 }
@@ -286,10 +242,10 @@ fn literal_allowed_non_http_scheme(text: &str) -> Option<&str> {
 /// Preserves percent-encoded bytes (such as `%26`, `%2F`, `%23`, `%25`) in an already-validated
 /// URL that carries no literal control characters, HTML entities, or whitespace escapes.
 fn preserve_encoded_url(url: &str, sanitized: &str) -> Option<String> {
-    if matches!(url.chars().next(), Some('.' | '/')) {
-        return Some(url.to_owned());
-    }
     let (prepared, url_tokens) = tokenize_url_entity_placeholders(url);
+    if matches!(url.chars().next(), Some('.' | '/')) {
+        return Some(finalize_raw(prepared.into_owned(), url_tokens.as_ref()));
+    }
     let effective = resolve_decoded_http_scheme_tokens(prepared.as_ref(), url_tokens.as_ref());
     if is_http_scheme_prefix(effective.as_ref()) && is_http_scheme_prefix(sanitized) {
         let back_sanitized = effective.replace('\\', "/");
@@ -315,15 +271,21 @@ fn preserve_encoded_url(url: &str, sanitized: &str) -> Option<String> {
         && literal_allowed_non_http_scheme(sanitized)
             .is_some_and(|s| s.eq_ignore_ascii_case(raw_scheme))
     {
-        return Some(url.replace('\\', "/"));
+        return Some(finalize_raw(
+            prepared.replace('\\', "/"),
+            url_tokens.as_ref(),
+        ));
     }
     if url_scheme(url).is_none() && url_scheme(sanitized).is_none() {
-        return Some(url.to_owned());
+        return Some(finalize_raw(prepared.into_owned(), url_tokens.as_ref()));
     }
     if first_scheme_delimiter_is_relative(url).is_some()
         && first_scheme_delimiter_is_relative(sanitized).is_some()
     {
-        return Some(url.replace('\\', "/"));
+        return Some(finalize_raw(
+            prepared.replace('\\', "/"),
+            url_tokens.as_ref(),
+        ));
     }
     None
 }
@@ -855,8 +817,6 @@ pub fn sanitize_url(url: &str) -> String {
     if url.is_empty() {
         return BLANK_URL.to_owned();
     }
-    let restored = restore_encoded_html_numeric_refs(url);
-    let url = restored.as_ref();
     // Tokenize all literal Mermaid entity placeholders BEFORE `decode_url_obfuscations_bounded`,
     // then classify URL components using the ALREADY-DECODED separators (`%2F`, `%40`, `%2568`,
     // `&#58;`, etc.) so:
@@ -881,6 +841,9 @@ pub fn sanitize_url(url: &str) -> String {
     // The scheme is searched after the leading whitespace is gone. Without a scheme the decoded
     // text itself is returned, with its leading whitespace.
     let trimmed = decoded.trim_start_matches(is_js_space);
+    if has_invalid_decoded_scheme(trimmed, url_tokens.as_ref()) {
+        return BLANK_URL.to_owned();
+    }
     let effective_trimmed = resolve_decoded_http_scheme_tokens(trimmed, url_tokens.as_ref());
     let Some(raw_scheme) = url_scheme(effective_trimmed.as_ref()) else {
         return finalize_raw(decoded, url_tokens.as_ref());
@@ -1187,8 +1150,60 @@ fn decode_mermaid_placeholder_at(segment: &str, pos: usize) -> Option<(usize, St
     None
 }
 
+/// Decodes an HTML numeric character reference that `encode_entities` split into `&ﬂ°°<digits>¶ß`
+/// or `&ﬂ°x<hex>¶ß` (starting at the `ﬂ°` position immediately after `&`), returning
+/// `(end_byte_pos, raw_placeholder_without_amp, unicode_decoded)`.
+fn decode_encoded_html_numeric_at(segment: &str, pos: usize) -> Option<(usize, String, String)> {
+    let after_open = segment[pos..].strip_prefix("ﬂ°")?;
+    if let Some(after_deg) = after_open.strip_prefix('°') {
+        let digits_len = after_deg.bytes().take_while(u8::is_ascii_digit).count();
+        if digits_len > 0 && after_deg[digits_len..].starts_with("¶ß") {
+            let digits = &after_deg[..digits_len];
+            let reference = format!("&#{digits};");
+            let decoded = crate::sanitize::decode_attribute_references(&reference);
+            let end = pos + "ﬂ°°".len() + digits_len + "¶ß".len();
+            return Some((end, segment[pos..end].to_owned(), decoded));
+        }
+    } else if matches!(after_open.as_bytes().first(), Some(b'x' | b'X')) {
+        let hex_len = after_open[1..]
+            .bytes()
+            .take_while(u8::is_ascii_hexdigit)
+            .count();
+        if hex_len > 0 && after_open[1 + hex_len..].starts_with("¶ß") {
+            let x_hex = &after_open[..1 + hex_len];
+            let reference = format!("&#{x_hex};");
+            let decoded = crate::sanitize::decode_attribute_references(&reference);
+            let cp = decoded.chars().next().map_or(0xFFFD, u32::from);
+            let end = pos + "ﬂ°".len() + 1 + hex_len + "¶ß".len();
+            return Some((end, format!("ﬂ°°{cp}¶ß"), decoded));
+        }
+    }
+    None
+}
+
+/// Whether substituting all tokenized entity placeholders in `trimmed` with their Unicode decoded
+/// values reveals a blocked scheme (`javascript:`, `data:`, or `vbscript:`) before any relative
+/// URL delimiter (`/`, `?`, or non-entity `#`).
+fn has_invalid_decoded_scheme(trimmed: &str, tokens: Option<&UrlEntityTokens>) -> bool {
+    let Some(tokens) = tokens else {
+        return false;
+    };
+    let substituted = substitute_token_values(trimmed, &tokens.prefix, &tokens.decoded);
+    let cleaned: String = substituted.chars().filter(|&c| !is_ctrl(c)).collect();
+    let head = cleaned.trim_start_matches(is_js_space);
+    if matches!(head.chars().next(), Some('.' | '/'))
+        || first_scheme_delimiter_is_relative(head).is_some()
+    {
+        return false;
+    }
+    url_scheme(head).is_some_and(|raw| is_invalid_protocol(js_trim(&raw.to_lowercase())))
+}
+
 /// Tokenizes every literal Mermaid entity placeholder (`ﬂ°` / `¶ß`) in `candidate` in a single
-/// O(n) forward pass into bounded-size ASCII tokens before obfuscation decoding runs.
+/// O(n) forward pass into bounded-size ASCII tokens before obfuscation decoding runs. Complete
+/// HTML numeric character references that `encode_entities` split into `&ﬂ°°<digits>¶ß` or
+/// `&ﬂ°x<hex>¶ß` are consumed together with their leading `&` and decoded as Unicode so
+/// percent-encoded components elsewhere in the URL stay intact.
 fn tokenize_url_entity_placeholders(
     candidate: &str,
 ) -> (std::borrow::Cow<'_, str>, Option<UrlEntityTokens>) {
@@ -1224,6 +1239,21 @@ fn tokenize_url_entity_placeholders(
                 break;
             }
         };
+        if pos > cursor
+            && candidate.as_bytes()[pos - 1] == b'&'
+            && let Some((end, raw_val, decoded_val)) =
+                decode_encoded_html_numeric_at(candidate, pos)
+        {
+            out.push_str(&candidate[cursor..pos - 1]);
+            let idx = raw.len();
+            out.push_str(&prefix);
+            out.push_str(&idx.to_string());
+            out.push_str("__");
+            raw.push(raw_val);
+            decoded.push(decoded_val);
+            cursor = end;
+            continue;
+        }
         out.push_str(&candidate[cursor..pos]);
         let Some((end, decoded_val)) = decode_mermaid_placeholder_at(candidate, pos) else {
             out.push_str(&candidate[pos..]);
@@ -2921,14 +2951,31 @@ mod tests {
             format_url("data&#58;#part", false).as_deref(),
             Some("about:blank")
         );
-        // Encoded numeric references (`&ﬂ°°169¶ß` from `&#169;`) restore cleanly in URLs without
-        // leaving a stray `&`, and `&ﬂ°°106¶ßavascript:` fails closed.
+        // Encoded numeric references (`&ﬂ°°169¶ß`, `&ﬂ°xA9¶ß`, `&ﬂ°°128512¶ß`) decode as Unicode
+        // without leaving a stray `&` or clobbering percent-escapes in other components, and
+        // scheme obfuscation (`&ﬂ°°106¶ßavascript:`, `&ﬂ°x6A¶ßavascript:`) fails closed.
         assert_eq!(
             format_url("https://example.com/A&ﬂ°°169¶ßB", false).as_deref(),
             Some("https://example.com/A%C2%A9B")
         );
         assert_eq!(
+            format_url("https://example.org/a%2Fb?note=&ﬂ°°169¶ß", false).as_deref(),
+            Some("https://example.org/a%2Fb?note=%C2%A9")
+        );
+        assert_eq!(
+            format_url("https://example.org/a&ﬂ°xA9¶ßb", false).as_deref(),
+            Some("https://example.org/a%C2%A9b")
+        );
+        assert_eq!(
+            format_url("https://example.org/a&ﬂ°°128512¶ßb", false).as_deref(),
+            Some("https://example.org/a%F0%9F%98%80b")
+        );
+        assert_eq!(
             format_url("&ﬂ°°106¶ßavascript:alert(1)", false).as_deref(),
+            Some("about:blank")
+        );
+        assert_eq!(
+            format_url("&ﬂ°x6A¶ßavascript:alert(1)", false).as_deref(),
             Some("about:blank")
         );
     }

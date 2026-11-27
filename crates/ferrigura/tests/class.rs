@@ -1159,14 +1159,17 @@ fn gantt_sequence_url_guards_and_protected_dollar_ids() {
     );
 
     // Sequence actor links and icons guard schemes after entity resolution and preserve XML
-    // whitespace references (such as tab -> &#9;).
-    let seq_src = "sequenceDiagram\n  participant A\n  link A: Tab @ /One#9;Two\n  link A: Bad @ javascript#58;alert(1)\n  properties A: {\"icon\": \"javascript#58;alert(1)\"}\n  A->>A: hi\n";
+    // whitespace references (such as tab -> &#9;). `sequence/svgDraw.js` always runs `sanitizeUrl`
+    // (blocking `javascript#58;` even in loose mode), while `guard_url` blocks non-allowlisted
+    // schemes like `notes#58;` only outside loose mode.
+    let seq_src = "sequenceDiagram\n  participant A\n  link A: Tab @ /One#9;Two\n  link A: Bad @ javascript#58;alert(1)\n  link A: Note @ notes#58;meeting\n  properties A: {\"icon\": \"javascript#58;alert(1)\"}\n  A->>A: hi\n";
     let seq_strict = ferrigura::render(seq_src, &Value::empty_object()).expect("renders");
     assert!(
         seq_strict.contains("xlink:href=\"/One&#9;Two\""),
         "{seq_strict}"
     );
     assert!(!seq_strict.contains("javascript:alert(1)"), "{seq_strict}");
+    assert!(!seq_strict.contains("notes:meeting"), "{seq_strict}");
     let seq_doc = roxmltree::Document::parse(&seq_strict).expect("well-formed SVG XML");
     let seq_hrefs: Vec<&str> = seq_doc
         .descendants()
@@ -1177,9 +1180,10 @@ fn gantt_sequence_url_guards_and_protected_dollar_ids() {
     assert!(seq_hrefs.contains(&"about:blank"), "{seq_hrefs:?}");
     let seq_loose = ferrigura::render(seq_src, &loose_cfg).expect("renders");
     assert!(
-        seq_loose.contains("xlink:href=\"javascript:alert(1)\""),
+        seq_loose.contains("xlink:href=\"notes:meeting\""),
         "{seq_loose}"
     );
+    assert!(!seq_loose.contains("javascript:alert(1)"), "{seq_loose}");
 
     // Sequence actor icons run `sanitizeUrl` before `guard_image_url` (matching Mermaid's
     // `drawImage`), so raster `data:image/...` URLs become `about:blank` there while `imageSquare`
@@ -2193,5 +2197,21 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     assert!(
         gantt_literal_frag.contains("xlink:href=\"#graph-Foo%41\""),
         "{gantt_literal_frag}"
+    );
+
+    // Case-insensitive `AccDescr {` blocks in state diagrams keep unmatched quotes inside the
+    // description so following `style` hex colors stay literal.
+    let state_ci_acc_descr = ferrigura::render(
+        "stateDiagram-v2\n  AccDescr {\n    The \"metric\n  }\n  A --> B\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        state_ci_acc_descr.contains("fill:#abc"),
+        "{state_ci_acc_descr}"
+    );
+    assert!(
+        !state_ci_acc_descr.contains("&amp;abc;"),
+        "{state_ci_acc_descr}"
     );
 }

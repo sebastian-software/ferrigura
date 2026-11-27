@@ -520,6 +520,47 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         literal_fragment_target.contains("xlink:href=\"#graph-Foo%41\""),
         "{literal_fragment_target}"
     );
+    // Numeric character references in one URL component decode as Unicode without discarding
+    // percent-encoded delimiters in unaffected components.
+    for (raw, expected) in [
+        (
+            "https://example.org/a%2Fb?note=&#169;",
+            "https://example.org/a%2Fb?note=%C2%A9",
+        ),
+        (
+            "https://example.org/a&#xA9;b",
+            "https://example.org/a%C2%A9b",
+        ),
+        (
+            "https://example.org/a&#128512;b",
+            "https://example.org/a%F0%9F%98%80b",
+        ),
+    ] {
+        let svg = render(
+            &format!("flowchart TD\nA[x]\nclick A \"{raw}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            svg.contains(&format!("xlink:href=\"{expected}\"")),
+            "raw={raw}: {svg}"
+        );
+    }
+    // Multiline `accDescr` blocks whose opening `{` is on the next line do not leak unmatched
+    // quotes into subsequent `style` lines.
+    let next_line_acc_descr = render(
+        "flowchart LR\n  accDescr\n  {\n    The \"metric\n  }\n  A\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        next_line_acc_descr.contains("fill:#abc"),
+        "{next_line_acc_descr}"
+    );
+    assert!(
+        !next_line_acc_descr.contains("&amp;abc;"),
+        "{next_line_acc_descr}"
+    );
     let valid_image = render(
         "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",
         &Value::empty_object(),

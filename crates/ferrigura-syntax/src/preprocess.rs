@@ -447,36 +447,69 @@ fn is_colon_label_dialect(text: &str) -> bool {
     false
 }
 
-/// Whether `rest` (at the first non-whitespace token of a line outside quotes) opens a multiline
-/// `accDescr { ... }` block whose body lines are plain text until the closing `}`.
-fn starts_acc_descr_block(rest: &str) -> bool {
-    if let Some(after) = rest.strip_prefix("accDescr") {
-        let after_ws = after.trim_start_matches(|c: char| {
-            is_js_space(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
-        });
-        return after_ws.starts_with('{');
-    }
-    false
+/// Accessibility opener matched at the start of a line whose following `{` or `:` appears after
+/// a line break (`accDescr\n{ ... }`, `accDescr\n: ...`, `accTitle\n: ...`).
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum PendingAcc {
+    #[default]
+    None,
+    Descr,
+    Title,
 }
 
-/// Whether `rest` (at the first non-whitespace token of a line outside quotes) starts a single-line
-/// plain-text directive or comment (`%%`, `accTitle:`, `accDescr:`) whose literal `"` characters
-/// do not open a multiline quoted string.
-fn is_plain_text_line(rest: &str) -> bool {
-    if rest.starts_with("%%") {
-        return true;
+/// Whether `rest` (at the first non-whitespace token of a line outside quotes) starts an
+/// accessibility keyword (`accDescr` or `accTitle`, case-insensitive in `stateDiagram`).
+fn strip_acc_keyword<'a>(rest: &'a str, keyword: &str, ci: bool) -> Option<&'a str> {
+    if ci {
+        strip_ascii_ci_word(rest, keyword)
+    } else {
+        rest.strip_prefix(keyword)
     }
-    for kw in ["accTitle", "accDescr"] {
-        if let Some(after) = rest.strip_prefix(kw) {
-            let after_ws = after.trim_start_matches(|c: char| {
-                is_js_space(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
-            });
-            if after_ws.starts_with(':') {
-                return true;
-            }
+}
+
+/// Result of classifying an accessibility keyword at the start of a line.
+enum AccLineStart {
+    /// `accDescr { ... }` opened on this line.
+    DescrBlock,
+    /// `accTitle:` or `accDescr:` opened on this line (single-line plain text).
+    PlainLine,
+    /// Keyword alone on the line; `{` or `:` may follow on a later line (`\s*` in lexers).
+    Pending(PendingAcc),
+}
+
+fn classify_acc_line_start(rest: &str, ci: bool) -> Option<AccLineStart> {
+    if let Some(after) = strip_acc_keyword(rest, "accDescr", ci) {
+        let after_ws = trim_horizontal_ws(after);
+        if after_ws.starts_with('{') {
+            return Some(AccLineStart::DescrBlock);
+        }
+        if after_ws.starts_with(':') {
+            return Some(AccLineStart::PlainLine);
+        }
+        if after_ws.is_empty()
+            || after_ws
+                .chars()
+                .next()
+                .is_some_and(|c| matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}'))
+        {
+            return Some(AccLineStart::Pending(PendingAcc::Descr));
         }
     }
-    false
+    if let Some(after) = strip_acc_keyword(rest, "accTitle", ci) {
+        let after_ws = trim_horizontal_ws(after);
+        if after_ws.starts_with(':') {
+            return Some(AccLineStart::PlainLine);
+        }
+        if after_ws.is_empty()
+            || after_ws
+                .chars()
+                .next()
+                .is_some_and(|c| matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}'))
+        {
+            return Some(AccLineStart::Pending(PendingAcc::Title));
+        }
+    }
+    None
 }
 
 /// Whether `rest` starts a `style` or `classDef` statement (keyword followed by whitespace).
@@ -599,6 +632,7 @@ impl EncodeDialects {
 struct MultilineScanState {
     in_quotes: bool,
     in_acc_descr_block: bool,
+    pending_acc: PendingAcc,
     in_note_block: bool,
     class_body_depth: usize,
 }
@@ -705,20 +739,41 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
                 continue;
             }
             at_line_start = false;
-            let rest = &line[at..];
-            if starts_acc_descr_block(rest) {
-                if let Some(brace) = rest.find('{')
-                    && !rest[brace + 1..].contains('}')
-                {
-                    state.in_acc_descr_block = true;
+            if state.pending_acc != PendingAcc::None {
+                let pending = state.pending_acc;
+                state.pending_acc = PendingAcc::None;
+                if pending == PendingAcc::Descr && ch == '{' {
+                    if !line[at + 1..].contains('}') {
+                        state.in_acc_descr_block = true;
+                    }
+                    break;
                 }
+                if ch == ':' {
+                    break;
+                }
+            }
+            let rest = &line[at..];
+            if rest.starts_with("%%") {
                 break;
+            }
+            match classify_acc_line_start(rest, dialects.state_diagram_dialect) {
+                Some(AccLineStart::DescrBlock) => {
+                    if let Some(brace) = rest.find('{')
+                        && !rest[brace + 1..].contains('}')
+                    {
+                        state.in_acc_descr_block = true;
+                    }
+                    break;
+                }
+                Some(AccLineStart::PlainLine) => break,
+                Some(AccLineStart::Pending(pending)) => {
+                    state.pending_acc = pending;
+                    break;
+                }
+                None => {}
             }
             if dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
                 state.in_note_block = true;
-                break;
-            }
-            if is_plain_text_line(rest) {
                 break;
             }
         }
@@ -971,20 +1026,41 @@ fn color_semicolon_byte(
                 continue;
             }
             at_line_start = false;
-            let rest = &line[at..];
-            if starts_acc_descr_block(rest) {
-                if let Some(brace) = rest.find('{')
-                    && !rest[brace + 1..].contains('}')
-                {
-                    state.in_acc_descr_block = true;
+            if state.pending_acc != PendingAcc::None {
+                let pending = state.pending_acc;
+                state.pending_acc = PendingAcc::None;
+                if pending == PendingAcc::Descr && ch == '{' {
+                    if !line[at + 1..].contains('}') {
+                        state.in_acc_descr_block = true;
+                    }
+                    break;
                 }
+                if ch == ':' {
+                    break;
+                }
+            }
+            let rest = &line[at..];
+            if rest.starts_with("%%") {
                 break;
+            }
+            match classify_acc_line_start(rest, dialects.state_diagram_dialect) {
+                Some(AccLineStart::DescrBlock) => {
+                    if let Some(brace) = rest.find('{')
+                        && !rest[brace + 1..].contains('}')
+                    {
+                        state.in_acc_descr_block = true;
+                    }
+                    break;
+                }
+                Some(AccLineStart::PlainLine) => break,
+                Some(AccLineStart::Pending(pending)) => {
+                    state.pending_acc = pending;
+                    break;
+                }
+                None => {}
             }
             if dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
                 state.in_note_block = true;
-                break;
-            }
-            if is_plain_text_line(rest) {
                 break;
             }
         }
@@ -1255,21 +1331,53 @@ impl StyleStmtTracker {
                 return;
             }
             self.at_line_start = false;
-            let rest = &src[at..];
-            if starts_acc_descr_block(rest) {
-                self.state.in_acc_descr_block = true;
-                self.kind = StmtKind::Other;
-                self.prev_was_alnum = false;
-                return;
+            if self.state.pending_acc != PendingAcc::None {
+                let pending = self.state.pending_acc;
+                self.state.pending_acc = PendingAcc::None;
+                if pending == PendingAcc::Descr && ch == '{' {
+                    self.state.in_acc_descr_block = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                if ch == ':' {
+                    self.in_plain_line = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
             }
-            if self.dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
-                self.state.in_note_block = true;
+            let rest = &src[at..];
+            if rest.starts_with("%%") {
                 self.in_plain_line = true;
                 self.kind = StmtKind::Other;
                 self.prev_was_alnum = false;
                 return;
             }
-            if is_plain_text_line(rest) {
+            match classify_acc_line_start(rest, self.dialects.state_diagram_dialect) {
+                Some(AccLineStart::DescrBlock) => {
+                    self.state.in_acc_descr_block = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                Some(AccLineStart::PlainLine) => {
+                    self.in_plain_line = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                Some(AccLineStart::Pending(pending)) => {
+                    self.state.pending_acc = pending;
+                    self.in_plain_line = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                None => {}
+            }
+            if self.dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
+                self.state.in_note_block = true;
                 self.in_plain_line = true;
                 self.kind = StmtKind::Other;
                 self.prev_was_alnum = false;
