@@ -31,7 +31,7 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..3654cf9 100644
+index 48ac4a6..820e6e0 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
 @@ -244,6 +244,502 @@ export function interpolateToCurve(
@@ -549,7 +549,7 @@ index 48ac4a6..3654cf9 100644
    }
  
    return url;
-@@ -895,23 +1394,509 @@ export default {
+@@ -895,23 +1394,570 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -626,6 +626,18 @@ index 48ac4a6..3654cf9 100644
 +    }
 +    return false;
 +  };
++  const startsMultilineStateNote = (s: string, at: number): boolean => {
++    const rest = s.slice(at);
++    const lineEnd = rest.search(/[\n\r\u2028\u2029]/);
++    const line = lineEnd === -1 ? rest : rest.slice(0, lineEnd);
++    return /^note[^\S\n\r\u2028\u2029]+(?:left|right)[^\S\n\r\u2028\u2029]+of[^\S\n\r\u2028\u2029]+[^:\s][^:]*$/i.test(
++      line
++    );
++  };
++  const endsMultilineStateNote = (s: string, at: number): boolean => {
++    const rest = s.slice(at);
++    return /^end[^\S\n\r\u2028\u2029]+note(?:$|\s)/i.test(rest);
++  };
 +  const startsStyleOrClassDef = (s: string, at: number): boolean => {
 +    for (const kw of ['style', 'classDef']) {
 +      if (s.startsWith(kw, at) && at + kw.length < s.length && /\s/.test(s[at + kw.length])) {
@@ -644,6 +656,7 @@ index 48ac4a6..3654cf9 100644
 +    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
 +
 +  const allowClassDefCssSemi = allowsClassDefSemicolonCss(txt);
++  const stateDiagramDialect = allowClassDefCssSemi;
 +  const classDiagramDialect = isClassDiagramDialect(txt);
 +  const colonLabelDialect = isColonLabelDialect(txt);
 +
@@ -702,6 +715,7 @@ index 48ac4a6..3654cf9 100644
 +    let lineStart = 0;
 +    let inQuotes = false;
 +    let inAccDescrBlock = false;
++    let inNoteBlock = false;
 +    let classBodyDepth = 0;
 +    const isLineTerm = (c: string) =>
 +      c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
@@ -717,6 +731,17 @@ index 48ac4a6..3654cf9 100644
 +      let lastSemi = -1;
 +      for (let i = 0; i < line.length; i++) {
 +        const c = line[i];
++        if (inNoteBlock) {
++          if (atLineStart) {
++            if (/\s/.test(c)) {
++              continue;
++            }
++            if (endsMultilineStateNote(line, i)) {
++              inNoteBlock = false;
++            }
++          }
++          break;
++        }
 +        if (inAccDescrBlock) {
 +          if (c === '}') {
 +            inAccDescrBlock = false;
@@ -759,6 +784,10 @@ index 48ac4a6..3654cf9 100644
 +            if (brace !== -1 && line.indexOf('}', brace + 1) === -1) {
 +              inAccDescrBlock = true;
 +            }
++            break;
++          }
++          if (stateDiagramDialect && startsMultilineStateNote(line, i)) {
++            inNoteBlock = true;
 +            break;
 +          }
 +          if (isPlainTextLine(line, i)) {
@@ -868,6 +897,7 @@ index 48ac4a6..3654cf9 100644
 +  let atLineStart = true;
 +  let inPlainLine = false;
 +  let inAccDescrBlock = false;
++  let inNoteBlock = false;
 +  let classBodyDepth = 0;
 +  let inQuotes = false;
 +  let prevWasAlnum = false;
@@ -886,6 +916,7 @@ index 48ac4a6..3654cf9 100644
 +          !inQuotes &&
 +          !inPlainLine &&
 +          !inAccDescrBlock &&
++          !inNoteBlock &&
 +          classBodyDepth === 0 &&
 +          stmtKind === 1 &&
 +          seenColon &&
@@ -911,6 +942,7 @@ index 48ac4a6..3654cf9 100644
 +            !inQuotes &&
 +            !inPlainLine &&
 +            !inAccDescrBlock &&
++            !inNoteBlock &&
 +            classBodyDepth === 0 &&
 +            stmtKind === 0
 +          ) {
@@ -924,6 +956,28 @@ index 48ac4a6..3654cf9 100644
 +        i = j;
 +        continue;
 +      }
++    }
++    if (inNoteBlock) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (atLineStart) {
++        if (/\s/.test(ch)) {
++          continue;
++        }
++        atLineStart = false;
++        if (endsMultilineStateNote(txt, i)) {
++          inNoteBlock = false;
++          inPlainLine = true;
++        }
++      }
++      prevWasAlnum = false;
++      continue;
 +    }
 +    if (inAccDescrBlock) {
 +      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
@@ -1007,6 +1061,13 @@ index 48ac4a6..3654cf9 100644
 +      atLineStart = false;
 +      if (startsAccDescrBlock(txt, i)) {
 +        inAccDescrBlock = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (stateDiagramDialect && startsMultilineStateNote(txt, i)) {
++        inNoteBlock = true;
++        inPlainLine = true;
 +        stmtKind = 2;
 +        prevWasAlnum = false;
 +        continue;

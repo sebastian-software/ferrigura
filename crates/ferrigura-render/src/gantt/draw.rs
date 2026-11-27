@@ -53,6 +53,45 @@ fn estimated_ticks(min: f64, max: f64, every: f64, unit: &str) -> f64 {
     ((max - min) / interval).ceil()
 }
 
+/// Pre-resolved, XML-normalized, collision-free task DOM IDs for one Gantt render pass.
+struct ResolvedGanttIds {
+    task_dom_ids: Vec<String>,
+    element_owned: std::collections::HashSet<String>,
+    remapped_fragments: std::collections::HashMap<String, String>,
+}
+
+impl ResolvedGanttIds {
+    fn remap_fragment(&self, raw_link: &str) -> Option<String> {
+        use crate::unified::pipeline::{
+            canonical_attr_id, format_fragment_url, percent_decode_fragment, strip_fragment_marker,
+        };
+
+        let fragment = strip_fragment_marker(raw_link)?;
+        if let Some(target) = self.remapped_fragments.get(&format!("#{fragment}")) {
+            return Some(target.clone());
+        }
+        if fragment.contains('%')
+            && let Some(decoded) = percent_decode_fragment(fragment)
+        {
+            if self.element_owned.contains(&decoded) {
+                return Some(format_fragment_url(&decoded));
+            }
+            if let Some(target) = self.remapped_fragments.get(&format!("#{decoded}")) {
+                return Some(target.clone());
+            }
+            let resolved_target = canonical_attr_id(&decoded);
+            if self.element_owned.contains(&resolved_target) {
+                return Some(format_fragment_url(&resolved_target));
+            }
+        }
+        let resolved_target = canonical_attr_id(fragment);
+        if resolved_target != fragment && self.element_owned.contains(&resolved_target) {
+            return Some(format_fragment_url(&resolved_target));
+        }
+        None
+    }
+}
+
 impl Chart<'_> {
     /// The tokens of the theme: the light scheme, which gives the presentation attributes.
     fn tokens(&self) -> &ThemeTokens {
@@ -301,18 +340,41 @@ impl Chart<'_> {
         out.push_str(&background);
 
         // Allocate unique bar and `-text` label DOM IDs across tasks after resolving Mermaid entity
-        // placeholders. Literal task IDs keep their exact emitted IDs while entity-decoded IDs that
-        // collide with a literal task or an earlier decoded task get a numeric suffix, and
-        // same-document fragment links to those tasks are remapped to match.
-        let (task_dom_ids, fragment_map) = self.allocate_task_dom_ids();
+        // placeholders and XML attribute normalization. Literal task IDs keep their exact emitted
+        // IDs while entity-decoded or XML-normalized IDs that collide with a literal task, a
+        // renderer-owned ID, or an earlier decoded task get a numeric suffix, and same-document
+        // fragment links to those tasks are remapped and percent-encoded to match.
+        let resolved_ids = self.allocate_task_dom_ids();
+        if let Some(drawing) = drawing.as_deref_mut() {
+            let mask_prefix = format!("{}-draw-mask-", self.id);
+            let mut occupied_masks = Vec::new();
+            for &index in &self.array {
+                let dom_id = resolved_ids
+                    .as_ref()
+                    .map_or(self.model.tasks[index].id.as_str(), |ids| {
+                        ids.task_dom_ids[index].as_str()
+                    });
+                let bar_id = format!("{}-{dom_id}", self.id);
+                if bar_id.starts_with(&mask_prefix) {
+                    occupied_masks.push(bar_id);
+                }
+                let text_id = format!("{}-{dom_id}-text", self.id);
+                if text_id.starts_with(&mask_prefix) {
+                    occupied_masks.push(text_id);
+                }
+            }
+            if !occupied_masks.is_empty() {
+                drawing.reserve_mask_ids(occupied_masks);
+            }
+        }
 
         // The bars and the labels: all rectangles first, then all texts, in the same group.
         let mut parts: Vec<(usize, String, String)> = Vec::with_capacity(self.array.len());
         for &index in &self.array {
-            let dom_id = task_dom_ids
+            let dom_id = resolved_ids
                 .as_ref()
                 .map_or(self.model.tasks[index].id.as_str(), |ids| {
-                    ids[index].as_str()
+                    ids.task_dom_ids[index].as_str()
                 });
             let (mut rect, bounds) = self.bar(index, dom_id);
             let mut text = self.label_element(index, dom_id, texts)?;
@@ -353,9 +415,12 @@ impl Chart<'_> {
         // branch wraps it (`ganttRenderer.js:508-531`).
         for (index, rect, text) in &parts {
             if let Some(url) = self.model.links.get(&self.model.tasks[*index].id) {
-                let resolved = Self::remap_task_fragment(url, &fragment_map).unwrap_or_else(|| {
-                    crate::common::resolve_entity_placeholders(url).into_owned()
-                });
+                let resolved = resolved_ids
+                    .as_ref()
+                    .and_then(|ids| ids.remap_fragment(url))
+                    .unwrap_or_else(|| {
+                        crate::common::resolve_entity_placeholders(url).into_owned()
+                    });
                 let guarded = ferrigura_syntax::url::guard_url(&resolved, self.loose);
                 group.push_str(&format!(
                     "<a xlink:href=\"{}\" target=\"_top\">{rect}{text}</a>",
@@ -368,82 +433,156 @@ impl Chart<'_> {
         Ok(())
     }
 
-    /// Allocates unique bar/label DOM IDs when any task ID contains Mermaid entity placeholders,
-    /// returning `(per_task_dom_ids, raw_fragment_to_allocated_fragment)`.
-    fn allocate_task_dom_ids(
-        &self,
-    ) -> (
-        Option<Vec<String>>,
-        std::collections::HashMap<String, String>,
-    ) {
-        let has_placeholders = self
-            .model
-            .tasks
-            .iter()
-            .any(|task| task.id.contains("ﬂ°") || task.id.contains("¶ß"));
-        if !has_placeholders {
-            return (None, std::collections::HashMap::new());
-        }
-        let mut used = std::collections::HashSet::with_capacity(self.model.tasks.len() * 2);
-        let mut allocated = vec![String::new(); self.model.tasks.len()];
-        // Pass 1: preserve every literal task ID verbatim and reserve both its bar and label IDs.
-        for (idx, task) in self.model.tasks.iter().enumerate() {
-            if !task.id.contains("ﬂ°") && !task.id.contains("¶ß") {
-                used.insert(task.id.clone());
-                used.insert(format!("{}-text", task.id));
-                allocated[idx].clone_from(&task.id);
-            }
-        }
-        // Pass 2: resolve entity-bearing task IDs, disambiguating collisions on bar or `-text` IDs.
-        let mut fragment_map = std::collections::HashMap::new();
-        for (idx, task) in self.model.tasks.iter().enumerate() {
-            if task.id.contains("ﬂ°") || task.id.contains("¶ß") {
-                let base = crate::common::resolve_entity_placeholders(&task.id).into_owned();
-                let candidate = if !used.contains(&base) && !used.contains(&format!("{base}-text"))
-                {
-                    base
-                } else {
-                    let mut suffix = 2usize;
-                    loop {
-                        let next = format!("{base}-{suffix}");
-                        if !used.contains(&next) && !used.contains(&format!("{next}-text")) {
-                            break next;
-                        }
-                        suffix += 1;
-                    }
-                };
-                used.insert(candidate.clone());
-                used.insert(format!("{candidate}-text"));
-                fragment_map.insert(
-                    format!("#{}-{}", self.id, task.id),
-                    format!("#{}-{}", self.id, candidate),
-                );
-                fragment_map.insert(
-                    format!("#{}-{}-text", self.id, task.id),
-                    format!("#{}-{}-text", self.id, candidate),
-                );
-                allocated[idx] = candidate;
-            }
-        }
-        (Some(allocated), fragment_map)
-    }
+    /// Allocates unique bar/label DOM IDs when any task ID, SVG ID, or fragment link requires
+    /// entity resolution, XML attribute normalization, or collision disambiguation.
+    fn allocate_task_dom_ids(&self) -> Option<ResolvedGanttIds> {
+        use crate::unified::pipeline::{
+            canonical_attr_id, canonical_xml_attr, format_fragment_url, needs_id_normalization,
+            strip_fragment_marker,
+        };
 
-    /// Remaps a raw same-document fragment link targeting an entity-bearing task ID (with either
-    /// literal `#` or entity-spelled `#35;`) to the task's allocated unique DOM ID.
-    fn remap_task_fragment(
-        raw_url: &str,
-        fragment_map: &std::collections::HashMap<String, String>,
-    ) -> Option<String> {
-        if fragment_map.is_empty() {
+        let canonical_svg_id = canonical_xml_attr(self.id);
+        let mut renderer_owned = std::collections::HashSet::new();
+        renderer_owned.insert(canonical_svg_id.to_string());
+        if !self.model.acc_title.is_empty() {
+            renderer_owned.insert(format!("chart-title-{canonical_svg_id}"));
+        }
+        if !self.model.acc_descr.is_empty() {
+            renderer_owned.insert(format!("chart-desc-{canonical_svg_id}"));
+        }
+        let needs_pass = canonical_svg_id != self.id
+            || self.model.tasks.iter().any(|task| {
+                needs_id_normalization(&task.id)
+                    || renderer_owned.contains(&format!("{canonical_svg_id}-{}", task.id))
+                    || renderer_owned.contains(&format!("{canonical_svg_id}-{}-text", task.id))
+            })
+            || self.model.links.values().any(|link| {
+                strip_fragment_marker(link).is_some_and(|fragment| {
+                    fragment.contains('%') || needs_id_normalization(fragment)
+                })
+            });
+        if !needs_pass {
             return None;
         }
-        let trimmed = raw_url.trim();
-        let normalized = if let Some(rest) = trimmed.strip_prefix("ﬂ°°35¶ß") {
-            std::borrow::Cow::Owned(format!("#{rest}"))
-        } else {
-            std::borrow::Cow::Borrowed(trimmed)
-        };
-        fragment_map.get(normalized.as_ref()).cloned()
+
+        // Precompute XML-canonical bar and `-text` IDs in rendered task order (`self.array`) so
+        // collision disambiguation agrees identically with the pinned reference.
+        let mut reserved = std::collections::HashSet::with_capacity(self.model.tasks.len() * 2);
+        let mut plans = Vec::with_capacity(self.array.len());
+        for &index in &self.array {
+            let task = &self.model.tasks[index];
+            let had_placeholder = task.id.contains("ﬂ°") || task.id.contains("¶ß");
+            let canonical_local = canonical_attr_id(&task.id);
+            let canonical_bar = format!("{canonical_svg_id}-{canonical_local}");
+            let canonical_text = format!("{canonical_bar}-text");
+            let unchanged =
+                !had_placeholder && canonical_local == task.id && canonical_svg_id == self.id;
+            reserved.insert(canonical_bar.clone());
+            reserved.insert(canonical_text.clone());
+            plans.push((
+                index,
+                had_placeholder,
+                canonical_local,
+                canonical_bar,
+                canonical_text,
+                unchanged,
+            ));
+        }
+
+        // Pass 1: preserve unchanged literal task IDs verbatim so an earlier entity-decoded task
+        // cannot steal a literal task's bar or label ID (and existing repeated literal IDs such as
+        // vertical markers keep their reference output unchanged).
+        let mut seen = std::collections::HashSet::with_capacity(reserved.len());
+        let mut element_owned = std::collections::HashSet::with_capacity(reserved.len());
+        let mut claimed = vec![false; plans.len()];
+        for (pos, &(_, _, _, ref canonical_bar, ref canonical_text, unchanged)) in
+            plans.iter().enumerate()
+        {
+            if unchanged
+                && !renderer_owned.contains(canonical_bar)
+                && !renderer_owned.contains(canonical_text)
+            {
+                seen.insert(canonical_bar.clone());
+                seen.insert(canonical_text.clone());
+                element_owned.insert(canonical_bar.clone());
+                element_owned.insert(canonical_text.clone());
+                claimed[pos] = true;
+            }
+        }
+
+        // Pass 2: assign decoded, normalized, and colliding task IDs.
+        let mut task_dom_ids = vec![String::new(); self.model.tasks.len()];
+        let mut remapped_fragments = std::collections::HashMap::new();
+        let mut next_suffix: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        for (pos, (index, had_placeholder, canonical_local, canonical_bar, canonical_text, _)) in
+            plans.into_iter().enumerate()
+        {
+            let task = &self.model.tasks[index];
+            if claimed[pos] {
+                task_dom_ids[index].clone_from(&task.id);
+                continue;
+            }
+            let canonical_differs = canonical_local != task.id;
+            let collided = renderer_owned.contains(&canonical_bar)
+                || renderer_owned.contains(&canonical_text)
+                || seen.contains(&canonical_bar)
+                || seen.contains(&canonical_text);
+            let final_local = if !collided {
+                seen.insert(canonical_bar.clone());
+                seen.insert(canonical_text.clone());
+                element_owned.insert(canonical_bar.clone());
+                element_owned.insert(canonical_text.clone());
+                canonical_local
+            } else {
+                let suffix = next_suffix.entry(canonical_bar.clone()).or_insert(2);
+                loop {
+                    let candidate_local = format!("{canonical_local}-{}", *suffix);
+                    let candidate_bar = format!("{canonical_svg_id}-{candidate_local}");
+                    let candidate_text = format!("{candidate_bar}-text");
+                    *suffix += 1;
+                    if !renderer_owned.contains(&candidate_bar)
+                        && !renderer_owned.contains(&candidate_text)
+                        && !reserved.contains(&candidate_bar)
+                        && !reserved.contains(&candidate_text)
+                        && !seen.contains(&candidate_bar)
+                        && !seen.contains(&candidate_text)
+                    {
+                        seen.insert(candidate_bar.clone());
+                        seen.insert(candidate_text.clone());
+                        element_owned.insert(candidate_bar);
+                        element_owned.insert(candidate_text);
+                        break candidate_local;
+                    }
+                }
+            };
+            let normalized_changed =
+                had_placeholder || final_local != task.id || canonical_svg_id != self.id;
+            let raw_distinct_from_owner = had_placeholder
+                || canonical_differs
+                || canonical_svg_id != self.id
+                || !element_owned.contains(&canonical_bar);
+            if normalized_changed && raw_distinct_from_owner {
+                let target_bar = format!("{canonical_svg_id}-{final_local}");
+                let target_text = format!("{target_bar}-text");
+                remapped_fragments
+                    .entry(format!("#{}-{}", self.id, task.id))
+                    .or_insert_with(|| format_fragment_url(&target_bar));
+                remapped_fragments
+                    .entry(format!("#{}-{}-text", self.id, task.id))
+                    .or_insert_with(|| format_fragment_url(&target_text));
+            }
+            if collided || had_placeholder || canonical_differs {
+                task_dom_ids[index] = final_local;
+            } else {
+                task_dom_ids[index].clone_from(&task.id);
+            }
+        }
+        Some(ResolvedGanttIds {
+            task_dom_ids,
+            element_owned,
+            remapped_fragments,
+        })
     }
 
     /// Whether a task has a link, which wraps it in an anchor.

@@ -505,20 +505,91 @@ fn is_single_colon(src: &str, at: usize) -> bool {
     (at == 0 || bytes[at - 1] != b':') && bytes.get(at + 1) != Some(&b':')
 }
 
+/// Whether `rest` (at the first non-whitespace token of a line in a `stateDiagram`) starts a
+/// multiline `note left/right of <id>` block whose body runs until a line starting with `end note`.
+/// Single-line notes (`note left of A : text`) contain `:` and are already handled as single-line
+/// plain labels.
+fn starts_multiline_state_note(rest: &str) -> bool {
+    let Some(after_note) = strip_ascii_ci_word(rest, "note") else {
+        return false;
+    };
+    let after_note_ws = trim_horizontal_ws(after_note);
+    if after_note_ws.len() == after_note.len() {
+        return false;
+    }
+    let Some(after_side) = strip_ascii_ci_word(after_note_ws, "left")
+        .or_else(|| strip_ascii_ci_word(after_note_ws, "right"))
+    else {
+        return false;
+    };
+    let after_side_ws = trim_horizontal_ws(after_side);
+    if after_side_ws.len() == after_side.len() {
+        return false;
+    }
+    let Some(after_of) = strip_ascii_ci_word(after_side_ws, "of") else {
+        return false;
+    };
+    let after_of_ws = trim_horizontal_ws(after_of);
+    if after_of_ws.len() == after_of.len() {
+        return false;
+    }
+    let line_end = after_of_ws
+        .find(JS_LINE_TERMINATORS)
+        .unwrap_or(after_of_ws.len());
+    let target = trim_horizontal_ws(&after_of_ws[..line_end]);
+    !target.is_empty() && !target.contains(':')
+}
+
+/// Whether `rest` (at the first non-whitespace token of a line inside a multiline state note) ends
+/// the note with `end note` (case-insensitive, followed by whitespace or line end).
+fn ends_multiline_state_note(rest: &str) -> bool {
+    let Some(after_end) = strip_ascii_ci_word(rest, "end") else {
+        return false;
+    };
+    let after_end_ws = trim_horizontal_ws(after_end);
+    if after_end_ws.len() == after_end.len() {
+        return false;
+    }
+    strip_ascii_ci_word(after_end_ws, "note").is_some_and(|after| {
+        after
+            .chars()
+            .next()
+            .is_none_or(|c| is_js_space(c) || matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}'))
+    })
+}
+
+fn trim_horizontal_ws(s: &str) -> &str {
+    s.trim_start_matches(|c: char| {
+        is_js_space(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
+    })
+}
+
+fn strip_ascii_ci_word<'a>(s: &'a str, word: &str) -> Option<&'a str> {
+    let head = s.get(..word.len())?;
+    if head.eq_ignore_ascii_case(word) {
+        Some(&s[word.len()..])
+    } else {
+        None
+    }
+}
+
 /// Dialect flags computed once from the diagram header for entity encoding and error remapping.
 #[derive(Clone, Copy)]
 struct EncodeDialects {
     allow_classdef_css_semi: bool,
     colon_label_dialect: bool,
     class_diagram_dialect: bool,
+    state_diagram_dialect: bool,
 }
 
 impl EncodeDialects {
     fn of(text: &str) -> Self {
+        let state_diagram_dialect = allows_classdef_semicolon_css(text);
         Self {
-            allow_classdef_css_semi: allows_classdef_semicolon_css(text),
+            allow_classdef_css_semi: state_diagram_dialect,
             colon_label_dialect: is_colon_label_dialect(text),
             class_diagram_dialect: is_class_diagram_dialect(text),
+            state_diagram_dialect,
         }
     }
 }
@@ -528,6 +599,7 @@ impl EncodeDialects {
 struct MultilineScanState {
     in_quotes: bool,
     in_acc_descr_block: bool,
+    in_note_block: bool,
     class_body_depth: usize,
 }
 
@@ -576,8 +648,8 @@ pub(crate) fn remap_encoded_error(
     error
 }
 
-/// Advances the multiline double-quote, `accDescr { ... }`, and `class ... { ... }` body state
-/// across a single line.
+/// Advances the multiline double-quote, `accDescr { ... }`, state `note ... end note`, and
+/// `class ... { ... }` body state across a single line.
 fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: EncodeDialects) {
     let mut at_line_start = true;
     let mut stmt_start = true;
@@ -585,6 +657,17 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
     let mut in_class_stmt = false;
     let mut prev_was_alnum = false;
     for (at, ch) in line.char_indices() {
+        if state.in_note_block {
+            if at_line_start {
+                if is_js_space(ch) {
+                    continue;
+                }
+                if ends_multiline_state_note(&line[at..]) {
+                    state.in_note_block = false;
+                }
+            }
+            break;
+        }
         if state.in_acc_descr_block {
             if ch == '}' {
                 state.in_acc_descr_block = false;
@@ -629,6 +712,10 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
                 {
                     state.in_acc_descr_block = true;
                 }
+                break;
+            }
+            if dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
+                state.in_note_block = true;
                 break;
             }
             if is_plain_text_line(rest) {
@@ -836,6 +923,17 @@ fn color_semicolon_byte(
     let mut chars = line.char_indices();
 
     while let Some((at, ch)) = chars.next() {
+        if state.in_note_block {
+            if at_line_start {
+                if is_js_space(ch) {
+                    continue;
+                }
+                if ends_multiline_state_note(&line[at..]) {
+                    state.in_note_block = false;
+                }
+            }
+            break;
+        }
         if state.in_acc_descr_block {
             if ch == '}' {
                 state.in_acc_descr_block = false;
@@ -880,6 +978,10 @@ fn color_semicolon_byte(
                 {
                     state.in_acc_descr_block = true;
                 }
+                break;
+            }
+            if dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
+                state.in_note_block = true;
                 break;
             }
             if is_plain_text_line(rest) {
@@ -1090,6 +1192,22 @@ impl StyleStmtTracker {
     }
 
     fn push(&mut self, src: &str, at: usize, ch: char) {
+        if self.state.in_note_block {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.reset_line();
+            } else if self.at_line_start {
+                if is_js_space(ch) {
+                    return;
+                }
+                self.at_line_start = false;
+                if ends_multiline_state_note(&src[at..]) {
+                    self.state.in_note_block = false;
+                    self.in_plain_line = true;
+                }
+            }
+            self.prev_was_alnum = false;
+            return;
+        }
         if self.state.in_acc_descr_block {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
                 self.reset_line();
@@ -1140,6 +1258,13 @@ impl StyleStmtTracker {
             let rest = &src[at..];
             if starts_acc_descr_block(rest) {
                 self.state.in_acc_descr_block = true;
+                self.kind = StmtKind::Other;
+                self.prev_was_alnum = false;
+                return;
+            }
+            if self.dialects.state_diagram_dialect && starts_multiline_state_note(rest) {
+                self.state.in_note_block = true;
+                self.in_plain_line = true;
                 self.kind = StmtKind::Other;
                 self.prev_was_alnum = false;
                 return;
@@ -1213,6 +1338,7 @@ impl StyleStmtTracker {
         !self.state.in_quotes
             && !self.in_plain_line
             && !self.state.in_acc_descr_block
+            && !self.state.in_note_block
             && self.state.class_body_depth == 0
             && self.kind == StmtKind::Style
             && self.seen_colon

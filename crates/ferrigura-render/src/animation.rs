@@ -459,6 +459,10 @@ impl Drawing {
         }
     }
 
+    pub(crate) fn reserve_mask_ids(&mut self, ids: impl IntoIterator<Item = String>) {
+        self.inner.occupied_mask_ids.extend(ids);
+    }
+
     pub(crate) fn next(&mut self, length: f64) -> Result<Timing, RenderError> {
         let timing = Timing {
             start: if self.options.order == AnimationOrder::Source {

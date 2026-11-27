@@ -1935,4 +1935,132 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
             .expect("href");
         assert_eq!(href, expected, "raw={raw}");
     }
+
+    // Disambiguating a colliding flowchart edge `<path id>` keeps the logical `data-id` intact
+    // on both the path and its edge label.
+    let edge_data_id = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "flowchart LR\n  subgraph foo\n    A\n  end\n  A foo@-->|go| B\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let edge_data_doc = roxmltree::Document::parse(&edge_data_id).expect("well-formed SVG XML");
+    assert!(
+        edge_data_doc
+            .descendants()
+            .any(|n| n.has_tag_name("g") && n.attribute("id") == Some("graph-foo")),
+        "{edge_data_id}"
+    );
+    assert!(
+        edge_data_doc.descendants().any(|n| n.has_tag_name("path")
+            && n.attribute("id") == Some("graph-foo-1")
+            && n.attribute("data-id") == Some("foo")),
+        "{edge_data_id}"
+    );
+    assert!(
+        edge_data_doc
+            .descendants()
+            .any(|n| n.attribute("data-id") == Some("foo") && n.has_tag_name("g")),
+        "{edge_data_id}"
+    );
+
+    // Literal quotes inside multiline `stateDiagram` `note ... end note` blocks do not corrupt
+    // following `style` lines.
+    let state_note_quote = ferrigura::render(
+        "stateDiagram-v2\n  A --> B\n  note right of A\n    Unit: \" (inches)\n  end note\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(state_note_quote.contains("fill:#abc"), "{state_note_quote}");
+    assert!(
+        !state_note_quote.contains("&amp;abc;"),
+        "{state_note_quote}"
+    );
+
+    // Gantt task ID collision detection normalizes XML attribute whitespace (`#9;` vs `#32;`),
+    // percent-encodes allocated fragments (`a#37;41` -> `#graph-a%2541`), recognizes `#num;`
+    // fragment markers on colliding tasks, and reserves `draw-mask-*` IDs during animation.
+    let gantt_xml_ws = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : a#9;b, 2024-01-01, 1d\n  T2 : a#32;b, 2024-01-02, 1d\n  click a#9;b href \"#graph-a#9;b\"\n  click a#32;b href \"#graph-a#32;b\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let gantt_ws_doc = roxmltree::Document::parse(&gantt_xml_ws).expect("well-formed SVG XML");
+    let mut ws_ids = std::collections::HashSet::new();
+    for id in gantt_ws_doc.descendants().filter_map(|n| n.attribute("id")) {
+        assert!(
+            ws_ids.insert(id),
+            "duplicate gantt XML id {id:?} in {gantt_xml_ws}"
+        );
+    }
+    assert!(ws_ids.contains("graph-a b"));
+    assert!(ws_ids.contains("graph-a b-2"));
+    assert!(
+        gantt_xml_ws.contains("xlink:href=\"#graph-a%20b\""),
+        "{gantt_xml_ws}"
+    );
+    assert!(
+        gantt_xml_ws.contains("xlink:href=\"#graph-a%20b-2\""),
+        "{gantt_xml_ws}"
+    );
+
+    let gantt_pct = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : a#37;41, 2024-01-01, 1d\n  click a#37;41 href \"#graph-a#37;41\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(gantt_pct.contains("id=\"graph-a%41\""), "{gantt_pct}");
+    assert!(
+        gantt_pct.contains("xlink:href=\"#graph-a%2541\""),
+        "{gantt_pct}"
+    );
+
+    let gantt_num_marker = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : one#45;two, 2024-01-01, 1d\n  T2 : one-two, 2024-01-02, 1d\n  click one#45;two href \"#num;graph-one#45;two\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        gantt_num_marker.contains("xlink:href=\"#graph-one-two-2\""),
+        "{gantt_num_marker}"
+    );
+
+    let gantt_anim_mask = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : draw-mask#45;0, 2024-01-01, 1d\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                animation: Some(ferrigura::Animation::default()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let gantt_anim_doc = roxmltree::Document::parse(&gantt_anim_mask).expect("well-formed SVG XML");
+    let mut anim_ids = std::collections::HashSet::new();
+    for id in gantt_anim_doc
+        .descendants()
+        .filter_map(|n| n.attribute("id"))
+    {
+        assert!(
+            anim_ids.insert(id),
+            "duplicate animated gantt id {id:?} in {gantt_anim_mask}"
+        );
+    }
+    assert!(anim_ids.contains("graph-draw-mask-0"));
+    assert!(anim_ids.contains("graph-draw-mask-1"));
 }

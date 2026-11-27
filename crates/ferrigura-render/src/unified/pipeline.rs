@@ -575,7 +575,7 @@ pub(crate) fn canonical_attr_id(raw: &str) -> String {
 
 /// Whether a raw node or edge ID contains a Mermaid entity placeholder, XML-normalizable
 /// whitespace, or a character that XML 1.0 replaces with U+FFFD.
-fn needs_id_normalization(raw: &str) -> bool {
+pub(crate) fn needs_id_normalization(raw: &str) -> bool {
     raw.contains("ﬂ°")
         || raw.contains("¶ß")
         || raw
@@ -645,7 +645,7 @@ fn is_renderer_owned_local(local: &str, canonical_svg_id: &str, defs: ReservedDe
 /// and the WHATWG URL fragment percent-encode set (C0 controls, space, `"`, `<`, `>`, `` ` ``,
 /// DEL, and non-ASCII UTF-8 bytes) so URL parsing preserves trailing spaces and percent-decoding
 /// recovers the exact DOM ID.
-fn format_fragment_url(id: &str) -> String {
+pub(crate) fn format_fragment_url(id: &str) -> String {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
     let mut out = String::with_capacity(1 + id.len());
     out.push('#');
@@ -663,7 +663,7 @@ fn format_fragment_url(id: &str) -> String {
 
 /// Percent-decodes valid `%XX` octets in a URL fragment into UTF-8 while keeping literal UTF-8
 /// bytes intact. Returns `None` if the decoded bytes are not valid UTF-8.
-fn percent_decode_fragment(fragment: &str) -> Option<String> {
+pub(crate) fn percent_decode_fragment(fragment: &str) -> Option<String> {
     let bytes = fragment.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
     let mut index = 0;
@@ -689,7 +689,7 @@ fn percent_decode_fragment(fragment: &str) -> Option<String> {
 /// spaces, matching URL parsing), including when the marker itself was encoded as a Mermaid entity
 /// placeholder (such as `#35;` -> `ﬂ°°35¶ß` or `#num;` -> `ﬂ°num¶ß`), returning the raw fragment
 /// body without decoding the target ID.
-fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
+pub(crate) fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
     let trimmed = raw_link.trim_matches(|ch: char| ch <= ' ');
     if let Some(rest) = trimmed.strip_prefix('#') {
         return Some(rest);
@@ -709,6 +709,7 @@ fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
 struct ResolvedDomIds {
     nodes: Vec<String>,
     edge_ids: Vec<String>,
+    edge_path_ids: Vec<String>,
     element_owned: HashSet<String>,
     remapped_fragments: HashMap<String, String>,
 }
@@ -894,12 +895,19 @@ impl ResolvedDomIds {
         }
 
         let mut edge_ids = Vec::with_capacity(data.edges.len());
+        let mut edge_path_ids = Vec::with_capacity(data.edges.len());
         for (index, (had_placeholder, canonical_local, canonical_full, _)) in
             edge_plans.into_iter().enumerate()
         {
             let edge = &data.edges[index];
+            let raw_path = format!("{svg_id}-{}", edge.id);
             if edge_claimed[index] {
-                edge_ids.push(edge.id.clone());
+                edge_path_ids.push(raw_path);
+                if had_placeholder {
+                    edge_ids.push(canonical_local);
+                } else {
+                    edge_ids.push(edge.id.clone());
+                }
                 continue;
             }
             let canonical_differs = canonical_local != edge.id;
@@ -907,7 +915,7 @@ impl ResolvedDomIds {
                 || !seen.insert(canonical_full.clone());
             let final_local = if !collided {
                 element_owned.insert(canonical_full.clone());
-                canonical_local
+                canonical_local.clone()
             } else {
                 let suffix = next_suffix.entry(canonical_full.clone()).or_insert(1);
                 loop {
@@ -932,11 +940,18 @@ impl ResolvedDomIds {
             if normalized_changed && raw_distinct_from_owner {
                 let target_id = format!("{canonical_svg_id}-{final_local}");
                 remapped_fragments
-                    .entry(format!("#{svg_id}-{}", edge.id))
+                    .entry(format!("#{raw_path}"))
                     .or_insert_with(|| format_fragment_url(&target_id));
             }
             if collided || had_placeholder {
-                edge_ids.push(final_local);
+                edge_path_ids.push(format!("{svg_id}-{final_local}"));
+            } else {
+                edge_path_ids.push(raw_path);
+            }
+            // Keep the logical edge `data-id` stable when only the SVG `<path id>` was suffixed
+            // to resolve a collision (matching the patched reference's `data-id` contract).
+            if had_placeholder {
+                edge_ids.push(canonical_local);
             } else {
                 edge_ids.push(edge.id.clone());
             }
@@ -945,6 +960,7 @@ impl ResolvedDomIds {
         Some(Self {
             nodes,
             edge_ids,
+            edge_path_ids,
             element_owned,
             remapped_fragments,
         })
@@ -1065,9 +1081,19 @@ pub(crate) fn paint_with_animation<'a>(
     }
     let mut edge_paths = String::new();
     let mut coloured_markers = String::new();
-    let paths = edges::prepare_paths(&path_edges, id, &data.diagram_type, &config.section, jumps);
+    let paths = edges::prepare_paths(
+        &path_edges,
+        id,
+        &data.diagram_type,
+        &config.section,
+        jumps,
+        resolved_ids
+            .as_ref()
+            .map(|ids| ids.edge_path_ids.as_slice()),
+    );
     let mut animator = animation
         .map(|options| {
+            let mask_prefix = format!("{id}-draw-mask-");
             let mut occupied_mask_ids = HashSet::new();
             for (index, node) in data.nodes.iter().enumerate() {
                 let dom_id = resolved_ids
@@ -1077,8 +1103,13 @@ pub(crate) fn paint_with_animation<'a>(
                     occupied_mask_ids.insert(format!("{id}-{dom_id}"));
                 }
             }
-            for edge in path_edges.iter() {
-                if edge.id.starts_with("draw-mask-") {
+            for (index, edge) in path_edges.iter().enumerate() {
+                if let Some(ids) = &resolved_ids {
+                    let path_id = &ids.edge_path_ids[index];
+                    if path_id.starts_with(&mask_prefix) {
+                        occupied_mask_ids.insert(path_id.clone());
+                    }
+                } else if edge.id.starts_with("draw-mask-") {
                     occupied_mask_ids.insert(format!("{id}-{}", edge.id));
                 }
             }

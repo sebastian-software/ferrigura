@@ -458,10 +458,17 @@ pub fn paint_paths(
     diagram_type: &str,
     section: &Section<'_>,
 ) -> Vec<EdgePath> {
-    prepare_paths(edges, svg_id, diagram_type, section, jump_style(section))
-        .into_iter()
-        .map(|painted| finish_path(painted, None))
-        .collect()
+    prepare_paths(
+        edges,
+        svg_id,
+        diagram_type,
+        section,
+        jump_style(section),
+        None,
+    )
+    .into_iter()
+    .map(|painted| finish_path(painted, None))
+    .collect()
 }
 
 /// The final paths, including line hops, before their SVG is serialized.
@@ -471,6 +478,7 @@ pub(crate) fn prepare_paths(
     diagram_type: &str,
     section: &Section<'_>,
     jumps: Option<JumpStyle>,
+    path_ids: Option<&[String]>,
 ) -> Vec<Painted> {
     let default_curve = section.flowchart.curve.clone();
     // The design mode turns an edge on a wider radius and draws its own arrowheads.
@@ -483,8 +491,9 @@ pub(crate) fn prepare_paths(
     let mut created = std::collections::HashSet::new();
     let mut painted: Vec<Painted> = edges
         .iter()
-        .map(|edge| {
-            paint_edge(
+        .enumerate()
+        .map(|(index, edge)| {
+            let mut painted = paint_edge(
                 edge,
                 svg_id,
                 diagram_type,
@@ -492,7 +501,11 @@ pub(crate) fn prepare_paths(
                 radius,
                 design,
                 &mut created,
-            )
+            );
+            if let Some(path_id) = path_ids.and_then(|ids| ids.get(index)) {
+                painted.path_id.clone_from(path_id);
+            }
+            painted
         })
         .collect();
 

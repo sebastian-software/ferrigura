@@ -29,7 +29,7 @@ The first run takes about half a minute; later runs reuse the build while the pi
 | 11    | SVG flowchart edge labels mask their edges at full opacity, without changing layout                                                                      |
 | 12    | All nonempty shared SVG edge-label backgrounds use full opacity, retaining theme fill transparency; state, block and agentflow no longer halve it        |
 | 13    | Preserve CSS hex colors and statement separators in `style`/`classDef` and resolve source Mermaid entity placeholders in HTTP/HTTPS URLs with component-aware WHATWG encoding during `formatUrl` |
-| 14    | Reserve renderer-owned SVG IDs (`drop-shadow`, optional `gradient`, emitted accessibility title/desc), disambiguate colliding node and edge path IDs, and avoid double-decoding resolved IDs |
+| 14    | Reserve renderer-owned SVG IDs (`drop-shadow`, optional `gradient`, emitted accessibility title/desc), disambiguate colliding node, edge path, and Gantt task IDs, and avoid double-decoding resolved IDs |
 
 Patches 03, 04 and 05 and part of 08 concern diagram types that ferrigura does not draw ([0024](../../docs/decisions/0024-a-fixed-list-of-diagram-types.md)). They stay because the configuration run compares the whole set of configuration keys and the defaults with the reference, and the harness registers every detector of the reference.
 
