@@ -796,6 +796,22 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
             }
             stmt_start = false;
             let rest = &line[at..];
+            match classify_acc_line_start(rest, dialects.state_diagram_dialect) {
+                Some(AccLineStart::DescrBlock) => {
+                    if let Some(brace) = rest.find('{')
+                        && !rest[brace + 1..].contains('}')
+                    {
+                        state.in_acc_descr_block = true;
+                    }
+                    break;
+                }
+                Some(AccLineStart::PlainLine) => break,
+                Some(AccLineStart::Pending(pending)) => {
+                    state.pending_acc = pending;
+                    break;
+                }
+                None => {}
+            }
             in_style_stmt = starts_style_or_classdef(rest);
             in_class_stmt = dialects.class_diagram_dialect && starts_class_stmt(rest);
         }
@@ -1103,6 +1119,22 @@ fn color_semicolon_byte(
             }
             stmt_start = false;
             let rest = &line[at..];
+            match classify_acc_line_start(rest, dialects.state_diagram_dialect) {
+                Some(AccLineStart::DescrBlock) => {
+                    if let Some(brace) = rest.find('{')
+                        && !rest[brace + 1..].contains('}')
+                    {
+                        state.in_acc_descr_block = true;
+                    }
+                    break;
+                }
+                Some(AccLineStart::PlainLine) => break,
+                Some(AccLineStart::Pending(pending)) => {
+                    state.pending_acc = pending;
+                    break;
+                }
+                None => {}
+            }
             in_style_or_classdef = starts_style_or_classdef(rest);
             in_class_stmt = dialects.class_diagram_dialect && starts_class_stmt(rest);
             if let Some(after) = rest.strip_prefix(word)
@@ -1411,6 +1443,28 @@ impl StyleStmtTracker {
                 return;
             }
             let rest = &src[at..];
+            match classify_acc_line_start(rest, self.dialects.state_diagram_dialect) {
+                Some(AccLineStart::DescrBlock) => {
+                    self.state.in_acc_descr_block = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                Some(AccLineStart::PlainLine) => {
+                    self.in_plain_line = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                Some(AccLineStart::Pending(pending)) => {
+                    self.state.pending_acc = pending;
+                    self.in_plain_line = true;
+                    self.kind = StmtKind::Other;
+                    self.prev_was_alnum = false;
+                    return;
+                }
+                None => {}
+            }
             if starts_style_or_classdef(rest) {
                 self.kind = StmtKind::Style;
                 self.in_classdef = starts_classdef(rest);

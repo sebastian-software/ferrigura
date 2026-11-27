@@ -29,10 +29,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..2186605 100644
+index 48ac4a6..f11a111 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,753 @@ export function interpolateToCurve(
+@@ -244,6 +244,797 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -783,20 +783,79 @@ index 48ac4a6..2186605 100644
 +  return null;
 +};
 +
++const preserveValidHttpEncodedUrl = (url: string): string | null => {
++  const hasPlaceholders = url.includes('ﬂ°') || url.includes('¶ß');
++  let prefix = '';
++  const rawValues: string[] = [];
++  const decodedValues: string[] = [];
++  let prepared = url;
++  if (hasPlaceholders) {
++    const probe = decodeSanitizeUrlOnly(url);
++    prefix = pickTokenPrefix(url, probe);
++    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
++  }
++  const effective =
++    rawValues.length > 0
++      ? resolveDecodedHttpSchemeTokens(prepared, prefix, decodedValues).text
++      : prepared;
++  if (!/^https?:/i.test(effective)) {
++    return null;
++  }
++  if (hasInvalidDecodedScheme(effective, prefix, decodedValues)) {
++    return 'about:blank';
++  }
++  const backSanitized = effective.replace(/\\/g, '/');
++  const resolved =
++    rawValues.length > 0
++      ? resolveHttpHostTokens(backSanitized, prefix, decodedValues)
++      : backSanitized;
++  if (!URL.canParse(resolved)) {
++    return null;
++  }
++  const urlSchemeMatch = backSanitized.match(BR_URL_SCHEME_RE);
++  const urlScheme = urlSchemeMatch ? urlSchemeMatch[0].toLowerCase().trim() : '';
++  if (urlScheme.includes('://')) {
++    return rawValues.length > 0
++      ? restoreHttpTokensByComponent(resolved, prefix, decodedValues)
++      : resolved;
++  }
++  const parsed = new URL(resolved);
++  parsed.protocol = parsed.protocol.toLowerCase();
++  parsed.hostname = parsed.hostname.toLowerCase();
++  return rawValues.length > 0
++    ? restoreHttpTokensByComponent(parsed.toString(), prefix, decodedValues)
++    : parsed.toString();
++};
++
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +999,24 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +1043,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
 -    return sanitizeUrl(url);
 +    if (startsWithFragmentMarker(url)) {
-+      return url.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
++      let finalized = url;
++      if (url.includes('ﬂ°') || url.includes('¶ß')) {
++        const probe = decodeSanitizeUrlOnly(url);
++        const prefix = pickTokenPrefix(url, probe);
++        const rawValues: string[] = [];
++        const decodedValues: string[] = [];
++        const prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
++        finalized = rawValues.length === 0 ? prepared : restoreRawTokens(prepared, prefix, rawValues);
++      }
++      return finalized.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
 +    }
 +    const relative = formatRelativeWithSchemeDelimiter(url);
 +    if (relative !== null) {
 +      return relative;
++    }
++    if (url.includes('%') && !hasNonPercentObfuscation(url)) {
++      const preservedHttp = preserveValidHttpEncodedUrl(url);
++      if (preservedHttp !== null) {
++        return preservedHttp;
++      }
 +    }
 +    const sanitized = sanitizeHttpUrlWithEntities(url);
 +    if (sanitized === 'about:blank') {
@@ -812,7 +871,7 @@ index 48ac4a6..2186605 100644
    }
  
    return url;
-@@ -895,23 +1659,658 @@ export default {
+@@ -895,23 +1718,704 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -1143,6 +1202,25 @@ index 48ac4a6..2186605 100644
 +            continue;
 +          }
 +          stmtStart = false;
++          const accKind = classifyAccLineStart(line, i, stateDiagramDialect);
++          if (accKind === 'block') {
++            const brace = line.indexOf('{', i);
++            if (brace !== -1 && line.indexOf('}', brace + 1) === -1) {
++              inAccDescrBlock = true;
++            }
++            break;
++          }
++          if (accKind === 'plain') {
++            break;
++          }
++          if (accKind === 'pendingDescr') {
++            pendingAcc = 'descr';
++            break;
++          }
++          if (accKind === 'pendingTitle') {
++            pendingAcc = 'title';
++            break;
++          }
 +          inStyleOrClassDef = startsStyleOrClassDef(line, i);
 +          inClassStmt = classDiagramDialect && startsClassStmt(line, i);
 +          if (
@@ -1455,6 +1533,33 @@ index 48ac4a6..2186605 100644
 +    }
 +    if (stmtKind === 0) {
 +      if (/\s/.test(ch)) {
++        continue;
++      }
++      const accKind = classifyAccLineStart(txt, i, stateDiagramDialect);
++      if (accKind === 'block') {
++        inAccDescrBlock = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'plain') {
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingDescr') {
++        pendingAcc = 'descr';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
++        continue;
++      }
++      if (accKind === 'pendingTitle') {
++        pendingAcc = 'title';
++        inPlainLine = true;
++        stmtKind = 2;
++        prevWasAlnum = false;
 +        continue;
 +      }
 +      if (startsStyleOrClassDef(txt, i)) {

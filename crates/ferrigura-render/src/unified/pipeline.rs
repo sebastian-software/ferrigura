@@ -661,6 +661,47 @@ pub(crate) fn format_fragment_url(id: &str) -> String {
     out
 }
 
+/// Percent-encodes a resolved SVG element ID for use as a `#fragment` URL, checking whether the
+/// default percent-encoded spelling would collide with another emitted DOM ID via HTML's
+/// exact-match-first fragment lookup (for example `graph-G%41` -> `#graph-G%2541` when
+/// `graph-G%2541` also exists). When it would, percent-encodes an additional byte so HTML falls
+/// through to percent decoding and resolves to `id`.
+pub(crate) fn format_fragment_url_for(id: &str, element_owned: &HashSet<String>) -> String {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let default = format_fragment_url(id);
+    if &default[1..] == id || !element_owned.contains(&default[1..]) {
+        return default;
+    }
+    let bytes = id.as_bytes();
+    for extra in 0..bytes.len() {
+        let mut candidate = String::with_capacity(default.len() + 2);
+        for (idx, &byte) in bytes.iter().enumerate() {
+            let must_encode = idx == extra
+                || byte <= 0x20
+                || matches!(byte, b'"' | b'%' | b'<' | b'>' | b'`')
+                || byte >= 0x7F;
+            if must_encode {
+                candidate.push('%');
+                candidate.push(HEX[(byte >> 4) as usize] as char);
+                candidate.push(HEX[(byte & 0x0F) as usize] as char);
+            } else {
+                candidate.push(byte as char);
+            }
+        }
+        if !element_owned.contains(&candidate) {
+            return format!("#{candidate}");
+        }
+    }
+    let mut all = String::with_capacity(1 + bytes.len() * 3);
+    all.push('#');
+    for &byte in bytes {
+        all.push('%');
+        all.push(HEX[(byte >> 4) as usize] as char);
+        all.push(HEX[(byte & 0x0F) as usize] as char);
+    }
+    all
+}
+
 /// Percent-decodes valid `%XX` octets in a URL fragment into UTF-8 while keeping literal UTF-8
 /// bytes intact. Returns `None` if the decoded bytes are not valid UTF-8.
 pub(crate) fn percent_decode_fragment(fragment: &str) -> Option<String> {
@@ -733,26 +774,48 @@ impl ResolvedDomIds {
             && let Some(decoded) = percent_decode_fragment(fragment)
         {
             if self.element_owned.contains(&decoded) {
-                return Some(Cow::Owned(format_fragment_url(&decoded)));
+                // If the original fragment has no Mermaid entity placeholders, it already
+                // resolves directly to `decoded` via HTML's percent-decoding step without risking
+                // a rewrite collision with another emitted ID (e.g. `#graph-%47%2541` ->
+                // `graph-G%41` when `graph-G%2541` also exists).
+                if !fragment.contains("ﬂ°") && !fragment.contains("¶ß") {
+                    return None;
+                }
+                return Some(Cow::Owned(format_fragment_url_for(
+                    &decoded,
+                    &self.element_owned,
+                )));
             }
-            if let Some(target) = self.remapped_fragments.get(&format!("#{decoded}")) {
-                return Some(Cow::Borrowed(target.as_str()));
+            if let Some(target_id) = self.remapped_fragments.get(&format!("#{decoded}")) {
+                return Some(Cow::Owned(format_fragment_url_for(
+                    target_id,
+                    &self.element_owned,
+                )));
             }
             let resolved_target = canonical_attr_id(&decoded);
             if self.element_owned.contains(&resolved_target) {
-                return Some(Cow::Owned(format_fragment_url(&resolved_target)));
+                return Some(Cow::Owned(format_fragment_url_for(
+                    &resolved_target,
+                    &self.element_owned,
+                )));
             }
         }
-        if let Some(target) = if trimmed.starts_with('#') {
+        if let Some(target_id) = if trimmed.starts_with('#') {
             self.remapped_fragments.get(trimmed)
         } else {
             self.remapped_fragments.get(&format!("#{fragment}"))
         } {
-            return Some(Cow::Borrowed(target.as_str()));
+            return Some(Cow::Owned(format_fragment_url_for(
+                target_id,
+                &self.element_owned,
+            )));
         }
         let resolved_target = canonical_attr_id(fragment);
         if resolved_target != fragment && self.element_owned.contains(&resolved_target) {
-            return Some(Cow::Owned(format_fragment_url(&resolved_target)));
+            return Some(Cow::Owned(format_fragment_url_for(
+                &resolved_target,
+                &self.element_owned,
+            )));
         }
         None
     }
@@ -891,7 +954,7 @@ impl ResolvedDomIds {
                 let target_id = format!("{canonical_svg_id}-{final_local}");
                 remapped_fragments
                     .entry(format!("#{svg_id}-{}", node.dom_id))
-                    .or_insert_with(|| format_fragment_url(&target_id));
+                    .or_insert(target_id);
             }
             if collided || had_placeholder {
                 nodes.push(final_local);
@@ -947,7 +1010,7 @@ impl ResolvedDomIds {
                 let target_id = format!("{canonical_svg_id}-{final_local}");
                 remapped_fragments
                     .entry(format!("#{raw_path}"))
-                    .or_insert_with(|| format_fragment_url(&target_id));
+                    .or_insert(target_id);
             }
             if collided || had_placeholder {
                 edge_path_ids.push(format!("{svg_id}-{final_local}"));

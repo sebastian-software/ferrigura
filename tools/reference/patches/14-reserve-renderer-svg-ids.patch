@@ -161,7 +161,7 @@ index 64d8255..7e22f45 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..883ec34 100644
+index 49145b2..2c9740c 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -172,7 +172,7 @@ index 49145b2..883ec34 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,438 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,478 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -374,6 +374,43 @@ index 49145b2..883ec34 100644
 +  return out;
 +};
 +
++const formatFragmentUrlFor = (id: string, elementOwned: Set<string>): string => {
++  const defaultUrl = formatFragmentUrl(id);
++  const defaultFrag = defaultUrl.slice(1);
++  if (defaultFrag === id || !elementOwned.has(defaultFrag)) {
++    return defaultUrl;
++  }
++  const bytes = new TextEncoder().encode(id);
++  for (let extra = 0; extra < bytes.length; extra++) {
++    let candidate = '';
++    for (let idx = 0; idx < bytes.length; idx++) {
++      const byte = bytes[idx];
++      if (
++        idx === extra ||
++        byte <= 0x20 ||
++        byte === 0x22 ||
++        byte === 0x25 ||
++        byte === 0x3c ||
++        byte === 0x3e ||
++        byte === 0x60 ||
++        byte >= 0x7f
++      ) {
++        candidate += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++      } else {
++        candidate += String.fromCharCode(byte);
++      }
++    }
++    if (!elementOwned.has(candidate)) {
++      return `#${candidate}`;
++    }
++  }
++  let all = '#';
++  for (const byte of bytes) {
++    all += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
++  }
++  return all;
++};
++
 +const percentDecodeFragment = (fragment: string): string | undefined => {
 +  const bytes: number[] = [];
 +  const encoder = new TextEncoder();
@@ -540,13 +577,13 @@ index 49145b2..883ec34 100644
 +    if (c.rawPrefixDiffers || !elementOwned.has(c.canonicalBar)) {
 +      const rawBarKey = `#${svgId}-${c.raw}`;
 +      if (!remappedFragments.has(rawBarKey)) {
-+        remappedFragments.set(rawBarKey, formatFragmentUrl(c.targetBar));
++        remappedFragments.set(rawBarKey, c.targetBar);
 +      }
 +    }
 +    if (c.rawPrefixDiffers || !elementOwned.has(c.canonicalText)) {
 +      const rawTextKey = `#${svgId}-${c.raw}-text`;
 +      if (!remappedFragments.has(rawTextKey)) {
-+        remappedFragments.set(rawTextKey, formatFragmentUrl(c.targetText));
++        remappedFragments.set(rawTextKey, c.targetText);
 +      }
 +    }
 +  }
@@ -566,25 +603,28 @@ index 49145b2..883ec34 100644
 +    const decoded = percentDecodeFragment(fragment);
 +    if (decoded !== undefined) {
 +      if (elementOwned.has(decoded)) {
-+        return formatFragmentUrl(decoded);
++        if (!fragment.includes('ﬂ°') && !fragment.includes('¶ß')) {
++          return rawLink;
++        }
++        return formatFragmentUrlFor(decoded, elementOwned);
 +      }
 +      const remapped = remappedFragments.get(`#${decoded}`);
 +      if (remapped !== undefined) {
-+        return remapped;
++        return formatFragmentUrlFor(remapped, elementOwned);
 +      }
 +      const resolved = canonicalAttrId(decoded);
 +      if (elementOwned.has(resolved)) {
-+        return formatFragmentUrl(resolved);
++        return formatFragmentUrlFor(resolved, elementOwned);
 +      }
 +    }
 +  }
 +  const direct = remappedFragments.get(`#${fragment}`);
 +  if (direct !== undefined) {
-+    return direct;
++    return formatFragmentUrlFor(direct, elementOwned);
 +  }
 +  const resolved = canonicalAttrId(fragment);
 +  if (resolved !== fragment && elementOwned.has(resolved)) {
-+    return formatFragmentUrl(resolved);
++    return formatFragmentUrlFor(resolved, elementOwned);
 +  }
 +  return rawLink;
 +};
@@ -611,7 +651,7 @@ index 49145b2..883ec34 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +538,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +578,286 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -690,7 +730,7 @@ index 49145b2..883ec34 100644
 +        elementOwned.add(p.canonicalPath);
 +        edgeClaimed[i] = true;
 +      }
-     }
++    }
 +
 +    const nextSuffix = new Map<string, number>();
 +    const remapped = new Map<string, string>();
@@ -736,7 +776,7 @@ index 49145b2..883ec34 100644
 +      if (normalizedChanged && rawDistinctFromOwner) {
 +        const key = `#${svgId}-${p.originalDomId}`;
 +        if (!remapped.has(key)) {
-+          remapped.set(key, formatFragmentUrl(`${canonicalSvgId}-${finalLocal}`));
++          remapped.set(key, `${canonicalSvgId}-${finalLocal}`);
 +        }
 +      }
 +      if (collided || p.hadPlaceholder) {
@@ -748,7 +788,7 @@ index 49145b2..883ec34 100644
 +      } else {
 +        p.node.domId = `${svgId}-${p.originalDomId}`;
 +      }
-+    }
+     }
 +
 +    for (let i = 0; i < edgePlans.length; i++) {
 +      const p = edgePlans[i];
@@ -785,7 +825,7 @@ index 49145b2..883ec34 100644
 +      if (finalPath !== p.rawPath && rawDistinctFromOwner) {
 +        const key = `#${p.rawPath}`;
 +        if (!remapped.has(key)) {
-+          remapped.set(key, formatFragmentUrl(finalPath));
++          remapped.set(key, finalPath);
 +        }
 +      }
 +      if (collided || p.pathHadPlaceholder) {
@@ -810,23 +850,33 @@ index 49145b2..883ec34 100644
 +        const decoded = percentDecodeFragment(fragment);
 +        if (decoded !== undefined) {
 +          if (elementOwned.has(decoded)) {
-+            target = formatFragmentUrl(decoded);
++            if (!fragment.includes('ﬂ°') && !fragment.includes('¶ß')) {
++              return rawLink;
++            }
++            target = formatFragmentUrlFor(decoded, elementOwned);
 +          } else {
-+            target = remapped.get(`#${decoded}`);
-+            if (target === undefined) {
++            const remappedId = remapped.get(`#${decoded}`);
++            if (remappedId !== undefined) {
++              target = formatFragmentUrlFor(remappedId, elementOwned);
++            } else {
 +              const resolvedTarget = canonicalAttrId(decoded);
 +              if (elementOwned.has(resolvedTarget)) {
-+                target = formatFragmentUrl(resolvedTarget);
++                target = formatFragmentUrlFor(resolvedTarget, elementOwned);
 +              }
 +            }
 +          }
 +        }
 +      }
-+      target ??= remapped.get(`#${fragment}`);
++      if (target === undefined) {
++        const directId = remapped.get(`#${fragment}`);
++        if (directId !== undefined) {
++          target = formatFragmentUrlFor(directId, elementOwned);
++        }
++      }
 +      if (target === undefined) {
 +        const resolvedTarget = canonicalAttrId(fragment);
 +        if (resolvedTarget !== fragment && elementOwned.has(resolvedTarget)) {
-+          target = formatFragmentUrl(resolvedTarget);
++          target = formatFragmentUrlFor(resolvedTarget, elementOwned);
 +        }
 +      }
 +      return target ?? rawLink;

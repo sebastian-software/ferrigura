@@ -110,10 +110,12 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
     } else if loose {
         Some(url.to_owned())
     } else if starts_with_fragment_marker(url) {
-        if decode_url_obfuscations_bounded(url, MAX_DECODE_PASSES).is_none() {
+        let (prepared, url_tokens) = tokenize_url_entity_placeholders(url);
+        if decode_url_obfuscations_bounded(prepared.as_ref(), MAX_DECODE_PASSES).is_none() {
             return Some(BLANK_URL.to_owned());
         }
-        let cleaned: String = url
+        let finalized = finalize_raw(prepared.into_owned(), url_tokens.as_ref());
+        let cleaned: String = finalized
             .chars()
             .filter(|&c| !matches!(c, '\u{0000}'..='\u{001F}' | '\u{007F}'..='\u{009F}'))
             .collect();
@@ -121,6 +123,12 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
     } else {
         if let Some(relative) = format_relative_with_scheme_delimiter(url) {
             return Some(relative);
+        }
+        if url.contains('%')
+            && !has_non_percent_obfuscation(url)
+            && let Some(preserved_http) = preserve_valid_http_encoded_url(url)
+        {
+            return Some(preserved_http);
         }
         let sanitized = sanitize_url(url);
         if sanitized == BLANK_URL {
@@ -134,6 +142,42 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
         }
         Some(sanitized)
     }
+}
+
+/// Validates and normalizes an original `http:` / `https:` URL carrying percent-escapes (such as
+/// `https://%23alice@example.org/report`) BEFORE `sanitize_url` percent-decodes delimiters into
+/// invalid syntax, while still enforcing the bounded obfuscation-decoding limit and blocked-scheme
+/// check.
+fn preserve_valid_http_encoded_url(url: &str) -> Option<String> {
+    let (prepared, url_tokens) = tokenize_url_entity_placeholders(url);
+    let effective = resolve_decoded_http_scheme_tokens(prepared.as_ref(), url_tokens.as_ref());
+    if !is_http_scheme_prefix(effective.as_ref()) {
+        return None;
+    }
+    if decode_url_obfuscations_bounded(prepared.as_ref(), MAX_DECODE_PASSES).is_none() {
+        return Some(BLANK_URL.to_owned());
+    }
+    if has_invalid_decoded_scheme(effective.as_ref(), url_tokens.as_ref()) {
+        return Some(BLANK_URL.to_owned());
+    }
+    let back_sanitized = effective.replace('\\', "/");
+    let resolved = resolve_http_host_tokens(&back_sanitized, url_tokens.as_ref());
+    if ::url::Url::parse(resolved.as_ref()).is_err() {
+        return None;
+    }
+    let scheme = url_scheme(&back_sanitized)
+        .map(|s| js_trim(&s.to_lowercase()).to_owned())
+        .unwrap_or_default();
+    if scheme.contains("://") {
+        if let Some(ref tokens) = url_tokens {
+            return Some(restore_http_tokens_by_component(resolved.as_ref(), tokens));
+        }
+        return Some(resolved.into_owned());
+    }
+    Some(normalize_http_with_tokens(
+        resolved.as_ref(),
+        url_tokens.as_ref(),
+    ))
 }
 
 /// Whether `text` carries non-percent obfuscation (literal control characters, `&#...` numeric
@@ -2977,6 +3021,21 @@ mod tests {
         assert_eq!(
             format_url("&ﬂ°x6A¶ßavascript:alert(1)", false).as_deref(),
             Some("about:blank")
+        );
+        // Valid escaped HTTP(S) userinfo (`%23alice@`) is validated before percent-decoding turns
+        // `%23` into `#`, while same-document fragments restore numeric references without leaving
+        // a stray `&` or decoding `%` escapes.
+        assert_eq!(
+            format_url("https://%23alice@example.org/report", false).as_deref(),
+            Some("https://%23alice@example.org/report")
+        );
+        assert_eq!(
+            format_url("#graph-classId-Caf&ﬂ°°233¶ß", false).as_deref(),
+            Some("#graph-classId-Cafﬂ°°233¶ß")
+        );
+        assert_eq!(
+            format_url("#graph-classId-Caf&ﬂ°xE9¶ß%201", false).as_deref(),
+            Some("#graph-classId-Cafﬂ°°233¶ß%201")
         );
     }
 }

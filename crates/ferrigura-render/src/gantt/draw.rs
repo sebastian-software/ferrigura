@@ -63,7 +63,8 @@ struct ResolvedGanttIds {
 impl ResolvedGanttIds {
     fn remap_fragment(&self, raw_link: &str) -> Option<String> {
         use crate::unified::pipeline::{
-            canonical_attr_id, format_fragment_url, percent_decode_fragment, strip_fragment_marker,
+            canonical_attr_id, format_fragment_url_for, percent_decode_fragment,
+            strip_fragment_marker,
         };
 
         let fragment = strip_fragment_marker(raw_link)?;
@@ -74,22 +75,31 @@ impl ResolvedGanttIds {
             && let Some(decoded) = percent_decode_fragment(fragment)
         {
             if self.element_owned.contains(&decoded) {
-                return Some(format_fragment_url(&decoded));
+                if !fragment.contains("ﬂ°") && !fragment.contains("¶ß") {
+                    return None;
+                }
+                return Some(format_fragment_url_for(&decoded, &self.element_owned));
             }
-            if let Some(target) = self.remapped_fragments.get(&format!("#{decoded}")) {
-                return Some(target.clone());
+            if let Some(target_id) = self.remapped_fragments.get(&format!("#{decoded}")) {
+                return Some(format_fragment_url_for(target_id, &self.element_owned));
             }
             let resolved_target = canonical_attr_id(&decoded);
             if self.element_owned.contains(&resolved_target) {
-                return Some(format_fragment_url(&resolved_target));
+                return Some(format_fragment_url_for(
+                    &resolved_target,
+                    &self.element_owned,
+                ));
             }
         }
-        if let Some(target) = self.remapped_fragments.get(&format!("#{fragment}")) {
-            return Some(target.clone());
+        if let Some(target_id) = self.remapped_fragments.get(&format!("#{fragment}")) {
+            return Some(format_fragment_url_for(target_id, &self.element_owned));
         }
         let resolved_target = canonical_attr_id(fragment);
         if resolved_target != fragment && self.element_owned.contains(&resolved_target) {
-            return Some(format_fragment_url(&resolved_target));
+            return Some(format_fragment_url_for(
+                &resolved_target,
+                &self.element_owned,
+            ));
         }
         None
     }
@@ -446,8 +456,7 @@ impl Chart<'_> {
     /// entity resolution, XML attribute normalization, or collision disambiguation.
     fn allocate_task_dom_ids(&self, exclude_ids: &[String]) -> Option<ResolvedGanttIds> {
         use crate::unified::pipeline::{
-            canonical_attr_id, canonical_xml_attr, format_fragment_url, needs_id_normalization,
-            strip_fragment_marker,
+            canonical_attr_id, canonical_xml_attr, needs_id_normalization, strip_fragment_marker,
         };
 
         let canonical_svg_id = canonical_xml_attr(self.id);
@@ -600,12 +609,12 @@ impl Chart<'_> {
             if raw_prefix_differs || !element_owned.contains(&canonical_bar) {
                 remapped_fragments
                     .entry(format!("#{}-{raw_id}", self.id))
-                    .or_insert_with(|| format_fragment_url(&target_bar));
+                    .or_insert(target_bar);
             }
             if raw_prefix_differs || !element_owned.contains(&canonical_text) {
                 remapped_fragments
                     .entry(format!("#{}-{raw_id}-text", self.id))
-                    .or_insert_with(|| format_fragment_url(&target_text));
+                    .or_insert(target_text);
             }
         }
         Some(ResolvedGanttIds {

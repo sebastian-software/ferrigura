@@ -980,7 +980,7 @@ fn url_entity_placeholders_and_fragment_precedence_match_reference() {
         .collect();
     assert_eq!(
         prefer_hrefs,
-        vec!["#graph-classId-A%20B-C", "#graph-classId-A%2520B-C"]
+        vec!["#%67raph-classId-A%20B-C", "#graph-classId-A%2520B-C"]
     );
     assert_eq!(
         resolved_fragment_target(prefer_hrefs[0]),
@@ -1072,7 +1072,7 @@ fn url_entity_placeholders_and_fragment_precedence_match_reference() {
         .collect();
     assert_eq!(
         disambig_hrefs,
-        vec!["#graph-classId-A%2520B-C", "#graph-classId-A%20B-C"]
+        vec!["#graph-classId-A%2520B-C", "#%67raph-classId-A%20B-C"]
     );
     assert_eq!(
         resolved_fragment_target(disambig_hrefs[0]),
@@ -2121,7 +2121,10 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         .descendants()
         .filter_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
         .collect();
-    assert_eq!(gantt_prec_hrefs, vec!["#graph-A%20B-C", "#graph-A%2520B-C"]);
+    assert_eq!(
+        gantt_prec_hrefs,
+        vec!["#%67raph-A%20B-C", "#graph-A%2520B-C"]
+    );
     assert_eq!(resolved_fragment_target(gantt_prec_hrefs[0]), "graph-A B-C");
     assert_eq!(
         resolved_fragment_target(gantt_prec_hrefs[1]),
@@ -2213,5 +2216,26 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     assert!(
         !state_ci_acc_descr.contains("&amp;abc;"),
         "{state_ci_acc_descr}"
+    );
+
+    // Same-document fragment links with HTML numeric references (`#graph-classId-Caf&#233;`)
+    // resolve cleanly to `graph-classId-Café` without leaving a stray `&`.
+    let frag_num_ref = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class Café\n  click Café href \"#graph-classId-Caf&#233;\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let frag_num_doc = roxmltree::Document::parse(&frag_num_ref).expect("well-formed SVG XML");
+    let frag_num_href = frag_num_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(
+        resolved_fragment_target(frag_num_href),
+        "graph-classId-Café"
     );
 }

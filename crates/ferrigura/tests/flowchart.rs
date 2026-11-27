@@ -561,6 +561,59 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         !next_line_acc_descr.contains("&amp;abc;"),
         "{next_line_acc_descr}"
     );
+    // `accDescr {` after a `;` statement separator also isolates unmatched quotes.
+    let semi_acc_descr = render(
+        "flowchart LR; accDescr {\n  The \"metric\n}\nA\nstyle A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(semi_acc_descr.contains("fill:#abc"), "{semi_acc_descr}");
+    assert!(!semi_acc_descr.contains("&amp;abc;"), "{semi_acc_descr}");
+    // Escaped HTTPS userinfo (`%23alice@`) stays valid instead of being blanked when `%23` is
+    // decoded.
+    let escaped_userinfo = render(
+        "flowchart TD\nA[x]\nclick A \"https://%23alice@example.org/report\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        escaped_userinfo.contains("xlink:href=\"https://%23alice@example.org/report\""),
+        "{escaped_userinfo}"
+    );
+    // Fragment spellings that already resolve via HTML percent-decoding (`#graph-%47%2541` ->
+    // `graph-G%41`) are preserved instead of rewritten to a colliding literal ID (`graph-G%2541`).
+    let no_decoy_rewrite = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "flowchart TD\nsubgraph G%41\nA\nend\nsubgraph G%2541\nB\nend\nclick B \"#graph-%47%2541\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        no_decoy_rewrite.contains("xlink:href=\"#graph-%47%2541\""),
+        "{no_decoy_rewrite}"
+    );
+    // When a fragment link MUST be rewritten to target `graph-G%41` while `graph-G%2541` also
+    // exists, the rewritten URL avoids the `#graph-G%2541` exact-match collision.
+    let decoy_avoid = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : G#37;41, 2024-01-01, 1d\n  T2 : G%2541, 2024-01-02, 1d\n  click G%2541 href \"#graph-G#37;41\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        !decoy_avoid.contains("xlink:href=\"#graph-G%2541\""),
+        "{decoy_avoid}"
+    );
+    assert!(
+        decoy_avoid.contains("xlink:href=\"#%67raph-G%2541\""),
+        "{decoy_avoid}"
+    );
     let valid_image = render(
         "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",
         &Value::empty_object(),
