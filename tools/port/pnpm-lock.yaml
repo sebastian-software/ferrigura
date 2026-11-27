@@ -193,7 +193,7 @@ importers:
         version: 30.0.0
       '@types/node':
         specifier: ^26.0.0
-        version: 26.6.6
+        version: 26.6.7
       esbuild:
         specifier: ^0.28.0
         version: 0.28.2
@@ -226,7 +226,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: ^8.0.0
-        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.8(@types/node@26.6.7)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.23.15)(yaml@2.9.1)
 
 packages:
 
@@ -787,8 +787,8 @@ packages:
   '@types/jsdom@30.0.0':
     resolution: {integrity: sha512-uAHGxujGE0cDaKGdK28zgDotFtNA7MKq5DXl8LrfdxdCI8VHcg15oJz+amHTChPNI5JpgEPQWc2xFdrw3em/nQ==}
 
-  '@types/node@26.6.6':
-    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
+  '@types/node@26.6.7':
+    resolution: {integrity: sha512-tovuRfrUILu6v46bMG+BgXxMvsqPBx2WO2as8Rpln+JTff1dbexMtAM4KFTejmL0axsnSWViCW7MecUQpLuBRA==}
 
   '@types/tough-cookie@4.0.5':
     resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
@@ -1495,12 +1495,12 @@ snapshots:
 
   '@types/jsdom@30.0.0':
     dependencies:
-      '@types/node': 26.6.6
+      '@types/node': 26.6.7
       '@types/tough-cookie': 4.0.5
       parse5: 8.0.1
       undici-types: 8.9.0
 
-  '@types/node@26.6.6':
+  '@types/node@26.6.7':
     dependencies:
       undici-types: 8.9.0
 
@@ -1847,7 +1847,7 @@ snapshots:
 
   undici@8.12.3: {}
 
-  vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.23.15)(yaml@2.9.1):
+  vite@8.3.8(@types/node@26.6.7)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -1855,7 +1855,7 @@ snapshots:
       rolldown: 1.2.19
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.6.6
+      '@types/node': 26.6.7
       esbuild: 0.28.2
       fsevents: 2.3.3
       jiti: 2.6.1
