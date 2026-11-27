@@ -582,4 +582,70 @@ fn every_rendered_svg_is_well_formed_xml() {
     );
 }
 
+#[test]
+fn theme_variables_array_and_font_family_cannot_inject_global_css() {
+    // 1. Front-matter `themeVariables` as an array must not bypass sanitization and break out of
+    // scoped rules in pie or other renderers.
+    let pie_array = "\
+---
+config:
+  themeVariables:
+    - pieTitleTextSize: \"25px;} body { display: none; } .x { font-size: 1px\"
+---
+pie
+  \"A\" : 1
+";
+    let empty = ferrigura::Value::empty_object();
+    let svg = ferrigura::render(pie_array, &empty).expect("pie with array themeVariables renders");
+    roxmltree::Document::parse(&svg).expect("well-formed XML");
+    assert!(
+        !svg.contains("body { display: none; }") && !svg.contains("display: none"),
+        "themeVariables array broke out of scoped CSS: {svg}"
+    );
+
+    // 2. Top-level `fontFamily` directives (both semicolon declarations and balanced braces) must
+    // not inject global CSS rules or extra declarations into `:root`.
+    for (label, diagram) in [
+        ("sequence", "sequenceDiagram\n  A->>B: hi\n"),
+        ("mindmap", "mindmap\n  root\n    leaf\n"),
+        ("xychart", "xychart-beta\n  x-axis [a, b]\n  bar [1, 2]\n"),
+        (
+            "quadrant",
+            "quadrantChart\n  x-axis L --> R\n  y-axis B --> T\n  p: [0.5, 0.5]\n",
+        ),
+        ("pie", "pie\n  \"A\" : 1\n"),
+        (
+            "gantt",
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T : 2024-01-01, 1d\n",
+        ),
+    ] {
+        for payload in [
+            "sans-serif; background: red; display: none",
+            "sans-serif} body{display:none} :root{--x:1",
+            "a { b",
+        ] {
+            for source in [
+                format!("---\nconfig:\n  fontFamily: \"{payload}\"\n---\n{diagram}"),
+                format!(
+                    "---\nconfig:\n  themeVariables:\n    fontFamily: \"{payload}\"\n---\n{diagram}"
+                ),
+            ] {
+                let svg = ferrigura::render(&source, &empty)
+                    .unwrap_or_else(|e| panic!("{label} with fontFamily {payload:?} failed: {e}"));
+                roxmltree::Document::parse(&svg).unwrap_or_else(|e| {
+                    panic!("{label} with fontFamily {payload:?} invalid XML: {e}")
+                });
+                assert!(
+                    !svg.contains("display: none")
+                        && !svg.contains("display:none")
+                        && !svg.contains("background: red")
+                        && !svg.contains("body{")
+                        && !svg.contains("ERROR: Unbalanced CSS"),
+                    "{label} injected CSS via fontFamily {payload:?}: {svg}"
+                );
+            }
+        }
+    }
+}
+
 mod accessibility;

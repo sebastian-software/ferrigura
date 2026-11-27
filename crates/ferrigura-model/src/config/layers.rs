@@ -529,18 +529,43 @@ pub fn sanitize_directive(args: &mut Value) {
                     && (key.contains("themeCSS") || key.contains("fontFamily"))
                 {
                     let cleaned = sanitize_css(text);
-                    *text = cleaned;
-                }
-            }
-            if let Some(Value::Object(variables)) = map.get_mut("themeVariables") {
-                for value in variables.values_mut() {
-                    if let Value::String(text) = value
-                        && !theme_value_pattern().is_match(text)
+                    if key.contains("fontFamily")
+                        && cleaned == *text
+                        && text
+                            .bytes()
+                            .any(|b| matches!(b, b';' | b'{' | b'}' | b'\\' | b'\n' | b'\r'))
                     {
                         text.clear();
+                    } else {
+                        *text = cleaned;
                     }
                 }
             }
+            if let Some(variables) = map.get_mut("themeVariables") {
+                sanitize_theme_variables(variables);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Recursively sanitizes `themeVariables` values, including arrays of override objects that
+/// `assign_with_depth` would otherwise unpack into the theme map.
+fn sanitize_theme_variables(value: &mut Value) {
+    match value {
+        Value::Object(variables) => {
+            variables.retain(|key, _| !key.contains("proto") && !key.contains("constr"));
+            for entry in variables.values_mut() {
+                sanitize_theme_variables(entry);
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                sanitize_theme_variables(item);
+            }
+        }
+        Value::String(text) if !theme_value_pattern().is_match(text) => {
+            text.clear();
         }
         _ => {}
     }

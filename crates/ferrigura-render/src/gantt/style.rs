@@ -199,9 +199,9 @@ pub(crate) fn style_element(
     };
     // `family` is the quoted `font-family` list of the embedded faces, or empty.
     let font = if family.is_empty() {
-        "sans-serif".to_owned()
+        "sans-serif"
     } else {
-        family.to_owned()
+        crate::svg::css_declaration_value(family, "sans-serif")
     };
     // `font-size` of the root is the theme's `fontSize`, as `getStyles` writes it (`styles.ts`).
     let size = theme
@@ -209,9 +209,10 @@ pub(crate) fn style_element(
         .font_size
         .text()
         .unwrap_or_else(|| "16px".to_owned());
+    let size = crate::svg::css_declaration_value(&size, "16px");
     let root = format!("#{id}{{font-family: {font};font-size: {size};fill: var(--textColor);}}");
     let mut scoped_rules = String::new();
-    for (selectors, body) in rules(&font) {
+    for (selectors, body) in rules(font) {
         for (index, selector) in selectors.split(',').enumerate() {
             if index > 0 {
                 scoped_rules.push_str(", ");

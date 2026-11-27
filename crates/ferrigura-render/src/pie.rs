@@ -475,6 +475,13 @@ fn style_element(
     let title_size = tokens.pie_title_text_size.text().unwrap_or_default();
     let section_size = tokens.pie_section_text_size.text().unwrap_or_default();
     let legend_size = tokens.pie_legend_text_size.text().unwrap_or_default();
+    let stroke_width = crate::svg::css_declaration_value(&stroke_width, "");
+    let opacity = crate::svg::css_declaration_value(&opacity, "");
+    let outer_stroke_width = crate::svg::css_declaration_value(&outer_stroke_width, "");
+    let title_size = crate::svg::css_declaration_value(&title_size, "");
+    let section_size = crate::svg::css_declaration_value(&section_size, "");
+    let legend_size = crate::svg::css_declaration_value(&legend_size, "");
+    let family = crate::svg::css_declaration_value(family, "sans-serif");
     let slots: String = (0..SLICE_COLORS)
         .map(|slot| {
             format!(

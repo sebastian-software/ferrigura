@@ -9,6 +9,20 @@ use ferrigura_text::EmbeddedFamily;
 
 use crate::common::d3::d3_number;
 
+/// Returns `value` unchanged when it cannot terminate or break out of a CSS declaration
+/// (`;`, `{`, `}`, `\`, `\n`, `\r`), or `fallback` otherwise.
+#[must_use]
+pub(crate) fn css_declaration_value<'a>(value: &'a str, fallback: &'a str) -> &'a str {
+    if value
+        .bytes()
+        .any(|b| matches!(b, b';' | b'{' | b'}' | b'\\' | b'\n' | b'\r'))
+    {
+        fallback
+    } else {
+        value
+    }
+}
+
 /// Escapes text for an XML element or attribute value. A character that XML 1.0 cannot hold (a
 /// control other than tab, line feed and carriage return) is written as U+FFFD.
 #[must_use]
