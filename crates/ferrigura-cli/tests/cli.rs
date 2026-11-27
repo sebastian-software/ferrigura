@@ -710,6 +710,7 @@ fn double_dash_renders_files_starting_with_a_dash() {
     fs::remove_dir_all(dir).unwrap();
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 #[test]
 fn output_dir_rejects_case_only_filename_collisions() {
     let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("case-collision-out");
@@ -725,6 +726,34 @@ fn output_dir_rejects_case_only_filename_collisions() {
     assert_eq!(output.status.code(), Some(2));
     assert!(stderr(&output).contains("collides with"));
     assert!(!dir.exists());
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[test]
+fn output_dir_allows_case_distinct_filenames_on_case_sensitive_platforms() {
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("case-sensitive-out");
+    let first_dir = root.join("first");
+    let second_dir = root.join("second");
+    let out_dir = root.join("out");
+    fs::create_dir_all(&first_dir).unwrap();
+    fs::create_dir_all(&second_dir).unwrap();
+    let upper = first_dir.join("Diagram.mmd");
+    let lower = second_dir.join("diagram.mmd");
+    fs::write(&upper, PIE).unwrap();
+    fs::write(&lower, PIE).unwrap();
+    let output = run(
+        &[
+            "--output-dir",
+            out_dir.to_str().unwrap(),
+            upper.to_str().unwrap(),
+            lower.to_str().unwrap(),
+        ],
+        "",
+    );
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(out_dir.join("Diagram.svg").is_file());
+    assert!(out_dir.join("diagram.svg").is_file());
+    fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

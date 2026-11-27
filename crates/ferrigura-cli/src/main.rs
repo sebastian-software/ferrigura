@@ -235,20 +235,25 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
     job.settle()
 }
 
-/// Case-folded output file key so `--output-dir` rejects names that collide on case-insensitive
-/// file systems consistently across all platforms.
+/// Output file key for `--output-dir` collision checks: case-folded on case-insensitive platforms
+/// (macOS/Windows) and exact on case-sensitive platforms.
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum TargetKey {
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     Folded(String),
     Raw(OsString),
 }
 
 impl TargetKey {
     fn from_path(path: &Path) -> Self {
-        match path.file_name().and_then(|name| name.to_str()) {
-            Some(name) => Self::Folded(name.to_lowercase()),
-            None => Self::Raw(path.as_os_str().to_os_string()),
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        if let Some(name) = path.file_name().and_then(|name| name.to_str()) {
+            return Self::Folded(name.to_lowercase());
         }
+        Self::Raw(path.file_name().map_or_else(
+            || path.as_os_str().to_os_string(),
+            std::ffi::OsStr::to_os_string,
+        ))
     }
 }
 

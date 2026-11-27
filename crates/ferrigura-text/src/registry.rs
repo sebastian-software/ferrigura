@@ -478,6 +478,41 @@ impl FontRegistry {
         hash.finish()
     }
 
+    /// Reads a regular font file up to the 16 MiB limit without blocking on Unix FIFOs.
+    ///
+    /// # Errors
+    ///
+    /// Reports a file read, non-regular-file, or size-limit error.
+    #[doc(hidden)]
+    pub fn read_font_file(path: &Path) -> Result<Vec<u8>, TextError> {
+        read_font_file(path)
+    }
+
+    /// Estimates the unique retained heap bytes of registered font payloads (including cached
+    /// whole-font base64 strings for CFF faces) so renderer caches can enforce a byte budget.
+    #[must_use]
+    #[doc(hidden)]
+    pub fn cached_font_bytes(&self) -> usize {
+        let mut seen_bytes = Vec::new();
+        let mut total = 0usize;
+        for face in &self.faces {
+            if let FontData::Registered {
+                bytes, whole_embed, ..
+            } = &face.data
+            {
+                let ptr = Arc::as_ptr(bytes) as usize;
+                if !seen_bytes.contains(&ptr) {
+                    seen_bytes.push(ptr);
+                    total = total.saturating_add(bytes.capacity());
+                }
+                if let Some(embed) = whole_embed {
+                    total = total.saturating_add(embed.base64.as_ref().map_or(0, String::capacity));
+                }
+            }
+        }
+        total
+    }
+
     /// Whether two registries contain the same faces (names, designs, and exact bytes) and
     /// fallback chain.
     #[must_use]
@@ -598,11 +633,20 @@ fn family_names(list: &str) -> Vec<String> {
     names
 }
 
-/// Reads a regular font file up to [`MAX_FONT_BYTES`].
+/// Reads a regular font file up to [`MAX_FONT_BYTES`] without blocking on Unix FIFOs.
 fn read_font_file(path: &Path) -> Result<Vec<u8>, TextError> {
-    let file = std::fs::File::open(path).map_err(|error| {
-        TextError::Registration(format!("cannot read font {}: {error}", path.display()))
-    })?;
+    let file = {
+        let mut options = std::fs::OpenOptions::new();
+        options.read(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.custom_flags(libc::O_NONBLOCK);
+        }
+        options.open(path).map_err(|error| {
+            TextError::Registration(format!("cannot read font {}: {error}", path.display()))
+        })?
+    };
     let metadata = file.metadata().map_err(|error| {
         TextError::Registration(format!("cannot read font {}: {error}", path.display()))
     })?;

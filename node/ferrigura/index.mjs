@@ -1,4 +1,5 @@
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync } from 'node:fs';
+import { types } from 'node:util';
 import { createNativeLoader } from './native-runtime.mjs';
 const MAX_FONT = 16 * 1024 * 1024;
 const load = createNativeLoader(import.meta.url, {
@@ -100,7 +101,7 @@ function fontInputs(options) {
         }
         return { ...face, data: bytes };
       }
-      if (!(data instanceof Uint8Array)) {
+      if (!types.isUint8Array(data)) {
         throw new TypeError('font data must be a Uint8Array');
       }
       if (data.byteLength > MAX_FONT) {

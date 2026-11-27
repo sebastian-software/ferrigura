@@ -3,7 +3,6 @@
 
 use std::collections::HashMap;
 use std::hash::Hasher;
-use std::io::Read;
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard, OnceLock, PoisonError};
 
 use ferrigura_model::config::{MermaidConfig, ResolvedThemeVariables, SiteConfig, typed_top};
@@ -633,50 +632,7 @@ impl RendererBuilder {
         weight: FontWeight,
         style: FontStyle,
     ) -> Result<Self, Error> {
-        const MAX_FONT_BYTES: u64 = 16 * 1024 * 1024;
-        let path = path.as_ref();
-        let file = std::fs::File::open(path).map_err(|error| {
-            ferrigura_text::TextError::Registration(format!(
-                "cannot read font {}: {error}",
-                path.display()
-            ))
-        })?;
-        let metadata = file.metadata().map_err(|error| {
-            ferrigura_text::TextError::Registration(format!(
-                "cannot read font {}: {error}",
-                path.display()
-            ))
-        })?;
-        if !metadata.is_file() {
-            return Err(ferrigura_text::TextError::Registration(format!(
-                "cannot read font {}: not a regular file",
-                path.display()
-            ))
-            .into());
-        }
-        if metadata.len() > MAX_FONT_BYTES {
-            return Err(ferrigura_text::TextError::Registration(format!(
-                "cannot read font {}: exceeds size limit",
-                path.display()
-            ))
-            .into());
-        }
-        let mut bytes = Vec::new();
-        file.take(MAX_FONT_BYTES + 1)
-            .read_to_end(&mut bytes)
-            .map_err(|error| {
-                ferrigura_text::TextError::Registration(format!(
-                    "cannot read font {}: {error}",
-                    path.display()
-                ))
-            })?;
-        if bytes.len() as u64 > MAX_FONT_BYTES {
-            return Err(ferrigura_text::TextError::Registration(format!(
-                "cannot read font {}: exceeds size limit",
-                path.display()
-            ))
-            .into());
-        }
+        let bytes = FontRegistry::read_font_file(path.as_ref())?;
         self.font_face(family, bytes, weight, style)
     }
 
@@ -703,22 +659,44 @@ impl RendererBuilder {
     #[must_use]
     pub fn shared(self) -> Arc<Renderer> {
         let font_fingerprint = self.fonts.as_ref().map(FontRegistry::fingerprint);
+        let font_bytes = self
+            .fonts
+            .as_ref()
+            .map_or(0, FontRegistry::cached_font_bytes);
         let mut kinds: Vec<DiagramType> = self.plugins.iter().map(Plugin::kind).collect();
         kinds.sort_unstable_by(|a, b| a.config_key().cmp(b.config_key()));
-        if let Some(renderer) = kept(&self.config, &kinds, font_fingerprint, self.fonts.as_ref()) {
+        if font_bytes <= SHORTHAND_FONT_BYTE_BUDGET
+            && let Some(renderer) =
+                kept(&self.config, &kinds, font_fingerprint, self.fonts.as_ref())
+        {
             return renderer;
         }
         // Two threads that miss at once keep two equal renderers for a while; that costs memory only.
         let config = self.config.clone();
         let renderer = Arc::new(self.build());
+        if font_bytes > SHORTHAND_FONT_BYTE_BUDGET {
+            return renderer;
+        }
         let mut cache = lock(&SHORTHAND);
-        if cache.len() == SHORTHAND_CAPACITY {
+        while cache.len() >= SHORTHAND_CAPACITY
+            || (font_bytes > 0
+                && cache
+                    .iter()
+                    .map(|entry| entry.font_bytes)
+                    .fold(0usize, usize::saturating_add)
+                    .saturating_add(font_bytes)
+                    > SHORTHAND_FONT_BYTE_BUDGET)
+        {
+            if cache.is_empty() {
+                break;
+            }
             cache.remove(0);
         }
         cache.push(Shared {
             config,
             kinds,
             font_fingerprint,
+            font_bytes,
             renderer: Arc::clone(&renderer),
         });
         renderer
@@ -1174,6 +1152,9 @@ static SHORTHAND: Mutex<Vec<Shared>> = Mutex::new(Vec::new());
 /// the output does not depend on it.
 const SHORTHAND_CAPACITY: usize = 8;
 
+/// Maximum retained supplied-font bytes across all renderers in [`SHORTHAND`].
+const SHORTHAND_FONT_BYTE_BUDGET: usize = 16 * 1024 * 1024;
+
 /// A renderer the shorthand keeps, with what it was made from.
 struct Shared {
     config: Value,
@@ -1181,6 +1162,8 @@ struct Shared {
     kinds: Vec<DiagramType>,
     /// The fingerprint of supplied fonts, or `None` when using bundled defaults.
     font_fingerprint: Option<u64>,
+    /// Estimated retained bytes of supplied font data owned by `renderer`.
+    font_bytes: usize,
     renderer: Arc<Renderer>,
 }
 

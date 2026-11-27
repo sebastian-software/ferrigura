@@ -209,6 +209,7 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
+ "serde_json",
 ]
 
 [[package]]
@@ -256,6 +257,7 @@ version = "0.9.0"
 dependencies = [
  "base64",
  "harfrust",
+ "libc",
  "read-fonts",
  "serde_json",
  "skera",

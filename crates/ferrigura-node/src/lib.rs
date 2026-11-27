@@ -18,8 +18,8 @@ use std::sync::{Arc, Mutex, PoisonError};
 use ferrigura::diagrams::{self, Plugin};
 use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, RendererBuilder};
 use ferrigura_model::value::Value;
-use napi::bindgen_prelude::{Uint8Array, Unknown};
-use napi::{Env, Error, Result, Status, ValueType};
+use napi::bindgen_prelude::Uint8Array;
+use napi::{Error, Result, Status};
 use napi_derive::napi;
 
 // A render makes many small allocations, which mimalloc serves faster than the system allocator. The
@@ -100,13 +100,12 @@ pub struct AnimationInput {
 /// id is not valid.
 #[napi]
 pub fn render(
-    env: Env,
     text: String,
-    config: Option<Unknown<'_>>,
+    config: Option<serde_json::Value>,
     options: Option<RenderOptionsInput>,
     fonts: Option<FontOptionsInput>,
 ) -> Result<String> {
-    let config = parse_config(&env, config)?;
+    let config = parse_config(config)?;
     let options = render_options(options)?;
     let (faces, fallbacks) = parse_fonts(fonts.as_ref())?;
     let renderer = cached_renderer(&config, &faces, &fallbacks)?;
@@ -135,12 +134,8 @@ impl Renderer {
     /// Throws immediately if `config` is not an object (when provided) or if supplied font bytes or
     /// face metadata are invalid.
     #[napi(constructor)]
-    pub fn new(
-        env: Env,
-        config: Option<Unknown<'_>>,
-        fonts: Option<FontOptionsInput>,
-    ) -> Result<Self> {
-        let config = parse_config(&env, config)?;
+    pub fn new(config: Option<serde_json::Value>, fonts: Option<FontOptionsInput>) -> Result<Self> {
+        let config = parse_config(config)?;
         let (faces, fallbacks) = parse_fonts(fonts.as_ref())?;
         let (builder, _) = build_with_fonts(builder(&config), &faces, &fallbacks)?;
         Ok(Self {
@@ -162,25 +157,21 @@ impl Renderer {
     }
 }
 
-/// Deserializes JS `config` directly into [`Value`] without an intermediate `serde_json::Value`
-/// tree, rejecting non-object values while treating `undefined` and `null` as an empty object.
-fn parse_config(env: &Env, config: Option<Unknown<'_>>) -> Result<Value> {
-    let Some(raw) = config else {
-        return Ok(Value::empty_object());
-    };
-    match raw.get_type()? {
-        ValueType::Undefined | ValueType::Null => Ok(Value::empty_object()),
-        ValueType::Object => {
-            let value: Value = env.from_js_value(raw)?;
-            validate_config(Some(value))
-        }
-        _ => Err(Error::new(
+/// Validates a JS `config` already converted by N-API's depth- and node-bounded `serde_json::Value`
+/// deserializer (so any JS getters run before `fonts` `Uint8Array` slices are extracted), rejecting
+/// non-object values while treating `undefined` and `null` as an empty object.
+fn parse_config(config: Option<serde_json::Value>) -> Result<Value> {
+    match config {
+        None | Some(serde_json::Value::Null) => Ok(Value::empty_object()),
+        Some(value @ serde_json::Value::Object(_)) => Ok(Value::from(value)),
+        Some(_) => Err(Error::new(
             Status::InvalidArg,
             "configuration must be an object",
         )),
     }
 }
 
+#[cfg(test)]
 fn validate_config(config: Option<Value>) -> Result<Value> {
     match config {
         None | Some(Value::Null) => Ok(Value::empty_object()),
@@ -333,11 +324,32 @@ fn build_with_fonts(
 }
 
 const RENDERER_CACHE_CAPACITY: usize = 8;
+/// Maximum retained supplied-font bytes across all renderers in [`RENDERER_CACHE`].
+const RENDERER_CACHE_FONT_BYTE_BUDGET: usize = 16 * 1024 * 1024;
 
 struct CachedRenderer {
     config: Value,
     fonts: Option<FontCacheKey>,
+    font_bytes: usize,
     renderer: Arc<ferrigura::Renderer>,
+}
+
+fn estimated_font_bytes(faces: &[OwnedFaceKey]) -> usize {
+    let mut seen = Vec::new();
+    let mut total = 0usize;
+    for face in faces {
+        let ptr = Arc::as_ptr(&face.data) as usize;
+        if !seen.contains(&ptr) {
+            seen.push(ptr);
+            total = total.saturating_add(face.data.capacity());
+        }
+        // CFF/CFF2 fonts embed whole with a precomputed base64 payload (~4/3x).
+        if face.data.starts_with(b"OTTO") {
+            let b64 = face.data.len().saturating_mul(4) / 3 + 4;
+            total = total.saturating_add(b64);
+        }
+    }
+    total
 }
 
 static RENDERER_CACHE: Mutex<Vec<CachedRenderer>> = Mutex::new(Vec::new());
@@ -380,7 +392,11 @@ fn cached_renderer(
         }
     }
     let (builder, owned_faces) = build_with_fonts(builder(config), faces, fallbacks)?;
+    let font_bytes = estimated_font_bytes(&owned_faces);
     let renderer = Arc::new(builder.build());
+    if font_bytes > RENDERER_CACHE_FONT_BYTE_BUDGET {
+        return Ok(renderer);
+    }
     let fonts_key = fingerprint.map(|fp| FontCacheKey {
         fingerprint: fp,
         faces: owned_faces,
@@ -392,12 +408,24 @@ fn cached_renderer(
     if let Some(existing) = take_cached(&mut cache, config, fingerprint, faces, fallbacks) {
         return Ok(existing);
     }
-    if cache.len() == RENDERER_CACHE_CAPACITY {
+    while cache.len() >= RENDERER_CACHE_CAPACITY
+        || (font_bytes > 0
+            && cache
+                .iter()
+                .map(|entry| entry.font_bytes)
+                .fold(0usize, usize::saturating_add)
+                .saturating_add(font_bytes)
+                > RENDERER_CACHE_FONT_BYTE_BUDGET)
+    {
+        if cache.is_empty() {
+            break;
+        }
         cache.remove(0);
     }
     cache.push(CachedRenderer {
         config: config.clone(),
         fonts: fonts_key,
+        font_bytes,
         renderer: Arc::clone(&renderer),
     });
     Ok(renderer)

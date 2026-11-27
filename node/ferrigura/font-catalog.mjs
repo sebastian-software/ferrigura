@@ -385,6 +385,10 @@ export async function resolveCatalogFonts(options) {
           protectedDownloads: options.protectedDownloads,
         });
         loaded.set(face.renderer.sha256, data);
+      } else if (data.byteLength !== face.renderer.size) {
+        throw new Error(
+          `font ${face.renderer.sha256} size mismatch: expected ${face.renderer.size}, got ${data.byteLength}`
+        );
       }
       fonts.push({ family: alias, weight: face.weight, style: face.style, data });
     }
