@@ -659,12 +659,22 @@ pub fn sanitize_url(url: &str) -> String {
     }
     let back_sanitized = trimmed.replace('\\', "/");
     if scheme == "mailto:" || scheme.contains("://") {
+        if let Some(ref tokens) = http_tokens {
+            return restore_http_tokens_by_component(&back_sanitized, tokens);
+        }
         return back_sanitized;
     }
     if scheme == "http:" || scheme == "https:" {
-        return normalize_http_with_tokens(&back_sanitized, &http_tokens);
+        return normalize_http_with_tokens(&back_sanitized, http_tokens.as_ref());
     }
     back_sanitized
+}
+
+/// Tokenized Mermaid entity placeholders extracted from an `http:` / `https:` URL before
+/// obfuscation decoding and WHATWG normalization.
+struct HttpEntityTokens {
+    prefix: String,
+    values: Vec<String>,
 }
 
 /// WHATWG URL percent-encode component for substituting decoded Mermaid entity placeholders back
@@ -728,28 +738,47 @@ fn percent_encode_component(out: &mut String, decoded: &str, component: UrlEncod
 }
 
 fn substitute_component_tokens(
+    out: &mut String,
     segment: &str,
-    tokens: &[(String, String)],
+    tokens: &HttpEntityTokens,
     component: UrlEncodeComponent,
-) -> String {
-    let mut current = segment.to_owned();
-    for (token, decoded) in tokens {
-        if current.contains(token.as_str()) {
-            let mut replacement = String::with_capacity(decoded.len());
-            percent_encode_component(&mut replacement, decoded, component);
-            current = current.replace(token.as_str(), &replacement);
+) {
+    let prefix = tokens.prefix.as_str();
+    let mut cursor = 0;
+    while cursor < segment.len() {
+        let Some(rel) = segment[cursor..].find(prefix) else {
+            out.push_str(&segment[cursor..]);
+            return;
+        };
+        let pos = cursor + rel;
+        out.push_str(&segment[cursor..pos]);
+        let digits_start = pos + prefix.len();
+        let digits_len = segment[digits_start..]
+            .bytes()
+            .take_while(u8::is_ascii_digit)
+            .count();
+        let digits_end = digits_start + digits_len;
+        if digits_len > 0
+            && segment[digits_end..].starts_with("__")
+            && let Ok(index) = segment[digits_start..digits_end].parse::<usize>()
+            && let Some(decoded) = tokens.values.get(index)
+        {
+            percent_encode_component(out, decoded, component);
+            cursor = digits_end + 2;
+            continue;
         }
+        out.push_str(prefix);
+        cursor = digits_start;
     }
-    current
 }
 
 /// Tokenizes literal Mermaid entity placeholders (`ﬂ°°<digits>¶ß`, `ﬂ°<name>¶ß`, standalone `¶ß`)
-/// in `segment` into collision-free ASCII tokens appended to `tokens`.
+/// in `segment` into collision-free ASCII tokens appended to `values`.
 fn tokenize_placeholders_into(
     out: &mut String,
     segment: &str,
     prefix: &str,
-    tokens: &mut Vec<(String, String)>,
+    values: &mut Vec<String>,
 ) {
     let mut cursor = 0;
     while cursor < segment.len() {
@@ -786,9 +815,11 @@ fn tokenize_placeholders_into(
                     format!("&{name};")
                 };
                 let decoded = crate::sanitize::decode_attribute_references(&reference);
-                let token = format!("{prefix}{}__", tokens.len());
-                out.push_str(&token);
-                tokens.push((token, decoded));
+                let idx = values.len();
+                out.push_str(prefix);
+                out.push_str(&idx.to_string());
+                out.push_str("__");
+                values.push(decoded);
                 cursor = pos + "ﬂ°".len() + body_start_rel + name_len + "¶ß".len();
                 continue;
             }
@@ -798,14 +829,18 @@ fn tokenize_placeholders_into(
             } else {
                 ("&".to_owned(), "ﬂ°".len())
             };
-            let token = format!("{prefix}{}__", tokens.len());
-            out.push_str(&token);
-            tokens.push((token, decoded));
+            let idx = values.len();
+            out.push_str(prefix);
+            out.push_str(&idx.to_string());
+            out.push_str("__");
+            values.push(decoded);
             cursor = pos + step;
         } else {
-            let token = format!("{prefix}{}__", tokens.len());
-            out.push_str(&token);
-            tokens.push((token, ";".to_owned()));
+            let idx = values.len();
+            out.push_str(prefix);
+            out.push_str(&idx.to_string());
+            out.push_str("__");
+            values.push(";".to_owned());
             cursor = pos + "¶ß".len();
         }
     }
@@ -816,9 +851,9 @@ fn tokenize_placeholders_into(
 /// placeholders in userinfo/path/query/fragment with collision-free ASCII tokens.
 fn prepare_http_entity_placeholders(
     candidate: &str,
-) -> (std::borrow::Cow<'_, str>, Vec<(String, String)>) {
+) -> (std::borrow::Cow<'_, str>, Option<HttpEntityTokens>) {
     if !candidate.contains("ﬂ°") && !candidate.contains("¶ß") {
-        return (std::borrow::Cow::Borrowed(candidate), Vec::new());
+        return (std::borrow::Cow::Borrowed(candidate), None);
     }
     let trimmed = candidate.trim_start_matches(is_js_space);
     let scheme_len = if trimmed
@@ -832,7 +867,7 @@ fn prepare_http_entity_placeholders(
     {
         6
     } else {
-        return (std::borrow::Cow::Borrowed(candidate), Vec::new());
+        return (std::borrow::Cow::Borrowed(candidate), None);
     };
 
     let normalized: std::borrow::Cow<'_, str> = if trimmed.contains('\\') {
@@ -851,12 +886,14 @@ fn prepare_http_entity_placeholders(
         .rfind('@')
         .map_or(authority_start, |at| authority_start + at + 1);
 
+    let decoded_probe =
+        decode_url_obfuscations_bounded(normalized.as_ref(), MAX_DECODE_PASSES).unwrap_or_default();
     let mut prefix = String::from("__FGENT_");
-    while normalized.contains(&prefix) {
+    while normalized.contains(&prefix) || decoded_probe.contains(&prefix) {
         prefix.push('X');
     }
 
-    let mut tokens = Vec::new();
+    let mut values = Vec::new();
     let mut out = String::with_capacity(normalized.len());
     out.push_str(&normalized[..authority_start]);
     // Userinfo (up to and including `@`): tokenize so delimiters are encoded as userinfo later.
@@ -864,7 +901,7 @@ fn prepare_http_entity_placeholders(
         &mut out,
         &normalized[authority_start..host_start],
         &prefix,
-        &mut tokens,
+        &mut values,
     );
     // Host[:port]: resolve directly before IDNA/port parsing.
     let host_port = &normalized[host_start..authority_end];
@@ -880,44 +917,113 @@ fn prepare_http_entity_placeholders(
         out.push_str(host_port);
     }
     // Path, query, and fragment: tokenize so component-aware encoding runs after `Url::parse`.
-    tokenize_placeholders_into(&mut out, &normalized[authority_end..], &prefix, &mut tokens);
+    tokenize_placeholders_into(&mut out, &normalized[authority_end..], &prefix, &mut values);
+    let tokens = (!values.is_empty()).then_some(HttpEntityTokens { prefix, values });
     (std::borrow::Cow::Owned(out), tokens)
+}
+
+/// Restores tokenized Mermaid placeholders in an already-sanitized `http:` / `https:` URL that
+/// bypassed `Url::parse` (for example, an URL with an explicit `:port` or a `:` in query/fragment
+/// that made `url_scheme` include `://`).
+fn restore_http_tokens_by_component(url: &str, tokens: &HttpEntityTokens) -> String {
+    let scheme_len = if url
+        .get(..5)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("http:"))
+    {
+        5
+    } else if url
+        .get(..6)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("https:"))
+    {
+        6
+    } else {
+        return url.to_owned();
+    };
+    let slashes = url[scheme_len..].bytes().take_while(|&b| b == b'/').count();
+    let authority_start = scheme_len + slashes;
+    let authority_end = url[authority_start..]
+        .find(['/', '?', '#'])
+        .map_or(url.len(), |offset| authority_start + offset);
+    let authority = &url[authority_start..authority_end];
+    let host_start = authority
+        .rfind('@')
+        .map_or(authority_start, |at| authority_start + at + 1);
+
+    let frag_start = url[authority_end..]
+        .find('#')
+        .map_or(url.len(), |offset| authority_end + offset);
+    let query_start = url[authority_end..frag_start]
+        .find('?')
+        .map_or(frag_start, |offset| authority_end + offset);
+
+    let mut out = String::with_capacity(url.len());
+    out.push_str(&url[..authority_start]);
+    substitute_component_tokens(
+        &mut out,
+        &url[authority_start..host_start],
+        tokens,
+        UrlEncodeComponent::Userinfo,
+    );
+    out.push_str(&url[host_start..authority_end]);
+    substitute_component_tokens(
+        &mut out,
+        &url[authority_end..query_start],
+        tokens,
+        UrlEncodeComponent::Path,
+    );
+    substitute_component_tokens(
+        &mut out,
+        &url[query_start..frag_start],
+        tokens,
+        UrlEncodeComponent::SpecialQuery,
+    );
+    substitute_component_tokens(
+        &mut out,
+        &url[frag_start..],
+        tokens,
+        UrlEncodeComponent::Fragment,
+    );
+    out
 }
 
 /// The `http:` and `https:` branch of `sanitizeUrl`: `about:blank` when `URL.canParse` is false,
 /// otherwise the serialized `URL` with any tokenized Mermaid placeholders substituted back using
 /// each component's WHATWG percent-encode set.
-fn normalize_http_with_tokens(candidate: &str, tokens: &[(String, String)]) -> String {
+fn normalize_http_with_tokens(candidate: &str, tokens: Option<&HttpEntityTokens>) -> String {
     let Ok(parsed) = ::url::Url::parse(candidate) else {
         return BLANK_URL.to_owned();
     };
-    if tokens.is_empty() {
+    let Some(tokens) = tokens else {
         return parsed.to_string();
-    }
+    };
     use ::url::Position;
     let mut out = String::with_capacity(parsed.as_str().len());
     out.push_str(&parsed[..Position::BeforeUsername]);
-    out.push_str(&substitute_component_tokens(
+    substitute_component_tokens(
+        &mut out,
         &parsed[Position::BeforeUsername..Position::BeforeHost],
         tokens,
         UrlEncodeComponent::Userinfo,
-    ));
+    );
     out.push_str(&parsed[Position::BeforeHost..Position::BeforePath]);
-    out.push_str(&substitute_component_tokens(
+    substitute_component_tokens(
+        &mut out,
         &parsed[Position::BeforePath..Position::AfterPath],
         tokens,
         UrlEncodeComponent::Path,
-    ));
-    out.push_str(&substitute_component_tokens(
+    );
+    substitute_component_tokens(
+        &mut out,
         &parsed[Position::AfterPath..Position::AfterQuery],
         tokens,
         UrlEncodeComponent::SpecialQuery,
-    ));
-    out.push_str(&substitute_component_tokens(
+    );
+    substitute_component_tokens(
+        &mut out,
         &parsed[Position::AfterQuery..],
         tokens,
         UrlEncodeComponent::Fragment,
-    ));
+    );
     out
 }
 

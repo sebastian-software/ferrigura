@@ -1,10 +1,40 @@
 Preserve CSS hex colors and diagram statement separators in style/classDef declarations, resolve host[:port] Mermaid entity placeholders before WHATWG host/IDNA normalization in formatUrl, and substitute source placeholders in userinfo/path/query/fragment with component-aware WHATWG percent-encoding so userinfo delimiters cannot redirect the host and source-typed percent-encoded filenames are preserved verbatim.
 
+diff --git a/packages/mermaid/src/diagrams/common/svgDrawCommon.ts b/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
+index 86220b2..941a0df 100644
+--- a/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
++++ b/packages/mermaid/src/diagrams/common/svgDrawCommon.ts
+@@ -1,4 +1,4 @@
+-import { sanitizeUrl } from '@braintree/sanitize-url';
++import { sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
+ import { select } from 'd3';
+ import type { SVG, SVGGroup } from '../../diagram-api/types.js';
+ import { lineBreakRegex } from './common.js';
+diff --git a/packages/mermaid/src/diagrams/gantt/ganttDb.js b/packages/mermaid/src/diagrams/gantt/ganttDb.js
+index 0ca8f3f..1159c71 100644
+--- a/packages/mermaid/src/diagrams/gantt/ganttDb.js
++++ b/packages/mermaid/src/diagrams/gantt/ganttDb.js
+@@ -1,4 +1,4 @@
+-import { sanitizeUrl } from '@braintree/sanitize-url';
++import { sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
+ import dayjs from 'dayjs';
+ import dayjsIsoWeek from 'dayjs/plugin/isoWeek.js';
+ import dayjsCustomParseFormat from 'dayjs/plugin/customParseFormat.js';
+diff --git a/packages/mermaid/src/diagrams/sequence/svgDraw.js b/packages/mermaid/src/diagrams/sequence/svgDraw.js
+index c6cb9d5..5e20321 100644
+--- a/packages/mermaid/src/diagrams/sequence/svgDraw.js
++++ b/packages/mermaid/src/diagrams/sequence/svgDraw.js
+@@ -1,4 +1,4 @@
+-import { sanitizeUrl } from '@braintree/sanitize-url';
++import { sanitizeHttpUrlWithEntities as sanitizeUrl } from '../../utils.js';
+ import * as configApi from '../../config.js';
+ import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
+ import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..7db2afc 100644
+index 48ac4a6..bf15f44 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,189 @@ export function interpolateToCurve(
+@@ -244,6 +244,228 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -72,24 +102,69 @@ index 48ac4a6..7db2afc 100644
 +
 +const substituteComponentTokens = (
 +  segment: string,
-+  tokens: Array<[string, string]>,
++  prefix: string,
++  values: string[],
 +  component: UrlEncodeComponent
 +): string => {
-+  let current = segment;
-+  for (const [token, decoded] of tokens) {
-+    if (current.includes(token)) {
-+      const encoded = percentEncodeComponent(decoded, component);
-+      current = current.replaceAll(token, () => encoded);
++  let out = '';
++  let cursor = 0;
++  while (cursor < segment.length) {
++    const pos = segment.indexOf(prefix, cursor);
++    if (pos === -1) {
++      return out + segment.slice(cursor);
 +    }
++    out += segment.slice(cursor, pos);
++    const digitsStart = pos + prefix.length;
++    let digitsEnd = digitsStart;
++    while (digitsEnd < segment.length && segment[digitsEnd] >= '0' && segment[digitsEnd] <= '9') {
++      digitsEnd++;
++    }
++    if (digitsEnd > digitsStart && segment.startsWith('__', digitsEnd)) {
++      const idx = Number.parseInt(segment.slice(digitsStart, digitsEnd), 10);
++      if (idx >= 0 && idx < values.length) {
++        out += percentEncodeComponent(values[idx], component);
++        cursor = digitsEnd + 2;
++        continue;
++      }
++    }
++    out += prefix;
++    cursor = digitsStart;
 +  }
-+  return current;
++  return out;
 +};
 +
-+const tokenizePlaceholders = (
-+  segment: string,
-+  prefix: string,
-+  tokens: Array<[string, string]>
-+): string => {
++const restoreHttpTokensByComponent = (url: string, prefix: string, values: string[]): string => {
++  const schemeMatch = /^https?:/i.exec(url);
++  if (!schemeMatch) {
++    return url;
++  }
++  let authorityStart = schemeMatch[0].length;
++  while (authorityStart < url.length && url[authorityStart] === '/') {
++    authorityStart += 1;
++  }
++  const rest = url.slice(authorityStart);
++  const endOffset = rest.search(/[/?#]/);
++  const authorityEnd = endOffset === -1 ? url.length : authorityStart + endOffset;
++  const authority = url.slice(authorityStart, authorityEnd);
++  const atIndex = authority.lastIndexOf('@');
++  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++
++  const hashOffset = url.indexOf('#', authorityEnd);
++  const fragStart = hashOffset === -1 ? url.length : hashOffset;
++  const queryOffset = url.indexOf('?', authorityEnd);
++  const queryStart = queryOffset === -1 || queryOffset > fragStart ? fragStart : queryOffset;
++
++  return (
++    url.slice(0, authorityStart) +
++    substituteComponentTokens(url.slice(authorityStart, hostStart), prefix, values, 'userinfo') +
++    url.slice(hostStart, authorityEnd) +
++    substituteComponentTokens(url.slice(authorityEnd, queryStart), prefix, values, 'path') +
++    substituteComponentTokens(url.slice(queryStart, fragStart), prefix, values, 'query') +
++    substituteComponentTokens(url.slice(fragStart), prefix, values, 'fragment')
++  );
++};
++
++const tokenizePlaceholders = (segment: string, prefix: string, values: string[]): string => {
 +  let out = '';
 +  let cursor = 0;
 +  while (cursor < segment.length) {
@@ -111,19 +186,19 @@ index 48ac4a6..7db2afc 100644
 +      if (end > bodyStart && segment.startsWith('¶ß', end)) {
 +        const body = segment.slice(bodyStart, end);
 +        const ref = numeric ? `&#${body};` : `&${body};`;
-+        const token = `${prefix}${tokens.length}__`;
-+        tokens.push([token, decodeHtmlAttrRef(ref)]);
++        const token = `${prefix}${values.length}__`;
++        values.push(decodeHtmlAttrRef(ref));
 +        out += token;
 +        cursor = end + 2;
 +        continue;
 +      }
-+      const token = `${prefix}${tokens.length}__`;
-+      tokens.push([token, numeric ? '&#' : '&']);
++      const token = `${prefix}${values.length}__`;
++      values.push(numeric ? '&#' : '&');
 +      out += token;
 +      cursor = bodyStart;
 +    } else {
-+      const token = `${prefix}${tokens.length}__`;
-+      tokens.push([token, ';']);
++      const token = `${prefix}${values.length}__`;
++      values.push(';');
 +      out += token;
 +      cursor = pos + 2;
 +    }
@@ -131,11 +206,12 @@ index 48ac4a6..7db2afc 100644
 +  return out;
 +};
 +
-+const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
-+  if (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß')) {
++export const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
++  if (!rawUrl || (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß'))) {
 +    return sanitizeUrl(rawUrl);
 +  }
-+  const normalized = rawUrl.replace(/\\/g, '/');
++  const trimmed = rawUrl.trimStart();
++  const normalized = trimmed.replace(/\\/g, '/');
 +  const schemeMatch = /^https?:/i.exec(normalized);
 +  if (!schemeMatch) {
 +    return sanitizeUrl(rawUrl);
@@ -151,15 +227,19 @@ index 48ac4a6..7db2afc 100644
 +  const atIndex = authority.lastIndexOf('@');
 +  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
 +
++  const pctDecoded = normalized.replace(/%([0-9A-Fa-f]{2})/g, (_m, hex: string) =>
++    String.fromCharCode(Number.parseInt(hex, 16))
++  );
++  const probe = sanitizeUrl(normalized);
 +  let prefix = '__FGENT_';
-+  while (normalized.includes(prefix)) {
++  while (normalized.includes(prefix) || pctDecoded.includes(prefix) || probe.includes(prefix)) {
 +    prefix += 'X';
 +  }
-+  const tokens: Array<[string, string]> = [];
++  const values: string[] = [];
 +  const userinfoTok = tokenizePlaceholders(
 +    normalized.slice(authorityStart, hostStart),
 +    prefix,
-+    tokens
++    values
 +  );
 +  const hostPort = normalized.slice(hostStart, authorityEnd);
 +  let resolvedHost = hostPort;
@@ -171,30 +251,19 @@ index 48ac4a6..7db2afc 100644
 +      .replace(/"/g, '&quot;');
 +    resolvedHost = decodeHtmlAttrRef(decodeEntities(escaped));
 +  }
-+  const tailTok = tokenizePlaceholders(normalized.slice(authorityEnd), prefix, tokens);
++  const tailTok = tokenizePlaceholders(normalized.slice(authorityEnd), prefix, values);
 +  const tokenized = normalized.slice(0, authorityStart) + userinfoTok + resolvedHost + tailTok;
 +  const sanitized = sanitizeUrl(tokenized);
-+  if (tokens.length === 0 || !/^https?:/i.test(sanitized)) {
++  if (values.length === 0 || !/^https?:/i.test(sanitized)) {
 +    return sanitized;
 +  }
-+  try {
-+    const parsed = new URL(sanitized);
-+    const user = substituteComponentTokens(parsed.username, tokens, 'userinfo');
-+    const pass = substituteComponentTokens(parsed.password, tokens, 'userinfo');
-+    const auth = user || pass ? `${user}${pass ? `:${pass}` : ''}@` : '';
-+    const pathname = substituteComponentTokens(parsed.pathname, tokens, 'path');
-+    const search = substituteComponentTokens(parsed.search, tokens, 'query');
-+    const hash = substituteComponentTokens(parsed.hash, tokens, 'fragment');
-+    return `${parsed.protocol}//${auth}${parsed.host}${pathname}${search}${hash}`;
-+  } catch {
-+    return sanitized;
-+  }
++  return restoreHttpTokensByComponent(sanitized, prefix, values);
 +};
 +
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +435,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +474,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -203,7 +272,7 @@ index 48ac4a6..7db2afc 100644
    }
  
    return url;
-@@ -895,23 +1078,223 @@ export default {
+@@ -895,23 +1117,223 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -248,7 +317,7 @@ index 48ac4a6..7db2afc 100644
 +      } else if (c === '-') {
 +        // continue
 +      } else {
-+        return sawLetter && c === ':';
++        return sawLetter && c === ':' && s[k + 1] !== ':';
 +      }
 +      k++;
 +    }

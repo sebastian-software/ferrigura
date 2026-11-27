@@ -522,20 +522,21 @@ pub fn decode_entities(text: &str) -> String {
 }
 
 /// Whether `rest` starts (after optional horizontal JS whitespace) with an ASCII CSS property
-/// declaration (`<name>:`), such as `color:#abcdef` in `classDef late fill:#123456;color:#abcdef`.
+/// declaration (`<name>:` not followed by another `:`, so flowchart `B:::red` is excluded), such
+/// as `color:#abcdef` in `classDef late fill:#123456;color:#abcdef`.
 fn starts_with_css_property(rest: &str) -> bool {
     let trimmed = rest.trim_start_matches(|c: char| {
         is_js_space(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
     });
     let mut chars = trimmed.chars();
     let mut saw_letter = false;
-    for ch in chars.by_ref() {
+    while let Some(ch) = chars.next() {
         if ch.is_ascii_alphabetic() {
             saw_letter = true;
         } else if ch == '-' {
             continue;
         } else {
-            return saw_letter && ch == ':';
+            return saw_letter && ch == ':' && chars.next() != Some(':');
         }
     }
     false

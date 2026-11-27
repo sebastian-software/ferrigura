@@ -1516,7 +1516,8 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         "{strict_pct_filename}"
     );
 
-    // Semicolons separating a `style` statement from a following diagram statement are preserved.
+    // Semicolons separating a `style` or `classDef` statement from a following diagram statement
+    // (including `B:::red`) are preserved.
     let multi_stmt_style = ferrigura::render(
         "flowchart LR\n  A\n  style A fill:#abc,stroke-width:1px; B --> C;\n",
         &Value::empty_object(),
@@ -1524,4 +1525,50 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     .expect("renders");
     assert!(multi_stmt_style.contains("fill:#abc"), "{multi_stmt_style}");
     roxmltree::Document::parse(&multi_stmt_style).expect("well-formed SVG XML");
+
+    let multi_stmt_classdef = ferrigura::render(
+        "flowchart LR\n  classDef red fill:#abc,stroke-width:1px; B:::red;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        multi_stmt_classdef.contains("fill:#abc"),
+        "{multi_stmt_classdef}"
+    );
+    roxmltree::Document::parse(&multi_stmt_classdef).expect("well-formed SVG XML");
+
+    // HTTP links with a second colon (explicit port or query colon) still restore entity tokens.
+    let explicit_port_entity = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org:8080/#copy;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        explicit_port_entity.contains("xlink:href=\"https://example.org:8080/%C2%A9\""),
+        "{explicit_port_entity}"
+    );
+    let query_colon_entity = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org/?t=12:00&c=#copy;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        query_colon_entity.contains("xlink:href=\"https://example.org/?t=12:00&amp;c=%C2%A9\""),
+        "{query_colon_entity}"
+    );
+
+    // Percent-encoded filenames resembling internal token prefixes are never overwritten.
+    let token_lookalike = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org/%5f_FGENT_0__/#copy;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        token_lookalike.contains("xlink:href=\"https://example.org/__FGENT_0__/%C2%A9\""),
+        "{token_lookalike}"
+    );
+    assert!(
+        !token_lookalike.contains("/%C2%A9/%C2%A9"),
+        "{token_lookalike}"
+    );
 }
