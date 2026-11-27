@@ -185,20 +185,24 @@ pub fn draw_text(data: &TextData) -> Element {
 /// `drawImage(elem, x, y, link)`: an `<image>` whose `xlink:href` is the sanitized link.
 #[must_use]
 pub fn draw_image(x: f64, y: f64, link: &str) -> Element {
+    let sanitized = sanitize_url(link);
+    let resolved = crate::common::resolve_url_entity_placeholders(&sanitized);
     Element::new("image")
         .with("x", number(x))
         .with("y", number(y))
-        .with("xlink:href", sanitize_url(link))
+        .with("xlink:href", resolved.into_owned())
 }
 
 /// `drawEmbeddedImage(element, x, y, link)`: a `<use>` of the element with the id `link`, which is
 /// sanitized and written as `#` followed by the result.
 #[must_use]
 pub fn draw_embedded_image(x: f64, y: f64, link: &str) -> Element {
+    let sanitized = sanitize_url(link);
+    let resolved = crate::common::resolve_entity_placeholders(&sanitized);
     Element::new("use")
         .with("x", number(x))
         .with("y", number(y))
-        .with("xlink:href", format!("#{}", sanitize_url(link)))
+        .with("xlink:href", format!("#{resolved}"))
 }
 
 /// `getNoteRect()`: the rectangle of a note, at the origin, 100 by 100, in the note colors. The

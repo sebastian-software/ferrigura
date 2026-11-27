@@ -486,7 +486,10 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .filter(|id| id.starts_with("graph-drop-shadow"))
         .collect();
     assert_eq!(shadow_node_ids, vec!["graph-drop-shadow-1"]);
+}
 
+#[test]
+fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
     // Optional definitions (such as `{svg_id}-gradient`) are only reserved when the current render
     // actually emits them: default requirement diagrams emit no gradient, so a requirement named
     // `gradient` keeps `graph-gradient`, while `useGradient: true` disambiguates it.
@@ -772,6 +775,11 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         resolved_fragment_target(pct_href),
         "graph-classId-New Item "
     );
+}
+
+#[test]
+fn url_entity_placeholders_and_fragment_precedence_match_reference() {
+    let loose_config = Value::from(serde_json::json!({ "securityLevel": "loose" }));
 
     // Normalized HTTP/HTTPS links with Mermaid entity placeholders (such as `#32;`) resolve the
     // percent-encoded internal placeholder at the SVG sink without decoding unrelated `%XX`
@@ -944,6 +952,63 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         resolved_fragment_target(lit_href),
         "graph-classId-Idﬂ°copy¶ß"
     );
+
+    // When an unchanged class `A B-C` coexists with `A%20B#45;C` in loose mode, clicking
+    // `#graph-classId-A%20B#45;C` prefers the decoded existing target `A B-C` over falling back
+    // to the raw `%20` remap of `A%20B#45;C`.
+    let prefer_existing = ferrigura::Renderer::new(&loose_config)
+        .render_with(
+            "classDiagram\n  class `A B-C`\n  class `A%20B#45;C`\n  click `A B-C` href \"#graph-classId-A%20B#45;C\"\n  click `A%20B#45;C` href \"#graph-classId-A%2520B#45;C\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let prefer_doc = roxmltree::Document::parse(&prefer_existing).expect("well-formed SVG XML");
+    let prefer_hrefs: Vec<&str> = prefer_doc
+        .descendants()
+        .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(
+        prefer_hrefs,
+        vec!["#graph-classId-A%20B-C", "#graph-classId-A%2520B-C"]
+    );
+    assert_eq!(
+        resolved_fragment_target(prefer_hrefs[0]),
+        "graph-classId-A B-C"
+    );
+    assert_eq!(
+        resolved_fragment_target(prefer_hrefs[1]),
+        "graph-classId-A%20B-C"
+    );
+
+    // Sequence relative menu links decode entities in attribute context (`/docs/#notebook;` ->
+    // `/docs/&notebook;`, not text-context `/docs/¬ebook;`) and avoid double decoding.
+    let seq_rel = render(
+        "sequenceDiagram\n  participant A\n  link A: Docs @ /docs/#notebook;\n  link A: Lit @ /docs/#64258;°copy#182;ß\n  A->>A: ping\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let seq_rel_doc = roxmltree::Document::parse(&seq_rel).expect("well-formed SVG XML");
+    let seq_rel_hrefs: Vec<&str> = seq_rel_doc
+        .descendants()
+        .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(seq_rel_hrefs, vec!["/docs/&notebook;", "/docs/ﬂ°copy¶ß"]);
+
+    // Gantt task links also resolve percent-encoded HTTP entity placeholders (`#32;` -> `%20`).
+    let gantt_link = render(
+        "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  Task :t1, 2024-01-01, 2d\n  click t1 href \"https://example.org/A#32;B\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let gantt_doc = roxmltree::Document::parse(&gantt_link).expect("well-formed SVG XML");
+    let gantt_href = gantt_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(gantt_href, "https://example.org/A%20B");
 
     // When a subgraph `foo` keeps `graph-foo` and a colliding edge `foo@-->` is disambiguated to
     // `graph-foo-1`, fragment links to `#graph-foo` remain on the subgraph (with or without an

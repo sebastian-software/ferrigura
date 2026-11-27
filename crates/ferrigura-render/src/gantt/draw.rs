@@ -342,9 +342,10 @@ impl Chart<'_> {
         // branch wraps it (`ganttRenderer.js:508-531`).
         for (index, rect, text) in &parts {
             if let Some(url) = self.model.links.get(&self.model.tasks[*index].id) {
+                let resolved = crate::common::resolve_url_entity_placeholders(url);
                 group.push_str(&format!(
                     "<a xlink:href=\"{}\" target=\"_top\">{rect}{text}</a>",
-                    escape(url)
+                    crate::svg::escape_url_attr(&resolved)
                 ));
             }
         }

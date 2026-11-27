@@ -745,28 +745,36 @@ struct ResolvedDomIds {
     nodes: Vec<String>,
     edge_ids: Vec<String>,
     edge_path_ids: Vec<String>,
+    element_owned: HashSet<String>,
     remapped_fragments: HashMap<String, String>,
 }
 
 impl ResolvedDomIds {
     /// Looks up the remapped fragment URL for `raw_link`, matching its percent-decoded fragment
-    /// target first (so `#graph-classId-A%20B#45;C` targets `A B-C` rather than a literal
-    /// `A%20B-C`), then falling back to its raw spelling. Also recognizes entity-encoded leading
-    /// `#` markers (such as `#35;`).
-    fn remap_fragment(&self, raw_link: &str) -> Option<&str> {
+    /// target first (so `#graph-classId-A%20B#45;C` targets `A B-C` — whether `A B-C` was
+    /// remapped or kept unchanged — rather than a literal `A%20B-C`), then falling back to its
+    /// raw spelling. Also recognizes entity-encoded leading `#` markers (such as `#35;`).
+    fn remap_fragment(&self, raw_link: &str) -> Option<Cow<'_, str>> {
         let fragment = strip_fragment_marker(raw_link)?;
         if fragment.contains('%')
             && let Some(decoded) = percent_decode_fragment(fragment)
-            && let Some(target) = self.remapped_fragments.get(&format!("#{decoded}"))
         {
-            return Some(target.as_str());
+            if let Some(target) = self.remapped_fragments.get(&format!("#{decoded}")) {
+                return Some(Cow::Borrowed(target.as_str()));
+            }
+            let resolved_target = canonical_attr_id(&decoded);
+            if self.element_owned.contains(&resolved_target) {
+                return Some(Cow::Owned(format_fragment_url(&resolved_target)));
+            }
         }
         if raw_link.starts_with('#') {
-            self.remapped_fragments.get(raw_link).map(String::as_str)
+            self.remapped_fragments
+                .get(raw_link)
+                .map(|target| Cow::Borrowed(target.as_str()))
         } else {
             self.remapped_fragments
                 .get(&format!("#{fragment}"))
-                .map(String::as_str)
+                .map(|target| Cow::Borrowed(target.as_str()))
         }
     }
 
@@ -1012,6 +1020,7 @@ impl ResolvedDomIds {
             nodes,
             edge_ids,
             edge_path_ids,
+            element_owned,
             remapped_fragments,
         })
     }
@@ -1116,7 +1125,7 @@ pub(crate) fn paint_with_animation<'a>(
             link_form,
             loose,
             dom_id,
-            remapped_link,
+            remapped_link.as_deref(),
         );
         if animation.is_some() {
             node_parts.push((index, svg));

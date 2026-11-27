@@ -1190,7 +1190,7 @@ impl Renderer<'_> {
         for (key, value) in &actor.links {
             let target = super::model::value_text(value);
             let sanitized = ferrigura_syntax::url::sanitize_url(&target);
-            let href = crate::common::resolve_percent_encoded_url_placeholders(&sanitized);
+            let href = crate::common::resolve_url_entity_placeholders(&sanitized);
             let mut link = Element::new("a")
                 .with("xlink:href", href.into_owned())
                 .with("target", "_blank");

@@ -572,8 +572,10 @@ impl<'a> Renderer<'a> {
         let svg = format!("{open}{accessibility}{content}<style>{style}</style><g/>{rest}</svg>");
         // The entities the parser encoded are decoded in the whole document, as the reference
         // does after rendering (`mermaidAPI.ts:359`), and the references XML does not define are
-        // rewritten.
-        Ok(xml_references(&decode_entities(&svg)))
+        // rewritten. `xlink:href` attributes already resolved their entity placeholders in
+        // attribute context and are preserved verbatim so text-context entity matching (e.g.
+        // `&not` inside `&notebook;`) and double-decoding cannot alter URLs.
+        Ok(decode_sequence_svg(&svg))
     }
 
     /// The embedded font faces of the text the diagram draws, and the family name the style
@@ -600,6 +602,53 @@ impl<'a> Renderer<'a> {
         });
         Ok((families, name))
     }
+}
+
+/// Decodes Mermaid entity placeholders and HTML-only character references across a serialized
+/// sequence SVG while skipping `xlink:href="..."` attributes inside element tags (which have
+/// already been resolved in HTML attribute context and XML-escaped).
+fn decode_sequence_svg(svg: &str) -> String {
+    if !svg.contains("xlink:href=\"") {
+        return xml_references(&decode_entities(svg));
+    }
+    let bytes = svg.as_bytes();
+    let mut out = String::with_capacity(svg.len());
+    let mut flushed = 0;
+    let mut in_tag = false;
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'<' => {
+                in_tag = true;
+                i += 1;
+            }
+            b'>' => {
+                in_tag = false;
+                i += 1;
+            }
+            b'x' if in_tag
+                && i > 0
+                && bytes[i - 1].is_ascii_whitespace()
+                && svg[i..].starts_with("xlink:href=\"") =>
+            {
+                let value_start = i + "xlink:href=\"".len();
+                if let Some(rel_end) = svg[value_start..].find('"') {
+                    let attr_end = value_start + rel_end + 1;
+                    out.push_str(&xml_references(&decode_entities(&svg[flushed..i])));
+                    out.push_str(&svg[i..attr_end]);
+                    flushed = attr_end;
+                    i = attr_end;
+                    continue;
+                }
+                i += 1;
+            }
+            _ => i += 1,
+        }
+    }
+    if flushed < svg.len() {
+        out.push_str(&xml_references(&decode_entities(&svg[flushed..])));
+    }
+    out
 }
 
 /// Whether a line type increments the sequence number after it (`sequenceRenderer.ts:1358-1378`).
