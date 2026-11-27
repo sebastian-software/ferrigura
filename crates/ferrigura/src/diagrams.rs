@@ -504,7 +504,13 @@ fn render_gantt(prepared: &Prepared<'_>, options: &RenderOptions) -> Result<Stri
     gantt_render::render_with_animation(
         &Context {
             fonts: prepared.fonts,
-            diagram: &gantt::parse_prepared(&prepared.source, gantt::Options { now })?,
+            diagram: &gantt::parse_prepared_with_security(
+                &prepared.source,
+                gantt::Options { now },
+                ferrigura_syntax::url::SecurityLevel::from_config(
+                    &prepared.view.globals.security_level,
+                ),
+            )?,
             section: &gantt_render::GanttSection {
                 config: &typed_config.gantt,
                 now,

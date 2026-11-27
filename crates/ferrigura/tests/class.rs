@@ -1663,4 +1663,48 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         .unwrap_or("");
     assert_eq!(a11y_title, "end;");
     assert_eq!(a11y_desc, "tail;");
+
+    // Trailing backslashes in quoted flowchart labels do not escape the closing quote.
+    let backslash_label = ferrigura::render(
+        "flowchart LR\n  A[\"C:\\\"]\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(backslash_label.contains("fill:#abc"), "{backslash_label}");
+
+    // Gantt `securityLevel: loose` skips parser-side URL sanitization (matching Mermaid's
+    // `ganttDb.setLink`), so deeply percent-encoded HTTPS queries reach the sink intact.
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let deep_query = "https://example.org/?q=%25252525252525252541";
+    let gantt_loose = ferrigura::render(
+        &format!(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  Task :t1, 2024-01-01, 2d\n  click t1 href \"{deep_query}\"\n"
+        ),
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        gantt_loose.contains(&format!("xlink:href=\"{deep_query}\"")),
+        "{gantt_loose}"
+    );
+
+    // Overlapping `__fgXXXXXXXX_` prefixes sharing an underscore keep the filename intact.
+    let overlapping_prefix = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org/__fg00000001__fg00000000_0__/#copy;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        overlapping_prefix
+            .contains("xlink:href=\"https://example.org/__fg00000001__fg00000000_0__/%C2%A9\""),
+        "{overlapping_prefix}"
+    );
+
+    // Multiline class label parse error remaps its column using the prior line's quote state.
+    let parse_err = ferrigura_syntax::class::parse(
+        "classDiagram\n  class A[\"first\nstyle A fill: #169;\"] @ junk\n",
+    )
+    .expect_err("invalid trailing syntax must fail");
+    assert_eq!(parse_err.line, 3);
+    assert_eq!(parse_err.column, 23);
 }

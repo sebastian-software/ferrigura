@@ -412,21 +412,61 @@ pub(crate) fn remap_encoded_error(
     let Some(target_line) = error.line.checked_sub(1 + line_offset) else {
         return error;
     };
-    let Some(orig_line) = cleaned.split('\n').nth(target_line) else {
+    let mut initial_in_quotes = false;
+    let mut lines = cleaned.split('\n');
+    for _ in 0..target_line {
+        let Some(prev_line) = lines.next() else {
+            return error;
+        };
+        advance_quote_state(prev_line, &mut initial_in_quotes);
+    }
+    let Some(orig_line) = lines.next() else {
         return error;
     };
     if !orig_line.contains('#') {
         return error;
     }
-    error.column = remap_encoded_line_column(orig_line, error.column);
+    error.column = remap_encoded_line_column(orig_line, error.column, initial_in_quotes);
     error
+}
+
+/// Advances the multiline double-quote state across a single line (skipping `%%` comment lines
+/// outside quotes and matching Mermaid's lexer where `"` closes a string without backslash
+/// escaping).
+fn advance_quote_state(line: &str, in_quotes: &mut bool) {
+    let mut at_line_start = true;
+    for (at, ch) in line.char_indices() {
+        if *in_quotes {
+            if ch == '"' {
+                *in_quotes = false;
+            }
+            continue;
+        }
+        if at_line_start {
+            if is_js_space(ch) {
+                continue;
+            }
+            at_line_start = false;
+            if line[at..].starts_with("%%") {
+                break;
+            }
+        }
+        if ch == '"' {
+            *in_quotes = true;
+        }
+    }
 }
 
 /// JavaScript line terminators that `.` in a regex does not cross (`\n`, `\r`, U+2028, U+2029).
 const JS_LINE_TERMINATORS: [char; 4] = ['\n', '\r', '\u{2028}', '\u{2029}'];
 
-/// Maps a 1-based column in `encode_entities(orig_line)` back to its 1-based column in `orig_line`.
-fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
+/// Maps a 1-based column in `encode_entities(orig_line)` back to its 1-based column in `orig_line`,
+/// given the quote state carried in from preceding lines.
+fn remap_encoded_line_column(
+    orig_line: &str,
+    encoded_column: usize,
+    initial_in_quotes: bool,
+) -> usize {
     let mut chars: Vec<(char, usize)> = orig_line
         .chars()
         .enumerate()
@@ -436,18 +476,11 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
         let current: String = chars.iter().map(|&(c, _)| c).collect();
         let mut to_remove = Vec::new();
         let mut char_offset = 0usize;
-        let mut in_quotes = false;
-        let mut escaped = false;
+        let mut in_quotes = initial_in_quotes;
         for segment in current.split_inclusive(JS_LINE_TERMINATORS) {
             let content = segment.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(segment);
-            let ended_with_terminator = content.len() < segment.len();
-            if let Some(semi_byte) =
-                color_semicolon_byte(content, word, &mut in_quotes, &mut escaped)
-            {
+            if let Some(semi_byte) = color_semicolon_byte(content, word, &mut in_quotes) {
                 to_remove.push(char_offset + content[..semi_byte].chars().count());
-            }
-            if ended_with_terminator {
-                escaped = false;
             }
             char_offset += segment.chars().count();
         }
@@ -468,7 +501,7 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
     }
     let current: String = chars.iter().map(|&(c, _)| c).collect();
     let mut mapped_cols: Vec<usize> = Vec::with_capacity(chars.len());
-    let mut tracker = StyleStmtTracker::new();
+    let mut tracker = StyleStmtTracker::with_in_quotes(initial_in_quotes);
     let mut char_idx = 0usize;
     let mut byte_idx = 0usize;
     while char_idx < chars.len() {
@@ -556,12 +589,7 @@ fn starts_with_css_property(rest: &str) -> bool {
 /// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and only drops a
 /// semicolon at end-of-line (or before a following CSS property on `classDef`) so statement
 /// separators like `style A fill:#abc,stroke-width:1px; B --> C;` stay intact.
-fn color_semicolon_byte(
-    line: &str,
-    word: &str,
-    in_quotes: &mut bool,
-    escaped: &mut bool,
-) -> Option<usize> {
+fn color_semicolon_byte(line: &str, word: &str, in_quotes: &mut bool) -> Option<usize> {
     let mut at_line_start = true;
     let mut stmt_start = true;
     let mut in_target_stmt = false;
@@ -572,11 +600,7 @@ fn color_semicolon_byte(
 
     while let Some((at, ch)) = chars.next() {
         if *in_quotes {
-            if *escaped {
-                *escaped = false;
-            } else if ch == '\\' {
-                *escaped = true;
-            } else if ch == '"' {
+            if ch == '"' {
                 *in_quotes = false;
             }
             continue;
@@ -658,18 +682,13 @@ fn color_semicolon_byte(
 fn drop_color_semicolons(text: &str, word: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut in_quotes = false;
-    let mut escaped = false;
     for line in text.split_inclusive(JS_LINE_TERMINATORS) {
         let content = line.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(line);
-        let ended_with_terminator = content.len() < line.len();
-        if let Some(semicolon) = color_semicolon_byte(content, word, &mut in_quotes, &mut escaped) {
+        if let Some(semicolon) = color_semicolon_byte(content, word, &mut in_quotes) {
             out.push_str(&line[..semicolon]);
             out.push_str(&line[semicolon + 1..]);
         } else {
             out.push_str(line);
-        }
-        if ended_with_terminator {
-            escaped = false;
         }
     }
     out
@@ -708,19 +727,21 @@ struct StyleStmtTracker {
     at_line_start: bool,
     in_comment: bool,
     in_quotes: bool,
-    escaped: bool,
 }
 
 impl StyleStmtTracker {
     fn new() -> Self {
+        Self::with_in_quotes(false)
+    }
+
+    fn with_in_quotes(in_quotes: bool) -> Self {
         Self {
             kind: StmtKind::Start,
             seen_colon: false,
             last_allows_hex: false,
             at_line_start: true,
             in_comment: false,
-            in_quotes: false,
-            escaped: false,
+            in_quotes,
         }
     }
 
@@ -734,7 +755,6 @@ impl StyleStmtTracker {
         self.reset();
         self.at_line_start = true;
         self.in_comment = false;
-        self.escaped = false;
     }
 
     fn finish_entity(&mut self) {
@@ -748,14 +768,7 @@ impl StyleStmtTracker {
     fn push(&mut self, src: &str, at: usize, ch: char) {
         if self.in_quotes {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
-                self.escaped = false;
-                self.reset();
-                self.at_line_start = true;
-                self.in_comment = false;
-            } else if self.escaped {
-                self.escaped = false;
-            } else if ch == '\\' {
-                self.escaped = true;
+                self.reset_line();
             } else if ch == '"' {
                 self.in_quotes = false;
             }

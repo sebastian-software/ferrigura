@@ -901,7 +901,9 @@ fn collect_used_token_ids(s: &str, used: &mut std::collections::HashSet<u32>) {
             {
                 used.insert(id);
             }
-            i += 13;
+            // Resume at the trailing `_` so overlapping prefixes like
+            // `__fg00000001__fg00000000_0__` cannot hide the second ID.
+            i += 12;
         } else {
             i += 1;
         }
@@ -988,20 +990,14 @@ fn match_http_scheme_prefix(s: &str) -> Option<(usize, &'static str, bool)> {
             }
             pos += 3;
         } else if rest.starts_with('&') {
-            let max_scan = rest.len().min(32);
-            let sub = &rest[..max_scan];
-            let entity_len = if let Some(semi) = sub[1..].find(';') {
-                let body = &sub[1..1 + semi];
-                if !body.is_empty() && body.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'#')
-                {
-                    Some(semi + 2)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-            let len = entity_len?;
+            let bytes = rest.as_bytes();
+            let limit = bytes.len().min(32);
+            let semi = bytes[1..limit].iter().position(|&b| b == b';')?;
+            let body = &bytes[1..1 + semi];
+            if body.is_empty() || !body.iter().all(|&b| b.is_ascii_alphanumeric() || b == b'#') {
+                return None;
+            }
+            let len = semi + 2;
             let text = crate::sanitize::decode_attribute_references(&rest[..len]);
             for ch in text.chars() {
                 if !matches!(ch, '\u{0000}'..='\u{001F}' | '\u{007F}'..='\u{009F}') {
@@ -2565,6 +2561,15 @@ mod tests {
         assert_eq!(
             sanitize_url("/files/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf?q=ﬂ°copy¶ß"),
             "/files/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf?q=ﬂ°copy¶ß"
+        );
+        // Leading `&` followed by multibyte UTF-8 crossing the 32-byte entity-probe boundary
+        // must never panic on a UTF-8 char boundary.
+        let multibyte_amp = format!("&{}ﬂ°copy¶ß", "é".repeat(20));
+        assert_eq!(sanitize_url(&multibyte_amp), multibyte_amp);
+        // Overlapping `__fgXXXXXXXX_` prefixes sharing an underscore must both be detected.
+        assert_eq!(
+            sanitize_url("https://example.org/__fg00000001__fg00000000_0__/ﬂ°copy¶ß"),
+            "https://example.org/__fg00000001__fg00000000_0__/%C2%A9"
         );
     }
 }

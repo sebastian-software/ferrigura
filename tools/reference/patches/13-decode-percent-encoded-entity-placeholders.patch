@@ -31,7 +31,7 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..c8c4950 100644
+index 48ac4a6..4f92b5c 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
 @@ -244,6 +244,428 @@ export function interpolateToCurve(
@@ -194,7 +194,7 @@ index 48ac4a6..c8c4950 100644
 +};
 +
 +const collectUsedTokenIds = (s: string, used: Set<number>): void => {
-+  const re = /__fg([0-9a-f]{8})_/gi;
++  const re = /__fg([0-9a-f]{8})(?=_)/gi;
 +  let match: RegExpExecArray | null;
 +  while ((match = re.exec(s)) !== null) {
 +    used.add(Number.parseInt(match[1], 16));
@@ -472,7 +472,7 @@ index 48ac4a6..c8c4950 100644
    }
  
    return url;
-@@ -895,23 +1317,261 @@ export default {
+@@ -895,23 +1317,248 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -527,7 +527,6 @@ index 48ac4a6..c8c4950 100644
 +    let result = '';
 +    let lineStart = 0;
 +    let inQuotes = false;
-+    let escaped = false;
 +    const isLineTerm = (c: string) =>
 +      c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
 +    const processLine = (line: string): string => {
@@ -540,11 +539,7 @@ index 48ac4a6..c8c4950 100644
 +      for (let i = 0; i < line.length; i++) {
 +        const c = line[i];
 +        if (inQuotes) {
-+          if (escaped) {
-+            escaped = false;
-+          } else if (c === '\\') {
-+            escaped = true;
-+          } else if (c === '"') {
++          if (c === '"') {
 +            inQuotes = false;
 +          }
 +          continue;
@@ -624,7 +619,6 @@ index 48ac4a6..c8c4950 100644
 +    for (let i = 0; i < input.length; i++) {
 +      if (isLineTerm(input[i])) {
 +        result += processLine(input.slice(lineStart, i)) + input[i];
-+        escaped = false;
 +        lineStart = i + 1;
 +      }
 +    }
@@ -640,7 +634,6 @@ index 48ac4a6..c8c4950 100644
 +  let atLineStart = true;
 +  let inComment = false;
 +  let inQuotes = false;
-+  let escaped = false;
 +  let copyFrom = 0;
 +  for (let i = 0; i < txt.length; i++) {
 +    const ch = txt[i];
@@ -685,11 +678,6 @@ index 48ac4a6..c8c4950 100644
 +        lastAllowsHex = false;
 +        atLineStart = true;
 +        inComment = false;
-+        escaped = false;
-+      } else if (escaped) {
-+        escaped = false;
-+      } else if (ch === '\\') {
-+        escaped = true;
 +      } else if (ch === '"') {
 +        inQuotes = false;
 +      }
@@ -701,7 +689,6 @@ index 48ac4a6..c8c4950 100644
 +      lastAllowsHex = false;
 +      atLineStart = true;
 +      inComment = false;
-+      escaped = false;
 +      continue;
 +    }
 +    if (inComment) {
