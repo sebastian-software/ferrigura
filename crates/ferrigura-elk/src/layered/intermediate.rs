@@ -361,7 +361,7 @@ fn graph_layout_to_node(
             options::PORT_CONSTRAINTS,
             Some(crate::core::data::OptionValue::Enum {
                 class: "PortConstraints",
-                name: "FIXED_POS".to_string(),
+                name: "FIXED_POS",
             }),
         );
         parent

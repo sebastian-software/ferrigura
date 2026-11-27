@@ -18,7 +18,7 @@ use crate::layered::options;
 /// `DepthFirstCycleBreaker.process`: reverses the edges that close a cycle. The edges are
 /// reversed after the search, in the order the search found them.
 pub fn break_cycles(graph: &mut LGraph) {
-    let nodes = graph.layerless_nodes.clone();
+    let nodes = &graph.layerless_nodes;
     let mut position = vec![0; graph.nodes.len()];
     for (index, &node) in nodes.iter().enumerate() {
         position[node] = index;
@@ -26,7 +26,7 @@ pub fn break_cycles(graph: &mut LGraph) {
     let sources: Vec<usize> = nodes
         .iter()
         .copied()
-        .filter(|&node| incoming_edges(graph, node).is_empty())
+        .filter(|&node| incoming_edges(graph, node).next().is_none())
         .collect();
     let to_reverse = {
         let mut search = Search {
@@ -271,21 +271,19 @@ impl Search<'_> {
 }
 
 /// `LNode.getOutgoingEdges()`: the outgoing edges of the node's ports, port by port.
-pub fn outgoing_edges(graph: &LGraph, node: usize) -> Vec<usize> {
+pub fn outgoing_edges(graph: &LGraph, node: usize) -> impl Iterator<Item = usize> + '_ {
     graph.nodes[node]
         .ports
         .iter()
         .flat_map(|&port| graph.ports[port].outgoing.iter().copied())
-        .collect()
 }
 
 /// `LNode.getIncomingEdges()`: the incoming edges of the node's ports, port by port.
-pub fn incoming_edges(graph: &LGraph, node: usize) -> Vec<usize> {
+pub fn incoming_edges(graph: &LGraph, node: usize) -> impl Iterator<Item = usize> + '_ {
     graph.nodes[node]
         .ports
         .iter()
         .flat_map(|&port| graph.ports[port].incoming.iter().copied())
-        .collect()
 }
 
 /// `LEdge.isSelfLoop()`: both ends of the edge are on the same node.
@@ -322,7 +320,7 @@ pub fn reverse_edge(graph: &mut LGraph, edge: usize) {
                 options::EDGE_LABELS_PLACEMENT,
                 Some(OptionValue::Enum {
                     class: "EdgeLabelPlacement",
-                    name: flipped.java_name().to_string(),
+                    name: flipped.java_name(),
                 }),
             );
         }
@@ -373,7 +371,7 @@ mod tests {
             options::DIRECTION,
             Some(OptionValue::Enum {
                 class: "Direction",
-                name: "DOWN".to_string(),
+                name: "DOWN",
             }),
         );
         for &(from, to) in edges {

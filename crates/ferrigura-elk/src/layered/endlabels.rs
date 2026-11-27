@@ -93,7 +93,11 @@ pub fn postprocess(graph: &mut LGraph) {
             continue;
         }
         let position = data.position;
-        let cells = graph.nodes[node].end_labels.take().unwrap_or_default();
+        let cells = graph.nodes[node]
+            .end_labels
+            .take()
+            .map(|boxed| *boxed)
+            .unwrap_or_default();
         for (_, mut cell) in cells {
             cell.rect.move_by(position);
             for (label, label_position) in cell.label_layout(graph) {
@@ -149,7 +153,7 @@ fn process_node(
         .filter_map(|(&port, cell)| cell.clone().map(|cell| (port, cell)))
         .collect();
     if !port_cells.is_empty() {
-        graph.nodes[node].end_labels = Some(port_cells);
+        graph.nodes[node].end_labels = Some(Box::new(port_cells));
         update_node_margins(graph, node, &cells);
     }
 }

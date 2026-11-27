@@ -197,7 +197,7 @@ fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis, offset: f64) {
                 options::ALIGNMENT,
                 Some(OptionValue::Enum {
                     class: "Alignment",
-                    name: alignment.java_name().to_string(),
+                    name: alignment.java_name(),
                 }),
             );
         }
@@ -290,7 +290,7 @@ fn transpose_all(graph: &mut LGraph) {
                 options::ALIGNMENT,
                 Some(OptionValue::Enum {
                     class: "Alignment",
-                    name: alignment.java_name().to_string(),
+                    name: alignment.java_name(),
                 }),
             );
         }
@@ -349,7 +349,7 @@ fn transpose_all(graph: &mut LGraph) {
             options::EDGE_LABELS_SIDE_SELECTION,
             Some(OptionValue::Enum {
                 class: "EdgeLabelSideSelection",
-                name: transposed_selection(selection).java_name().to_string(),
+                name: transposed_selection(selection).java_name(),
             }),
         );
     }
@@ -435,7 +435,7 @@ fn set_layer_constraint(node: &mut LNode, constraint: LayerConstraint) {
         options::LAYER_CONSTRAINT,
         Some(OptionValue::Enum {
             class: "LayerConstraint",
-            name: constraint.java_name().to_string(),
+            name: constraint.java_name(),
         }),
     );
 }

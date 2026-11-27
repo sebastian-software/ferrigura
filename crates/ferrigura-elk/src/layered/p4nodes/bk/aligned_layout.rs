@@ -11,7 +11,7 @@
 //! which Java only reads after it has set them.
 
 use crate::layered::lgraph::LGraph;
-use crate::layered::spacings;
+use crate::layered::spacings::Spacings;
 
 use super::access::{java_max, java_min, lnode, port_node_id};
 use super::neighborhood::NeighborhoodInformation;
@@ -156,6 +156,7 @@ impl AlignedLayout {
         ni: &NeighborhoodInformation,
         block_root: usize,
         delta: f64,
+        cached_spacings: &Spacings,
     ) -> f64 {
         let mut available_space = delta;
         let root_node = block_root;
@@ -165,11 +166,8 @@ impl AlignedLayout {
             let min_y_current = self.min_y(graph, ni, current);
             if let Some(neighbor) = self.upper_neighbor(graph, ni, current) {
                 let max_y_neighbor = self.max_y(graph, ni, neighbor);
-                let spacing = spacings::vertical(
-                    graph,
-                    lnode(graph, ni, current),
-                    lnode(graph, ni, neighbor),
-                );
+                let spacing =
+                    cached_spacings.vertical(lnode(graph, ni, current), lnode(graph, ni, neighbor));
                 available_space =
                     java_min(available_space, min_y_current - (max_y_neighbor + spacing));
             }
@@ -188,6 +186,7 @@ impl AlignedLayout {
         ni: &NeighborhoodInformation,
         block_root: usize,
         delta: f64,
+        cached_spacings: &Spacings,
     ) -> f64 {
         let mut available_space = delta;
         let root_node = block_root;
@@ -197,11 +196,8 @@ impl AlignedLayout {
             let max_y_current = self.max_y(graph, ni, current);
             if let Some(neighbor) = self.lower_neighbor(graph, ni, current) {
                 let min_y_neighbor = self.min_y(graph, ni, neighbor);
-                let spacing = spacings::vertical(
-                    graph,
-                    lnode(graph, ni, current),
-                    lnode(graph, ni, neighbor),
-                );
+                let spacing =
+                    cached_spacings.vertical(lnode(graph, ni, current), lnode(graph, ni, neighbor));
                 available_space =
                     java_min(available_space, min_y_neighbor - (max_y_current + spacing));
             }

@@ -268,14 +268,14 @@ mod tests {
             options::DIRECTION,
             Some(crate::core::data::OptionValue::Enum {
                 class: "Direction",
-                name: "DOWN".to_string(),
+                name: "DOWN",
             }),
         );
         graph.properties.set(
             options::HIERARCHY_HANDLING,
             Some(crate::core::data::OptionValue::Enum {
                 class: "HierarchyHandling",
-                name: "INCLUDE_CHILDREN".to_string(),
+                name: "INCLUDE_CHILDREN",
             }),
         );
         prepare(&mut graph).unwrap();

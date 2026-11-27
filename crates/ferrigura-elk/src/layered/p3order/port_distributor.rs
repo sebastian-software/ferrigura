@@ -112,41 +112,32 @@ impl PortDistributor {
         current: usize,
         forward: bool,
     ) {
-        self.update_node_positions(&layout.order[current]);
-        let length = layout.order.len();
+        let Layout { order, node_ports } = layout;
+        let free_layer = &order[current];
+        self.update_node_positions(free_layer);
+        let length = order.len();
         let side = if forward {
             PortSide::WEST
         } else {
             PortSide::EAST
         };
-        let free_layer = layout.order[current].clone();
         if current != start_index(forward, length) {
             let fixed_index = if forward { current - 1 } else { current + 1 };
-            let fixed_layer = layout.order[fixed_index].clone();
-            self.calculate_port_ranks(
-                net,
-                &layout.node_ports,
-                &fixed_layer,
-                port_type_for(forward),
-            );
-            for &node in &free_layer {
-                self.distribute_node_ports(net, &mut layout.node_ports, node, side);
+            let fixed_layer = &order[fixed_index];
+            self.calculate_port_ranks(net, node_ports, fixed_layer, port_type_for(forward));
+            for &node in free_layer {
+                self.distribute_node_ports(net, node_ports, node, side);
             }
-            self.calculate_port_ranks(
-                net,
-                &layout.node_ports,
-                &free_layer,
-                port_type_for(!forward),
-            );
+            self.calculate_port_ranks(net, node_ports, free_layer, port_type_for(!forward));
             // A node with a nested graph keeps the order its nested graph gave its ports there.
-            for &node in &fixed_layer {
+            for &node in fixed_layer {
                 if net.graph().nodes[node].nested_graph.is_none() {
-                    self.distribute_node_ports(net, &mut layout.node_ports, node, opposed(side));
+                    self.distribute_node_ports(net, node_ports, node, opposed(side));
                 }
             }
         } else {
-            for &node in &free_layer {
-                self.distribute_node_ports(net, &mut layout.node_ports, node, side);
+            for &node in free_layer {
+                self.distribute_node_ports(net, node_ports, node, side);
             }
         }
     }
@@ -164,12 +155,9 @@ impl PortDistributor {
         if is_order_fixed(net.constraints(node)) {
             return;
         }
-        let on_side = net.side_ports(&node_ports[node], side);
-        self.distribute_on_side(net, node_ports, node, &on_side);
-        let south = net.side_ports(&node_ports[node], PortSide::SOUTH);
-        self.distribute_on_side(net, node_ports, node, &south);
-        let north = net.side_ports(&node_ports[node], PortSide::NORTH);
-        self.distribute_on_side(net, node_ports, node, &north);
+        self.distribute_on_side(net, node_ports, node, side);
+        self.distribute_on_side(net, node_ports, node, PortSide::SOUTH);
+        self.distribute_on_side(net, node_ports, node, PortSide::NORTH);
         self.sort_ports(net, &mut node_ports[node]);
     }
 
@@ -179,10 +167,10 @@ impl PortDistributor {
         net: &Net,
         node_ports: &[Vec<usize>],
         node: usize,
-        ports: &[usize],
+        side: PortSide,
     ) {
         self.in_layer_ports.clear();
-        self.collect_ports(net, node_ports, node, ports);
+        self.collect_ports(net, node_ports, node, side);
         if !self.in_layer_ports.is_empty() {
             self.in_layer_barycenters(net, node);
         }
@@ -190,20 +178,13 @@ impl PortDistributor {
 
     /// `iteratePortsAndCollectInLayerPorts`: the barycenter of each port from the ranks of the ports
     /// it connects to; ports with an edge into their own layer are collected instead.
-    fn collect_ports(
-        &mut self,
-        net: &Net,
-        node_ports: &[Vec<usize>],
-        node: usize,
-        ports: &[usize],
-    ) {
+    fn collect_ports(&mut self, net: &Net, node_ports: &[Vec<usize>], node: usize, side: PortSide) {
         self.min_barycenter = 0.0;
         self.max_barycenter = 0.0;
         let node_layer = net.layer(node);
         // `2 * node.getLayer().getNodes().size() + 1`, an int widened to a float.
         let absurdly_large_float = (2 * net.layer_size(node) + 1) as f32;
-        'ports: for &port in ports {
-            let side = net.side(port);
+        'ports: for port in net.side_ports(&node_ports[node], side) {
             let north_south_port = matches!(side, PortSide::NORTH | PortSide::SOUTH);
             // `float sum = 0`.
             let mut sum = 0.0_f32;
@@ -305,7 +286,8 @@ impl PortDistributor {
         // `positionOf(node) + 1` and `layer size + 1`, ints in Java, converted to float for the comparison.
         let node_index = (self.positions[node] + 1) as f32;
         let layer_size = (net.layer_size(node) + 1) as f32;
-        for port in self.in_layer_ports.clone() {
+        for index in 0..self.in_layer_ports.len() {
+            let port = self.in_layer_ports[index];
             let mut sum = 0_usize;
             let mut connections = 0_usize;
             for connected in net.connected_ports(port) {
@@ -389,41 +371,45 @@ fn node_relative_ranks(
 ) -> f32 {
     match port_type {
         PortType::INPUT => {
-            let inputs: Vec<usize> = ports
-                .iter()
-                .copied()
-                .filter(|&port| !net.incoming(port).is_empty())
-                .collect();
-            let north_input_count = inputs
-                .iter()
-                .filter(|&&port| net.side(port) == PortSide::NORTH)
-                .count();
+            let mut input_count = 0_usize;
+            let mut north_input_count = 0_usize;
+            for &port in ports {
+                if !net.incoming(port).is_empty() {
+                    input_count += 1;
+                    if net.side(port) == PortSide::NORTH {
+                        north_input_count += 1;
+                    }
+                }
+            }
             // `1.0f / (inputCount + 1)`.
-            let incr = 1.0_f32 / (inputs.len() + 1) as f32;
+            let incr = 1.0_f32 / (input_count + 1) as f32;
             // Ranks go north - west - south - east.
             let mut north_pos = rank_sum + north_input_count as f32 * incr;
             let mut rest_pos = rank_sum + 1.0 - incr;
-            for port in inputs {
-                if net.side(port) == PortSide::NORTH {
-                    port_ranks[port] = north_pos;
-                    north_pos -= incr;
-                } else {
-                    port_ranks[port] = rest_pos;
-                    rest_pos -= incr;
+            for &port in ports {
+                if !net.incoming(port).is_empty() {
+                    if net.side(port) == PortSide::NORTH {
+                        port_ranks[port] = north_pos;
+                        north_pos -= incr;
+                    } else {
+                        port_ranks[port] = rest_pos;
+                        rest_pos -= incr;
+                    }
                 }
             }
         }
         PortType::OUTPUT => {
-            let outputs: Vec<usize> = ports
+            let output_count = ports
                 .iter()
-                .copied()
-                .filter(|&port| !net.outgoing(port).is_empty())
-                .collect();
-            let incr = 1.0_f32 / (outputs.len() + 1) as f32;
+                .filter(|&&port| !net.outgoing(port).is_empty())
+                .count();
+            let incr = 1.0_f32 / (output_count + 1) as f32;
             let mut pos = rank_sum + incr;
-            for port in outputs {
-                port_ranks[port] = pos;
-                pos += incr;
+            for &port in ports {
+                if !net.outgoing(port).is_empty() {
+                    port_ranks[port] = pos;
+                    pos += incr;
+                }
             }
         }
     }
@@ -441,25 +427,27 @@ fn layer_total_ranks(
 ) -> f32 {
     match port_type {
         PortType::INPUT => {
-            let inputs: Vec<usize> = ports
-                .iter()
-                .copied()
-                .filter(|&port| !net.incoming(port).is_empty())
-                .collect();
-            let north_input_count = inputs
-                .iter()
-                .filter(|&&port| net.side(port) == PortSide::NORTH)
-                .count();
-            let input_count = inputs.len();
+            let mut input_count = 0_usize;
+            let mut north_input_count = 0_usize;
+            for &port in ports {
+                if !net.incoming(port).is_empty() {
+                    input_count += 1;
+                    if net.side(port) == PortSide::NORTH {
+                        north_input_count += 1;
+                    }
+                }
+            }
             let mut north_pos = rank_sum + north_input_count as f32;
             let mut rest_pos = rank_sum + input_count as f32;
-            for port in inputs {
-                if net.side(port) == PortSide::NORTH {
-                    port_ranks[port] = north_pos;
-                    north_pos -= 1.0;
-                } else {
-                    port_ranks[port] = rest_pos;
-                    rest_pos -= 1.0;
+            for &port in ports {
+                if !net.incoming(port).is_empty() {
+                    if net.side(port) == PortSide::NORTH {
+                        port_ranks[port] = north_pos;
+                        north_pos -= 1.0;
+                    } else {
+                        port_ranks[port] = rest_pos;
+                        rest_pos -= 1.0;
+                    }
                 }
             }
             input_count as f32

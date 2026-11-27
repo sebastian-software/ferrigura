@@ -98,7 +98,7 @@ fn connected_components(graph: &LGraph, nodes: &[usize]) -> Vec<Vec<usize>> {
 fn depth_first(graph: &LGraph, node: usize, visited: &mut [bool], component: &mut Vec<usize>) {
     visited[node] = true;
     component.push(node);
-    for port in graph.nodes[node].ports.clone() {
+    for &port in &graph.nodes[node].ports {
         for edge in connected_edges(graph, port) {
             let opposite = opposite_node(graph, port, edge);
             if !visited[opposite] {
@@ -109,13 +109,9 @@ fn depth_first(graph: &LGraph, node: usize, visited: &mut [bool], component: &mu
 }
 
 /// `LPort.getConnectedEdges()`: the incoming edges, then the outgoing ones.
-fn connected_edges(graph: &LGraph, port: usize) -> Vec<usize> {
+fn connected_edges(graph: &LGraph, port: usize) -> impl Iterator<Item = usize> + '_ {
     let port = &graph.ports[port];
-    port.incoming
-        .iter()
-        .chain(&port.outgoing)
-        .copied()
-        .collect()
+    port.incoming.iter().chain(&port.outgoing).copied()
 }
 
 /// `getOpposite`: the node at the other end of `edge`, seen from `port`.

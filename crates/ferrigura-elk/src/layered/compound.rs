@@ -532,7 +532,7 @@ impl Preprocessor<'_> {
             options::PORT_CONSTRAINTS,
             Some(OptionValue::Enum {
                 class: "PortConstraints",
-                name: if fixed { "FIXED_SIDE" } else { "FREE" }.to_string(),
+                name: if fixed { "FIXED_SIDE" } else { "FREE" },
             }),
         );
         Ok(dummy)
@@ -693,7 +693,7 @@ impl Preprocessor<'_> {
                 options::PORT_CONSTRAINTS,
                 Some(OptionValue::Enum {
                     class: "PortConstraints",
-                    name: "FIXED_SIDE".to_string(),
+                    name: "FIXED_SIDE",
                 }),
             );
             graph
@@ -748,7 +748,7 @@ fn create_external_port_dummy(
         options::PORT_CONSTRAINTS,
         Some(OptionValue::Enum {
             class: "PortConstraints",
-            name: "FIXED_POS".to_string(),
+            name: "FIXED_POS",
         }),
     );
     dummy.properties.set(
@@ -808,14 +808,14 @@ fn create_external_port_dummy(
             ));
         }
     };
-    dummy.external_port = Some(ExternalPortDummy {
+    dummy.external_port = Some(Box::new(ExternalPortDummy {
         side: Some(side),
         size: port_size,
         anchor,
         origin,
         edge_constraint,
         port_ratio_or_position: None,
-    });
+    }));
     let mut port = LPort::new(node_index, dummy_port_side);
     port.position = anchor;
     graph.ports.push(port);
@@ -830,7 +830,7 @@ fn set_layer_constraint(node: &mut LNode, constraint: LayerConstraint) {
         options::LAYER_CONSTRAINT,
         Some(OptionValue::Enum {
             class: "LayerConstraint",
-            name: constraint.java_name().to_string(),
+            name: constraint.java_name(),
         }),
     );
 }

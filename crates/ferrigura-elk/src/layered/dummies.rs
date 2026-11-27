@@ -322,7 +322,7 @@ fn new_dummy_node(graph: &mut LGraph, node_type: NodeType, origin: usize) -> usi
         options::PORT_CONSTRAINTS,
         Some(OptionValue::Enum {
             class: "PortConstraints",
-            name: "FIXED_POS".to_string(),
+            name: "FIXED_POS",
         }),
     );
     graph.nodes.push(node);
@@ -367,7 +367,7 @@ mod tests {
             options::DIRECTION,
             Some(OptionValue::Enum {
                 class: "Direction",
-                name: "DOWN".to_string(),
+                name: "DOWN",
             }),
         );
         graph
@@ -387,7 +387,7 @@ mod tests {
             options::EDGE_LABELS_PLACEMENT,
             Some(OptionValue::Enum {
                 class: "EdgeLabelPlacement",
-                name: "CENTER".to_string(),
+                name: "CENTER",
             }),
         );
         graph.ports[source].outgoing.push(0);

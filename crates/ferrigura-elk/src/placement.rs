@@ -246,6 +246,7 @@ pub(crate) fn run(graph: &mut LGraph) {
 /// The graph as plain data, with the nodes and the ports of the graph that its nodes and ports
 /// stand for.
 fn view(graph: &LGraph) -> Option<(Layers, Vec<usize>, Vec<usize>)> {
+    let cached_spacings = spacings::Spacings::for_graph(graph);
     let mut node_of = Vec::new();
     let mut index_of_node = vec![usize::MAX; graph.nodes.len()];
     let mut nodes = Vec::new();
@@ -267,7 +268,7 @@ fn view(graph: &LGraph) -> Option<(Layers, Vec<usize>, Vec<usize>)> {
                 let before = &graph.nodes[members[index - 1]];
                 (before.size.y
                     + before.margin.bottom
-                    + spacings::vertical(graph, before, this)
+                    + cached_spacings.vertical(before, this)
                     + this.margin.top)
                     .ceil()
             };

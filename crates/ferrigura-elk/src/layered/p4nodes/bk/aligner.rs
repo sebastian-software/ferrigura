@@ -34,22 +34,29 @@ pub fn vertical_alignment(
     }
 
     // If the horizontal direction is LEFT, the layers are traversed from right to left.
-    let mut layers: Vec<&Vec<usize>> = graph.layers.iter().collect();
-    if bal.hdir == Some(HDirection::Left) {
-        layers.reverse();
-    }
-
-    for layer in layers {
+    let reverse_layers = bal.hdir == Some(HDirection::Left);
+    let reverse_nodes = bal.vdir == Some(VDirection::Up);
+    let layer_count = graph.layers.len();
+    for layer_step in 0..layer_count {
+        let layer = if reverse_layers {
+            &graph.layers[layer_count - 1 - layer_step]
+        } else {
+            &graph.layers[layer_step]
+        };
         // `r` is the position in layer order where the last block was found, -1 for none.
-        let mut r: i64 = -1;
-        let mut nodes: Vec<usize> = layer.clone();
-        if bal.vdir == Some(VDirection::Up) {
-            // Upwards, the nodes of a layer are traversed in reverse, starting from INT_MAX.
-            r = i64::from(i32::MAX);
-            nodes.reverse();
-        }
-
-        for node in nodes {
+        // Upwards, the nodes of a layer are traversed in reverse, starting from INT_MAX.
+        let mut r: i64 = if reverse_nodes {
+            i64::from(i32::MAX)
+        } else {
+            -1
+        };
+        let node_count = layer.len();
+        for node_step in 0..node_count {
+            let node = if reverse_nodes {
+                layer[node_count - 1 - node_step]
+            } else {
+                layer[node_step]
+            };
             let v = graph.nodes[node].placement_id;
             let neighbors: &[Neighbor] = if bal.hdir == Some(HDirection::Left) {
                 &ni.right_neighbors[v]

@@ -41,7 +41,7 @@ pub fn detect_cycles(
 
     // Process the edges that point left: those of zero weight are removed, the others reversed.
     for &source in segments {
-        for dependency in arena.segments[source].outgoing_deps.clone() {
+        for &dependency in &arena.segments[source].outgoing_deps {
             let data = arena.dependencies[dependency];
             // Only consider critical dependencies, if required.
             if critical_only && data.kind != DependencyType::Critical {
@@ -200,7 +200,8 @@ fn update_neighbors(
     critical_only: bool,
 ) {
     // Process the following nodes.
-    for dependency in arena.segments[node].outgoing_deps.clone() {
+    for index in 0..arena.segments[node].outgoing_deps.len() {
+        let dependency = arena.segments[node].outgoing_deps[index];
         let data = arena.dependencies[dependency];
         if critical_only && data.kind != DependencyType::Critical {
             continue;
@@ -220,7 +221,8 @@ fn update_neighbors(
     }
 
     // Process the preceding nodes.
-    for dependency in arena.segments[node].incoming_deps.clone() {
+    for index in 0..arena.segments[node].incoming_deps.len() {
+        let dependency = arena.segments[node].incoming_deps[index];
         let data = arena.dependencies[dependency];
         if critical_only && data.kind != DependencyType::Critical {
             continue;

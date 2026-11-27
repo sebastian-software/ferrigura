@@ -77,15 +77,23 @@ impl NeighborhoodInformation {
         let left: Vec<Vec<Neighbor>> = (0..node_count)
             .map(|id| {
                 let node = &graph.nodes[ni.node_of_id[id]];
-                let edges = incoming_edges(graph, node);
-                neighbors(graph, &ni.node_index, &edges, source_node_id)
+                neighbors(
+                    graph,
+                    &ni.node_index,
+                    incoming_edges(graph, node),
+                    source_node_id,
+                )
             })
             .collect();
         let right: Vec<Vec<Neighbor>> = (0..node_count)
             .map(|id| {
                 let node = &graph.nodes[ni.node_of_id[id]];
-                let edges = outgoing_edges(graph, node);
-                neighbors(graph, &ni.node_index, &edges, target_node_id)
+                neighbors(
+                    graph,
+                    &ni.node_index,
+                    outgoing_edges(graph, node),
+                    target_node_id,
+                )
             })
             .collect();
         ni.left_neighbors = left;
@@ -100,12 +108,12 @@ impl NeighborhoodInformation {
 fn neighbors(
     graph: &LGraph,
     node_index: &[usize],
-    edges: &[usize],
+    edges: impl Iterator<Item = usize>,
     far_end: fn(&LGraph, usize) -> usize,
 ) -> Vec<Neighbor> {
     let mut result: Vec<Neighbor> = Vec::new();
     let mut max_priority = 0;
-    for &edge in edges {
+    for edge in edges {
         if is_self_loop(graph, edge) || is_in_layer_edge(graph, edge) {
             continue;
         }

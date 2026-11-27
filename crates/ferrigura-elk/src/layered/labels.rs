@@ -738,7 +738,7 @@ fn set_end_layer_node_alignment(
         options::ALIGNMENT,
         Some(OptionValue::Enum {
             class: "Alignment",
-            name: alignment.java_name().to_string(),
+            name: alignment.java_name(),
         }),
     );
     Ok(())
@@ -1377,13 +1377,13 @@ mod tests {
     use crate::layered::lgraph::{LEdge, LNode, LPort};
 
     /// A graph with the given direction name, as `org.eclipse.elk.direction`.
-    fn graph_in(direction: &str) -> LGraph {
+    fn graph_in(direction: &'static str) -> LGraph {
         let mut graph = LGraph::default();
         graph.properties.set(
             options::DIRECTION,
             Some(OptionValue::Enum {
                 class: "Direction",
-                name: direction.to_string(),
+                name: direction,
             }),
         );
         graph
@@ -1398,11 +1398,8 @@ mod tests {
         label.include_label
     }
 
-    fn enum_value(class: &'static str, name: &str) -> Option<OptionValue> {
-        Some(OptionValue::Enum {
-            class,
-            name: name.to_string(),
-        })
+    fn enum_value(class: &'static str, name: &'static str) -> Option<OptionValue> {
+        Some(OptionValue::Enum { class, name })
     }
 
     /// A node of `node_type` in `layer`, with an input port (`ports[0]`, west) and an output port
@@ -1474,7 +1471,7 @@ mod tests {
         (n0, label, n1)
     }
 
-    fn set_side_selection(graph: &mut LGraph, name: &str) {
+    fn set_side_selection(graph: &mut LGraph, name: &'static str) {
         graph.properties.set(
             options::EDGE_LABELS_SIDE_SELECTION,
             enum_value("EdgeLabelSideSelection", name),
@@ -1530,7 +1527,7 @@ mod tests {
 
     #[test]
     fn end_layer_strategies_pick_the_end_of_the_edge_and_align_the_label() {
-        fn head_or_tail(name: &str) -> (usize, Alignment) {
+        fn head_or_tail(name: &'static str) -> (usize, Alignment) {
             let mut graph = graph_in("RIGHT");
             let n0 = add_node(&mut graph, NodeType::NORMAL, 0);
             let label = add_label_dummy(&mut graph, 1, KVector { x: 83.0, y: 24.0 });
@@ -1562,7 +1559,7 @@ mod tests {
 
     #[test]
     fn widest_and_center_layers_use_the_widest_normal_node_of_each_layer() {
-        fn label_layer(name: &str) -> usize {
+        fn label_layer(name: &'static str) -> usize {
             let mut graph = graph_in("RIGHT");
             let (_, label, ..) = long_chain_with_label_in_layer_one(&mut graph);
             // A normal node of width 60 in layer 2 makes that layer the widest of the span.

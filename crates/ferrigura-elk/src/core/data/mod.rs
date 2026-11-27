@@ -78,7 +78,7 @@ pub enum OptionValue {
     /// An enum constant by name; the typed enum resolves it.
     Enum {
         class: &'static str,
-        name: String,
+        name: &'static str,
     },
     /// An enum set, by constant names.
     EnumSet {
@@ -253,10 +253,7 @@ pub fn parse_value(spec: &OptionSpec, text: &str) -> Result<Option<OptionValue>,
         OptionKind::Enum(class) => match canonical_constant(class, text) {
             None => return Err(UnsupportedKind::new(spec)),
             Some(None) => None,
-            Some(Some(name)) => Some(OptionValue::Enum {
-                class,
-                name: name.to_string(),
-            }),
+            Some(Some(name)) => Some(OptionValue::Enum { class, name }),
         },
         OptionKind::EnumSet(class) => {
             let mut names = Vec::new();
@@ -387,10 +384,7 @@ fn parse_default(spec: &OptionSpec, text: &str) -> Option<OptionValue> {
     if let OptionKind::Enum(class) = spec.kind {
         let constant = text.rsplit('.').next()?;
         if let Some(Some(name)) = canonical_constant(class, constant) {
-            return Some(OptionValue::Enum {
-                class,
-                name: name.to_string(),
-            });
+            return Some(OptionValue::Enum { class, name });
         }
     }
     None

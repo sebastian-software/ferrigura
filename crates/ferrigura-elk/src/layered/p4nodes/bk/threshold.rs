@@ -16,10 +16,9 @@ use std::collections::VecDeque;
 use crate::core::data::enums::EdgeStraighteningStrategy;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
+use crate::layered::spacings::Spacings;
 
-use super::access::{
-    incoming_edges, is_in_layer_edge, lnode, name_of, outgoing_edges, port_node_id,
-};
+use super::access::{is_in_layer_edge, lnode, name_of, port_node_id};
 use super::aligned_layout::{AlignedLayout, HDirection, VDirection};
 use super::neighborhood::NeighborhoodInformation;
 
@@ -148,6 +147,7 @@ impl ThresholdStrategy {
         graph: &LGraph,
         ni: &NeighborhoodInformation,
         bal: &mut AlignedLayout,
+        cached_spacings: &Spacings,
     ) {
         if self.kind == ThresholdKind::Null {
             return;
@@ -163,13 +163,13 @@ impl ThresholdStrategy {
                 continue;
             }
             // Try to straighten the edge now. If that is not possible, try again later.
-            let moved = self.process(graph, ni, bal, &pick);
+            let moved = self.process(graph, ni, bal, &pick, cached_spacings);
             if !moved {
                 self.stack.push(pick);
             }
         }
         while let Some(pp) = self.stack.pop() {
-            self.process(graph, ni, bal, &pp);
+            self.process(graph, ni, bal, &pp, cached_spacings);
         }
     }
 
@@ -183,17 +183,19 @@ impl ThresholdStrategy {
         mut pp: Postprocessable,
     ) -> Postprocessable {
         let free = lnode(graph, ni, pp.free);
-        let edges = if pp.is_root {
-            if bal.hdir == Some(HDirection::Right) {
-                incoming_edges(graph, free)
-            } else {
-                outgoing_edges(graph, free)
-            }
-        } else if bal.hdir == Some(HDirection::Left) {
-            incoming_edges(graph, free)
+        let use_incoming = if pp.is_root {
+            bal.hdir == Some(HDirection::Right)
         } else {
-            outgoing_edges(graph, free)
+            bal.hdir == Some(HDirection::Left)
         };
+        let edges = free.ports.iter().flat_map(|&port| {
+            let list = if use_incoming {
+                &graph.ports[port].incoming
+            } else {
+                &graph.ports[port].outgoing
+            };
+            list.iter().copied()
+        });
 
         let mut has_edges = false;
         for edge in edges {
@@ -307,6 +309,7 @@ impl ThresholdStrategy {
         ni: &NeighborhoodInformation,
         bal: &mut AlignedLayout,
         pp: &Postprocessable,
+        cached_spacings: &Spacings,
     ) -> bool {
         let edge = pp
             .edge
@@ -326,12 +329,14 @@ impl ThresholdStrategy {
 
         if delta > 0.0 && delta < THRESHOLD {
             // The target lies below the source: shift the block upwards.
-            let available_space = bal.check_space_above(graph, ni, block_node, delta);
+            let available_space =
+                bal.check_space_above(graph, ni, block_node, delta, cached_spacings);
             bal.shift_block(block_node, -available_space);
             available_space > 0.0
         } else if delta < 0.0 && -delta < THRESHOLD {
             // The block was shifted too far up for the edge to be straight: shift it down again.
-            let available_space = bal.check_space_below(graph, ni, block_node, -delta);
+            let available_space =
+                bal.check_space_below(graph, ni, block_node, -delta, cached_spacings);
             bal.shift_block(block_node, available_space);
             available_space > 0.0
         } else {

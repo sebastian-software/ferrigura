@@ -63,7 +63,7 @@ fn process_node_sides(graph: &mut LGraph, node: usize) {
             options::PORT_CONSTRAINTS,
             Some(OptionValue::Enum {
                 class: "PortConstraints",
-                name: "FIXED_SIDE".to_string(),
+                name: "FIXED_SIDE",
             }),
         );
     }

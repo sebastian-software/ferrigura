@@ -89,7 +89,7 @@ fn layout_recursively(
                     options::HIERARCHY_HANDLING,
                     Some(OptionValue::Enum {
                         class: "HierarchyHandling",
-                        name: HierarchyHandling::SEPARATE_CHILDREN.java_name().to_string(),
+                        name: HierarchyHandling::SEPARATE_CHILDREN.java_name(),
                     }),
                 );
             } else {
@@ -183,7 +183,7 @@ fn resolve_hierarchy(
         options::HIERARCHY_HANDLING,
         Some(OptionValue::Enum {
             class: "HierarchyHandling",
-            name: resolved.java_name().to_string(),
+            name: resolved.java_name(),
         }),
     );
     resolved

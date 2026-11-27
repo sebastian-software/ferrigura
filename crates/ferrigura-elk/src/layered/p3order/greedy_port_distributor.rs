@@ -92,12 +92,13 @@ impl GreedyPortDistributor {
         } else {
             PortSide::EAST
         };
+        let Layout { order, node_ports } = layout;
         let mut improved = false;
-        for node in layout.order[current].clone() {
+        for &node in &order[current] {
             if is_order_fixed(net.constraints(node)) {
                 continue;
             }
-            improved |= self.distribute_ports_on_node(net, layout, node, side)?;
+            improved |= self.distribute_ports_on_node(net, &mut node_ports[node], side)?;
         }
         Ok(improved)
     }
@@ -108,11 +109,9 @@ impl GreedyPortDistributor {
     fn distribute_ports_on_node(
         &mut self,
         net: &Net,
-        layout: &mut Layout,
-        node: usize,
+        node_ports: &mut [usize],
         side: PortSide,
     ) -> Result<bool, LayoutError> {
-        let node_ports = &mut layout.node_ports[node];
         let mut view: Vec<usize> = (0..node_ports.len())
             .filter(|&index| net.side(node_ports[index]) == side)
             .collect();

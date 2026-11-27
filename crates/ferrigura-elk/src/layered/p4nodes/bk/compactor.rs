@@ -15,7 +15,7 @@ use indexmap::IndexMap;
 
 use crate::error::LayoutError;
 use crate::layered::lgraph::LGraph;
-use crate::layered::spacings;
+use crate::layered::spacings::{self, Spacings};
 
 use super::access::{java_max, java_min, lnode};
 use super::aligned_layout::{AlignedLayout, HDirection, VDirection};
@@ -29,6 +29,7 @@ pub fn horizontal_compaction(
     ni: &NeighborhoodInformation,
     bal: &mut AlignedLayout,
     straightening: ThresholdKind,
+    cached_spacings: &Spacings,
 ) -> Result<(), LayoutError> {
     // Initialize the sinks and shifts, with the direction in mind.
     for layer in &graph.layers {
@@ -48,23 +49,29 @@ pub fn horizontal_compaction(
         .double_with_default(spacings::SPACING_NODE_NODE);
     let mut classes = ClassGraph::default();
 
-    let mut layers: Vec<&Vec<usize>> = graph.layers.iter().collect();
-    if bal.hdir == Some(HDirection::Left) {
-        layers.reverse();
-    }
+    let reverse_layers = bal.hdir == Some(HDirection::Left);
+    let reverse_nodes = bal.vdir == Some(VDirection::Up);
+    let layer_count = graph.layers.len();
 
     let mut threshold = ThresholdStrategy::new(straightening, ni.node_count);
     for y in bal.y.iter_mut() {
         *y = None;
     }
 
-    for layer in &layers {
-        let mut nodes: Vec<usize> = (*layer).clone();
-        if bal.vdir == Some(VDirection::Up) {
-            nodes.reverse();
-        }
+    for layer_step in 0..layer_count {
+        let layer = if reverse_layers {
+            &graph.layers[layer_count - 1 - layer_step]
+        } else {
+            &graph.layers[layer_step]
+        };
+        let node_count = layer.len();
         // The initial placement of every block.
-        for node in nodes {
+        for node_step in 0..node_count {
+            let node = if reverse_nodes {
+                layer[node_count - 1 - node_step]
+            } else {
+                layer[node_step]
+            };
             let v = graph.nodes[node].placement_id;
             if bal.root_of(v) == v {
                 place_block(
@@ -75,6 +82,7 @@ pub fn horizontal_compaction(
                     &mut classes,
                     v,
                     spacing_node_node,
+                    cached_spacings,
                 );
             }
         }
@@ -84,8 +92,13 @@ pub fn horizontal_compaction(
     place_classes(bal, &mut classes)?;
 
     // Apply the coordinates. A block root may be shifted with its class.
-    for layer in &layers {
-        for &node in layer.iter() {
+    for layer_step in 0..layer_count {
+        let layer = if reverse_layers {
+            &graph.layers[layer_count - 1 - layer_step]
+        } else {
+            &graph.layers[layer_step]
+        };
+        for &node in layer {
             let v = graph.nodes[node].placement_id;
             let root = bal.root_of(v);
             bal.y[v] = bal.y[root];
@@ -101,12 +114,13 @@ pub fn horizontal_compaction(
     }
 
     // All blocks are placed: shift the postponed ones.
-    threshold.post_process(graph, ni, bal);
+    threshold.post_process(graph, ni, bal, cached_spacings);
     Ok(())
 }
 
 /// `placeBlock(root, bal)`: places the block with root `root` below or above the blocks it touches,
 /// after those blocks are placed themselves.
+#[allow(clippy::too_many_arguments)]
 fn place_block(
     graph: &LGraph,
     ni: &NeighborhoodInformation,
@@ -115,6 +129,7 @@ fn place_block(
     classes: &mut ClassGraph,
     root: usize,
     spacing_node_node: f64,
+    cached_spacings: &Spacings,
 ) {
     if bal.y[root].is_some() {
         return;
@@ -161,6 +176,7 @@ fn place_block(
                 classes,
                 neighbor_root,
                 spacing_node_node,
+                cached_spacings,
             );
 
             // The threshold has to be calculated after the neighbor is placed, or the order of the
@@ -174,7 +190,7 @@ fn place_block(
 
             if bal.sink[root] == bal.sink[neighbor_root] {
                 // Both blocks are in the same class: their distance is the spacing between the nodes.
-                let spacing = spacings::vertical(graph, current, neighbor_node);
+                let spacing = cached_spacings.vertical(current, neighbor_node);
 
                 if bal.vdir == Some(VDirection::Up) {
                     let current_block_position = bal.y_of(root);
@@ -313,7 +329,7 @@ fn place_classes(bal: &mut AlignedLayout, classes: &mut ClassGraph) -> Result<()
             .get_mut(&sink)
             .expect("a queued class is in the class graph");
         let class_shift = *class.class_shift.get_or_insert(0.0);
-        let outgoing = class.outgoing.clone();
+        let outgoing = std::mem::take(&mut class.outgoing);
 
         for edge in outgoing {
             // The first class to reach a target sets its shift; later ones minimize or maximize it.

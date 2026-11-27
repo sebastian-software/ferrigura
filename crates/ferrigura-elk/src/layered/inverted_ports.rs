@@ -135,7 +135,7 @@ fn create_dummy(graph: &mut LGraph, edge: usize) -> (usize, usize, usize) {
         options::PORT_CONSTRAINTS,
         Some(OptionValue::Enum {
             class: "PortConstraints",
-            name: "FIXED_POS".to_string(),
+            name: "FIXED_POS",
         }),
     );
     graph.nodes.push(node);
@@ -246,7 +246,7 @@ mod tests {
             options::PORT_CONSTRAINTS,
             Some(OptionValue::Enum {
                 class: "PortConstraints",
-                name: "FIXED_SIDE".to_string(),
+                name: "FIXED_SIDE",
             }),
         );
     }
@@ -285,7 +285,7 @@ mod tests {
             options::EDGE_LABELS_PLACEMENT,
             Some(OptionValue::Enum {
                 class: "EdgeLabelPlacement",
-                name: "HEAD".to_string(),
+                name: "HEAD",
             }),
         );
         let label = graph.add_label(label);

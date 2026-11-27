@@ -84,34 +84,38 @@ struct Pair {
     horizontal: Option<OptionId>,
 }
 
-/// `Spacings.precalculateNodeTypeSpacings`, as a table indexed by node type ordinals.
-fn table() -> [[Pair; 6]; 6] {
+const PAIR_EMPTY: Pair = Pair {
+    vertical: None,
+    horizontal: None,
+};
+
+/// `Spacings.precalculateNodeTypeSpacings`, as a compile-time table indexed by node type ordinals.
+const TABLE: [[Pair; 6]; 6] = build_table();
+
+const fn build_table() -> [[Pair; 6]; 6] {
     use NodeType::*;
-    let mut t = [[Pair::default(); 6]; 6];
-    let idx = |node: NodeType| node as usize;
-    // nodeTypeSpacing(nt, vertical, horizontal): one type with itself, both directions
-    let same = |t: &mut [[Pair; 6]; 6], nt: NodeType, v: Option<OptionId>, h: Option<OptionId>| {
-        t[idx(nt)][idx(nt)] = Pair {
+    let mut t = [[PAIR_EMPTY; 6]; 6];
+    const fn same(t: &mut [[Pair; 6]; 6], nt: NodeType, v: Option<OptionId>, h: Option<OptionId>) {
+        let i = nt as usize;
+        t[i][i] = Pair {
             vertical: v,
             horizontal: h,
         };
-    };
-    // nodeTypeSpacing(n1, n2, spacing): vertical only, both orders
-    let pair_v = |t: &mut [[Pair; 6]; 6], a: NodeType, b: NodeType, v: OptionId| {
-        t[idx(a)][idx(b)].vertical = Some(v);
-        t[idx(b)][idx(a)].vertical = Some(v);
-    };
-    // nodeTypeSpacing(n1, n2, vertical, horizontal): both, both orders
-    let pair_vh = |t: &mut [[Pair; 6]; 6], a: NodeType, b: NodeType, v: OptionId, h: OptionId| {
-        t[idx(a)][idx(b)] = Pair {
+    }
+    const fn pair_v(t: &mut [[Pair; 6]; 6], a: NodeType, b: NodeType, v: OptionId) {
+        let (ia, ib) = (a as usize, b as usize);
+        t[ia][ib].vertical = Some(v);
+        t[ib][ia].vertical = Some(v);
+    }
+    const fn pair_vh(t: &mut [[Pair; 6]; 6], a: NodeType, b: NodeType, v: OptionId, h: OptionId) {
+        let (ia, ib) = (a as usize, b as usize);
+        let entry = Pair {
             vertical: Some(v),
             horizontal: Some(h),
         };
-        t[idx(b)][idx(a)] = Pair {
-            vertical: Some(v),
-            horizontal: Some(h),
-        };
-    };
+        t[ia][ib] = entry;
+        t[ib][ia] = entry;
+    }
     same(
         &mut t,
         NORMAL,
@@ -149,22 +153,10 @@ fn table() -> [[Pair; 6]; 6] {
         SPACING_EDGE_NODE,
         SPACING_EDGE_NODE_BETWEEN_LAYERS,
     );
-    pair_v(
-        &mut t,
-        NORTH_SOUTH_PORT,
-        NORTH_SOUTH_PORT,
-        SPACING_EDGE_EDGE,
-    );
-    t[idx(NORTH_SOUTH_PORT)][idx(NORTH_SOUTH_PORT)] = Pair {
-        vertical: Some(SPACING_EDGE_EDGE),
-        horizontal: None,
-    };
+    same(&mut t, NORTH_SOUTH_PORT, Some(SPACING_EDGE_EDGE), None);
     pair_v(&mut t, NORTH_SOUTH_PORT, EXTERNAL_PORT, SPACING_EDGE_EDGE);
     pair_v(&mut t, NORTH_SOUTH_PORT, LABEL, SPACING_LABEL_NODE);
-    t[idx(EXTERNAL_PORT)][idx(EXTERNAL_PORT)] = Pair {
-        vertical: Some(SPACING_PORT_PORT),
-        horizontal: None,
-    };
+    same(&mut t, EXTERNAL_PORT, Some(SPACING_PORT_PORT), None);
     pair_vh(
         &mut t,
         EXTERNAL_PORT,
@@ -217,15 +209,55 @@ fn local_spacing(graph: &LGraph, option: Option<OptionId>) -> f64 {
     }
 }
 
+/// Resolved node-type spacing tables for one `LGraph`.
+#[derive(Debug, Clone, Copy)]
+pub struct Spacings {
+    vertical: [[f64; 6]; 6],
+    horizontal: [[f64; 6]; 6],
+}
+
+impl Spacings {
+    /// Resolves every node-type pair's vertical and horizontal spacing once for `graph`.
+    pub fn for_graph(graph: &LGraph) -> Self {
+        let mut vertical = [[0.0; 6]; 6];
+        let mut horizontal = [[0.0; 6]; 6];
+        for row in 0..6 {
+            for col in row..6 {
+                let pair = TABLE[row][col];
+                let v = local_spacing(graph, pair.vertical);
+                let h = local_spacing(graph, pair.horizontal);
+                vertical[row][col] = v;
+                vertical[col][row] = v;
+                horizontal[row][col] = h;
+                horizontal[col][row] = h;
+            }
+        }
+        Spacings {
+            vertical,
+            horizontal,
+        }
+    }
+
+    /// `Spacings.getVerticalSpacing(n1, n2)` from the cached table.
+    pub fn vertical(&self, a: &LNode, b: &LNode) -> f64 {
+        self.vertical[a.node_type as usize][b.node_type as usize]
+    }
+
+    /// `Spacings.getHorizontalSpacing(n1, n2)` from the cached table.
+    pub fn horizontal(&self, a: &LNode, b: &LNode) -> f64 {
+        self.horizontal[a.node_type as usize][b.node_type as usize]
+    }
+}
+
 /// `Spacings.getVerticalSpacing(n1, n2)`.
 pub fn vertical(graph: &LGraph, a: &LNode, b: &LNode) -> f64 {
-    let pair = table()[a.node_type as usize][b.node_type as usize];
+    let pair = TABLE[a.node_type as usize][b.node_type as usize];
     local_spacing(graph, pair.vertical)
 }
 
 /// `Spacings.getHorizontalSpacing(n1, n2)`.
 pub fn horizontal(graph: &LGraph, a: &LNode, b: &LNode) -> f64 {
-    let pair = table()[a.node_type as usize][b.node_type as usize];
+    let pair = TABLE[a.node_type as usize][b.node_type as usize];
     local_spacing(graph, pair.horizontal)
 }
 
