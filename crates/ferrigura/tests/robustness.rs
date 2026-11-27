@@ -843,3 +843,38 @@ fn issue_248_dos_and_panic_reproducers_terminate_cleanly() {
 
     assert_eq!(renderer.render(CONTROL).expect("control renders"), control);
 }
+
+#[test]
+fn issue_254_quadratic_hotspots_stay_linear() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let control = renderer.render(CONTROL).expect("control renders");
+
+    // 1. Unclosed `<a` tags in `preprocess::quote_html_attributes` (previously O(N^2)).
+    let unclosed_tags = "<a".repeat(25_000);
+    let _ = ferrigura_syntax::preprocess::prepare(&unclosed_tags).expect("prepare succeeds");
+
+    // 2. Repeated `%%}%%` without newlines in `config::remove_comment_lines` (previously O(N^2)).
+    let comment_markers = "%%}%%".repeat(10_000);
+    let _ = ferrigura_syntax::config::read(&comment_markers);
+
+    // 3. Long space run before `<` in sequence `Lexer::id` (previously ~1.2B ops).
+    let seq_spaces = format!("sequenceDiagram\nparticipant x{}<\n", " ".repeat(49_000));
+    let _ = ferrigura_syntax::parse(&seq_spaces);
+
+    // 4. Deeply nested disallowed HTML elements in `sanitize_text` (previously O(depth * N)).
+    let nested_disallowed = format!("{}{}", "<foo>".repeat(200), "<b>x</b>".repeat(1_000));
+    let sanitized = ferrigura_syntax::sanitize::sanitize_text(&nested_disallowed);
+    assert_eq!(sanitized, "<b>x</b>".repeat(1_000));
+
+    // 5. Long single-line inputs for class, state, and ER lexers (precomputed index bounds).
+    let long_class = format!("classDiagram\n{}", "a ".repeat(20_000));
+    let _ = ferrigura_syntax::parse(&long_class);
+
+    let long_state = format!("stateDiagram-v2\nstate {} {{\n}}\n", "a ".repeat(15_000));
+    let _ = ferrigura_syntax::parse(&long_state);
+
+    let long_er = format!("erDiagram\nE {{\n  {} x\n}}\n", "a~".repeat(15_000));
+    let _ = ferrigura_syntax::parse(&long_er);
+
+    assert_eq!(renderer.render(CONTROL).expect("control renders"), control);
+}

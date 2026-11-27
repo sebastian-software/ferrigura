@@ -7,6 +7,9 @@
 //! follows the viewer's. A value that is not a color, or a dark sheet whose rules do not line up
 //! with the light one, keeps the dark value under `prefers-color-scheme: dark`.
 
+use std::collections::{HashMap, HashSet};
+use std::fmt::Write as _;
+
 use ferrigura_model::theme::khroma;
 
 /// Declares both schemes on a standalone SVG. Inline, the SVG is never the root, so it inherits
@@ -27,89 +30,92 @@ pub fn both(light: &str, dark: &str) -> String {
     let (Some(light_rules), Some(dark_rules)) = (rules(light), rules(dark)) else {
         return separate(light, dark);
     };
-    let mut dark_by_key: Vec<(Key<'_>, &Rule<'_>, bool)> = keyed(&dark_rules)
-        .into_iter()
-        .map(|(key, rule)| (key, rule, false))
-        .collect();
-    let mut merged = String::from(STANDALONE);
+    let mut dark_counts: HashMap<&str, usize> = HashMap::with_capacity(dark_rules.len());
+    let mut dark_by_key: HashMap<Key<'_>, usize> = HashMap::with_capacity(dark_rules.len());
+    for (index, rule) in dark_rules.iter().enumerate() {
+        let seen = dark_counts.entry(rule.selector).or_insert(0);
+        dark_by_key.insert((rule.selector, *seen), index);
+        *seen += 1;
+    }
+    let mut dark_used = vec![false; dark_rules.len()];
+    let mut light_counts: HashMap<&str, usize> = HashMap::with_capacity(light_rules.len());
+    let mut merged = String::with_capacity(STANDALONE.len() + light.len() + dark.len() / 2);
+    merged.push_str(STANDALONE);
     let mut fallback = String::new();
-    for (key, light_rule) in keyed(&light_rules) {
-        let dark_rule = dark_by_key
-            .iter_mut()
-            .find(|(dark_key, _, used)| !*used && *dark_key == key)
-            .map(|entry| {
-                entry.2 = true;
-                entry.1
-            });
-        let mut kept = String::new();
-        let mut dark_only = String::new();
-        for (property, light_value) in &light_rule.declarations {
-            let dark_value = dark_rule.and_then(|rule| value_of(rule, property));
-            let value = match dark_value {
-                None => (*light_value).to_owned(),
-                Some(dark_value) if dark_value == *light_value => dark_value.to_owned(),
-                Some(dark_value) => light_dark(light_value, dark_value).unwrap_or_else(|| {
-                    dark_only.push_str(&format!("{property}:{dark_value};"));
-                    (*light_value).to_owned()
-                }),
-            };
-            kept.push_str(&format!("{property}:{value};"));
-        }
+    let mut kept = String::new();
+    let mut dark_only = String::new();
+    for light_rule in &light_rules {
+        let seen = light_counts.entry(light_rule.selector).or_insert(0);
+        let key = (light_rule.selector, *seen);
+        *seen += 1;
+        let dark_rule = dark_by_key.get(&key).copied().map(|index| {
+            dark_used[index] = true;
+            &dark_rules[index]
+        });
+        kept.clear();
+        dark_only.clear();
         if let Some(dark_rule) = dark_rule {
-            for (property, dark_value) in &dark_rule.declarations {
-                if value_of(light_rule, property).is_none() {
-                    dark_only.push_str(&format!("{property}:{dark_value};"));
+            let mut dark_values: HashMap<&str, &str> =
+                HashMap::with_capacity(dark_rule.declarations.len());
+            for &(property, value) in &dark_rule.declarations {
+                dark_values.insert(property, value);
+            }
+            let mut light_props: HashSet<&str> =
+                HashSet::with_capacity(light_rule.declarations.len());
+            for &(property, light_value) in &light_rule.declarations {
+                light_props.insert(property);
+                match dark_values.get(property).copied() {
+                    None => {
+                        let _ = write!(kept, "{property}:{light_value};");
+                    }
+                    Some(dark_value) if dark_value == light_value => {
+                        let _ = write!(kept, "{property}:{dark_value};");
+                    }
+                    Some(dark_value) => match light_dark(light_value, dark_value) {
+                        Some(combined) => {
+                            let _ = write!(kept, "{property}:{combined};");
+                        }
+                        None => {
+                            let _ = write!(dark_only, "{property}:{dark_value};");
+                            let _ = write!(kept, "{property}:{light_value};");
+                        }
+                    },
                 }
             }
+            for &(property, dark_value) in &dark_rule.declarations {
+                if !light_props.contains(property) {
+                    let _ = write!(dark_only, "{property}:{dark_value};");
+                }
+            }
+        } else {
+            for &(property, light_value) in &light_rule.declarations {
+                let _ = write!(kept, "{property}:{light_value};");
+            }
         }
-        merged.push_str(&format!("{}{{{kept}}}", light_rule.selector));
+        let _ = write!(merged, "{}{{{kept}}}", light_rule.selector);
         if !dark_only.is_empty() {
-            fallback.push_str(&format!("{}{{{dark_only}}}", light_rule.selector));
+            let _ = write!(fallback, "{}{{{dark_only}}}", light_rule.selector);
         }
     }
-    for (_, dark_rule, used) in &dark_by_key {
-        if !used {
-            fallback.push_str(&format!("{}{{{}}}", dark_rule.selector, body(dark_rule)));
+    for (index, dark_rule) in dark_rules.iter().enumerate() {
+        if !dark_used[index] {
+            let _ = write!(fallback, "{}{{", dark_rule.selector);
+            for &(property, value) in &dark_rule.declarations {
+                let _ = write!(fallback, "{property}:{value};");
+            }
+            fallback.push('}');
         }
     }
     if !fallback.is_empty() {
-        merged.push_str(&format!("{DARK_MEDIA}{fallback}}}"));
+        merged.push_str(DARK_MEDIA);
+        merged.push_str(&fallback);
+        merged.push('}');
     }
     merged
 }
 
 /// A rule's selector and how many rules with that selector come before it.
 type Key<'a> = (&'a str, usize);
-
-fn keyed<'a, 'b>(rules: &'b [Rule<'a>]) -> Vec<(Key<'a>, &'b Rule<'a>)> {
-    rules
-        .iter()
-        .enumerate()
-        .map(|(index, rule)| {
-            let seen = rules[..index]
-                .iter()
-                .filter(|earlier| earlier.selector == rule.selector)
-                .count();
-            ((rule.selector, seen), rule)
-        })
-        .collect()
-}
-
-/// The last value a rule declares for a property, as the cascade applies it.
-fn value_of<'a>(rule: &Rule<'a>, property: &str) -> Option<&'a str> {
-    rule.declarations
-        .iter()
-        .rev()
-        .find(|(name, _)| *name == property)
-        .map(|(_, value)| *value)
-}
-
-fn body(rule: &Rule<'_>) -> String {
-    rule.declarations
-        .iter()
-        .map(|(property, value)| format!("{property}:{value};"))
-        .collect()
-}
 
 /// The sheets as they are, with the dark one under the media query.
 fn separate(light: &str, dark: &str) -> String {
@@ -137,11 +143,15 @@ fn split_important(value: &str) -> (&str, bool) {
 /// A value `light-dark()` accepts: a color the theme functions parse, a variable (the sheets refer
 /// only to color variables), or a color keyword.
 fn is_color(value: &str) -> bool {
-    let lower = value.to_ascii_lowercase();
-    lower.starts_with("var(")
-        || lower.starts_with("light-dark(")
-        || lower == "transparent"
-        || lower == "currentcolor"
+    let bytes = value.as_bytes();
+    bytes
+        .get(..4)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"var("))
+        || bytes
+            .get(..11)
+            .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"light-dark("))
+        || value.eq_ignore_ascii_case("transparent")
+        || value.eq_ignore_ascii_case("currentcolor")
         || khroma::luminance(value).is_ok()
 }
 
@@ -296,5 +306,23 @@ stroke:light-dark(var(--a, #fff),var(--a, #000))!important;}"
             rules[0].declarations,
             vec![("content", "\"a;b\""), ("background", "url(data:x;y)")]
         );
+    }
+
+    #[test]
+    fn many_rules_and_properties_merge_preserving_order() {
+        let mut light = String::new();
+        let mut dark = String::new();
+        for i in 0..300 {
+            light.push_str(&format!(
+                "#d .r{i}{{fill:#fff;stroke:#eee;opacity:1;color:RGB(1, 2, 3);}}"
+            ));
+            dark.push_str(&format!(
+                "#d .r{i}{{stroke:#111;fill:#000;opacity:0.5;color:RGBA(4, 5, 6, 0.5);}}"
+            ));
+        }
+        let merged = both(&light, &dark);
+        assert!(merged.contains("#d .r0{fill:light-dark(#fff,#000);stroke:light-dark(#eee,#111);opacity:1;color:light-dark(RGB(1, 2, 3),RGBA(4, 5, 6, 0.5));}"));
+        assert!(merged.contains("#d .r299{fill:light-dark(#fff,#000);"));
+        assert!(merged.contains("@media (prefers-color-scheme: dark){#d .r0{opacity:0.5;}"));
     }
 }

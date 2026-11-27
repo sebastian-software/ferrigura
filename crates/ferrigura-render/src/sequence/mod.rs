@@ -26,6 +26,8 @@ mod model;
 mod style;
 mod text;
 
+use std::collections::{HashMap, HashSet};
+
 use ferrigura_model::config::SequenceDiagramConfig;
 use ferrigura_model::sequence::{LineType, SequenceDiagram};
 use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
@@ -33,7 +35,7 @@ use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 use self::blocks::BlockAction;
 use self::bounds::{Bounds, js_round};
 use self::conf::Conf;
-use self::model::{Block, Layout, Message};
+use self::model::{Block, Layout};
 use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
@@ -137,21 +139,6 @@ impl<'a> Renderer<'a> {
         self.front.iter().rev().chain(self.back.iter()).collect()
     }
 
-    /// Sets `y2` on the lifeline of an actor (`fixLifeLineHeights`, `svgDraw.js:368-381`).
-    fn set_lifeline_y2(&mut self, actor_cnt: i64, y2: f64) {
-        let id = format!("actor{actor_cnt}");
-        let mut done = false;
-        let mut visit = |element: &mut Element| {
-            if !done && element.get("id") == Some(id.as_str()) {
-                element.set("y2", number(y2));
-                done = true;
-            }
-        };
-        for element in self.front.iter_mut().chain(self.back.iter_mut()) {
-            element.visit_mut(&mut visit);
-        }
-    }
-
     /// `draw(text, id, version, diagObj)` (`sequenceRenderer.ts:1043-1172`).
     fn draw(&mut self, title: &str) -> Result<(), RenderError> {
         let max_widths = self.max_message_width_per_actor()?;
@@ -177,14 +164,18 @@ impl<'a> Renderer<'a> {
         }
 
         if self.conf.hide_unused_participants {
-            let mut used = std::collections::HashSet::new();
+            let mut used: HashSet<&str> = HashSet::with_capacity(self.layout.messages.len() * 2);
             for message in &self.layout.messages {
-                used.insert(message.from.clone());
-                used.insert(message.to.clone());
+                if let Some(from) = message.from.as_deref() {
+                    used.insert(from);
+                }
+                if let Some(to) = message.to.as_deref() {
+                    used.insert(to);
+                }
             }
             self.layout
                 .actor_keys
-                .retain(|key| used.contains(&Some(key.clone())));
+                .retain(|key| used.contains(key.as_str()));
         }
 
         self.add_actor_rendering_data();
@@ -206,18 +197,18 @@ impl<'a> Renderer<'a> {
         let text_margin = self.conf.box_text_margin;
         let message_count = self.layout.messages.len();
         for index in 0..message_count {
-            let msg = self.layout.messages[index].clone();
-            match msg.line_type {
+            let line_type = self.layout.messages[index].line_type;
+            match line_type {
                 LineType::Note => {
                     self.draw_note(index)?;
                 }
                 LineType::ActiveStart
                 | LineType::CentralConnection
                 | LineType::CentralConnectionReverse => {
-                    self.new_activation_for(&msg)?;
+                    self.new_activation_for(index)?;
                 }
                 LineType::ActiveEnd => {
-                    self.active_end(&msg)?;
+                    self.active_end(index)?;
                 }
                 LineType::LoopStart
                 | LineType::OptStart
@@ -242,11 +233,10 @@ impl<'a> Renderer<'a> {
                     )?;
                 }
                 LineType::RectStart => {
-                    let text = self.layout.messages[index].text.clone();
-                    let fill = if text.is_empty() {
+                    let fill = if self.layout.messages[index].text.is_empty() {
                         self.rect_default_fill()
                     } else {
-                        text
+                        self.layout.messages[index].text.clone()
                     };
                     self.adjust_loop_height_for_wrap(
                         &loop_widths,
@@ -258,8 +248,9 @@ impl<'a> Renderer<'a> {
                 }
                 LineType::RectEnd => {
                     let block = self.end_block()?;
-                    backgrounds.push(block.clone());
-                    self.bounds.bump(stop_y(&block) - self.bounds.vertical_pos);
+                    let stop = stop_y(&block);
+                    backgrounds.push(block);
+                    self.bounds.bump(stop - self.bounds.vertical_pos);
                 }
                 LineType::AltElse | LineType::CriticalOption => {
                     self.adjust_loop_height_for_wrap(
@@ -280,25 +271,31 @@ impl<'a> Renderer<'a> {
                     )?;
                 }
                 LineType::LoopEnd => {
-                    self.close_block(&msg.id, "loop")?;
+                    let id = self.layout.messages[index].id.clone();
+                    self.close_block(&id, "loop")?;
                 }
                 LineType::OptEnd => {
-                    self.close_block(&msg.id, "opt")?;
+                    let id = self.layout.messages[index].id.clone();
+                    self.close_block(&id, "opt")?;
                 }
                 LineType::AltEnd => {
-                    self.close_block(&msg.id, "alt")?;
+                    let id = self.layout.messages[index].id.clone();
+                    self.close_block(&id, "alt")?;
                 }
                 LineType::ParEnd => {
-                    self.close_block(&msg.id, "par")?;
+                    let id = self.layout.messages[index].id.clone();
+                    self.close_block(&id, "par")?;
                 }
                 LineType::CriticalEnd => {
-                    self.close_block(&msg.id, "critical")?;
+                    let id = self.layout.messages[index].id.clone();
+                    self.close_block(&id, "critical")?;
                 }
                 LineType::BreakEnd => {
-                    self.close_block(&msg.id, "break")?;
+                    let id = self.layout.messages[index].id.clone();
+                    self.close_block(&id, "break")?;
                 }
                 LineType::Autonumber => {
-                    if let Some(number_item) = &msg.autonumber {
+                    if let Some(number_item) = &self.layout.messages[index].autonumber {
                         if let Some(start) = number_item.start.filter(|value| is_truthy(*value)) {
                             sequence_index = start;
                         }
@@ -310,20 +307,25 @@ impl<'a> Renderer<'a> {
                 }
                 _ => {
                     // A message: its bounds now, its drawing after the actors' row.
-                    if let Some(mut model) = self.layout.messages[index].message_model.clone() {
+                    if let Some(mut model) = self.layout.messages[index].message_model.take() {
                         model.starty = self.bounds.vertical_pos;
                         model.sequence_index = sequence_index;
                         model.sequence_visible = self.sequence_numbers;
                         // The reference logs a message it cannot bound and goes on.
-                        if let Ok(line_start_y) = self.bound_message(&mut model) {
-                            self.adjust_created_destroyed(index, &mut model, line_start_y);
-                            self.layout.messages[index].message_model = Some(model);
-                            to_draw.push((index, line_start_y));
+                        match self.bound_message(&mut model) {
+                            Ok(line_start_y) => {
+                                self.adjust_created_destroyed(index, &mut model, line_start_y);
+                                self.layout.messages[index].message_model = Some(model);
+                                to_draw.push((index, line_start_y));
+                            }
+                            Err(_) => {
+                                self.layout.messages[index].message_model = Some(model);
+                            }
                         }
                     }
                 }
             }
-            if is_sequence_line(msg.line_type) {
+            if is_sequence_line(line_type) {
                 // The reference rounds to two decimals, against floating-point error.
                 sequence_index = js_round((sequence_index + sequence_step) * 100.0) / 100.0;
             }
@@ -433,35 +435,42 @@ impl<'a> Renderer<'a> {
 
     /// `newActivation` for an activation item (`sequenceRenderer.ts:1155-1163`): the activation
     /// opens on its actor, in a group of its own at the back of the root.
-    fn new_activation_for(&mut self, msg: &Message) -> Result<(), RenderError> {
-        let key = msg.from.clone().unwrap_or_default();
-        let index = self.layout.actor_index(&key).ok_or_else(|| {
+    fn new_activation_for(&mut self, msg_index: usize) -> Result<(), RenderError> {
+        let key = self.layout.messages[msg_index]
+            .from
+            .as_deref()
+            .unwrap_or("");
+        let index = self.layout.actor_index(key).ok_or_else(|| {
             RenderError::Layout("an activation names an undeclared actor".to_owned())
         })?;
-        let stacked = self.bounds.activation_count(&key) as f64;
+        let stacked = self.bounds.activation_count(key) as f64;
         let actor = &self.layout.actors[index];
         let x = actor.x + actor.width / 2.0 + ((stacked - 1.0) * self.conf.activation_width) / 2.0;
+        let key_owned = key.to_owned();
         let anchored = self.append(Element::new("g"));
         let width = self.conf.activation_width;
-        self.bounds.new_activation(&key, x, width, anchored);
+        self.bounds.new_activation(&key_owned, x, width, anchored);
         Ok(())
     }
 
     /// `activeEnd` (`sequenceRenderer.ts:1121-1138`): closes the last activation of the actor,
     /// draws it down to the row, and bounds it.
-    fn active_end(&mut self, msg: &Message) -> Result<(), RenderError> {
-        let key = msg.from.clone().unwrap_or_default();
+    fn active_end(&mut self, msg_index: usize) -> Result<(), RenderError> {
+        let key = self.layout.messages[msg_index]
+            .from
+            .as_deref()
+            .unwrap_or("");
         let mut vertical_pos = self.bounds.vertical_pos;
         let mut activation = self
             .bounds
-            .end_activation(&key)
+            .end_activation(key)
             .ok_or_else(|| RenderError::Layout("an activation ends with none open".to_owned()))?;
         let starty = activation.extent.starty.unwrap_or(f64::NAN);
         if starty + 18.0 > vertical_pos {
             activation.extent.starty = Some(vertical_pos - 6.0);
             vertical_pos += 12.0;
         }
-        let stacked = self.bounds.activation_count(&key);
+        let stacked = self.bounds.activation_count(key);
         self.draw_activation(&activation, vertical_pos, stacked);
         self.bounds.insert(
             self.conf.box_margin,
@@ -474,24 +483,43 @@ impl<'a> Renderer<'a> {
     }
 
     /// `svgDraw.fixLifeLineHeights` (`svgDraw.js:368-381`): the lifelines stop at the footer's top
-    /// (mirrored) or below the row's bottom.
+    /// (mirrored) or below the row's bottom. Updates all lifelines in a single tree pass.
     fn fix_lifeline_heights(&mut self) {
         let mirror = self.conf.mirror_actors;
-        let keys = self.layout.actor_keys.clone();
-        for key in keys {
-            let Some(index) = self.layout.actor_index(&key) else {
+        let mut targets: HashMap<String, f64> =
+            HashMap::with_capacity(self.layout.actor_keys.len());
+        for key in &self.layout.actor_keys {
+            let Some(index) = self.layout.actor_index(key) else {
                 continue;
             };
-            let actor = self.layout.actors[index].clone();
+            let actor = &self.layout.actors[index];
             let Some(cnt) = actor.actor_cnt else {
                 continue;
             };
             let stop = actor.stopy.unwrap_or(0.0);
-            if !mirror && actor.stopy.is_some_and(is_truthy) {
-                self.set_lifeline_y2(cnt, stop + actor.height / 2.0);
+            let y2 = if !mirror && actor.stopy.is_some_and(is_truthy) {
+                stop + actor.height / 2.0
             } else if mirror {
-                self.set_lifeline_y2(cnt, stop);
+                stop
+            } else {
+                continue;
+            };
+            targets.insert(format!("actor{cnt}"), y2);
+        }
+        if targets.is_empty() {
+            return;
+        }
+        for element in self.front.iter_mut().chain(self.back.iter_mut()) {
+            if targets.is_empty() {
+                break;
             }
+            element.visit_mut(&mut |node| {
+                if !targets.is_empty()
+                    && let Some(y2) = node.get("id").and_then(|id| targets.remove(id))
+                {
+                    node.set("y2", number(y2));
+                }
+            });
         }
     }
 

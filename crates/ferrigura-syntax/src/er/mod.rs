@@ -27,7 +27,8 @@ pub fn parse(raw: &str) -> Result<ErDiagram, ParseError> {
 
 /// Parses an already prepared source.
 pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<ErDiagram, ParseError> {
-    let cleaned = cleanup_comments(&remove_directives(&prepared.text));
+    let without_directives = remove_directives(&prepared.text);
+    let cleaned = cleanup_comments(&without_directives);
     let text = encode_entities(&cleaned) + "\n";
     let mut db = ErDb::new();
     if let Some(title) = &prepared.title {

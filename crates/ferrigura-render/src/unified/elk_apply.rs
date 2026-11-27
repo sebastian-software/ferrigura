@@ -28,7 +28,9 @@ use super::elk_straighten::{project_label_onto_straightened_run, straighten_edge
 use super::geom::{CenterBox, Point};
 use super::shapes::Intersect;
 use super::terminal;
-use ferrigura_elk::json::{JsonEdge, JsonEdgeSection, JsonNode, JsonPoint};
+#[cfg(test)]
+use ferrigura_elk::json::JsonPoint;
+use ferrigura_elk::json::{JsonEdge, JsonEdgeSection, JsonNode};
 use ferrigura_jsmath::pow;
 
 /// Padding between a subgraph frame and its children (`SUBGRAPH_PADDING`).
@@ -225,23 +227,169 @@ impl<'a> Layout<'a> {
         children: &[JsonNode],
         graph: &JsonNode,
     ) {
+        let group_edges = self.index_group_edge_bounds(children, graph);
+        let _ = self.even_group_frames_rec(data, children, &group_edges);
+    }
+
+    /// Precomputes edge lane bounds per group in one pass over `graph.edges`: attachment points for
+    /// edges ending on a group, and full internal edge bounds attributed to the deepest strict
+    /// common ancestor group (then propagated bottom-up during [`Self::even_group_frames_rec`]).
+    fn index_group_edge_bounds<'g>(
+        &self,
+        children: &'g [JsonNode],
+        graph: &'g JsonNode,
+    ) -> GroupEdgeBounds<'g> {
+        fn collect_parents<'g>(
+            nodes: &'g [JsonNode],
+            parent: Option<&'g str>,
+            into: &mut HashMap<&'g str, &'g str>,
+        ) {
+            for node in nodes {
+                if let Some(p) = parent {
+                    into.insert(node.id.as_str(), p);
+                }
+                collect_parents(&node.children, Some(node.id.as_str()), into);
+            }
+        }
+
+        let mut elk_parent: HashMap<&'g str, &'g str> = HashMap::new();
+        collect_parents(children, None, &mut elk_parent);
+
+        let mut internal: HashMap<&'g str, LaneBounds> = HashMap::new();
+        let mut attach: HashMap<&'g str, LaneBounds> = HashMap::new();
+        let mut source_ancestors: Vec<&'g str> = Vec::new();
+        let include_labels = self.state.group_padding.is_some();
+
+        for edge in &graph.edges {
+            let (source, target) = elk_ends_ref(edge);
+            let attaches_start = self.is_group(source);
+            let attaches_end = self.is_group(target);
+
+            // Deepest strict common ancestor group in the ELK tree, if both ends sit inside one.
+            let lca_group = if elk_parent.contains_key(source) && elk_parent.contains_key(target) {
+                source_ancestors.clear();
+                let mut cur = elk_parent.get(source).copied();
+                while let Some(anc) = cur {
+                    if source_ancestors.contains(&anc) {
+                        break;
+                    }
+                    source_ancestors.push(anc);
+                    cur = elk_parent.get(anc).copied();
+                }
+                let mut found = None;
+                let mut steps = 0usize;
+                let mut cur = elk_parent.get(target).copied();
+                while let Some(anc) = cur {
+                    if steps > elk_parent.len() {
+                        break;
+                    }
+                    steps += 1;
+                    if source_ancestors.contains(&anc) && self.is_group(anc) {
+                        found = Some(anc);
+                        break;
+                    }
+                    cur = elk_parent.get(anc).copied();
+                }
+                found
+            } else {
+                None
+            };
+
+            if lca_group.is_none() && !attaches_start && !attaches_end {
+                continue;
+            }
+
+            let offset = self.calc_offset(source, target);
+
+            if let Some(group_id) = lca_group {
+                let bounds = internal.entry(group_id).or_default();
+                for section in &edge.sections {
+                    if let Some(p) = section.start_point {
+                        bounds.include_point(p.x + offset.x, p.y + offset.y);
+                    }
+                    for p in &section.bend_points {
+                        bounds.include_point(p.x + offset.x, p.y + offset.y);
+                    }
+                    if let Some(p) = section.end_point {
+                        bounds.include_point(p.x + offset.x, p.y + offset.y);
+                    }
+                }
+                // The design mode keeps the box of an inner edge's label inside the frame: the box
+                // holds the label's own room, so the frame does not cross it.
+                if include_labels {
+                    for label in &edge.labels {
+                        let (Some(x), Some(y), Some(width), Some(height)) =
+                            (label.x, label.y, label.width, label.height)
+                        else {
+                            continue;
+                        };
+                        bounds.include_point(x + offset.x, y + offset.y);
+                        bounds.include_point(x + offset.x + width, y + offset.y + height);
+                    }
+                }
+            }
+
+            if attaches_start {
+                let bounds = attach.entry(source).or_default();
+                for section in &edge.sections {
+                    if let Some(p) = section.start_point {
+                        bounds.include_point(p.x + offset.x, p.y + offset.y);
+                    }
+                }
+            }
+            if attaches_end {
+                let bounds = attach.entry(target).or_default();
+                for section in &edge.sections {
+                    if let Some(p) = section.end_point {
+                        bounds.include_point(p.x + offset.x, p.y + offset.y);
+                    }
+                }
+            }
+        }
+
+        GroupEdgeBounds { internal, attach }
+    }
+
+    fn even_group_frames_rec(
+        &mut self,
+        data: &mut LayoutData,
+        children: &[JsonNode],
+        group_edges: &GroupEdgeBounds<'_>,
+    ) -> LaneBounds {
+        let mut combined_internal = LaneBounds::default();
         for elk_node in children {
             if !self.is_group(&elk_node.id) {
                 continue;
             }
-            self.even_group_frames(data, &elk_node.children, graph);
+            let child_internal = self.even_group_frames_rec(data, &elk_node.children, group_edges);
+            let mut own_internal = group_edges
+                .internal
+                .get(elk_node.id.as_str())
+                .copied()
+                .unwrap_or_default();
+            own_internal.merge(child_internal);
+            combined_internal.merge(own_internal);
 
-            let boxes: Vec<(Point, f64, f64)> = elk_node
-                .children
-                .iter()
-                .filter_map(|child| self.nodes.get(&child.id))
-                .filter(|child| child.positioned && truthy(child.width) && truthy(child.height))
-                .map(|child| (child.pos, child.width, child.height))
-                .collect();
+            let mut has_box = false;
+            let mut min_x = f64::INFINITY;
+            let mut max_x = f64::NEG_INFINITY;
+            let mut max_y = f64::NEG_INFINITY;
+            for child in &elk_node.children {
+                let Some(child) = self.nodes.get(&child.id) else {
+                    continue;
+                };
+                if !(child.positioned && truthy(child.width) && truthy(child.height)) {
+                    continue;
+                }
+                has_box = true;
+                min_x = min_x.min(child.pos.x).min(child.pos.x + child.width);
+                max_x = max_x.max(child.pos.x).max(child.pos.x + child.width);
+                max_y = max_y.max(child.pos.y).max(child.pos.y + child.height);
+            }
             let Some(group) = self.nodes.get(&elk_node.id) else {
                 continue;
             };
-            if !group.positioned || boxes.is_empty() {
+            if !group.positioned || !has_box {
                 continue;
             }
             let origin = group.pos;
@@ -249,21 +397,13 @@ impl<'a> Layout<'a> {
             let group_height = group.height;
             let title_width = group.title_width;
 
-            let descendants = collect_descendant_ids(elk_node);
-            let lane = self.internal_edge_points(graph, &descendants, &elk_node.id);
-            let xs: Vec<f64> = boxes
-                .iter()
-                .flat_map(|(pos, width, _)| [pos.x, pos.x + width])
-                .chain(lane.iter().map(|p| p.x))
-                .collect();
-            let ys: Vec<f64> = boxes
-                .iter()
-                .flat_map(|(pos, _, height)| [pos.y, pos.y + height])
-                .chain(lane.iter().map(|p| p.y))
-                .collect();
-            let min_x = xs.iter().copied().fold(f64::INFINITY, f64::min);
-            let max_x = xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-            let max_y = ys.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            let mut lane = own_internal;
+            if let Some(&attached) = group_edges.attach.get(elk_node.id.as_str()) {
+                lane.merge(attached);
+            }
+            min_x = min_x.min(lane.min_x);
+            max_x = max_x.max(lane.max_x);
+            max_y = max_y.max(lane.max_y);
 
             // Only ever pull a frame in: ELK sized it to hold everything it put there.
             let padding = self.state.group_padding.unwrap_or(SUBGRAPH_PADDING);
@@ -306,68 +446,7 @@ impl<'a> Layout<'a> {
                 layout.height = Some(height);
             }
         }
-    }
-
-    /// The absolute points of the edges that run inside the group, and of those that end on it
-    /// (`internalEdgePoints`). They widen the lane the frame must keep clear.
-    fn internal_edge_points(
-        &self,
-        graph: &JsonNode,
-        descendants: &HashSet<String>,
-        group_id: &str,
-    ) -> Vec<Point> {
-        let mut points = Vec::new();
-        for edge in &graph.edges {
-            let (source, target) = elk_ends(edge);
-            let is_internal = descendants.contains(&source) && descendants.contains(&target);
-            let attaches_start = source == group_id;
-            let attaches_end = target == group_id;
-            if !is_internal && !attaches_start && !attaches_end {
-                continue;
-            }
-            let offset = self.calc_offset(&source, &target);
-            for section in &edge.sections {
-                let picked: Vec<Option<JsonPoint>> = if is_internal {
-                    let mut all = vec![section.start_point];
-                    all.extend(section.bend_points.iter().copied().map(Some));
-                    all.push(section.end_point);
-                    all
-                } else {
-                    vec![
-                        if attaches_start {
-                            section.start_point
-                        } else {
-                            None
-                        },
-                        if attaches_end {
-                            section.end_point
-                        } else {
-                            None
-                        },
-                    ]
-                };
-                points.extend(
-                    picked
-                        .into_iter()
-                        .flatten()
-                        .map(|p| Point::new(p.x + offset.x, p.y + offset.y)),
-                );
-            }
-            // The design mode keeps the box of an inner edge's label inside the frame: the box
-            // holds the label's own room, so the frame does not cross it.
-            if is_internal && self.state.group_padding.is_some() {
-                for label in &edge.labels {
-                    let (Some(x), Some(y), Some(width), Some(height)) =
-                        (label.x, label.y, label.width, label.height)
-                    else {
-                        continue;
-                    };
-                    points.push(Point::new(x + offset.x, y + offset.y));
-                    points.push(Point::new(x + offset.x + width, y + offset.y + height));
-                }
-            }
-        }
-        points
+        combined_internal
     }
 
     /// `applyElkEdgeLayout`: the alignment pre-pass, then every edge in ELK's order, then the
@@ -847,34 +926,64 @@ fn cluster_paints_title(shape: &str) -> bool {
     !matches!(shape, "noteGroup" | "divider")
 }
 
-/// The two ends of an ELK edge, in ELK's own orientation: the sources and targets it was given.
-fn elk_ends(edge: &JsonEdge) -> (String, String) {
+/// Scalar lane bounds accumulated for a group's internal and attached edges.
+#[derive(Debug, Clone, Copy)]
+struct LaneBounds {
+    min_x: f64,
+    max_x: f64,
+    max_y: f64,
+}
+
+impl Default for LaneBounds {
+    fn default() -> Self {
+        Self {
+            min_x: f64::INFINITY,
+            max_x: f64::NEG_INFINITY,
+            max_y: f64::NEG_INFINITY,
+        }
+    }
+}
+
+impl LaneBounds {
+    fn include_point(&mut self, x: f64, y: f64) {
+        self.min_x = self.min_x.min(x);
+        self.max_x = self.max_x.max(x);
+        self.max_y = self.max_y.max(y);
+    }
+
+    fn merge(&mut self, other: Self) {
+        self.min_x = self.min_x.min(other.min_x);
+        self.max_x = self.max_x.max(other.max_x);
+        self.max_y = self.max_y.max(other.max_y);
+    }
+}
+
+struct GroupEdgeBounds<'a> {
+    internal: HashMap<&'a str, LaneBounds>,
+    attach: HashMap<&'a str, LaneBounds>,
+}
+
+/// The two ends of an ELK edge as borrowed slices, in ELK's own orientation.
+fn elk_ends_ref(edge: &JsonEdge) -> (&str, &str) {
     let start = edge
         .sources
         .first()
-        .cloned()
-        .or_else(|| edge.source.clone())
-        .unwrap_or_default();
+        .map(String::as_str)
+        .or(edge.source.as_deref())
+        .unwrap_or("");
     let end = edge
         .targets
         .first()
-        .cloned()
-        .or_else(|| edge.target.clone())
-        .unwrap_or_default();
+        .map(String::as_str)
+        .or(edge.target.as_deref())
+        .unwrap_or("");
     (start, end)
 }
 
-/// The ids of every node inside `elk_node`, at any depth (`collectDescendantIds`).
-fn collect_descendant_ids(elk_node: &JsonNode) -> HashSet<String> {
-    fn collect(node: &JsonNode, into: &mut HashSet<String>) {
-        for child in &node.children {
-            into.insert(child.id.clone());
-            collect(child, into);
-        }
-    }
-    let mut ids = HashSet::new();
-    collect(elk_node, &mut ids);
-    ids
+/// The two ends of an ELK edge, in ELK's own orientation: the sources and targets it was given.
+fn elk_ends(edge: &JsonEdge) -> (String, String) {
+    let (start, end) = elk_ends_ref(edge);
+    (start.to_owned(), end.to_owned())
 }
 
 /// The points of a section, shifted by the container's offset: start, bends, end

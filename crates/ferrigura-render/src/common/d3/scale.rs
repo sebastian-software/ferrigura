@@ -135,6 +135,13 @@ impl BandScale {
         self
     }
 
+    /// `range(r)`: updates the output range and recomputes band positions in place without
+    /// cloning the domain or rebuilding the lookup table.
+    pub fn set_range(&mut self, range: [f64; 2]) {
+        self.range = range;
+        self.rescale();
+    }
+
     /// `scale(value)`: the start of the band of `value`, or `None` for a value outside the domain
     /// (d3 returns `undefined`).
     #[must_use]

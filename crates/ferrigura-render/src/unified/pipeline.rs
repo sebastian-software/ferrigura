@@ -1248,32 +1248,28 @@ pub(crate) fn paint_with_animation<'a>(
     let mut edge_labels = String::new();
     // The boxes of the edge labels in the design mode, where each interrupts its edge.
     let mut label_gaps: Vec<BBox> = Vec::new();
+    let frames: Vec<BBox> = if config.section.design.is_some() {
+        painted_clusters
+            .iter()
+            .map(|cluster| cluster.bbox)
+            .collect()
+    } else {
+        Vec::new()
+    };
     for (index, edge) in data.edges.iter().enumerate() {
         let resolved_edge_id = resolved_ids
             .as_ref()
             .map_or(edge.id.as_str(), |ids| ids.edge_ids[index].as_str());
         if let Some(label) = measured.edge_labels.get(&edge.id) {
             // The design mode keeps a label's chip off the frame of a group.
-            let moved = if config.section.design.is_some() || resolved_edge_id != edge.id {
-                let mut cloned = edge.clone();
-                if config.section.design.is_some() {
-                    let frames: Vec<BBox> = painted_clusters
-                        .iter()
-                        .map(|cluster| cluster.bbox)
-                        .collect();
-                    let place = edges::label_clear_of_frames(edge, label, &frames);
-                    cloned.x = Some(place.x);
-                    cloned.y = Some(place.y);
-                }
-                if resolved_edge_id != edge.id {
-                    cloned.id = resolved_edge_id.to_owned();
-                }
-                Some(cloned)
+            let (x, y) = if config.section.design.is_some() {
+                let place = edges::label_clear_of_frames(edge, label, &frames);
+                (Some(place.x), Some(place.y))
             } else {
-                None
+                (edge.x, edge.y)
             };
-            let edge = moved.as_ref().unwrap_or(edge);
-            let painted = edges::paint_label(edge, label, &config.section);
+            let painted =
+                edges::paint_label_at(edge, label, &config.section, resolved_edge_id, x, y);
             cover(&mut bounds, painted.bbox);
             if config.section.design.is_some() && label.background.is_some() {
                 label_gaps.push(painted.bbox);

@@ -6,6 +6,8 @@
 //! Comments and directives are not removed here: the lexer treats them as hidden tokens, as the
 //! grammars do.
 
+use std::borrow::Cow;
+
 use crate::ParseError;
 use crate::text::{is_cr_lf, is_js_space, is_line_term, is_word};
 use crate::yaml::{self, Yaml};
@@ -25,13 +27,55 @@ pub struct Prepared {
     pub(crate) line_offset: usize,
 }
 
+/// Normalizes CRLF and CR to LF without allocating when `\r` is absent.
+fn normalize_line_breaks(raw: &str) -> Cow<'_, str> {
+    if !raw.contains('\r') {
+        return Cow::Borrowed(raw);
+    }
+    let mut out = String::with_capacity(raw.len());
+    let bytes = raw.as_bytes();
+    let mut copied = 0;
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'\r' {
+            out.push_str(&raw[copied..i]);
+            out.push('\n');
+            if bytes.get(i + 1) == Some(&b'\n') {
+                i += 2;
+            } else {
+                i += 1;
+            }
+            copied = i;
+        } else {
+            i += 1;
+        }
+    }
+    out.push_str(&raw[copied..]);
+    Cow::Owned(out)
+}
+
+/// Whether `text` begins with optional horizontal JavaScript whitespace followed by `---`.
+fn has_leading_front_matter_fence(text: &str) -> bool {
+    let rest = text.trim_start_matches(|c: char| is_js_space(c) && !is_cr_lf(c));
+    rest.starts_with("---")
+}
+
 /// Normalizes line breaks and quotes HTML attributes, then removes the front matter and reads it.
 pub fn prepare(raw: &str) -> Result<Prepared, ParseError> {
-    let normalized = quote_html_attributes(&raw.replace("\r\n", "\n").replace('\r', "\n"));
+    let line_norm = normalize_line_breaks(raw);
+    let normalized = quote_html_attributes(&line_norm);
+    if !has_leading_front_matter_fence(&normalized) {
+        return Ok(Prepared {
+            text: normalized.into_owned(),
+            title: None,
+            front_matter: Vec::new(),
+            line_offset: 0,
+        });
+    }
     let chars: Vec<char> = normalized.chars().collect();
     let Some(front_matter) = match_front_matter(&chars) else {
         return Ok(Prepared {
-            text: normalized,
+            text: normalized.into_owned(),
             title: None,
             front_matter: Vec::new(),
             line_offset: 0,
@@ -125,50 +169,80 @@ fn dedent(body: &str, indent: &str) -> String {
 }
 
 /// `replace(/<(\w+)([^>]*)>/g, …)` with `="x"` changed to `='x'` inside the tag.
-fn quote_html_attributes(text: &str) -> String {
-    let chars: Vec<char> = text.chars().collect();
-    let n = chars.len();
-    let mut out = String::with_capacity(text.len());
+fn quote_html_attributes(text: &str) -> Cow<'_, str> {
+    if !text.contains('<') || !text.contains('>') || !text.contains("=\"") {
+        return Cow::Borrowed(text);
+    }
+    let bytes = text.as_bytes();
+    let n = bytes.len();
+    let mut out: Option<String> = None;
+    let mut copied = 0;
     let mut i = 0;
     while i < n {
-        if chars[i] == '<' {
-            let name_end = (i + 1..n).find(|&k| !is_word(chars[k])).unwrap_or(n);
-            if name_end > i + 1
-                && let Some(close) = (name_end..n).find(|&k| chars[k] == '>')
-            {
-                out.push('<');
-                out.extend(&chars[i + 1..name_end]);
-                out.push_str(&quote_attributes(&chars[name_end..close]));
-                out.push('>');
-                i = close + 1;
-                continue;
-            }
+        let Some(rel_lt) = text[i..].find('<') else {
+            break;
+        };
+        let lt = i + rel_lt;
+        let mut name_end = lt + 1;
+        while name_end < n && is_word(bytes[name_end] as char) {
+            name_end += 1;
         }
-        out.push(chars[i]);
-        i += 1;
+        if name_end > lt + 1 {
+            let Some(rel_gt) = text[name_end..].find('>') else {
+                // No closing `>` exists anywhere in the rest of the text.
+                break;
+            };
+            let close = name_end + rel_gt;
+            let attrs = &text[name_end..close];
+            if attrs.contains("=\"") {
+                let quoted = quote_attributes(attrs);
+                if quoted != attrs {
+                    let buf = out.get_or_insert_with(|| String::with_capacity(text.len()));
+                    buf.push_str(&text[copied..name_end]);
+                    buf.push_str(&quoted);
+                    copied = close;
+                }
+            }
+            i = close + 1;
+        } else {
+            i = lt + 1;
+        }
     }
-    out
+    match out {
+        Some(mut buf) => {
+            buf.push_str(&text[copied..]);
+            Cow::Owned(buf)
+        }
+        None => Cow::Borrowed(text),
+    }
 }
 
 /// `replace(/="([^"]*)"/g, "='$1'")`.
-fn quote_attributes(attributes: &[char]) -> String {
-    let n = attributes.len();
+fn quote_attributes(attributes: &str) -> String {
+    let bytes = attributes.as_bytes();
+    let n = bytes.len();
     let mut out = String::with_capacity(n);
+    let mut copied = 0;
     let mut i = 0;
     while i < n {
-        if attributes[i] == '='
-            && attributes.get(i + 1) == Some(&'"')
-            && let Some(close) = (i + 2..n).find(|&k| attributes[k] == '"')
-        {
+        let Some(rel) = attributes[i..].find("=\"") else {
+            break;
+        };
+        let eq = i + rel;
+        if let Some(rel_close) = attributes[eq + 2..].find('"') {
+            let close = eq + 2 + rel_close;
+            out.push_str(&attributes[copied..eq]);
             out.push_str("='");
-            out.extend(&attributes[i + 2..close]);
+            out.push_str(&attributes[eq + 2..close]);
             out.push('\'');
+            copied = close + 1;
             i = close + 1;
-            continue;
+        } else {
+            // No closing `"` exists anywhere in the remainder of the tag.
+            break;
         }
-        out.push(attributes[i]);
-        i += 1;
     }
+    out.push_str(&attributes[copied..]);
     out
 }
 
@@ -201,11 +275,14 @@ fn last_line_break_in_run(text: &[char], from: usize) -> Option<usize> {
 /// the first closing fence after the body.
 /// The text after a front matter block at its start, as `detectType` strips it
 /// (`detectType.ts` 15-18, `matchFrontMatter`): the block is only located, its YAML is not read.
-pub(crate) fn strip_front_matter(text: &str) -> String {
+pub(crate) fn strip_front_matter(text: &str) -> Cow<'_, str> {
+    if !has_leading_front_matter_fence(text) {
+        return Cow::Borrowed(text);
+    }
     let chars: Vec<char> = text.chars().collect();
     match match_front_matter(&chars) {
-        Some(front_matter) => chars[front_matter.length..].iter().collect(),
-        None => text.to_owned(),
+        Some(front_matter) => Cow::Owned(chars[front_matter.length..].iter().collect()),
+        None => Cow::Borrowed(text),
     }
 }
 
@@ -329,7 +406,10 @@ pub(crate) fn loose_directive_len(text: &str) -> Option<usize> {
 }
 
 /// Removes the `%%{ … }%%` directives, as `removeDirectives` does.
-pub(crate) fn remove_directives(text: &str) -> String {
+pub(crate) fn remove_directives(text: &str) -> Cow<'_, str> {
+    if !text.contains("%%{") {
+        return Cow::Borrowed(text);
+    }
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(start) = rest.find("%%{") {
@@ -343,12 +423,15 @@ pub(crate) fn remove_directives(text: &str) -> String {
         }
     }
     out.push_str(rest);
-    out
+    Cow::Owned(out)
 }
 
 /// Removes the comment lines, as `cleanupComments` does: `^\s*%%(?!{)[^\n]+\n?` with the
 /// multi-line flag, then the leading whitespace of the text.
-pub(crate) fn cleanup_comments(text: &str) -> String {
+pub(crate) fn cleanup_comments(text: &str) -> Cow<'_, str> {
+    if !text.contains("%%") {
+        return Cow::Borrowed(text.trim_start_matches(is_js_space));
+    }
     let mut out = String::with_capacity(text.len());
     let mut copied = 0;
     let mut at = 0;
@@ -366,8 +449,15 @@ pub(crate) fn cleanup_comments(text: &str) -> String {
             None => break,
         }
     }
+    if copied == 0 {
+        return Cow::Borrowed(text.trim_start_matches(is_js_space));
+    }
     out.push_str(&text[copied..]);
-    out.trim_start_matches(is_js_space).to_owned()
+    let lead = out.len() - out.trim_start_matches(is_js_space).len();
+    if lead > 0 {
+        out.drain(..lead);
+    }
+    Cow::Owned(out)
 }
 
 /// The end of a comment match that starts at the line start `start`, if there is one.
@@ -1102,9 +1192,21 @@ fn remap_encoded_line_column(
 /// it is rendered (`mermaidAPI.ts:359`), so a placeholder the user typed is decoded as well.
 #[must_use]
 pub fn decode_entities(text: &str) -> String {
-    text.replace("ﬂ°°", "&#")
-        .replace("ﬂ°", "&")
-        .replace("¶ß", ";")
+    if !text.contains("ﬂ°") && !text.contains("¶ß") {
+        return text.to_owned();
+    }
+    let mut out = if text.contains("ﬂ°°") {
+        text.replace("ﬂ°°", "&#")
+    } else {
+        text.to_owned()
+    };
+    if out.contains("ﬂ°") {
+        out = out.replace("ﬂ°", "&");
+    }
+    if out.contains("¶ß") {
+        out = out.replace("¶ß", ";");
+    }
+    out
 }
 
 /// Whether the next semicolon-bounded statement in `rest` (which is already on a single line)

@@ -6,6 +6,7 @@
 //!
 //! Each function is a transcription of its reference function; the comments name the line.
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 
 use ferrigura_model::sequence::{CentralConnection, LineType, Placement};
@@ -13,7 +14,6 @@ use ferrigura_model::sequence::{CentralConnection, LineType, Placement};
 use super::Renderer;
 use super::actors::stack_height;
 use super::bounds::{get_max, get_min};
-use super::conf::Font;
 use super::model::{Actor, Extent, MessageModel, NoteModel};
 use super::text::{dimensions, wrap};
 use crate::RenderError;
@@ -99,17 +99,20 @@ impl Renderer<'_> {
     ) -> Result<BTreeMap<String, f64>, RenderError> {
         let mut max_width: BTreeMap<String, f64> = BTreeMap::new();
         let padding = self.conf.wrap_padding;
-        for msg_index in 0..self.layout.messages.len() {
-            let msg = self.layout.messages[msg_index].clone();
+        let width_conf = self.conf.width;
+        let layout = &self.layout;
+        let conf = &self.conf;
+        let memo = &mut self.memo;
+        for msg in &layout.messages {
             let (Some(from), Some(to)) = (msg.from.as_deref(), msg.to.as_deref()) else {
                 continue;
             };
             let (Some(from_index), Some(to_index)) =
-                (self.layout.actor_index(from), self.layout.actor_index(to))
+                (layout.actor_index(from), layout.actor_index(to))
             else {
                 continue;
             };
-            let actor = self.layout.actors[to_index].clone();
+            let actor = &layout.actors[to_index];
             // The first actor with a message to its left needs no margin, nor the last one a note
             // to its right (`:1507-1516`).
             if msg.placement == Some(Placement::LeftOf) && actor.prev_actor.is_none() {
@@ -121,35 +124,28 @@ impl Renderer<'_> {
             let is_note = msg.placement.is_some();
             let is_message = !is_note;
             let font = if is_note {
-                self.conf.note_font.clone()
+                &conf.note_font
             } else {
-                self.conf.message_font.clone()
+                &conf.message_font
             };
             let wrapped = if msg.wrap {
-                wrap(
-                    &mut self.memo,
-                    &msg.text,
-                    self.conf.width - 2.0 * padding,
-                    &font,
-                )?
+                Cow::Owned(wrap(memo, &msg.text, width_conf - 2.0 * padding, font)?)
             } else {
-                msg.text.clone()
+                Cow::Borrowed(msg.text.as_str())
             };
-            let dims = dimensions(&mut self.memo, &wrapped, &font)?;
+            let dims = dimensions(memo, &wrapped, font)?;
             let message_width = dims.width + 2.0 * padding;
             let next_matches = actor.next_actor.as_deref() == Some(from);
             let prev_matches = actor.prev_actor.as_deref() == Some(from);
-            let from_key = from.to_owned();
-            let to_key = to.to_owned();
             if is_message && next_matches {
-                bump_max(&mut max_width, &to_key, message_width);
+                bump_max(&mut max_width, to, message_width);
             } else if is_message && prev_matches {
-                bump_max(&mut max_width, &from_key, message_width);
+                bump_max(&mut max_width, from, message_width);
             } else if is_message && from == to {
-                bump_max(&mut max_width, &from_key, message_width / 2.0);
-                bump_max(&mut max_width, &to_key, message_width / 2.0);
+                bump_max(&mut max_width, from, message_width / 2.0);
+                bump_max(&mut max_width, to, message_width / 2.0);
             } else if msg.placement == Some(Placement::RightOf) {
-                bump_max(&mut max_width, &from_key, message_width);
+                bump_max(&mut max_width, from, message_width);
             } else if msg.placement == Some(Placement::LeftOf) {
                 if let Some(prev) = &actor.prev_actor {
                     bump_max(&mut max_width, prev, message_width);
@@ -159,7 +155,7 @@ impl Renderer<'_> {
                     bump_max(&mut max_width, prev, message_width / 2.0);
                 }
                 if actor.next_actor.is_some() {
-                    bump_max(&mut max_width, &from_key, message_width / 2.0);
+                    bump_max(&mut max_width, from, message_width / 2.0);
                 }
             }
             let _ = from_index;
@@ -174,40 +170,40 @@ impl Renderer<'_> {
         max_width: &BTreeMap<String, f64>,
     ) -> Result<f64, RenderError> {
         let padding = self.conf.wrap_padding;
+        let width_conf = self.conf.width;
+        let height_conf = self.conf.height;
+        let neo = self.conf.neo;
         let mut max_height = 0.0_f64;
-        let actor_font = self.conf.actor_font.clone();
-        for index in 0..self.layout.actors.len() {
-            let actor = &mut self.layout.actors[index];
-            if actor.wrap {
-                actor.description = wrap(
-                    &mut self.memo,
-                    &actor.description,
-                    self.conf.width - 2.0 * padding,
-                    &actor_font,
-                )?;
-            }
-            let dims = dimensions(
-                &mut self.memo,
-                &self.layout.actors[index].description,
-                &actor_font,
-            )?;
-            let actor = &mut self.layout.actors[index];
-            actor.width = if actor.wrap {
-                self.conf.width
-            } else {
-                get_max(&[Some(self.conf.width), Some(dims.width + 2.0 * padding)])
-            };
-            if self.conf.neo {
-                actor.actor_text_height = Some(dims.height);
-                actor.height = get_max(&[Some(stack_height(dims.height)), Some(self.conf.height)]);
-            } else {
-                actor.height = if actor.wrap {
-                    get_max(&[Some(dims.height), Some(self.conf.height)])
+        {
+            let actor_font = &self.conf.actor_font;
+            let memo = &mut self.memo;
+            for actor in &mut self.layout.actors {
+                if actor.wrap {
+                    actor.description = wrap(
+                        memo,
+                        &actor.description,
+                        width_conf - 2.0 * padding,
+                        actor_font,
+                    )?;
+                }
+                let dims = dimensions(memo, &actor.description, actor_font)?;
+                actor.width = if actor.wrap {
+                    width_conf
                 } else {
-                    self.conf.height
+                    get_max(&[Some(width_conf), Some(dims.width + 2.0 * padding)])
                 };
+                if neo {
+                    actor.actor_text_height = Some(dims.height);
+                    actor.height = get_max(&[Some(stack_height(dims.height)), Some(height_conf)]);
+                } else {
+                    actor.height = if actor.wrap {
+                        get_max(&[Some(dims.height), Some(height_conf)])
+                    } else {
+                        height_conf
+                    };
+                }
+                max_height = get_max(&[Some(max_height), Some(actor.height)]);
             }
-            max_height = get_max(&[Some(max_height), Some(actor.height)]);
         }
 
         // The margin after each actor: wide enough for the widest message from it, and never less
@@ -233,59 +229,66 @@ impl Renderer<'_> {
         // The boxes: the margin they add beside their actors, and the height of their titles
         // (`:1670-1698`).
         let mut max_box_height = 0.0_f64;
-        let box_count = self.layout.boxes.len();
-        for box_index in 0..box_count {
-            let keys = self.layout.boxes[box_index].actor_keys.clone();
-            let mut total_width = 0.0;
-            for key in &keys {
-                if let Some(index) = self.layout.actor_index(key) {
-                    let actor = &self.layout.actors[index];
-                    total_width += actor.width + actor.margin.filter(|m| *m != 0.0).unwrap_or(0.0);
+        {
+            let message_font = &self.conf.message_font;
+            let box_margin = self.conf.box_margin;
+            let box_text_margin = self.conf.box_text_margin;
+            let memo = &mut self.memo;
+            let actors = &self.layout.actors;
+            let actor_indices = &self.layout.actor_indices;
+            for sequence_box in &mut self.layout.boxes {
+                let mut total_width = 0.0;
+                for key in &sequence_box.actor_keys {
+                    if let Some(&index) = actor_indices.get(key) {
+                        let actor = &actors[index];
+                        total_width +=
+                            actor.width + actor.margin.filter(|m| *m != 0.0).unwrap_or(0.0);
+                    }
                 }
+                total_width += box_margin * 8.0;
+                total_width -= 2.0 * box_text_margin;
+                if sequence_box.wrap
+                    && let Some(name) = sequence_box.name.as_deref()
+                {
+                    let wrapped = wrap(memo, name, total_width - 2.0 * padding, message_font)?;
+                    sequence_box.name = Some(wrapped);
+                }
+                let name = sequence_box.name.as_deref().unwrap_or("");
+                let dims = dimensions(memo, name, message_font)?;
+                max_box_height = get_max(&[Some(dims.height), Some(max_box_height)]);
+                let min_width = get_max(&[Some(total_width), Some(dims.width + 2.0 * padding)]);
+                let mut margin = box_text_margin;
+                if total_width < min_width {
+                    margin += (min_width - total_width) / 2.0;
+                }
+                sequence_box.margin = margin;
             }
-            total_width += self.conf.box_margin * 8.0;
-            total_width -= 2.0 * self.conf.box_text_margin;
-            let sequence_box = &mut self.layout.boxes[box_index];
-            let message_font = self.conf.message_font.clone();
-            if sequence_box.wrap
-                && let Some(name) = sequence_box.name.clone()
-            {
-                let wrapped = wrap(
-                    &mut self.memo,
-                    &name,
-                    total_width - 2.0 * padding,
-                    &message_font,
-                )?;
-                self.layout.boxes[box_index].name = Some(wrapped);
-            }
-            let name = self.layout.boxes[box_index]
-                .name
-                .clone()
-                .unwrap_or_default();
-            let dims = dimensions(&mut self.memo, &name, &message_font)?;
-            max_box_height = get_max(&[Some(dims.height), Some(max_box_height)]);
-            let min_width = get_max(&[Some(total_width), Some(dims.width + 2.0 * padding)]);
-            let mut margin = self.conf.box_text_margin;
-            if total_width < min_width {
-                margin += (min_width - total_width) / 2.0;
-            }
-            self.layout.boxes[box_index].margin = margin;
         }
         for sequence_box in &mut self.layout.boxes {
             sequence_box.text_max_height = max_box_height;
         }
-        Ok(get_max(&[Some(max_height), Some(self.conf.height)]))
+        Ok(get_max(&[Some(max_height), Some(height_conf)]))
     }
 
     /// `buildNoteModel` (`:1701-1771`): the geometry of a note.
     pub(super) fn build_note_model(&mut self, msg_index: usize) -> Result<NoteModel, RenderError> {
-        let msg = self.layout.messages[msg_index].clone();
-        let from_index = self.actor_of(msg.from.as_deref())?;
-        let to_index = self.actor_of(msg.to.as_deref())?;
-        let from = self.layout.actors[from_index].clone();
-        let to = self.layout.actors[to_index].clone();
+        let layout = &self.layout;
+        let msg = &layout.messages[msg_index];
+        let from_index = msg
+            .from
+            .as_deref()
+            .and_then(|key| layout.actor_index(key))
+            .ok_or_else(missing_actor)?;
+        let to_index = msg
+            .to
+            .as_deref()
+            .and_then(|key| layout.actor_index(key))
+            .ok_or_else(missing_actor)?;
+        let from = &layout.actors[from_index];
+        let to = &layout.actors[to_index];
         let conf = &self.conf;
-        let note_font: Font = conf.note_font.clone();
+        let note_font = &conf.note_font;
+        let memo = &mut self.memo;
         let padding = conf.note_margin;
         let width_conf = conf.width;
         let actor_margin = conf.actor_margin;
@@ -294,11 +297,11 @@ impl Renderer<'_> {
         let stopx = to.x;
 
         let measured_text = if should_wrap {
-            wrap(&mut self.memo, &msg.text, width_conf, &note_font)?
+            Cow::Owned(wrap(memo, &msg.text, width_conf, note_font)?)
         } else {
-            msg.text.clone()
+            Cow::Borrowed(msg.text.as_str())
         };
-        let mut text_dims = dimensions(&mut self.memo, &measured_text, &note_font)?;
+        let mut text_dims = dimensions(memo, &measured_text, note_font)?;
         let width;
         let note_startx;
         if msg.placement == Some(Placement::RightOf) {
@@ -323,16 +326,16 @@ impl Renderer<'_> {
             note_startx = startx - width + (from.width - actor_margin) / 2.0;
         } else if msg.to == msg.from {
             let self_text = if should_wrap {
-                wrap(
-                    &mut self.memo,
+                Cow::Owned(wrap(
+                    memo,
                     &msg.text,
                     get_max(&[Some(width_conf), Some(from.width)]),
-                    &note_font,
-                )?
+                    note_font,
+                )?)
             } else {
-                msg.text.clone()
+                Cow::Borrowed(msg.text.as_str())
             };
-            text_dims = dimensions(&mut self.memo, &self_text, &note_font)?;
+            text_dims = dimensions(memo, &self_text, note_font)?;
             width = if should_wrap {
                 get_max(&[Some(width_conf), Some(from.width)])
             } else {
@@ -352,12 +355,7 @@ impl Renderer<'_> {
             };
         }
         let message = if should_wrap {
-            wrap(
-                &mut self.memo,
-                &msg.text,
-                width - 2.0 * self.conf.wrap_padding,
-                &note_font,
-            )?
+            wrap(memo, &msg.text, width - 2.0 * conf.wrap_padding, note_font)?
         } else {
             msg.text.clone()
         };
@@ -376,9 +374,7 @@ impl Renderer<'_> {
     /// missing actor is the TypeError the reference would throw.
     fn actor_of(&self, key: Option<&str>) -> Result<usize, RenderError> {
         key.and_then(|key| self.layout.actor_index(key))
-            .ok_or_else(|| {
-                RenderError::Layout("a message refers to an actor that is not declared".to_owned())
-            })
+            .ok_or_else(missing_actor)
     }
 
     /// `buildMessageModel` (`:1953-2032`): the geometry of a message, or `None` for the items that
@@ -387,14 +383,37 @@ impl Renderer<'_> {
         &mut self,
         msg_index: usize,
     ) -> Result<Option<MessageModel>, RenderError> {
-        let msg = self.layout.messages[msg_index].clone();
-        if !is_arrow(msg.line_type) {
-            return Ok(None);
-        }
-        let from_key = msg.from.clone().unwrap_or_default();
-        let to_key = msg.to.clone().unwrap_or_default();
-        let (from_left, from_right) = self.activation_bounds(&from_key)?;
-        let (to_left, to_right) = self.activation_bounds(&to_key)?;
+        let (
+            line_type,
+            central,
+            activate,
+            should_wrap,
+            same_actor,
+            from_left,
+            from_right,
+            to_left,
+            to_right,
+        ) = {
+            let msg = &self.layout.messages[msg_index];
+            if !is_arrow(msg.line_type) {
+                return Ok(None);
+            }
+            let from_key = msg.from.as_deref().unwrap_or("");
+            let to_key = msg.to.as_deref().unwrap_or("");
+            let (from_left, from_right) = self.activation_bounds(from_key)?;
+            let (to_left, to_right) = self.activation_bounds(to_key)?;
+            (
+                msg.line_type,
+                msg.central,
+                msg.activate,
+                msg.wrap,
+                msg.from == msg.to,
+                from_left,
+                from_right,
+                to_left,
+                to_right,
+            )
+        };
         let neo = self.conf.neo;
         let activation_width = self.conf.activation_width;
         let padding = self.conf.wrap_padding;
@@ -410,33 +429,33 @@ impl Renderer<'_> {
 
         if neo {
             let offset = 3.0;
-            if msg.line_type != LineType::SolidOpen {
+            if line_type != LineType::SolidOpen {
                 stopx += if is_arrow_to_right { -offset } else { offset };
             }
             if matches!(
-                msg.line_type,
+                line_type,
                 LineType::BidirectionalSolid | LineType::BidirectionalDotted
             ) {
                 startx += if is_arrow_to_right { offset } else { -offset };
             }
         }
 
-        startx += central_offset(msg.central, msg.line_type, is_arrow_to_right);
+        startx += central_offset(central, line_type, is_arrow_to_right);
         // The line width is counted, so the bounds of an activation are two pixels off.
         let is_arrow_to_activation = (to_left - to_right).abs() > 2.0;
         let adjust = |value: f64| if is_arrow_to_right { -value } else { value };
 
-        if msg.from == msg.to {
+        if same_actor {
             // A self message: its stop is its start, as the reference's later checks rely on.
             stopx = startx;
         } else {
-            if msg.activate == Some(true) && !is_arrow_to_activation {
+            if activate == Some(true) && !is_arrow_to_activation {
                 stopx += adjust(activation_width / 2.0 - 1.0);
             }
             // The arrowhead is drawn past the line's end (refX), so the line stops three pixels
             // short, except for the open arrows and the stick and reverse shapes that do not take one.
             if !matches!(
-                msg.line_type,
+                line_type,
                 LineType::SolidOpen
                     | LineType::DottedOpen
                     | LineType::StickTop
@@ -455,7 +474,7 @@ impl Renderer<'_> {
                 stopx += adjust(3.0);
             }
             if matches!(
-                msg.line_type,
+                line_type,
                 LineType::BidirectionalSolid
                     | LineType::BidirectionalDotted
                     | LineType::SolidArrowTopReverseDotted
@@ -469,20 +488,21 @@ impl Renderer<'_> {
 
         let all = [from_left, from_right, to_left, to_right];
         let bounded_width = (startx - stopx).abs();
-        let mut text = msg.text.clone();
-        if msg.wrap && !text.is_empty() {
-            text = wrap(
-                &mut self.memo,
-                &text,
+        let message_font = &self.conf.message_font;
+        let memo = &mut self.memo;
+        let msg = &mut self.layout.messages[msg_index];
+        if should_wrap && !msg.text.is_empty() {
+            msg.text = wrap(
+                memo,
+                &msg.text,
                 get_max(&[Some(bounded_width + 2.0 * padding), Some(conf_width)]),
-                &self.conf.message_font.clone(),
+                message_font,
             )?;
-            self.layout.messages[msg_index].text = text.clone();
         }
-        let message_font = self.conf.message_font.clone();
-        let dims = dimensions(&mut self.memo, &text, &message_font)?;
+        let dims = dimensions(memo, &msg.text, message_font)?;
+        let text = msg.text.clone();
         let width = get_max(&[
-            Some(if msg.wrap {
+            Some(if should_wrap {
                 0.0
             } else {
                 dims.width + 2.0 * padding
@@ -607,7 +627,7 @@ impl Renderer<'_> {
             if placement.is_some() {
                 let note = self.build_note_model(msg_index)?;
                 let (from, width) = (note.startx, note.width);
-                self.layout.messages[msg_index].note = Some(note.clone());
+                self.layout.messages[msg_index].note = Some(note);
                 for &open in &stack {
                     let current = &mut arena[open];
                     current.from = get_min(&[Some(current.from), Some(from)]);
@@ -623,18 +643,15 @@ impl Renderer<'_> {
                 };
                 let (startx, stopx) = (model.startx, model.stopx);
                 let model_width = model.width;
-                let (msg_from, msg_to) = {
-                    let msg = &self.layout.messages[msg_index];
-                    (msg.from.clone(), msg.to.clone())
-                };
-                self.layout.messages[msg_index].message_model = Some(model.clone());
+                self.layout.messages[msg_index].message_model = Some(model);
                 if truthy(startx) && truthy(stopx) && !stack.is_empty() {
                     for &open in &stack {
                         if startx == stopx {
-                            let from_index = self.actor_of(msg_from.as_deref())?;
-                            let to_index = self.actor_of(msg_to.as_deref())?;
-                            let from = self.layout.actors[from_index].clone();
-                            let to = self.layout.actors[to_index].clone();
+                            let msg = &self.layout.messages[msg_index];
+                            let from_index = self.actor_of(msg.from.as_deref())?;
+                            let to_index = self.actor_of(msg.to.as_deref())?;
+                            let from = &self.layout.actors[from_index];
+                            let to = &self.layout.actors[to_index];
                             let current = &mut arena[open];
                             current.from = get_min(&[
                                 Some(from.x - model_width / 2.0),
@@ -675,13 +692,12 @@ impl Renderer<'_> {
         let mut prev_margin = 0.0_f64;
         let mut prev_box: Option<usize> = None;
         let mut max_height = 0.0_f64;
-        let keys = self.layout.actor_keys.clone();
         let margin_conf = self.conf.actor_margin;
         let box_margin = self.conf.box_margin;
         let width_conf = self.conf.width;
         let height_conf = self.conf.height;
-        for key in &keys {
-            let Some(index) = self.layout.actor_index(key) else {
+        for key_index in 0..self.layout.actor_keys.len() {
+            let Some(index) = self.layout.actor_index(&self.layout.actor_keys[key_index]) else {
                 continue;
             };
             let actor_box = self.layout.actors[index].box_index;
@@ -743,6 +759,11 @@ impl Renderer<'_> {
 fn bump_max(map: &mut BTreeMap<String, f64>, key: &str, value: f64) {
     let entry = map.entry(key.to_owned()).or_insert(0.0);
     *entry = get_max(&[Some(*entry), Some(value)]);
+}
+
+/// The error when a message references an undeclared actor.
+fn missing_actor() -> RenderError {
+    RenderError::Layout("a message refers to an actor that is not declared".to_owned())
 }
 
 /// The error of a block that is closed with nothing open, which the reference throws on.

@@ -29,7 +29,8 @@ pub fn parse(raw: &str) -> Result<StateDiagram, ParseError> {
 
 /// Parses an already prepared source.
 pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<StateDiagram, ParseError> {
-    let cleaned = cleanup_comments(&remove_directives(&prepared.text));
+    let without_directives = remove_directives(&prepared.text);
+    let cleaned = cleanup_comments(&without_directives);
     let text = encode_entities(&cleaned) + "\n";
     // `setDiagramTitle` sanitizes the front matter's title.
     let title = prepared

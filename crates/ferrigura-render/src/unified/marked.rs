@@ -632,8 +632,7 @@ struct ItemRules {
 }
 
 impl ItemRules {
-    fn new(indent: usize) -> Self {
-        let spaces = 3.min(indent.saturating_sub(1));
+    fn for_spaces(spaces: usize) -> Self {
         Self {
             next_bullet: compile(
                 &format!(r"^ {{0,{spaces}}}(?:[*+-]|\d{{1,9}}[.)])((?:[ \t][^\n]*)?(?:\n|$))"),
@@ -647,6 +646,66 @@ impl ItemRules {
             heading_begin: compile(&format!(r"^ {{0,{spaces}}}#"), ""),
             html_begin: compile(&format!(r"^ {{0,{spaces}}}<(?:[a-z].*>|!--)"), "i"),
         }
+    }
+
+    fn for_indent(indent: usize) -> &'static Self {
+        let spaces = 3.min(indent.saturating_sub(1));
+        &ITEM_RULES[spaces]
+    }
+}
+
+static ITEM_RULES: LazyLock<[ItemRules; 4]> = LazyLock::new(|| {
+    [
+        ItemRules::for_spaces(0),
+        ItemRules::for_spaces(1),
+        ItemRules::for_spaces(2),
+        ItemRules::for_spaces(3),
+    ]
+});
+
+/// Precompiled per-bullet regexes for [`Lexer::list_inner`], covering every bullet `source::BULLET`
+/// can match (`*`, `+`, `-`, `\d{1,9}.`, `\d{1,9})`).
+struct ListItemRegexes {
+    star: Regex,
+    plus: Regex,
+    minus: Regex,
+    ordered_dot: Regex,
+    ordered_paren: Regex,
+}
+
+static LIST_ITEM_REGEXES: LazyLock<ListItemRegexes> = LazyLock::new(|| {
+    let build = |bull: &str| compile(&format!(r"^( {{0,3}}{bull})((?:[\t ][^\n]*)?(?:\n|$))"), "");
+    ListItemRegexes {
+        star: build(r"\*"),
+        plus: build(r"\+"),
+        minus: build(r"\-"),
+        ordered_dot: build(r"\d{1,9}\."),
+        ordered_paren: build(r"\d{1,9}\)"),
+    }
+});
+
+fn list_item_regex(bull: &str) -> std::borrow::Cow<'static, Regex> {
+    if bull.chars().count() > 1 {
+        match bull.chars().last() {
+            Some('.') => return std::borrow::Cow::Borrowed(&LIST_ITEM_REGEXES.ordered_dot),
+            Some(')') => return std::borrow::Cow::Borrowed(&LIST_ITEM_REGEXES.ordered_paren),
+            other => {
+                let suffix = other.unwrap_or('.');
+                return std::borrow::Cow::Owned(compile(
+                    &format!(r"^( {{0,3}}\d{{1,9}}\{suffix})((?:[\t ][^\n]*)?(?:\n|$))"),
+                    "",
+                ));
+            }
+        }
+    }
+    match bull {
+        "*" => std::borrow::Cow::Borrowed(&LIST_ITEM_REGEXES.star),
+        "+" => std::borrow::Cow::Borrowed(&LIST_ITEM_REGEXES.plus),
+        "-" => std::borrow::Cow::Borrowed(&LIST_ITEM_REGEXES.minus),
+        _ => std::borrow::Cow::Owned(compile(
+            &format!(r"^( {{0,3}}\{bull})((?:[\t ][^\n]*)?(?:\n|$))"),
+            "",
+        )),
     }
 }
 
@@ -1263,14 +1322,8 @@ impl Lexer {
     fn list_inner(&mut self, src: &str) -> Option<String> {
         let rules = self.rules;
         let captures = exec(&rules.list, src)?;
-        let mut bull = js_trim(group(&captures, 1).unwrap_or_default()).to_owned();
-        let ordered = bull.chars().count() > 1;
-        bull = if ordered {
-            format!(r"\d{{1,9}}\{}", bull.chars().last().unwrap_or('.'))
-        } else {
-            format!(r"\{bull}")
-        };
-        let item_regex = compile(&format!(r"^( {{0,3}}{bull})((?:[\t ][^\n]*)?(?:\n|$))"), "");
+        let bull = js_trim(group(&captures, 1).unwrap_or_default());
+        let item_regex = list_item_regex(bull);
 
         let mut src = src;
         let mut list_raw = String::new();
@@ -1315,7 +1368,7 @@ impl Lexer {
             }
 
             if !end_early {
-                let item_rules = ItemRules::new(indent);
+                let item_rules = ItemRules::for_indent(indent);
                 while !src.is_empty() {
                     let raw_line = first_line(src).to_owned();
                     next_line = raw_line.clone();
@@ -1574,48 +1627,99 @@ impl Lexer {
     /// symbol outside the Basic Multilingual Plane makes the text one unit shorter there.
     fn mask(&self, src: &str) -> String {
         let rules = self.rules;
-        let mut masked = src.to_owned();
-        if !self.links.is_empty() {
+        let mut masked = if !self.links.is_empty() && src.contains('[') {
+            let mut out = String::with_capacity(src.len());
+            let mut copied = 0;
             let mut position = 0;
-            while let Some(found) = rules.reflink_search.find_at(&masked, position) {
+            while let Some(found) = rules.reflink_search.find_at(src, position) {
                 let (start, end) = (found.start(), found.end());
-                let text = found.as_str().to_owned();
-                let next_unit = units(&masked[..end]).max(units(&masked[..start]) + 1);
+                let text = found.as_str();
                 let label = text
                     .rfind('[')
                     .map(|open| &text[open + 1..text.len().saturating_sub(1).max(open + 1)])
                     .unwrap_or_default();
                 if self.links.contains(label) {
-                    let filler = format!("[{}]", "a".repeat(units(&text).saturating_sub(2)));
-                    masked.replace_range(start..end, &filler);
+                    out.push_str(&src[copied..start]);
+                    out.push('[');
+                    out.extend(std::iter::repeat_n('a', units(text).saturating_sub(2)));
+                    out.push(']');
+                    copied = end;
                 }
-                position = byte_at_unit(&masked, next_unit, true);
+                position = if end > start {
+                    end
+                } else {
+                    next_boundary(src, start)
+                };
+                if position >= src.len() {
+                    break;
+                }
+            }
+            if copied == 0 {
+                src.to_owned()
+            } else {
+                out.push_str(&src[copied..]);
+                out
+            }
+        } else {
+            src.to_owned()
+        };
+
+        if masked.contains('\\') {
+            let mut out = String::with_capacity(masked.len());
+            let mut copied = 0;
+            let mut position = 0;
+            while let Some(found) = rules.any_punctuation.find_at(&masked, position) {
+                let (start, end) = (found.start(), found.end());
+                out.push_str(&masked[copied..start]);
+                out.push_str("++");
+                copied = end;
+                let match_units = units(&masked[start..end]);
+                // An escaped non-BMP symbol is 3 UTF-16 units replaced by `"++"` (2 units), so
+                // marked's `lastIndex` advances 1 UTF-16 unit past the replacement.
+                position = if match_units > 2 {
+                    end + byte_at_unit(&masked[end..], match_units - 2, true)
+                } else {
+                    end
+                };
                 if position >= masked.len() {
                     break;
                 }
             }
-        }
-        let mut position = 0;
-        while let Some(found) = rules.any_punctuation.find_at(&masked, position) {
-            let (start, end) = (found.start(), found.end());
-            let next_unit = units(&masked[..end]);
-            masked.replace_range(start..end, "++");
-            position = byte_at_unit(&masked, next_unit, true);
-            if position >= masked.len() {
-                break;
+            if copied > 0 {
+                out.push_str(&masked[copied..]);
+                masked = out;
             }
         }
-        let mut position = 0;
-        while let Some(found) = rules.block_skip.find_at(&masked, position) {
-            let (start, end) = (found.start(), found.end());
-            let next_unit = units(&masked[..end]).max(units(&masked[..start]) + 1);
-            let filler = format!("[{}]", "a".repeat(units(found.as_str()).saturating_sub(2)));
-            masked.replace_range(start..end, &filler);
-            position = byte_at_unit(&masked, next_unit, true);
-            if position >= masked.len() {
-                break;
+
+        if masked.contains(['[', '`', '<']) {
+            let mut out = String::with_capacity(masked.len());
+            let mut copied = 0;
+            let mut position = 0;
+            while let Some(found) = rules.block_skip.find_at(&masked, position) {
+                let (start, end) = (found.start(), found.end());
+                out.push_str(&masked[copied..start]);
+                out.push('[');
+                out.extend(std::iter::repeat_n(
+                    'a',
+                    units(found.as_str()).saturating_sub(2),
+                ));
+                out.push(']');
+                copied = end;
+                position = if end > start {
+                    end
+                } else {
+                    next_boundary(&masked, start)
+                };
+                if position >= masked.len() {
+                    break;
+                }
+            }
+            if copied > 0 {
+                out.push_str(&masked[copied..]);
+                masked = out;
             }
         }
+
         masked
     }
 
@@ -1912,8 +2016,10 @@ mod tests {
     #[test]
     fn every_rule_compiles() {
         LazyLock::force(&RULES);
+        LazyLock::force(&ITEM_RULES);
+        LazyLock::force(&LIST_ITEM_REGEXES);
         for indent in 1..=6 {
-            ItemRules::new(indent);
+            let _ = ItemRules::for_indent(indent);
         }
     }
 
@@ -1967,5 +2073,24 @@ mod tests {
         assert_eq!(advance(utf8, 0, 1), "🦀".len());
         assert_eq!(advance(utf8, "🦀 ".len(), 0), "🦀 c".len());
         assert!(!lex(utf8).is_empty());
+    }
+
+    #[test]
+    fn mask_handles_non_bmp_escapes_and_large_inputs_in_linear_time() {
+        // Escaped non-BMP symbol (`\🦀`) is 3 UTF-16 code units, replaced by `++` (2 units),
+        // skipping the next UTF-16 code unit just like marked's `lastIndex` update.
+        let lexer = Lexer::new();
+        assert_eq!(lexer.mask("\\🦀\\!"), "++\\!");
+        assert_eq!(lexer.mask("\\🦀a\\!"), "++a++");
+        assert_eq!(lexer.mask("`code` and \\! and \\*"), "[aaaa] and ++ and ++");
+
+        let large = format!("{} **bold**", "\\! `x` ".repeat(4_000));
+        assert!(!lex(&large).is_empty());
+
+        let mut many_items = String::new();
+        for i in 0..500 {
+            many_items.push_str(&format!("- item {i}\n"));
+        }
+        assert!(!lex(&many_items).is_empty());
     }
 }

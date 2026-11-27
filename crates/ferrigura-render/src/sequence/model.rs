@@ -4,7 +4,7 @@
 //! The reference mutates the DB's records in place. The port copies what the layout needs into
 //! these structs, in the DB's order, and keeps the parse data it reads unchanged in the model.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use ferrigura_model::sequence::{
     Autonumber, CentralConnection, LineType, Placement, SequenceDiagram,
@@ -222,6 +222,8 @@ pub struct Activation {
 pub struct Layout {
     /// The actors, in the DB's order.
     pub actors: Vec<Actor>,
+    /// Index into `actors` by actor key for O(1) lookups.
+    pub actor_indices: HashMap<String, usize>,
     /// The actors' keys in order, as `getActorKeys` gives them.
     pub actor_keys: Vec<String>,
     /// The boxes, in the order they were opened.
@@ -312,11 +314,16 @@ impl Layout {
                 message_model: None,
             })
             .collect();
+        let mut actor_indices = HashMap::with_capacity(actors.len());
+        for (index, actor) in actors.iter().enumerate() {
+            actor_indices.entry(actor.id.clone()).or_insert(index);
+        }
         Self {
             actor_keys: actors
                 .iter()
                 .map(|actor: &Actor| actor.id.clone())
                 .collect(),
+            actor_indices,
             actors,
             boxes,
             messages,
@@ -336,7 +343,7 @@ impl Layout {
     /// The index of the actor with the key `id`.
     #[must_use]
     pub fn actor_index(&self, id: &str) -> Option<usize> {
-        self.actors.iter().position(|actor| actor.id == id)
+        self.actor_indices.get(id).copied()
     }
 }
 

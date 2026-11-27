@@ -1,9 +1,9 @@
 //! The axes of the chart: `chartBuilder/components/axis/` of the reference (`baseAxis.ts`,
 //! `bandAxis.ts`, `linearAxis.ts`, `index.ts`).
 //!
-//! The reference rebuilds its d3 scale in `recalculateScale` after each change of the range, the
-//! position or the outer padding. This port builds the scale when it is used, from the same state,
-//! which gives the same values because every change in the reference is followed by a rebuild.
+//! The reference updates its d3 scale in `recalculateScale` after each change of the range, the
+//! position or the outer padding. This port caches the band scale on the axis and rescales it in
+//! place whenever those change.
 
 use std::f64::consts::PI;
 
@@ -52,7 +52,10 @@ impl Tick {
 /// The domain of an axis.
 #[derive(Debug, Clone, PartialEq)]
 enum Domain {
-    Band(Vec<String>),
+    Band {
+        categories: Vec<String>,
+        scale: BandScale,
+    },
     Linear([f64; 2]),
 }
 
@@ -98,8 +101,21 @@ impl Axis {
         theme: &AxisThemeConfig,
         screen_scale: f64,
     ) -> Self {
+        let initial_range = [0.0, 10.0];
         let (domain, title) = match data {
-            AxisData::Band { title, categories } => (Domain::Band(categories.clone()), title),
+            AxisData::Band { title, categories } => {
+                let scale = BandScale::new(categories, initial_range)
+                    .padding_inner(1.0)
+                    .padding_outer(0.0)
+                    .align(0.5);
+                (
+                    Domain::Band {
+                        categories: categories.clone(),
+                        scale,
+                    },
+                    title,
+                )
+            }
             AxisData::Linear { title, min, max } => (Domain::Linear([*min, *max]), title),
         };
         let rotation = if config.label_rotation >= -90.0 && config.label_rotation <= 90.0 {
@@ -115,7 +131,7 @@ impl Axis {
             config: config.clone(),
             theme: theme.clone(),
             position: AxisPosition::Left,
-            range: [0.0, 10.0],
+            range: initial_range,
             bounding: Rect::default(),
             show_title: false,
             show_label: false,
@@ -135,6 +151,14 @@ impl Axis {
         ]
     }
 
+    /// Updates the cached band scale to the current inset range.
+    fn recalculate_scale(&mut self) {
+        let range = self.get_range();
+        if let Domain::Band { scale, .. } = &mut self.domain {
+            scale.set_range(range);
+        }
+    }
+
     /// `setRange(range)`: the range, and the size of the box along the axis.
     pub fn set_range(&mut self, range: [f64; 2]) {
         self.range = range;
@@ -143,6 +167,7 @@ impl Axis {
         } else {
             self.bounding.width = range[1] - range[0];
         }
+        self.recalculate_scale();
     }
 
     /// `setAxisPosition(position)`: the position, and the range again, which sets the other side.
@@ -163,14 +188,6 @@ impl Axis {
         self.outer_padding
     }
 
-    /// The d3 band scale of a band axis, built on the current range.
-    fn band_scale(&self, categories: &[String]) -> BandScale {
-        BandScale::new(categories, self.get_range())
-            .padding_inner(1.0)
-            .padding_outer(0.0)
-            .align(0.5)
-    }
-
     /// The d3 linear scale of a linear axis. The left axis reverses its domain, since the SVG's y
     /// axis runs down from the top (`linearAxis.ts` 27-33).
     fn linear_scale(&self, domain: [f64; 2]) -> LinearScale {
@@ -185,7 +202,7 @@ impl Axis {
     /// linear axis.
     fn tick_values(&self) -> Vec<Tick> {
         match &self.domain {
-            Domain::Band(categories) => categories.iter().cloned().map(Tick::Text).collect(),
+            Domain::Band { categories, .. } => categories.iter().cloned().map(Tick::Text).collect(),
             Domain::Linear(domain) => self
                 .linear_scale(*domain)
                 .ticks(TICK_COUNT)
@@ -199,7 +216,11 @@ impl Axis {
     #[must_use]
     pub fn tick_distance(&self) -> f64 {
         let range = self.get_range();
-        (range[0] - range[1]).abs() / self.tick_values().len() as f64
+        let count = match &self.domain {
+            Domain::Band { categories, .. } => categories.len(),
+            Domain::Linear(domain) => self.linear_scale(*domain).ticks(TICK_COUNT).len(),
+        };
+        (range[0] - range[1]).abs() / count as f64
     }
 
     /// `getScaleValue(value)` for a text: the start of a category, or the position of a number
@@ -208,11 +229,7 @@ impl Axis {
     #[must_use]
     pub fn scale_text(&self, text: &str) -> Option<f64> {
         match &self.domain {
-            Domain::Band(categories) => Some(
-                self.band_scale(categories)
-                    .apply(text)
-                    .unwrap_or(self.get_range()[0]),
-            ),
+            Domain::Band { scale, .. } => Some(scale.apply(text).unwrap_or(self.get_range()[0])),
             Domain::Linear(domain) => self.linear_scale(*domain).apply(js_to_number(text)),
         }
     }
@@ -222,7 +239,7 @@ impl Axis {
     #[must_use]
     pub fn scale_number(&self, value: Option<f64>) -> Option<f64> {
         match &self.domain {
-            Domain::Band(_) => Some(self.get_range()[0]),
+            Domain::Band { .. } => Some(self.get_range()[0]),
             Domain::Linear(domain) => {
                 value.and_then(|value| self.linear_scale(*domain).apply(value))
             }
@@ -239,13 +256,28 @@ impl Axis {
 
     /// `getLabelDimension()`: the largest tick label at the label font size.
     fn label_dimension(&self) -> Result<TextBox, RenderError> {
-        let texts: Vec<String> = self.tick_values().iter().map(Tick::text).collect();
-        max_dimension(
-            &self.fonts,
-            &texts,
-            self.config.label_font_size,
-            self.screen_scale,
-        )
+        match &self.domain {
+            Domain::Band { categories, .. } => max_dimension(
+                &self.fonts,
+                categories,
+                self.config.label_font_size,
+                self.screen_scale,
+            ),
+            Domain::Linear(domain) => {
+                let texts: Vec<String> = self
+                    .linear_scale(*domain)
+                    .ticks(TICK_COUNT)
+                    .into_iter()
+                    .map(js_number)
+                    .collect();
+                max_dimension(
+                    &self.fonts,
+                    &texts,
+                    self.config.label_font_size,
+                    self.screen_scale,
+                )
+            }
+        }
     }
 
     /// `recalculateOuterPaddingToDrawBar()`: the outer padding that leaves room for a bar, half of
@@ -254,6 +286,7 @@ impl Axis {
         let tick_distance = self.tick_distance();
         if BAR_WIDTH_TO_TICK_WIDTH_RATIO * tick_distance > self.outer_padding * 2.0 {
             self.outer_padding = ((BAR_WIDTH_TO_TICK_WIDTH_RATIO * tick_distance) / 2.0).floor();
+            self.recalculate_scale();
         }
     }
 
@@ -289,6 +322,7 @@ impl Axis {
             let space = self.label_dimension()?;
             let max_padding = MAX_OUTER_PADDING_PERCENT_FOR_WRT_LABEL * available.width;
             self.outer_padding = (space.width / 2.0).min(max_padding);
+            self.recalculate_scale();
 
             let mut height_required = space.height;
             if self.position == AxisPosition::Bottom && self.rotation != 0.0 {
@@ -342,6 +376,7 @@ impl Axis {
             let space = self.label_dimension()?;
             let max_padding = MAX_OUTER_PADDING_PERCENT_FOR_WRT_LABEL * available.height;
             self.outer_padding = (space.height / 2.0).min(max_padding);
+            self.recalculate_scale();
             let width_required = space.width + config.label_padding * 2.0;
             if width_required <= available_width {
                 available_width -= width_required;

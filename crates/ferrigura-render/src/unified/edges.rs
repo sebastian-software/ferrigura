@@ -540,7 +540,7 @@ pub(crate) fn prepare_paths(
             jump_radius: JUMP_RADIUS,
             jump_style: style,
         };
-        for rewrite in line_jumps::apply_jumps(&geometries, &config) {
+        for rewrite in line_jumps::apply_jumps_owned(geometries, &config) {
             let target = &mut painted[indices[rewrite.index]];
             target.bbox = path_bounds(&rewrite.d).unwrap_or_default();
             target.d = Some(rewrite.d);
@@ -723,6 +723,20 @@ pub(crate) fn format_path(painted: &Painted) -> String {
 /// on its text.
 #[must_use]
 pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> EdgeLabel {
+    paint_label_at(edge, label, section, &edge.id, edge.x, edge.y)
+}
+
+/// Paints an edge's label using explicit `edge_id` and center `(x, y)` overrides without cloning
+/// the [`Edge`].
+#[must_use]
+pub(crate) fn paint_label_at(
+    edge: &Edge,
+    label: &LabelLayout,
+    section: &Section<'_>,
+    edge_id: &str,
+    x: Option<f64>,
+    y: Option<f64>,
+) -> EdgeLabel {
     let margin = section
         .flowchart
         .sub_graph_title_margin
@@ -730,8 +744,8 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
         .map_or(0.0, |margin| {
             (margin.top.unwrap_or(0) + margin.bottom.unwrap_or(0)) as f64
         });
-    let x = edge.x.unwrap_or(0.0);
-    let y = edge.y.unwrap_or(0.0) + margin / 2.0;
+    let x = x.unwrap_or(0.0);
+    let y = y.unwrap_or(0.0) + margin / 2.0;
     let text = label.bbox;
     let (text_x, text_y) = (text.x + text.width / 2.0, text.y + text.height / 2.0);
     // The design mode draws the background as a chip: wider than the text, with round corners.
@@ -772,7 +786,7 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
         "<g class=\"edgeLabel\" transform=\"translate({}, {})\"><g class=\"label\" data-id=\"{}\" transform=\"translate({}, {})\">{inner}</g></g>",
         js_number(x),
         js_number(y),
-        escape(&edge.id),
+        escape(edge_id),
         js_number(-text_x),
         js_number(-text_y),
     );
