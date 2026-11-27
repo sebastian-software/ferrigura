@@ -96,10 +96,10 @@ index 64d8255..53ebea6 100644
      // Fix for when the base tag is used
      let code: string = root.select<HTMLDivElement>(enclosingDivID_selector).node()!.innerHTML;
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..45334eb 100644
+index 48ac4a6..695efb7 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,46 @@ export function interpolateToCurve(
+@@ -244,6 +244,49 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -120,10 +120,13 @@ index 48ac4a6..45334eb 100644
 +  const endOffset = rest.search(/[/?#]/);
 +  const authorityEnd = endOffset === -1 ? normalized.length : authorityStart + endOffset;
 +  const authority = normalized.slice(authorityStart, authorityEnd);
-+  if (!authority.includes('ﬂ°')) {
++  const atIndex = authority.lastIndexOf('@');
++  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++  const hostPort = normalized.slice(hostStart, authorityEnd);
++  if (!hostPort.includes('ﬂ°')) {
 +    return rawUrl;
 +  }
-+  const escaped = authority
++  const escaped = hostPort
 +    .replace(/&/g, '&amp;')
 +    .replace(/</g, '&lt;')
 +    .replace(/>/g, '&gt;')
@@ -140,13 +143,13 @@ index 48ac4a6..45334eb 100644
 +      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '\uFFFD';
 +    });
 +  }
-+  return normalized.slice(0, authorityStart) + resolved + normalized.slice(authorityEnd);
++  return normalized.slice(0, hostStart) + resolved + normalized.slice(authorityEnd);
 +}
 +
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +292,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +295,7 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -155,10 +158,17 @@ index 48ac4a6..45334eb 100644
    }
  
    return url;
-@@ -902,16 +942,69 @@ export const encodeEntities = function (text: string): string {
-     return s.substring(0, s.length - 1);
-   });
+@@ -895,23 +938,185 @@ export default {
+ export const encodeEntities = function (text: string): string {
+   let txt = text;
  
+-  txt = txt.replace(/style.*:\S*#.*;/g, function (s): string {
+-    return s.substring(0, s.length - 1);
+-  });
+-  txt = txt.replace(/classDef.*:\S*#.*;/g, function (s): string {
+-    return s.substring(0, s.length - 1);
+-  });
+-
 -  txt = txt.replace(/#\w+;/g, function (s) {
 -    const innerTxt = s.substring(1, s.length - 1);
 -
@@ -167,10 +177,100 @@ index 48ac4a6..45334eb 100644
 -      return 'ﬂ°°' + innerTxt + '¶ß';
 -    } else {
 -      return 'ﬂ°' + innerTxt + '¶ß';
++  const dropColorSemicolons = (input: string, word: string): string => {
++    let result = '';
++    let lineStart = 0;
++    const isLineTerm = (c: string) => c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
++    const processLine = (line: string): string => {
++      let inQuotes = false;
++      let escaped = false;
++      let stmtStart = true;
++      let inTarget = false;
++      let seenColon = false;
++      let seenColonHash = false;
++      let lastSemi = -1;
++      for (let i = 0; i < line.length; i++) {
++        const c = line[i];
++        if (inQuotes) {
++          if (escaped) {
++            escaped = false;
++          } else if (c === '\\') {
++            escaped = true;
++          } else if (c === '"') {
++            inQuotes = false;
++          }
++          continue;
++        }
++        if (c === '"') {
++          inQuotes = true;
++          stmtStart = false;
++          if (inTarget) {
++            seenColon = false;
++          }
++          continue;
++        }
++        if (c === ';') {
++          if (inTarget && seenColonHash) {
++            lastSemi = i;
++          }
++          stmtStart = true;
++          inTarget = false;
++          seenColon = false;
++          seenColonHash = false;
++          continue;
++        }
++        if (stmtStart) {
++          if (/\s/.test(c)) {
++            continue;
++          }
++          stmtStart = false;
++          if (line.startsWith(word, i) && i + word.length < line.length && /\s/.test(line[i + word.length])) {
++            inTarget = true;
++          }
++          continue;
++        }
++        if (inTarget) {
++          if (c === ':') {
++            seenColon = true;
++          } else if (/\s/.test(c)) {
++            seenColon = false;
++          } else if (c === '#') {
++            if (seenColon) {
++              seenColonHash = true;
++            }
++            let j = i + 1;
++            while (j < line.length && /[A-Za-z0-9_]/.test(line[j])) {
++              j++;
++            }
++            if (j > i + 1 && line[j] === ';') {
++              const name = line.slice(i + 1, j);
++              if (!/^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(name)) {
++                i = j;
++              }
++            }
++          }
++        }
++      }
++      return lastSemi === -1 ? line : line.slice(0, lastSemi) + line.slice(lastSemi + 1);
++    };
++    for (let i = 0; i < input.length; i++) {
++      if (isLineTerm(input[i])) {
++        result += processLine(input.slice(lineStart, i)) + input[i];
++        lineStart = i + 1;
++      }
+     }
+-  });
++    return result + processLine(input.slice(lineStart));
++  };
++  txt = dropColorSemicolons(txt, 'style');
++  txt = dropColorSemicolons(txt, 'classDef');
++
 +  let out = '';
 +  let stmtKind: 0 | 1 | 2 = 0; // 0 = start, 1 = style/classDef, 2 = other
 +  let seenColon = false;
 +  let lastAllowsHex = false;
++  let inQuotes = false;
++  let escaped = false;
 +  let copyFrom = 0;
 +  for (let i = 0; i < txt.length; i++) {
 +    const ch = txt[i];
@@ -183,6 +283,7 @@ index 48ac4a6..45334eb 100644
 +        const innerTxt = txt.slice(i + 1, j);
 +        out += txt.slice(copyFrom, i);
 +        if (
++          !inQuotes &&
 +          stmtKind === 1 &&
 +          seenColon &&
 +          lastAllowsHex &&
@@ -199,7 +300,7 @@ index 48ac4a6..45334eb 100644
 +          lastAllowsHex = false;
 +        } else {
 +          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
-+          if (stmtKind === 0) {
++          if (!inQuotes && stmtKind === 0) {
 +            stmtKind = 2;
 +          }
 +          lastAllowsHex = false;
@@ -208,9 +309,34 @@ index 48ac4a6..45334eb 100644
 +        i = j;
 +        continue;
 +      }
-     }
--  });
-+    if (ch === ';' || ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++    }
++    if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++      stmtKind = 0;
++      seenColon = false;
++      lastAllowsHex = false;
++      inQuotes = false;
++      escaped = false;
++      continue;
++    }
++    if (inQuotes) {
++      if (escaped) {
++        escaped = false;
++      } else if (ch === '\\') {
++        escaped = true;
++      } else if (ch === '"') {
++        inQuotes = false;
++      }
++      continue;
++    }
++    if (ch === '"') {
++      inQuotes = true;
++      if (stmtKind === 0) {
++        stmtKind = 2;
++      }
++      lastAllowsHex = false;
++      continue;
++    }
++    if (ch === ';') {
 +      stmtKind = 0;
 +      seenColon = false;
 +      lastAllowsHex = false;

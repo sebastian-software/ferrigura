@@ -691,16 +691,22 @@ fn resolve_http_authority_entities(candidate: &str) -> std::borrow::Cow<'_, str>
         .find(['/', '?', '#'])
         .map_or(normalized.len(), |offset| authority_start + offset);
     let authority = &normalized[authority_start..authority_end];
-    if !authority.contains("ﬂ°") {
+    // Only resolve the host[:port] segment after any `userinfo@` separator so userinfo is decoded
+    // once at the SVG sink rather than once here and a second time after percent-encoding.
+    let host_start = authority
+        .rfind('@')
+        .map_or(authority_start, |at| authority_start + at + 1);
+    let host_port = &normalized[host_start..authority_end];
+    if !host_port.contains("ﬂ°") {
         return std::borrow::Cow::Borrowed(candidate);
     }
-    let escaped = authority
+    let escaped = host_port
         .replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;");
     let resolved = crate::sanitize::decode_attribute_references(&crate::decode_entities(&escaped));
     let mut out = String::with_capacity(normalized.len());
-    out.push_str(&normalized[..authority_start]);
+    out.push_str(&normalized[..host_start]);
     out.push_str(&resolved);
     out.push_str(&normalized[authority_end..]);
     std::borrow::Cow::Owned(out)

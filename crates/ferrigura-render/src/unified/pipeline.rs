@@ -579,7 +579,7 @@ pub(crate) fn paint_for_diagram<'a>(
 
 /// Applies XML 1.0 attribute-value whitespace normalization (`\r\n`, `\t`, `\n`, `\r` -> `' '`)
 /// and [`crate::svg::escape`]'s invalid-XML-character replacement (`!is_xml_char` -> U+FFFD).
-fn canonical_xml_attr(raw: &str) -> Cow<'_, str> {
+pub(crate) fn canonical_xml_attr(raw: &str) -> Cow<'_, str> {
     if !raw
         .chars()
         .any(|ch| matches!(ch, '\t' | '\n' | '\r') || !crate::svg::is_xml_char(ch))
@@ -606,7 +606,7 @@ fn canonical_xml_attr(raw: &str) -> Cow<'_, str> {
 
 /// Resolves Mermaid entity placeholders once and applies [`canonical_xml_attr`] so collision
 /// checks, emitted IDs, and fragment links agree with the serialized XML parser values.
-fn canonical_attr_id(raw: &str) -> String {
+pub(crate) fn canonical_attr_id(raw: &str) -> String {
     let resolved = crate::common::resolve_entity_placeholders(raw);
     canonical_xml_attr(resolved.as_ref()).into_owned()
 }
@@ -615,6 +615,7 @@ fn canonical_attr_id(raw: &str) -> String {
 /// whitespace, or a character that XML 1.0 replaces with U+FFFD.
 fn needs_id_normalization(raw: &str) -> bool {
     raw.contains("ﬂ°")
+        || raw.contains("¶ß")
         || raw
             .chars()
             .any(|ch| matches!(ch, '\t' | '\n' | '\r') || !crate::svg::is_xml_char(ch))
@@ -754,7 +755,7 @@ pub(crate) fn disambiguate_dom_ids(
     let mut reserved: HashSet<String> = HashSet::with_capacity(raw_ids.len());
     let mut plans: Vec<(String, String, bool)> = Vec::with_capacity(raw_ids.len());
     for &raw in raw_ids {
-        let had_placeholder = raw.contains("ﬂ°");
+        let had_placeholder = raw.contains("ﬂ°") || raw.contains("¶ß");
         let canonical_local = canonical_attr_id(raw);
         let unchanged = !had_placeholder && canonical_local == raw && canonical_svg_id == svg_id;
         let canonical_full = format!("{canonical_svg_id}-{canonical_local}");
@@ -915,7 +916,7 @@ impl ResolvedDomIds {
             HashSet::with_capacity(data.nodes.len() + data.edges.len());
         let mut node_plans = Vec::with_capacity(data.nodes.len());
         for node in &data.nodes {
-            let had_placeholder = node.dom_id.contains("ﬂ°");
+            let had_placeholder = node.dom_id.contains("ﬂ°") || node.dom_id.contains("¶ß");
             let canonical_local = canonical_attr_id(&node.dom_id);
             let canonical_full = format!("{canonical_svg_id}-{canonical_local}");
             let unchanged =
@@ -926,12 +927,12 @@ impl ResolvedDomIds {
 
         let mut edge_plans = Vec::with_capacity(data.edges.len());
         for edge in &data.edges {
-            let edge_had_placeholder = edge.id.contains("ﬂ°");
+            let edge_had_placeholder = edge.id.contains("ﬂ°") || edge.id.contains("¶ß");
             let canonical_edge_id = canonical_attr_id(&edge.id);
             let (raw_path, path_had_placeholder, canonical_path) = match edge.path_id.as_deref() {
                 Some(path) => (
                     path.to_owned(),
-                    path.contains("ﬂ°"),
+                    path.contains("ﬂ°") || path.contains("¶ß"),
                     canonical_attr_id(path),
                 ),
                 None => (

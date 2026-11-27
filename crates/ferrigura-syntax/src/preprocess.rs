@@ -473,11 +473,7 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
             if name_len > 0 && after[name_len..].starts_with(';') {
                 let name = &after[..name_len];
                 if tracker.allows_hex_color(name) {
-                    let rest_on_line = after[name_len + 1..]
-                        .split(JS_LINE_TERMINATORS)
-                        .next()
-                        .unwrap_or("");
-                    let keep_len = if rest_on_line.chars().all(is_js_space) {
+                    let keep_len = if is_horizontal_ws_to_eol(&after[name_len + 1..]) {
                         1 + name_len
                     } else {
                         1 + name_len + 1
@@ -525,20 +521,92 @@ pub fn decode_entities(text: &str) -> String {
         .replace("¶ß", ";")
 }
 
-/// Byte offset of the color-terminating semicolon to drop on a single line for `<word>.*:\S*#.*;`,
-/// if any. Because the match is greedy from the first occurrence of `word` to the last `;` on the
-/// line, each line is scanned at most once (O(line length)).
+/// Byte offset of the color-terminating semicolon to drop on a single line for a `style` or
+/// `classDef` declaration (`<word> .*:\S*#.*;`), if any. Only matches `word` followed by whitespace
+/// at the start of an unquoted statement (line start or after an unquoted `;`), skips non-hex
+/// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and only drops an
+/// unquoted semicolon at the end of the line so URLs and multi-statement lines stay intact.
 fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
-    let found = line.find(word)?;
-    let after_word = found + word.len();
-    let rel_semi = line[after_word..].rfind(';')?;
-    let semicolon = after_word + rel_semi;
-    has_colon_hash(&line[after_word..semicolon]).then_some(semicolon)
+    let mut in_quotes = false;
+    let mut escaped = false;
+    let mut stmt_start = true;
+    let mut in_target_stmt = false;
+    let mut seen_colon = false;
+    let mut seen_colon_hash = false;
+    let mut last_semi = None;
+    let mut chars = line.char_indices();
+
+    while let Some((at, ch)) = chars.next() {
+        if in_quotes {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_quotes = false;
+            }
+            continue;
+        }
+        if ch == '"' {
+            in_quotes = true;
+            stmt_start = false;
+            if in_target_stmt {
+                seen_colon = false;
+            }
+            continue;
+        }
+        if ch == ';' {
+            if in_target_stmt && seen_colon_hash {
+                last_semi = Some(at);
+            }
+            stmt_start = true;
+            in_target_stmt = false;
+            seen_colon = false;
+            seen_colon_hash = false;
+            continue;
+        }
+        if stmt_start {
+            if is_js_space(ch) {
+                continue;
+            }
+            stmt_start = false;
+            if let Some(after) = line[at..].strip_prefix(word)
+                && after.chars().next().is_some_and(is_js_space)
+            {
+                in_target_stmt = true;
+            }
+            continue;
+        }
+        if in_target_stmt {
+            if ch == ':' {
+                seen_colon = true;
+            } else if is_js_space(ch) {
+                seen_colon = false;
+            } else if ch == '#' {
+                if seen_colon {
+                    seen_colon_hash = true;
+                }
+                let after = &line[at + 1..];
+                let name_len = after
+                    .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                    .unwrap_or(after.len());
+                if name_len > 0 && after[name_len..].starts_with(';') {
+                    let name = &after[..name_len];
+                    let is_hex_color = matches!(name.len(), 3 | 4 | 6 | 8)
+                        && name.bytes().all(|b| b.is_ascii_hexdigit());
+                    if !is_hex_color {
+                        for _ in 0..=name_len {
+                            let _ = chars.next();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    last_semi
 }
 
-/// `<word>.*:\S*#.*;` with the semicolon removed: the last semicolon of each JavaScript line, when
-/// a colon followed by non-blank text and a `#` come after the first occurrence of `word` on that
-/// line.
+/// `<word> .*:\S*#.*;` with the color-terminating semicolon removed on each JavaScript line.
 fn drop_color_semicolons(text: &str, word: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for line in text.split_inclusive(JS_LINE_TERMINATORS) {
@@ -553,19 +621,18 @@ fn drop_color_semicolons(text: &str, word: &str) -> String {
     out
 }
 
-/// Whether `segment` has a colon followed by blank-free text and a `#`: `.*:\S*#.*`.
-fn has_colon_hash(segment: &str) -> bool {
-    let mut seen_colon = false;
-    for c in segment.chars() {
-        if c == ':' {
-            seen_colon = true;
-        } else if is_js_space(c) {
-            seen_colon = false;
-        } else if seen_colon && c == '#' {
+/// Whether `rest` contains only horizontal whitespace up to the next JS line terminator or EOF.
+/// Stops at the first non-whitespace character so repeated semicolon-separated statements stay O(n).
+fn is_horizontal_ws_to_eol(rest: &str) -> bool {
+    for ch in rest.chars() {
+        if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
             return true;
         }
+        if !is_js_space(ch) {
+            return false;
+        }
     }
-    false
+    true
 }
 
 /// Classification of the current semicolon-delimited statement on a line.
@@ -576,14 +643,16 @@ enum StmtKind {
     Other,
 }
 
-/// Single-pass O(n) forward tracker for whether the current `#<hex>;` sits inside a `style` or
-/// `classDef` declaration value (after `:` and a CSS token separator), resetting on every line
-/// terminator and statement-ending `;` so subsequent statements on the same line (such as
-/// `style A fill: #abc; B["letter: #100;"]`) are never treated as CSS.
+/// Single-pass O(n) forward tracker for whether the current `#<hex>;` sits inside an unquoted
+/// `style` or `classDef` declaration value (after `:` and a CSS token separator), resetting on
+/// every line terminator and unquoted `;` so quoted semicolons and subsequent statements on the
+/// same line are never treated as CSS.
 struct StyleStmtTracker {
     kind: StmtKind,
     seen_colon: bool,
     last_allows_hex: bool,
+    in_quotes: bool,
+    escaped: bool,
 }
 
 impl StyleStmtTracker {
@@ -592,6 +661,8 @@ impl StyleStmtTracker {
             kind: StmtKind::Start,
             seen_colon: false,
             last_allows_hex: false,
+            in_quotes: false,
+            escaped: false,
         }
     }
 
@@ -599,6 +670,12 @@ impl StyleStmtTracker {
         self.kind = StmtKind::Start;
         self.seen_colon = false;
         self.last_allows_hex = false;
+    }
+
+    fn reset_line(&mut self) {
+        self.reset();
+        self.in_quotes = false;
+        self.escaped = false;
     }
 
     fn finish_entity(&mut self) {
@@ -609,7 +686,29 @@ impl StyleStmtTracker {
     }
 
     fn push(&mut self, src: &str, at: usize, ch: char) {
-        if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') || ch == ';' {
+        if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+            self.reset_line();
+            return;
+        }
+        if self.in_quotes {
+            if self.escaped {
+                self.escaped = false;
+            } else if ch == '\\' {
+                self.escaped = true;
+            } else if ch == '"' {
+                self.in_quotes = false;
+            }
+            return;
+        }
+        if ch == '"' {
+            self.in_quotes = true;
+            if self.kind == StmtKind::Start {
+                self.kind = StmtKind::Other;
+            }
+            self.last_allows_hex = false;
+            return;
+        }
+        if ch == ';' {
             self.reset();
             return;
         }
@@ -637,7 +736,8 @@ impl StyleStmtTracker {
     }
 
     fn allows_hex_color(&self, name: &str) -> bool {
-        self.kind == StmtKind::Style
+        !self.in_quotes
+            && self.kind == StmtKind::Style
             && self.seen_colon
             && self.last_allows_hex
             && matches!(name.len(), 3 | 4 | 6 | 8)
@@ -665,11 +765,7 @@ pub(crate) fn encode_hash_entities(text: &str) -> String {
                 if tracker.allows_hex_color(name) {
                     out.push('#');
                     out.push_str(name);
-                    let rest_on_line = after[name_len + 1..]
-                        .split(JS_LINE_TERMINATORS)
-                        .next()
-                        .unwrap_or("");
-                    if !rest_on_line.chars().all(is_js_space) {
+                    if !is_horizontal_ws_to_eol(&after[name_len + 1..]) {
                         out.push(';');
                     }
                     tracker.reset();

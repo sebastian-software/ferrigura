@@ -357,7 +357,9 @@ pub(super) fn insert_edges(
             _ => vec![start_center, mid, end_center],
         };
 
-        let prefixed = format!("{}-{}", context.id, model.id);
+        let resolved_model_id = crate::unified::pipeline::canonical_attr_id(&model.id);
+        let canonical_svg_id = crate::unified::pipeline::canonical_xml_attr(context.id);
+        let prefixed = format!("{canonical_svg_id}-{resolved_model_id}");
         let path_id = next_edge_id.next().cloned();
         let thick = model.thickness == "thick";
         let dotted = model.pattern == "dotted";
@@ -398,7 +400,7 @@ pub(super) fn insert_edges(
             ..Edge::default()
         };
         let label = edges::label(&edge, font, &context.unified.fonts, false)?;
-        built.push((edge, model.id.clone(), label));
+        built.push((edge, resolved_model_id, label));
     }
 
     let paths: Vec<Edge> = built.iter().map(|(edge, _, _)| edge.clone()).collect();

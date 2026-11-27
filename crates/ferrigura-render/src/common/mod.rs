@@ -62,7 +62,7 @@ pub fn shown_text(text: &str) -> String {
 /// is present.
 #[must_use]
 pub(crate) fn resolve_entity_placeholders(text: &str) -> Cow<'_, str> {
-    if !text.contains("ﬂ°") {
+    if !text.contains("ﬂ°") && !text.contains("¶ß") {
         return Cow::Borrowed(text);
     }
     let escaped = text
@@ -149,7 +149,7 @@ pub(crate) fn resolve_percent_encoded_url_placeholders(url: &str) -> Cow<'_, str
 #[must_use]
 pub(crate) fn resolve_url_entity_placeholders(url: &str) -> Cow<'_, str> {
     let working = resolve_percent_encoded_url_placeholders(url);
-    if working.contains("ﬂ°") {
+    if working.contains("ﬂ°") || working.contains("¶ß") {
         Cow::Owned(resolve_entity_placeholders(working.as_ref()).into_owned())
     } else {
         working

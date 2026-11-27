@@ -1416,4 +1416,78 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
             .contains("xlink:href=\"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\""),
         "{loose_pct}"
     );
+
+    // `style` inside a quoted click URL does not strip semicolons from the URL fragment.
+    let url_styles = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org/styles?at=12:00#part/one;two\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        url_styles.contains("xlink:href=\"https://example.org/styles?at=12:00#part/one;two\""),
+        "{url_styles}"
+    );
+
+    // A semicolon inside a quoted tooltip does not start a CSS `style` statement.
+    let quoted_semi = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org\" \"Example; style A fill: #169;\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        quoted_semi.contains("title=\"Example; style A fill: ©\""),
+        "{quoted_semi}"
+    );
+
+    // Block edges resolve emitted `data-id` attributes alongside their disambiguated `id`.
+    let block_edge_data = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "block-beta\n  Foo#65;Bar\n  B\n  Foo#65;Bar -- \"go\" --> B\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let block_edge_data_doc =
+        roxmltree::Document::parse(&block_edge_data).expect("well-formed SVG XML");
+    assert!(
+        block_edge_data_doc
+            .descendants()
+            .any(|n| n.has_tag_name("path")
+                && n.attribute("id") == Some("graph-graph-1-FooABar-B")
+                && n.attribute("data-id") == Some("graph-1-FooABar-B")),
+        "{block_edge_data}"
+    );
+    assert!(
+        block_edge_data_doc
+            .descendants()
+            .any(|n| n.attribute("data-id") == Some("1-FooABar-B")),
+        "{block_edge_data}"
+    );
+    assert!(!block_edge_data.contains("ﬂ°"), "{block_edge_data}");
+
+    // HTTP userinfo placeholders decode only once (never double-decoded after percent-encoding).
+    let userinfo_once = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://foo#64258;°copy#182;ß@example.org/\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        userinfo_once
+            .contains("xlink:href=\"https://foo%EF%AC%82%C2%B0copy%C2%B6%C3%9F@example.org/\""),
+        "{userinfo_once}"
+    );
+    assert!(!userinfo_once.contains("foo%C2%A9@"), "{userinfo_once}");
+
+    // Sequence menu links preserve standalone closing marker `¶ß` decoding to `;`.
+    let seq_close_marker = ferrigura::render(
+        "sequenceDiagram\n  participant A\n  link A: Menu @ /one¶ßtwo\n  A->>A: hi\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        seq_close_marker.contains("xlink:href=\"/one;two\""),
+        "{seq_close_marker}"
+    );
 }
