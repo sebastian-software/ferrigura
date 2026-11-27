@@ -723,6 +723,12 @@ impl ResolvedDomIds {
     fn remap_fragment(&self, raw_link: &str) -> Option<Cow<'_, str>> {
         let trimmed = raw_link.trim_matches(|ch: char| ch <= ' ');
         let fragment = strip_fragment_marker(trimmed)?;
+        // Per the HTML fragment algorithm, an exact emitted DOM ID takes precedence over
+        // percent-decoded aliases (e.g. `#graph-Foo%41` stays on `Foo%41` when both `Foo%41` and
+        // `FooA` exist).
+        if self.element_owned.contains(fragment) {
+            return None;
+        }
         if fragment.contains('%')
             && let Some(decoded) = percent_decode_fragment(fragment)
         {

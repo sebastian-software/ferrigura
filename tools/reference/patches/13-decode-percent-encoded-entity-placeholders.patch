@@ -29,10 +29,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..6175622 100644
+index 48ac4a6..6a4e6e3 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,627 @@ export function interpolateToCurve(
+@@ -244,6 +244,681 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -461,10 +461,20 @@ index 48ac4a6..6175622 100644
 +  return out + url.slice(authorityEnd);
 +};
 +
++const restoreEncodedHtmlNumericRefs = (url: string): string => {
++  if (!url.includes('&ﬂ°')) {
++    return url;
++  }
++  return url
++    .replace(/&ﬂ°°(\d+)¶ß/g, '&#$1;')
++    .replace(/&ﬂ°([xX][0-9a-fA-F]+)¶ß/g, '&#$1;');
++};
++
 +export const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
 +  if (!rawUrl) {
 +    return 'about:blank';
 +  }
++  rawUrl = restoreEncodedHtmlNumericRefs(rawUrl);
 +  if (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß')) {
 +    const sanitized = sanitizeUrl(rawUrl);
 +    if (/^https?:/i.test(sanitized) && !URL.canParse(sanitized)) {
@@ -552,16 +562,57 @@ index 48ac4a6..6175622 100644
 +  text.match(BR_HTML_CTRL_ENTITY_RE) !== null ||
 +  BR_LITERAL_WS_ESCAPE_RE.test(text);
 +
-+const firstSchemeDelimiterIsPathOrQuery = (text: string): boolean => {
-+  const m = /[/?:]|&colon;/i.exec(text);
-+  return m !== null && (m[0] === '/' || m[0] === '?');
++const startsWithSinkEntityBody = (afterHash: string): boolean => {
++  let i = 0;
++  while (i < afterHash.length && isCtrlChar(afterHash.charCodeAt(i))) {
++    i += 1;
++  }
++  if (i >= afterHash.length) {
++    return false;
++  }
++  const ch = afterHash[i];
++  if ((ch >= '0' && ch <= '9') || ch === '%' || ch === '&' || ch === '\\') {
++    return true;
++  }
++  if (ch === 'x' || ch === 'X') {
++    i += 1;
++    while (i < afterHash.length && isCtrlChar(afterHash.charCodeAt(i))) {
++      i += 1;
++    }
++    return i < afterHash.length && /^[0-9a-fA-F%&\\]$/.test(afterHash[i]);
++  }
++  return false;
 +};
 +
-+const formatRelativeWithPathOrQueryDelimiter = (url: string): string | null => {
-+  if (url[0] === '.' || url[0] === '/' || !firstSchemeDelimiterIsPathOrQuery(url)) {
++const firstSchemeDelimiterIsRelative = (text: string): number => {
++  let hasEscapeOrCtrl = false;
++  for (let i = 0; i < text.length; i++) {
++    const ch = text[i];
++    if (ch === '/' || ch === '?') {
++      return i;
++    }
++    if (ch === ':') {
++      return -1;
++    }
++    if (ch === '&' && text.slice(i, i + 7).toLowerCase() === '&colon;') {
++      return -1;
++    }
++    if (ch === '#') {
++      if (!startsWithSinkEntityBody(text.slice(i + 1)) || !hasEscapeOrCtrl) {
++        return i;
++      }
++    } else if (ch === '&' || ch === '%' || ch === '\\' || isCtrlChar(text.charCodeAt(i))) {
++      hasEscapeOrCtrl = true;
++    }
++  }
++  return -1;
++};
++
++const formatRelativeWithSchemeDelimiter = (url: string): string | null => {
++  if (url[0] === '.' || url[0] === '/') {
 +    return null;
 +  }
-+  const delimPos = url.search(/[/?]/);
++  const delimPos = firstSchemeDelimiterIsRelative(url);
 +  if (delimPos <= 0) {
 +    return null;
 +  }
@@ -587,7 +638,7 @@ index 48ac4a6..6175622 100644
 +    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
 +  }
 +  const decoded = decodeSanitizeUrlOnly(prepared);
-+  if (!decoded || !firstSchemeDelimiterIsPathOrQuery(decoded)) {
++  if (!decoded || firstSchemeDelimiterIsRelative(decoded) < 0) {
 +    return null;
 +  }
 +  if (!hasNonPercentObfuscation(url)) {
@@ -651,7 +702,10 @@ index 48ac4a6..6175622 100644
 +  if (url.match(BR_URL_SCHEME_RE) === null && sanitized.match(BR_URL_SCHEME_RE) === null) {
 +    return url;
 +  }
-+  if (firstSchemeDelimiterIsPathOrQuery(url) && firstSchemeDelimiterIsPathOrQuery(sanitized)) {
++  if (
++    firstSchemeDelimiterIsRelative(url) >= 0 &&
++    firstSchemeDelimiterIsRelative(sanitized) >= 0
++  ) {
 +    return url.replace(/\\/g, '/');
 +  }
 +  return null;
@@ -660,7 +714,7 @@ index 48ac4a6..6175622 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +873,24 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +927,25 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -668,16 +722,17 @@ index 48ac4a6..6175622 100644
 +    if (startsWithFragmentMarker(url)) {
 +      return url.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
 +    }
-+    const relative = formatRelativeWithPathOrQueryDelimiter(url);
++    const restored = restoreEncodedHtmlNumericRefs(url);
++    const relative = formatRelativeWithSchemeDelimiter(restored);
 +    if (relative !== null) {
 +      return relative;
 +    }
-+    const sanitized = sanitizeHttpUrlWithEntities(url);
++    const sanitized = sanitizeHttpUrlWithEntities(restored);
 +    if (sanitized === 'about:blank') {
 +      return sanitized;
 +    }
-+    if (url.includes('%') && !hasNonPercentObfuscation(url)) {
-+      const preserved = preserveEncodedUrl(url, sanitized);
++    if (restored.includes('%') && !hasNonPercentObfuscation(restored)) {
++      const preserved = preserveEncodedUrl(restored, sanitized);
 +      if (preserved !== null) {
 +        return preserved;
 +      }
@@ -686,7 +741,7 @@ index 48ac4a6..6175622 100644
    }
  
    return url;
-@@ -895,23 +1533,585 @@ export default {
+@@ -895,23 +1588,570 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -1049,22 +1104,7 @@ index 48ac4a6..6175622 100644
 +      if (j > i + 1 && txt[j] === ';') {
 +        const innerTxt = txt.slice(i + 1, j);
 +        out += txt.slice(copyFrom, i);
-+        if (i > 0 && txt[i - 1] === '&' && /^(?:\d+|[xX][0-9a-fA-F]+)$/.test(innerTxt)) {
-+          out += txt.slice(i, j + 1);
-+          if (
-+            !inQuotes &&
-+            !inPlainLine &&
-+            !inAccDescrBlock &&
-+            !inNoteBlock &&
-+            classBodyDepth === 0 &&
-+            stmtKind === 0
-+          ) {
-+            stmtKind = 2;
-+          }
-+          atLineStart = false;
-+          lastAllowsHex = false;
-+          prevWasAlnum = false;
-+        } else if (
++        if (
 +          !inQuotes &&
 +          !inPlainLine &&
 +          !inAccDescrBlock &&

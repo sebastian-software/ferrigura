@@ -161,7 +161,7 @@ index 64d8255..7e22f45 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..d7b66ec 100644
+index 49145b2..883ec34 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -559,7 +559,7 @@ index 49145b2..d7b66ec 100644
 +  remappedFragments: Map<string, string>
 +): string => {
 +  const fragment = stripFragmentMarker(rawLink);
-+  if (fragment === undefined) {
++  if (fragment === undefined || elementOwned.has(fragment)) {
 +    return rawLink;
 +  }
 +  if (fragment.includes('%')) {
@@ -802,7 +802,7 @@ index 49145b2..d7b66ec 100644
 +
 +    const remapFragment = (rawLink: string): string => {
 +      const fragment = stripFragmentMarker(rawLink);
-+      if (fragment === undefined) {
++      if (fragment === undefined || elementOwned.has(fragment)) {
 +        return rawLink;
 +      }
 +      let target: string | undefined;

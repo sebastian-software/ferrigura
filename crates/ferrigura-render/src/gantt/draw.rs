@@ -67,6 +67,9 @@ impl ResolvedGanttIds {
         };
 
         let fragment = strip_fragment_marker(raw_link)?;
+        if self.element_owned.contains(fragment) {
+            return None;
+        }
         if fragment.contains('%')
             && let Some(decoded) = percent_decode_fragment(fragment)
         {

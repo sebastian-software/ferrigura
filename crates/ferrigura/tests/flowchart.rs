@@ -498,6 +498,28 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         encoded_backslash_click.contains("xlink:href=\"https://example.com/backups%5Cnew.zip\""),
         "{encoded_backslash_click}"
     );
+    let relative_fragment_colon_click = render(
+        "flowchart TD\nA[x]\nclick A \"data#part:two\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        relative_fragment_colon_click.contains("xlink:href=\"data#part:two\""),
+        "{relative_fragment_colon_click}"
+    );
+    let literal_fragment_target = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "flowchart TD\nsubgraph Foo%41\nA\nend\nsubgraph FooA\nB\nend\nclick B \"#graph-Foo%41\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        literal_fragment_target.contains("xlink:href=\"#graph-Foo%41\""),
+        "{literal_fragment_target}"
+    );
     let valid_image = render(
         "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",
         &Value::empty_object(),

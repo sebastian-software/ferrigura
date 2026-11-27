@@ -2159,4 +2159,39 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         gantt_exist_hrefs,
         vec!["#chart-title-chart-2", "#chart-title-chart-text"]
     );
+
+    // Numeric references in sequence messages and menu links stay opaque during lexing so `#` and
+    // `;` do not truncate the line, while menu URLs decode `&#169;` cleanly without a stray `&`.
+    let seq_num_ref = ferrigura::render(
+        "sequenceDiagram\n  participant A\n  link A: Home @ https://example.test/word&#169;.pdf\n  A->>B: Before &#169; after\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let seq_num_doc = roxmltree::Document::parse(&seq_num_ref).expect("well-formed SVG XML");
+    let seq_msg_text: String = seq_num_doc
+        .descendants()
+        .filter(|n| n.attribute("class") == Some("messageText"))
+        .filter_map(|n| n.text())
+        .collect();
+    assert_eq!(seq_msg_text, "Before &© after");
+    assert!(
+        seq_num_ref.contains("xlink:href=\"https://example.test/word%C2%A9.pdf\""),
+        "{seq_num_ref}"
+    );
+
+    // Exact emitted Gantt task IDs (`graph-Foo%41`) take precedence over percent-decoded aliases
+    // (`graph-FooA`) when both exist.
+    let gantt_literal_frag = ferrigura::Renderer::new(&loose_cfg)
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : Foo%41, 2024-01-01, 1d\n  T2 : FooA, 2024-01-02, 1d\n  click FooA href \"#graph-Foo%41\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        gantt_literal_frag.contains("xlink:href=\"#graph-Foo%41\""),
+        "{gantt_literal_frag}"
+    );
 }

@@ -92,6 +92,48 @@ fn starts_with_fragment_marker(url: &str) -> bool {
         || decode_mermaid_placeholder_at(url, 0).is_some_and(|(_, decoded)| decoded == "#")
 }
 
+/// Restores complete HTML numeric character references (`&#169;`, `&#xA9;`) that `encode_entities`
+/// split into `&ﬂ°°169¶ß` / `&ﬂ°xA9¶ß` so lexers (such as `sequenceDiagram`) never see raw `#`/`;`,
+/// while URL sanitization decodes them as HTML numeric references instead of leaving a stray `&`.
+fn restore_encoded_html_numeric_refs(url: &str) -> std::borrow::Cow<'_, str> {
+    if !url.contains("&ﬂ°") {
+        return std::borrow::Cow::Borrowed(url);
+    }
+    let mut out = String::with_capacity(url.len());
+    let mut cursor = 0;
+    while let Some(rel) = url[cursor..].find("&ﬂ°") {
+        let pos = cursor + rel;
+        out.push_str(&url[cursor..pos]);
+        let after_open = &url[pos + "&ﬂ°".len()..];
+        if let Some(after_deg) = after_open.strip_prefix('°') {
+            let digits_len = after_deg.bytes().take_while(u8::is_ascii_digit).count();
+            if digits_len > 0 && after_deg[digits_len..].starts_with("¶ß") {
+                out.push_str("&#");
+                out.push_str(&after_deg[..digits_len]);
+                out.push(';');
+                cursor = pos + "&ﬂ°°".len() + digits_len + "¶ß".len();
+                continue;
+            }
+        } else if matches!(after_open.as_bytes().first(), Some(b'x' | b'X')) {
+            let hex_len = after_open[1..]
+                .bytes()
+                .take_while(u8::is_ascii_hexdigit)
+                .count();
+            if hex_len > 0 && after_open[1 + hex_len..].starts_with("¶ß") {
+                out.push_str("&#");
+                out.push_str(&after_open[..1 + hex_len]);
+                out.push(';');
+                cursor = pos + "&ﬂ°".len() + 1 + hex_len + "¶ß".len();
+                continue;
+            }
+        }
+        out.push_str("&ﬂ°");
+        cursor = pos + "&ﬂ°".len();
+    }
+    out.push_str(&url[cursor..]);
+    std::borrow::Cow::Owned(out)
+}
+
 /// `formatUrl` of the reference.
 ///
 /// The link is trimmed with JavaScript's `trim`, and an empty result gives `None`. `loose` is
@@ -99,8 +141,9 @@ fn starts_with_fragment_marker(url: &str) -> bool {
 /// validated through [`sanitize_url`], except same-document fragments (starting with `#` or an
 /// entity spelling of `#` like `#35;`), which enforce the bounded decoding limit without running
 /// scheme detection on the fragment body and preserve their percent-encoded spelling for DOM
-/// lookup. Safe URLs without control characters, HTML entities, or whitespace escapes preserve
-/// percent-encoded delimiters (such as `%26` or `%2F`) instead of emitting their decoded form.
+/// lookup. Safe URLs without control characters, HTML entities, or literal whitespace escapes
+/// preserve percent-encoded delimiters (such as `%26`, `%2F`, or `%5C`) instead of emitting their
+/// decoded form.
 #[must_use]
 pub fn format_url(link: &str, loose: bool) -> Option<String> {
     let url = js_trim(link);
@@ -117,9 +160,12 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
             .filter(|&c| !matches!(c, '\u{0000}'..='\u{001F}' | '\u{007F}'..='\u{009F}'))
             .collect();
         Some(cleaned)
-    } else if let Some(relative) = format_relative_with_path_or_query_delimiter(url) {
-        Some(relative)
     } else {
+        let restored = restore_encoded_html_numeric_refs(url);
+        let url = restored.as_ref();
+        if let Some(relative) = format_relative_with_scheme_delimiter(url) {
+            return Some(relative);
+        }
         let sanitized = sanitize_url(url);
         if sanitized == BLANK_URL {
             return Some(sanitized);
@@ -149,16 +195,15 @@ fn has_non_percent_obfuscation(text: &str) -> bool {
         })
 }
 
-/// Handles relative URLs where a path or query delimiter (`/` or `?`) precedes any colon (such as
-/// `data/chart.svg?time=12:30`), which `@braintree/sanitize-url`'s greedy scheme regex would
-/// otherwise misclassify as a `data:` / `javascript:` / `vbscript:` scheme.
-fn format_relative_with_path_or_query_delimiter(url: &str) -> Option<String> {
-    if matches!(url.chars().next(), Some('.' | '/'))
-        || !first_scheme_delimiter_is_path_or_query(url)
-    {
+/// Handles relative URLs where a path, query, or non-entity fragment delimiter (`/`, `?`, or `#`)
+/// precedes any colon (such as `data/chart.svg?time=12:30` or `data#part:two`), which
+/// `@braintree/sanitize-url`'s greedy scheme regex would otherwise misclassify as a blocked
+/// `data:` / `javascript:` / `vbscript:` scheme.
+fn format_relative_with_scheme_delimiter(url: &str) -> Option<String> {
+    if matches!(url.chars().next(), Some('.' | '/')) {
         return None;
     }
-    let delim_pos = url.find(['/', '?'])?;
+    let delim_pos = first_scheme_delimiter_is_relative(url)?;
     let raw_prefix = &url[..delim_pos];
     if raw_prefix.contains("ﬂ°") || raw_prefix.contains("¶ß") {
         return None;
@@ -169,7 +214,7 @@ fn format_relative_with_path_or_query_delimiter(url: &str) -> Option<String> {
         return Some(BLANK_URL.to_owned());
     };
     if decoded.is_empty()
-        || !first_scheme_delimiter_is_path_or_query(&decoded)
+        || first_scheme_delimiter_is_relative(&decoded).is_none()
         || guard_url(url, false) == BLANK_URL
         || guard_url(&decoded, false) == BLANK_URL
     {
@@ -181,24 +226,35 @@ fn format_relative_with_path_or_query_delimiter(url: &str) -> Option<String> {
     Some(finalize_raw(decoded, url_tokens.as_ref()))
 }
 
-/// Whether the earliest scheme delimiter (`/`, `?`, `:`, or `&colon;`) in `text` is `/` or `?`,
-/// meaning any later colon cannot introduce a URI scheme.
-fn first_scheme_delimiter_is_path_or_query(text: &str) -> bool {
+/// Byte offset of the earliest relative URL delimiter (`/`, `?`, or a `#` fragment marker that
+/// cannot form a numeric character reference with its surroundings) when it precedes any `:` or
+/// `&colon;` scheme separator.
+fn first_scheme_delimiter_is_relative(text: &str) -> Option<usize> {
     let bytes = text.as_bytes();
-    for (idx, &byte) in bytes.iter().enumerate() {
-        match byte {
-            b'/' | b'?' => return true,
-            b':' => return false,
-            b'&' if bytes
+    let mut has_escape_or_ctrl = false;
+    for (idx, ch) in text.char_indices() {
+        match ch {
+            '/' | '?' => return Some(idx),
+            ':' => return None,
+            '&' if bytes
                 .get(idx..idx + "&colon;".len())
                 .is_some_and(|slice| slice.eq_ignore_ascii_case(b"&colon;")) =>
             {
-                return false;
+                return None;
             }
-            _ => {}
+            '#' => {
+                if !starts_with_sink_entity_body(&text[idx + 1..]) || !has_escape_or_ctrl {
+                    return Some(idx);
+                }
+            }
+            _ => {
+                if matches!(ch, '&' | '%' | '\\') || is_ctrl(ch) {
+                    has_escape_or_ctrl = true;
+                }
+            }
         }
     }
-    false
+    None
 }
 
 /// Returns the leading literal RFC-3986 scheme if it is in [`ALLOWED_SINK_SCHEMES`] and is not
@@ -264,8 +320,8 @@ fn preserve_encoded_url(url: &str, sanitized: &str) -> Option<String> {
     if url_scheme(url).is_none() && url_scheme(sanitized).is_none() {
         return Some(url.to_owned());
     }
-    if first_scheme_delimiter_is_path_or_query(url)
-        && first_scheme_delimiter_is_path_or_query(sanitized)
+    if first_scheme_delimiter_is_relative(url).is_some()
+        && first_scheme_delimiter_is_relative(sanitized).is_some()
     {
         return Some(url.replace('\\', "/"));
     }
@@ -799,6 +855,8 @@ pub fn sanitize_url(url: &str) -> String {
     if url.is_empty() {
         return BLANK_URL.to_owned();
     }
+    let restored = restore_encoded_html_numeric_refs(url);
+    let url = restored.as_ref();
     // Tokenize all literal Mermaid entity placeholders BEFORE `decode_url_obfuscations_bounded`,
     // then classify URL components using the ALREADY-DECODED separators (`%2F`, `%40`, `%2568`,
     // `&#58;`, etc.) so:
@@ -2843,6 +2901,34 @@ mod tests {
         );
         assert_eq!(
             format_url("java%5Cnscript:alert(1)", false).as_deref(),
+            Some("about:blank")
+        );
+        // Relative URLs with a fragment delimiter before a colon (`data#part:two`) stay intact
+        // while encoded colons before `#` still fail closed.
+        assert_eq!(
+            format_url("data#part:two", false).as_deref(),
+            Some("data#part:two")
+        );
+        assert_eq!(
+            format_url("data#123:two", false).as_deref(),
+            Some("data#123:two")
+        );
+        assert_eq!(
+            format_url("data%3A#part", false).as_deref(),
+            Some("about:blank")
+        );
+        assert_eq!(
+            format_url("data&#58;#part", false).as_deref(),
+            Some("about:blank")
+        );
+        // Encoded numeric references (`&ﬂ°°169¶ß` from `&#169;`) restore cleanly in URLs without
+        // leaving a stray `&`, and `&ﬂ°°106¶ßavascript:` fails closed.
+        assert_eq!(
+            format_url("https://example.com/A&ﬂ°°169¶ßB", false).as_deref(),
+            Some("https://example.com/A%C2%A9B")
+        );
+        assert_eq!(
+            format_url("&ﬂ°°106¶ßavascript:alert(1)", false).as_deref(),
             Some("about:blank")
         );
     }
