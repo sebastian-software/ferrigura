@@ -2,7 +2,7 @@
 //! the measure pass (`calculateBlockSize`, 138-156), the placed pass (`insertBlockPositioned`, 158-187)
 //! and `insertEdges` (215-302).
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use ferrigura_model::block::{ClassDef, Edge as ModelEdge};
 use ferrigura_model::config::BlockDiagramConfig;
@@ -175,13 +175,68 @@ pub(super) fn measure_all(block: &mut Block, context: &Context<'_>) -> Result<()
     Ok(())
 }
 
-/// Collects the raw IDs of every non-space block in the same tree order as [`place_all`].
-fn collect_block_ids<'a>(block: &'a Block, out: &mut Vec<&'a str>) {
+/// Collision-free local DOM IDs for non-space blocks (in tree order) and full `path_id`s for
+/// emitted edges (in edge order).
+pub(super) struct AllocatedIds {
+    pub block_dom_ids: Vec<String>,
+    pub edge_path_ids: Vec<String>,
+}
+
+/// Collects the raw IDs of every non-space block in tree order and every block ID that receives a
+/// layout size in `drawing.sizes`.
+fn collect_block_ids<'a>(
+    block: &'a Block,
+    non_space: &mut Vec<&'a str>,
+    all_ids: &mut HashSet<&'a str>,
+) {
     for child in &block.children {
+        all_ids.insert(child.id.as_str());
         if !child.is_space() {
-            out.push(child.id.as_str());
+            non_space.push(child.id.as_str());
         }
-        collect_block_ids(child, out);
+        collect_block_ids(child, non_space, all_ids);
+    }
+}
+
+/// Pre-allocates collision-free DOM IDs across all non-space blocks and emitted edge paths.
+pub(super) fn allocate_ids(
+    root: &Block,
+    edges_model: &[ModelEdge],
+    context: &Context<'_>,
+) -> AllocatedIds {
+    let mut raw_blocks = Vec::new();
+    let mut all_ids = HashSet::new();
+    collect_block_ids(root, &mut raw_blocks, &mut all_ids);
+
+    let mut edge_locals = Vec::new();
+    for model in edges_model {
+        if let Some(start) = model.start.as_deref()
+            && all_ids.contains(start)
+            && all_ids.contains(model.end.as_str())
+        {
+            edge_locals.push(format!("{}-{}", context.id, model.id));
+        }
+    }
+
+    let mut combined: Vec<&str> = Vec::with_capacity(raw_blocks.len() + edge_locals.len());
+    combined.extend_from_slice(&raw_blocks);
+    combined.extend(edge_locals.iter().map(String::as_str));
+
+    let defs = crate::unified::pipeline::ReservedDefs {
+        gradient: context.unified.theme.use_gradient.truthy(),
+        label_gaps: false,
+        a11y_title: false,
+        a11y_desc: false,
+    };
+    let mut resolved = crate::unified::pipeline::disambiguate_dom_ids(&combined, context.id, defs);
+    let resolved_edges = resolved.split_off(raw_blocks.len());
+    let edge_path_ids = resolved_edges
+        .into_iter()
+        .map(|local| format!("{}-{local}", context.id))
+        .collect();
+    AllocatedIds {
+        block_dom_ids: resolved,
+        edge_path_ids,
     }
 }
 
@@ -190,18 +245,10 @@ fn collect_block_ids<'a>(block: &'a Block, out: &mut Vec<&'a str>) {
 pub(super) fn place_all(
     block: &Block,
     context: &Context<'_>,
+    block_dom_ids: &[String],
     drawing: &mut Drawing,
 ) -> Result<(), RenderError> {
-    let mut raw_ids = Vec::new();
-    collect_block_ids(block, &mut raw_ids);
-    let defs = crate::unified::pipeline::ReservedDefs {
-        gradient: context.unified.theme.use_gradient.truthy(),
-        label_gaps: false,
-        a11y_title: false,
-        a11y_desc: false,
-    };
-    let resolved_ids = crate::unified::pipeline::disambiguate_dom_ids(&raw_ids, context.id, defs);
-    let mut next_id = resolved_ids.iter();
+    let mut next_id = block_dom_ids.iter();
     place_children(block, context, drawing, &mut next_id)
 }
 
@@ -281,10 +328,12 @@ fn place(
 pub(super) fn insert_edges(
     edges_model: &[ModelEdge],
     context: &Context<'_>,
+    edge_path_ids: &[String],
     drawing: &mut Drawing,
 ) -> Result<(), RenderError> {
     let font = font_size(context.unified.theme);
     let mut built: Vec<(Edge, String, Option<LabelLayout>)> = Vec::new();
+    let mut next_edge_id = edge_path_ids.iter();
     for model in edges_model {
         let (Some(start), end) = (model.start.as_deref(), model.end.as_str()) else {
             continue;
@@ -309,6 +358,7 @@ pub(super) fn insert_edges(
         };
 
         let prefixed = format!("{}-{}", context.id, model.id);
+        let path_id = next_edge_id.next().cloned();
         let thick = model.thickness == "thick";
         let dotted = model.pattern == "dotted";
         let thickness_class = if thick {
@@ -325,6 +375,7 @@ pub(super) fn insert_edges(
         // the path is `<id>-<id>-<edge>` and its `data-id` `<id>-<edge>`.
         let edge = Edge {
             id: prefixed,
+            path_id,
             start: start.to_owned(),
             end: end.to_owned(),
             label: model.label.clone(),

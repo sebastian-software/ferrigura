@@ -385,7 +385,7 @@ pub(crate) fn node_svg_with_resolved(
 
     let resolved_link = if remapped_link.is_some() {
         None
-    } else if links == LinkForm::PostRender {
+    } else if loose || links == LinkForm::PostRender {
         node.link
             .as_deref()
             .map(crate::common::resolve_entity_placeholders)

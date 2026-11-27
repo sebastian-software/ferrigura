@@ -892,6 +892,11 @@ impl ResolvedDomIds {
             || data.nodes.iter().any(|node| {
                 needs_id_normalization(&node.dom_id)
                     || is_renderer_owned_local(&node.dom_id, &canonical_svg_id, defs)
+                    || node.link.as_deref().is_some_and(|link| {
+                        strip_fragment_marker(link).is_some_and(|fragment| {
+                            fragment.contains('%') || needs_id_normalization(fragment)
+                        })
+                    })
             })
             || data.edges.iter().any(|edge| {
                 needs_id_normalization(&edge.id)

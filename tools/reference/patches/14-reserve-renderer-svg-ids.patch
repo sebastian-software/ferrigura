@@ -1,5 +1,141 @@
-Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs (including pre-assigned use-case path IDs) in the shared unified renderer, prefer existing decoded fragment targets over raw fallbacks (including post-render state click links and trimmed fragment whitespace), defer data-id placeholder rewriting until after layout/line-hops, and protect only the marked resolved DOM ID attributes from a second decodeEntities pass using a collision-free per-render token.
+Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs (including pre-assigned use-case path IDs and block-diagram nodes/edges) in the shared unified and block renderers, prefer existing decoded fragment targets over raw fallbacks (including post-render state click links and trimmed fragment whitespace), defer data-id placeholder rewriting until after layout/line-hops, and protect only the marked resolved DOM ID attributes from a second decodeEntities pass using a collision-free per-render token.
 
+diff --git a/packages/mermaid/src/diagrams/block/blockRenderer.ts b/packages/mermaid/src/diagrams/block/blockRenderer.ts
+index 6bd9b6d..7e9d22f 100644
+--- a/packages/mermaid/src/diagrams/block/blockRenderer.ts
++++ b/packages/mermaid/src/diagrams/block/blockRenderer.ts
+@@ -4,6 +4,7 @@ import * as configApi from '../../config.js';
+ import { log } from '../../logger.js';
+ import insertMarkers from '../../rendering-util/rendering-elements/markers.js';
+ import { insertLookDefs } from '../../rendering-util/insertLookDefs.js';
++import { allocateBlockIds, markProtectedBlockIds } from '../../rendering-util/render.js';
+ import { configureSvgSize } from '../../setupGraphViewbox.js';
+ import type { BlockDB } from './blockDB.js';
+ import { layout } from './layout.js';
+@@ -54,8 +55,37 @@ export const draw = async function (
+   const nodes = svg.insert('g').attr('class', 'block');
+   await calculateBlockSizes(nodes, bl, db);
+   const bounds = layout(db);
+-  await insertBlocks(nodes, bl, db);
+-  await insertEdges(nodes, edges, blArr, db, id);
++  const rawBlockIds: string[] = [];
++  const collectBlockIds = (blocks: typeof bl) => {
++    for (const block of blocks) {
++      const obj = db.getBlock(block.id);
++      if (obj?.type !== 'space') {
++        rawBlockIds.push(block.id);
++      }
++      if (block.children) {
++        collectBlockIds(block.children);
++      }
++    }
++  };
++  collectBlockIds(bl);
++  const rawEdgeLocals: string[] = [];
++  for (const edge of edges) {
++    if (edge.start && edge.end && db.getBlock(edge.start)?.size && db.getBlock(edge.end)?.size) {
++      rawEdgeLocals.push(id ? `${id}-${edge.id}` : edge.id);
++    }
++  }
++  const { resolved: allocatedIds, protectedIds } = allocateBlockIds(
++    [...rawBlockIds, ...rawEdgeLocals],
++    id,
++    Boolean(configApi.getConfig().themeVariables?.useGradient)
++  );
++  const blockDomIds = allocatedIds.slice(0, rawBlockIds.length);
++  const edgePathIds = allocatedIds
++    .slice(rawBlockIds.length)
++    .map((local) => (id ? `${id}-${local}` : local));
++  await insertBlocks(nodes, bl, db, blockDomIds);
++  await insertEdges(nodes, edges, blArr, db, id, edgePathIds);
++  markProtectedBlockIds(svg.node() as Element | null, protectedIds);
+ 
+   // Establish svg dimensions and get width and height
+   // Why, oh why ????
+diff --git a/packages/mermaid/src/diagrams/block/renderHelpers.ts b/packages/mermaid/src/diagrams/block/renderHelpers.ts
+index e6067b5..df146d8 100644
+--- a/packages/mermaid/src/diagrams/block/renderHelpers.ts
++++ b/packages/mermaid/src/diagrams/block/renderHelpers.ts
+@@ -155,11 +155,20 @@ async function calculateBlockSize(
+ }
+ type ActionFun = typeof calculateBlockSize;
+ 
+-export async function insertBlockPositioned(elem: any, block: Block, db: any) {
++export async function insertBlockPositioned(
++  elem: any,
++  block: Block,
++  db: any,
++  resolvedDomId?: string
++) {
+   const node = getNodeFromBlock(block, db, true);
+   // Add the element to the DOM to size it
+   const obj = db.getBlock(node.id);
+   if (obj.type !== 'space') {
++    if (resolvedDomId !== undefined) {
++      const dbDiagramId = db.getDiagramId();
++      node.domId = dbDiagramId ? `${dbDiagramId}-${resolvedDomId}` : resolvedDomId;
++    }
+     const config = getConfig();
+     const el = await insertNode(elem, node, { config });
+     /* Only where a slot was actually assigned -- composites. `stampColorSlot` falls back
+@@ -207,9 +216,21 @@ export async function calculateBlockSizes(elem: any, blocks: Block[], db: BlockD
+ export async function insertBlocks(
+   elem: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
+   blocks: Block[],
+-  db: BlockDB
++  db: BlockDB,
++  blockDomIds?: string[]
+ ) {
+-  await performOperations(elem, blocks, db, insertBlockPositioned);
++  let cursor = 0;
++  const walk = async (items: Block[]) => {
++    for (const block of items) {
++      const obj = db.getBlock(block.id);
++      const domId = obj?.type !== 'space' ? blockDomIds?.[cursor++] : undefined;
++      await insertBlockPositioned(elem, block, db, domId);
++      if (block.children) {
++        await walk(block.children);
++      }
++    }
++  };
++  await walk(blocks);
+ }
+ 
+ export async function insertEdges(
+@@ -217,7 +238,8 @@ export async function insertEdges(
+   edges: Block[],
+   blocks: Block[],
+   db: BlockDB,
+-  id: string
++  id: string,
++  edgePathIds?: string[]
+ ) {
+   const g = new graphlib.Graph({
+     multigraph: true,
+@@ -241,6 +263,7 @@ export async function insertEdges(
+     }
+   }
+ 
++  let edgeCursor = 0;
+   for (const edge of edges) {
+     // elem, e, edge, clusterDb, diagramType, graph;
+     if (edge.start && edge.end) {
+@@ -256,6 +279,7 @@ export async function insertEdges(
+           { x: end.x, y: end.y },
+         ];
+         const prefixedEdgeId = id ? `${id}-${edge.id}` : edge.id;
++        const pathId = edgePathIds?.[edgeCursor++];
+ 
+         const thicknessClass =
+           edge.thickness === 'thick' ? 'edge-thickness-thick' : 'edge-thickness-normal';
+@@ -268,6 +292,7 @@ export async function insertEdges(
+           {
+             ...edge,
+             id: prefixedEdgeId,
++            pathId,
+             arrowTypeEnd: edge.arrowTypeEnd,
+             arrowTypeStart: edge.arrowTypeStart,
+             points,
 diff --git a/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts b/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
 index ea730b3..f826dce 100644
 --- a/packages/mermaid/src/diagrams/state/stateRenderer-v3-unified.ts
@@ -60,7 +196,7 @@ index c02a201..8457734 100644
        .attr('data-usecase-kind', edge.internal ? 'note-connector' : 'relationship');
      if (edge.internal) {
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index dee48cf..e81dfb5 100644
+index 53ebea6..dde4212 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
 @@ -43,6 +43,11 @@ import type {
@@ -75,7 +211,7 @@ index dee48cf..e81dfb5 100644
  import { toBase64 } from './utils/base64.js';
  import { sanitizeCss } from './utils/sanitizeDirective.js';
  
-@@ -673,6 +678,9 @@ const renderDiagram = async function (
+@@ -681,6 +686,9 @@ const renderDiagram = async function (
  
    // -------------------------------------------------------------------------------
    // Draw the diagram with the renderer
@@ -85,7 +221,7 @@ index dee48cf..e81dfb5 100644
    try {
      if (injected.profiling) {
        await profiler.span('draw', () => diag.renderer.draw(text, id, injected.version, diag));
-@@ -686,6 +694,8 @@ const renderDiagram = async function (
+@@ -694,6 +702,8 @@ const renderDiagram = async function (
        errorRenderer.draw(text, id, injected.version);
      }
      throw e;
@@ -94,14 +230,14 @@ index dee48cf..e81dfb5 100644
    }
  
    // This is the d3 node for the svg element
-@@ -702,14 +712,17 @@ const renderDiagram = async function (
+@@ -710,14 +720,17 @@ const renderDiagram = async function (
      // -------------------------------------------------------------------------------
      // Clean up SVG code
      const svgRootSelection = root.select(`[id="${id}"]`);
 +    const svgRootEl = svgRootSelection.node() as Element | null;
      svgRootSelection.selectAll('foreignobject > *').attr('xmlns', XMLNS_XHTML_STD);
--    decodePercentEncodedHrefAttrs(svgRootSelection.node() as Element | null);
-+    decodePercentEncodedHrefAttrs(svgRootEl);
+-    decodePercentEncodedHrefAttrs(svgRootSelection.node() as Element | null, diag.type, config.securityLevel === 'loose');
++    decodePercentEncodedHrefAttrs(svgRootEl, diag.type, config.securityLevel === 'loose');
 +    const protectedTokens = swapProtectedSvgIds(svgRootEl);
  
      // Fix for when the base tag is used
@@ -114,7 +250,7 @@ index dee48cf..e81dfb5 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..68d1f48 100644
+index 49145b2..87a2e45 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -125,7 +261,7 @@ index 49145b2..68d1f48 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,195 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,289 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -318,10 +454,104 @@ index 49145b2..68d1f48 100644
 +  }
 +};
 +
++export const allocateBlockIds = (
++  rawIds: string[],
++  svgId: string,
++  useGradient: boolean
++): { resolved: string[]; protectedIds: Set<string> } => {
++  const canonicalSvgId = canonicalXmlAttr(svgId);
++  const rendererOwned = new Set<string>([
++    canonicalSvgId,
++    `${canonicalSvgId}-drop-shadow`,
++    `${canonicalSvgId}-drop-shadow-small`,
++  ]);
++  if (useGradient) {
++    rendererOwned.add(`${canonicalSvgId}-gradient`);
++  }
++  const plans = rawIds.map((raw) => {
++    const hadPlaceholder = raw.includes('ﬂ°');
++    const canonicalLocal = canonicalAttrId(raw);
++    const canonicalFull = `${canonicalSvgId}-${canonicalLocal}`;
++    const unchanged = !hadPlaceholder && canonicalLocal === raw && canonicalSvgId === svgId;
++    return { raw, hadPlaceholder, canonicalLocal, canonicalFull, unchanged };
++  });
++  const reserved = new Set<string>(plans.map((p) => p.canonicalFull));
++  const seen = new Set<string>();
++  const claimed = plans.map(() => false);
++  for (let i = 0; i < plans.length; i++) {
++    const p = plans[i];
++    if (p.unchanged && !rendererOwned.has(p.canonicalFull) && !seen.has(p.canonicalFull)) {
++      seen.add(p.canonicalFull);
++      claimed[i] = true;
++    }
++  }
++  const nextSuffix = new Map<string, number>();
++  const resolved: string[] = [];
++  const protectedIds = new Set<string>();
++  for (let i = 0; i < plans.length; i++) {
++    const p = plans[i];
++    if (claimed[i]) {
++      resolved.push(p.raw);
++      continue;
++    }
++    const collided = rendererOwned.has(p.canonicalFull) || seen.has(p.canonicalFull);
++    let finalLocal = p.canonicalLocal;
++    if (!collided) {
++      seen.add(p.canonicalFull);
++    } else {
++      let suffix = nextSuffix.get(p.canonicalFull) ?? 1;
++      while (true) {
++        const candidateLocal = `${p.canonicalLocal}-${suffix}`;
++        const candidateFull = `${canonicalSvgId}-${candidateLocal}`;
++        suffix += 1;
++        if (
++          !rendererOwned.has(candidateFull) &&
++          !reserved.has(candidateFull) &&
++          !seen.has(candidateFull)
++        ) {
++          nextSuffix.set(p.canonicalFull, suffix);
++          seen.add(candidateFull);
++          finalLocal = candidateLocal;
++          break;
++        }
++      }
++    }
++    if (collided || p.hadPlaceholder) {
++      const fullId = `${svgId}-${finalLocal}`;
++      if (needsDecodeProtection(fullId)) {
++        protectedIds.add(fullId);
++      }
++      resolved.push(finalLocal);
++    } else {
++      resolved.push(p.raw);
++    }
++  }
++  return { resolved, protectedIds };
++};
++
++export const markProtectedBlockIds = (svgEl: Element | null, protectedIds: Set<string>): void => {
++  if (!svgEl || protectedIds.size === 0) {
++    return;
++  }
++  let protectedMap = protectedAttrsBySvgRoot.get(svgEl);
++  for (const el of svgEl.querySelectorAll('[id]')) {
++    const val = el.getAttribute('id');
++    if (val !== null && protectedIds.has(val)) {
++      if (!protectedMap) {
++        protectedMap = new Map();
++        protectedAttrsBySvgRoot.set(svgEl, protectedMap);
++      }
++      const current = protectedMap.get(el) ?? {};
++      current.id = val;
++      protectedMap.set(el, current);
++    }
++  }
++};
++
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +295,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +389,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -391,7 +621,7 @@ index 49145b2..68d1f48 100644
 +        elementOwned.add(p.canonicalFull);
 +        nodeClaimed[i] = true;
 +      }
-     }
++    }
 +    const edgeClaimed = edgePlans.map(() => false);
 +    for (let i = 0; i < edgePlans.length; i++) {
 +      const p = edgePlans[i];
@@ -560,7 +790,7 @@ index 49145b2..68d1f48 100644
 +    const svgEl = svg.node() as Element | null;
 +    if (svgEl) {
 +      fragmentRemapperBySvgRoot.set(svgEl, remapFragment);
-+    }
+     }
 +    if (svgEl && (edgeDataIdMap.size > 0 || protectedIds.size > 0)) {
 +      let protectedMap = protectedAttrsBySvgRoot.get(svgEl);
 +      const mark = (el: Element, key: 'id' | 'dataId', value: string) => {

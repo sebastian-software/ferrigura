@@ -1338,4 +1338,82 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         literal_img.contains("href=\"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.png\""),
         "{literal_img}"
     );
+
+    // Fragment links with placeholders still remap even when no node or edge ID needs normalization.
+    let fast_path_frag = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo%41`\n  click `Foo%41` href \"#graph-classId-Foo#37;41\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let fast_doc = roxmltree::Document::parse(&fast_path_frag).expect("well-formed SVG XML");
+    assert!(
+        fast_doc
+            .descendants()
+            .any(|n| n.attribute("id") == Some("graph-classId-Foo%41")),
+        "{fast_path_frag}"
+    );
+    let fast_href = fast_doc
+        .descendants()
+        .find_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(fast_href, "#graph-classId-Foo%2541");
+
+    // Hex color handling resets at `;` so a following statement on the same line still encodes
+    // `#100;` as an entity (matching standalone `B["letter: #100;"]`, not literal `#100;`).
+    let semi_stmt = ferrigura::render(
+        "flowchart LR\n  style A fill: #abc; B[\"letter: #100;\"]\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(semi_stmt.contains("fill:#abc"), "{semi_stmt}");
+    let semi_doc = roxmltree::Document::parse(&semi_stmt).expect("well-formed SVG XML");
+    let b_text: String = semi_doc
+        .descendants()
+        .filter(|n| n.is_text())
+        .filter_map(|n| n.text())
+        .collect();
+    assert!(b_text.contains("letter: &#100;"), "{b_text:?}");
+    assert!(!b_text.contains("letter: #100;"), "{b_text:?}");
+
+    // Block diagrams reserve emitted edge path IDs before assigning block node IDs.
+    let block_edge_collision = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "block-beta\n  A\n  B\n  graph#45;1#45;A#45;B\n  A --> B\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let block_edge_doc =
+        roxmltree::Document::parse(&block_edge_collision).expect("well-formed SVG XML");
+    let mut seen_block_ids = std::collections::HashSet::new();
+    for id in block_edge_doc
+        .descendants()
+        .filter_map(|n| n.attribute("id"))
+    {
+        assert!(
+            seen_block_ids.insert(id),
+            "duplicate block SVG id {id:?} in {block_edge_collision}"
+        );
+    }
+    assert!(seen_block_ids.contains("graph-graph-1-A-B"));
+    assert!(seen_block_ids.contains("graph-graph-1-A-B-1"));
+
+    // Loose-mode links bypass URL normalization, so literal percent-encoded filenames stay intact.
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let loose_pct = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\"\n",
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose_pct
+            .contains("xlink:href=\"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.pdf\""),
+        "{loose_pct}"
+    );
 }

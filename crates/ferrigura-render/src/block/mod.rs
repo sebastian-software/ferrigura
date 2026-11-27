@@ -157,10 +157,17 @@ pub fn render(input: &Context<'_, BlockDiagram, BlockSection<'_>>) -> Result<Str
     // `layout`: the sizes and positions of the blocks.
     let layout_bounds = layout::layout(&mut root, input.section.block.padding)?;
 
-    // `insertBlocks` and `insertEdges`: the blocks, then the edges with their labels.
+    // `insertBlocks` and `insertEdges`: pre-allocate collision-free IDs across blocks and emitted
+    // edge paths, then draw the blocks and the edges with their labels.
     let mut drawing = nodes::Drawing::default();
-    nodes::place_all(&root, &context, &mut drawing)?;
-    nodes::insert_edges(&input.diagram.edges, &context, &mut drawing)?;
+    let allocated = nodes::allocate_ids(&root, &input.diagram.edges, &context);
+    nodes::place_all(&root, &context, &allocated.block_dom_ids, &mut drawing)?;
+    nodes::insert_edges(
+        &input.diagram.edges,
+        &context,
+        &allocated.edge_path_ids,
+        &mut drawing,
+    )?;
 
     // The box the drawing covers is `getBBox` of `g.block`; the layout's bounds are the fallback when
     // that box is not finite.

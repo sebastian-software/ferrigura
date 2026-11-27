@@ -460,6 +460,7 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
     }
     let current: String = chars.iter().map(|&(c, _)| c).collect();
     let mut mapped_cols: Vec<usize> = Vec::with_capacity(chars.len());
+    let mut tracker = StyleStmtTracker::new();
     let mut char_idx = 0usize;
     let mut byte_idx = 0usize;
     while char_idx < chars.len() {
@@ -471,7 +472,7 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
                 .unwrap_or(after.len());
             if name_len > 0 && after[name_len..].starts_with(';') {
                 let name = &after[..name_len];
-                if is_style_hex_color(&current[..byte_idx], name) {
+                if tracker.allows_hex_color(name) {
                     let rest_on_line = after[name_len + 1..]
                         .split(JS_LINE_TERMINATORS)
                         .next()
@@ -481,10 +482,10 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
                     } else {
                         1 + name_len + 1
                     };
-                    for &(c_ch, c_col) in &chars[char_idx..char_idx + keep_len] {
-                        let _ = c_ch;
+                    for &(_, c_col) in &chars[char_idx..char_idx + keep_len] {
                         mapped_cols.push(c_col);
                     }
+                    tracker.reset();
                     char_idx += 1 + name_len + 1;
                     byte_idx += 1 + name_len + 1;
                     continue;
@@ -496,12 +497,14 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
                 };
                 let replacement_chars = prefix_chars + name_len + "¶ß".chars().count();
                 mapped_cols.extend(std::iter::repeat_n(orig_col, replacement_chars));
+                tracker.finish_entity();
                 // `#`, ASCII `name`, and `;` are all single-byte ASCII characters.
                 char_idx += 1 + name_len + 1;
                 byte_idx += 1 + name_len + 1;
                 continue;
             }
         }
+        tracker.push(&current, byte_idx, ch);
         mapped_cols.push(orig_col);
         char_idx += 1;
         byte_idx += ch.len_utf8();
@@ -565,72 +568,129 @@ fn has_colon_hash(segment: &str) -> bool {
     false
 }
 
-/// Whether `#<name>;` at the end of `prefix` is a CSS hex color inside a `style` or `classDef`
-/// statement (e.g. `style A fill: #abc;`), which must remain literal rather than becoming an HTML
-/// entity placeholder while leaving non-hex entities (such as `#quot;` or `#34;`) intact.
-fn is_style_hex_color(prefix: &str, name: &str) -> bool {
-    if !matches!(name.len(), 3 | 4 | 6 | 8) || !name.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return false;
+/// Classification of the current semicolon-delimited statement on a line.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum StmtKind {
+    Start,
+    Style,
+    Other,
+}
+
+/// Single-pass O(n) forward tracker for whether the current `#<hex>;` sits inside a `style` or
+/// `classDef` declaration value (after `:` and a CSS token separator), resetting on every line
+/// terminator and statement-ending `;` so subsequent statements on the same line (such as
+/// `style A fill: #abc; B["letter: #100;"]`) are never treated as CSS.
+struct StyleStmtTracker {
+    kind: StmtKind,
+    seen_colon: bool,
+    last_allows_hex: bool,
+}
+
+impl StyleStmtTracker {
+    fn new() -> Self {
+        Self {
+            kind: StmtKind::Start,
+            seen_colon: false,
+            last_allows_hex: false,
+        }
     }
-    let line = prefix.rsplit(JS_LINE_TERMINATORS).next().unwrap_or(prefix);
-    let trimmed_line = line.trim_start_matches(is_js_space);
-    let starts_with_style_kw = |s: &str| {
-        s.strip_prefix("style")
-            .or_else(|| s.strip_prefix("classDef"))
-            .is_some_and(|rest| rest.chars().next().is_some_and(is_js_space))
-    };
-    let stmt = line.rsplit(';').next().unwrap_or(line);
-    let in_style_stmt = starts_with_style_kw(trimmed_line)
-        || starts_with_style_kw(stmt.trim_start_matches(is_js_space));
-    if !in_style_stmt {
-        return false;
+
+    fn reset(&mut self) {
+        self.kind = StmtKind::Start;
+        self.seen_colon = false;
+        self.last_allows_hex = false;
     }
-    stmt.contains(':')
-        && stmt
-            .chars()
-            .next_back()
-            .is_some_and(|c| c == ':' || c == ',' || c == '(' || is_js_space(c))
+
+    fn finish_entity(&mut self) {
+        if self.kind == StmtKind::Start {
+            self.kind = StmtKind::Other;
+        }
+        self.last_allows_hex = false;
+    }
+
+    fn push(&mut self, src: &str, at: usize, ch: char) {
+        if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') || ch == ';' {
+            self.reset();
+            return;
+        }
+        if self.kind == StmtKind::Start {
+            if is_js_space(ch) {
+                return;
+            }
+            let rest = &src[at..];
+            let is_style = rest
+                .strip_prefix("style")
+                .or_else(|| rest.strip_prefix("classDef"))
+                .is_some_and(|after| after.chars().next().is_some_and(is_js_space));
+            self.kind = if is_style {
+                StmtKind::Style
+            } else {
+                StmtKind::Other
+            };
+        }
+        if self.kind == StmtKind::Style {
+            if ch == ':' {
+                self.seen_colon = true;
+            }
+            self.last_allows_hex = ch == ':' || ch == ',' || ch == '(' || is_js_space(ch);
+        }
+    }
+
+    fn allows_hex_color(&self, name: &str) -> bool {
+        self.kind == StmtKind::Style
+            && self.seen_colon
+            && self.last_allows_hex
+            && matches!(name.len(), 3 | 4 | 6 | 8)
+            && name.bytes().all(|b| b.is_ascii_hexdigit())
+    }
 }
 
 /// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name, except for CSS hex
-/// colors inside `style` / `classDef` declarations.
+/// colors inside the current `style` / `classDef` statement.
 pub(crate) fn encode_hash_entities(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
+    let mut tracker = StyleStmtTracker::new();
     let mut cursor = 0;
-    while let Some(rel) = text[cursor..].find('#') {
-        let hash = cursor + rel;
-        out.push_str(&text[cursor..hash]);
-        let after = &text[hash + 1..];
-        let name_len = after
-            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
-            .unwrap_or(after.len());
-        if name_len > 0 && after[name_len..].starts_with(';') {
-            let name = &after[..name_len];
-            if is_style_hex_color(&text[..hash], name) {
-                out.push('#');
-                out.push_str(name);
-                let rest_on_line = after[name_len + 1..]
-                    .split(JS_LINE_TERMINATORS)
-                    .next()
-                    .unwrap_or("");
-                if !rest_on_line.chars().all(is_js_space) {
-                    out.push(';');
+    let mut chars = text.char_indices();
+    while let Some((at, ch)) = chars.next() {
+        if ch == '#' {
+            let after = &text[at + 1..];
+            let name_len = after
+                .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                .unwrap_or(after.len());
+            if name_len > 0 && after[name_len..].starts_with(';') {
+                let name = &after[..name_len];
+                out.push_str(&text[cursor..at]);
+                let end = at + 1 + name_len + 1;
+                if tracker.allows_hex_color(name) {
+                    out.push('#');
+                    out.push_str(name);
+                    let rest_on_line = after[name_len + 1..]
+                        .split(JS_LINE_TERMINATORS)
+                        .next()
+                        .unwrap_or("");
+                    if !rest_on_line.chars().all(is_js_space) {
+                        out.push(';');
+                    }
+                    tracker.reset();
+                } else {
+                    if name.bytes().all(|b| b.is_ascii_digit()) {
+                        out.push_str("ﬂ°°");
+                    } else {
+                        out.push_str("ﬂ°");
+                    }
+                    out.push_str(name);
+                    out.push_str("¶ß");
+                    tracker.finish_entity();
                 }
-                cursor = hash + 1 + name_len + 1;
+                cursor = end;
+                for _ in 0..=name_len {
+                    let _ = chars.next();
+                }
                 continue;
             }
-            if name.bytes().all(|b| b.is_ascii_digit()) {
-                out.push_str("ﬂ°°");
-            } else {
-                out.push_str("ﬂ°");
-            }
-            out.push_str(name);
-            out.push_str("¶ß");
-            cursor = hash + 1 + name_len + 1;
-        } else {
-            out.push('#');
-            cursor = hash + 1;
         }
+        tracker.push(text, at, ch);
     }
     out.push_str(&text[cursor..]);
     out
