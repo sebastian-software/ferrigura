@@ -1173,6 +1173,36 @@ fn gantt_sequence_url_guards_and_protected_dollar_ids() {
         "{seq_loose}"
     );
 
+    // Sequence actor icons run `sanitizeUrl` before `guard_image_url` (matching Mermaid's
+    // `drawImage`), so raster `data:image/...` URLs become `about:blank` there while `imageSquare`
+    // preserves them.
+    for icon in [
+        "data:image/png,abc",
+        "data:image/png#59;base64,iVBORw0KGgo=",
+    ] {
+        let seq_data_icon = ferrigura::render(
+            &format!(
+                "sequenceDiagram\n  participant A\n  properties A: {{\"icon\": \"{icon}\"}}\n  A->>A: hi\n"
+            ),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            seq_data_icon.contains("<image ")
+                && seq_data_icon.contains("xlink:href=\"about:blank\""),
+            "icon={icon}: {seq_data_icon}"
+        );
+    }
+    let img_square_data = ferrigura::render(
+        "flowchart LR\n  A@{ img: \"data:image/png;base64,iVBORw0KGgo=\", label: \"ok\", w: 16, h: 16 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        img_square_data.contains("href=\"data:image/png;base64,iVBORw0KGgo=\""),
+        "{img_square_data}"
+    );
+
     // Protected class IDs containing `$$` survive intact (no JS replacement-pattern corruption).
     let dollar = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
@@ -1197,5 +1227,42 @@ fn gantt_sequence_url_guards_and_protected_dollar_ids() {
     assert_eq!(
         resolved_fragment_target(dollar_href),
         "graph-classId-Fooﬂ°copy$$¶ß"
+    );
+
+    // When a percent-encoded fragment decodes to an exact emitted DOM ID that also exists as a raw
+    // key in `remapped_fragments`, prefer the exact emitted ID over the remapped alias.
+    let exact_vs_remapped = ferrigura::Renderer::new(&loose_cfg)
+        .render_with(
+            "classDiagram\n  class `Id#64258;°copy#182;ß`\n  class `Id#copy;`\n  click `Id#64258;°copy#182;ß` href \"#graph-classId-Id%EF%AC%82%C2%B0copy%C2%B6%C3%9F\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let exact_doc = roxmltree::Document::parse(&exact_vs_remapped).expect("well-formed SVG XML");
+    assert!(
+        exact_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Idﬂ°copy¶ß")),
+        "{exact_vs_remapped}"
+    );
+    assert!(
+        exact_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Id©")),
+        "{exact_vs_remapped}"
+    );
+    let exact_href = exact_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(
+        resolved_fragment_target(exact_href),
+        "graph-classId-Idﬂ°copy¶ß"
+    );
+    assert!(
+        !exact_href.contains("%C2%A9"),
+        "expected link to target exact Idﬂ°copy¶ß, not Id©: {exact_href}"
     );
 }

@@ -129,7 +129,8 @@ fn icon_element(input: &ShapeInput<'_>, styles: &Styles, at: Point) -> String {
             _ => String::new(),
         });
     format!(
-        "<g style=\"color: {colour};\" transform=\"translate({}, {})\"><g>{}</g></g>",
+        "<g style=\"{}\" transform=\"translate({}, {})\"><g>{}</g></g>",
+        crate::svg::escape(&format!("color: {colour};")),
         number(at.x),
         number(at.y),
         fallback_icon_svg(icon_size(input.node)),

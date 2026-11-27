@@ -56,6 +56,8 @@ fn typed_entities() -> Vec<String> {
         format!("packet\n0-10: \"{TYPED}\"\n"),
         format!("treemap-beta\n\"{TYPED}\"\n    \"{TYPED}\": 10\n"),
         format!("flowchart LR\nA[{TYPED}] --> B\n"),
+        "flowchart LR\nA@{ icon: \"fa:user\", label: \"User\" }\nstyle A stroke:red\"x&y\n"
+            .to_owned(),
     ]
 }
 

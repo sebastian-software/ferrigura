@@ -114,7 +114,7 @@ index 685688e..a8e1e42 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..189b3a2 100644
+index 49145b2..97e6929 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -321,7 +321,7 @@ index 49145b2..189b3a2 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +295,266 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +295,270 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -519,11 +519,15 @@ index 49145b2..189b3a2 100644
 +      if (fragment.includes('%')) {
 +        const decoded = percentDecodeFragment(fragment);
 +        if (decoded !== undefined) {
-+          target = remapped.get(`#${decoded}`);
-+          if (target === undefined) {
-+            const resolvedTarget = canonicalAttrId(decoded);
-+            if (elementOwned.has(resolvedTarget)) {
-+              target = formatFragmentUrl(resolvedTarget);
++          if (elementOwned.has(decoded)) {
++            target = formatFragmentUrl(decoded);
++          } else {
++            target = remapped.get(`#${decoded}`);
++            if (target === undefined) {
++              const resolvedTarget = canonicalAttrId(decoded);
++              if (elementOwned.has(resolvedTarget)) {
++                target = formatFragmentUrl(resolvedTarget);
++              }
 +            }
 +          }
 +        }

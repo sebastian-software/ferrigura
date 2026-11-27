@@ -763,6 +763,9 @@ impl ResolvedDomIds {
         if fragment.contains('%')
             && let Some(decoded) = percent_decode_fragment(fragment)
         {
+            if self.element_owned.contains(&decoded) {
+                return Some(Cow::Owned(format_fragment_url(&decoded)));
+            }
             if let Some(target) = self.remapped_fragments.get(&format!("#{decoded}")) {
                 return Some(Cow::Borrowed(target.as_str()));
             }
