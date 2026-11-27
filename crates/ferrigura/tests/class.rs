@@ -2262,6 +2262,8 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         "stateDiagram-v2\n  A --> B\n  note right of\n    A\n    \"draft\n  end note\n  style A fill:#abc;\n",
         "stateDiagram-v2 classDef hot fill:#abc;\n  A:::hot\n",
         "stateDiagram-v2\n  A --> B\n  note \"foo\" as Some \"odd text\n  style A fill:#abc;\n",
+        "stateDiagram-v2\n  state S {\n    A --> B\n  } style C fill:#abc;\n  C --> S\n",
+        "stateDiagram-v2\n  A --> B\n  # draft \"only one quote\n  style A fill:#abc;\n",
     ] {
         let state_note =
             ferrigura::render(state_note_src, &Value::empty_object()).expect("renders");
@@ -2314,6 +2316,25 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         gantt_strict_pct.contains("xlink:href=\"#graph-Foo%2541\""),
         "{gantt_strict_pct}"
     );
+
+    // Gantt task IDs and same-document fragment links normalize complete HTML numeric character
+    // references (`Foo&#169;`) identically so `#graph-Foo&#169;` reaches `graph-Foo©`.
+    let gantt_num_id = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : Foo&#169;, 2024-01-01, 1d\n  click Foo&#169; href \"#graph-Foo&#169;\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(gantt_num_id.contains("id=\"graph-Foo©\""), "{gantt_num_id}");
+    let gantt_num_doc = roxmltree::Document::parse(&gantt_num_id).expect("well-formed SVG XML");
+    let gantt_num_href = gantt_num_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(resolved_fragment_target(gantt_num_href), "graph-Foo©");
 
     // Backtick-quoted class names containing `{` or `"` stay scoped to their backtick token so
     // following `style` hex colors are not corrupted.

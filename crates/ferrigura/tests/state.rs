@@ -153,8 +153,8 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
 
     for unsupported in [
         "notes://do-your-thing/id",
-        "notes%25253Adoc",
-        "notes%3Afoo%FF",
+        "javascript%25253Aalert(1)",
+        "data%3Afoo%FF",
         "notes#58;meeting",
         "javascript#58;alert(1)",
     ] {

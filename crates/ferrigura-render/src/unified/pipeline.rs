@@ -569,7 +569,7 @@ pub(crate) fn canonical_xml_attr(raw: &str) -> Cow<'_, str> {
 /// Resolves Mermaid entity placeholders once and applies [`canonical_xml_attr`] so collision
 /// checks, emitted IDs, and fragment links agree with the serialized XML parser values.
 pub(crate) fn canonical_attr_id(raw: &str) -> String {
-    let resolved = crate::common::resolve_entity_placeholders(raw);
+    let resolved = ferrigura_syntax::url::resolve_url_entity_placeholders(raw);
     canonical_xml_attr(resolved.as_ref()).into_owned()
 }
 

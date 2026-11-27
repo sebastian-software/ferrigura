@@ -51,10 +51,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..47f1ada 100644
+index 48ac4a6..1f5f85b 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,846 @@ export function interpolateToCurve(
+@@ -244,6 +244,844 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -842,14 +842,12 @@ index 48ac4a6..47f1ada 100644
 +  if (rawScheme !== null && literalAllowedNonHttpScheme(sanitized) === rawScheme) {
 +    return finalizeRaw(prepared.replace(/\\/g, '/'));
 +  }
-+  if (url.match(BR_URL_SCHEME_RE) === null && sanitized.match(BR_URL_SCHEME_RE) === null) {
-+    return finalizeRaw(prepared);
-+  }
 +  if (
-+    firstSchemeDelimiterIsRelative(url) >= 0 &&
-+    firstSchemeDelimiterIsRelative(sanitized) >= 0
++    !/^https?:/i.test(sanitized) &&
++    !hasLiteralScheme(url) &&
++    (url.match(BR_URL_SCHEME_RE) === null || firstSchemeDelimiterIsRelative(url) >= 0)
 +  ) {
-+    return finalizeRaw(prepared.replace(/\\/g, '/'));
++    return finalizeRaw(prepared);
 +  }
 +  return null;
 +};
@@ -901,7 +899,7 @@ index 48ac4a6..47f1ada 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +1092,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +1090,39 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -942,7 +940,7 @@ index 48ac4a6..47f1ada 100644
    }
  
    return url;
-@@ -895,23 +1767,991 @@ export default {
+@@ -895,23 +1765,1023 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -1057,6 +1055,8 @@ index 48ac4a6..47f1ada 100644
 +  };
 +  const startsStateAsKeyword = (s: string, at: number): boolean =>
 +    /^as(?=$|[^A-Za-z0-9_])/i.test(s.slice(at));
++  const isStateCommentBoundary = (s: string, at: number): boolean =>
++    at === 0 || /[\s;{}]/.test(s[at - 1]);
 +  const startsStateNoteKeyword = (s: string, at: number): boolean =>
 +    /^note(?=$|\s)/i.test(s.slice(at));
 +  const matchStateNoteSideOfLen = (s: string, at: number): number => {
@@ -1341,6 +1341,14 @@ index 48ac4a6..47f1ada 100644
 +        if (c === '%' && line[i + 1] === '%') {
 +          break;
 +        }
++        if (
++          stateDiagramDialect &&
++          !inStyleOrClassDef &&
++          c === '#' &&
++          isStateCommentBoundary(line, i)
++        ) {
++          break;
++        }
 +        if (c === '"' && !prevWasAlnum) {
 +          inQuotes = true;
 +          stmtStart = false;
@@ -1386,6 +1394,15 @@ index 48ac4a6..47f1ada 100644
 +            seenColon = false;
 +            continue;
 +          }
++          stmtStart = true;
++          inTarget = false;
++          inStyleOrClassDef = false;
++          inClassStmt = false;
++          seenColon = false;
++          seenColonHash = false;
++          continue;
++        }
++        if (stateDiagramDialect && !inStyleOrClassDef && (c === '{' || c === '}')) {
 +          stmtStart = true;
 +          inTarget = false;
 +          inStyleOrClassDef = false;
@@ -1836,6 +1853,11 @@ index 48ac4a6..47f1ada 100644
 +      prevWasAlnum = false;
 +      continue;
 +    }
++    if (stateDiagramDialect && stmtKind !== 1 && ch === '#' && isStateCommentBoundary(txt, i)) {
++      inPlainLine = true;
++      prevWasAlnum = false;
++      continue;
++    }
 +    if (ch === '"' && !prevWasAlnum) {
 +      inQuotes = true;
 +      if (stmtKind === 0) {
@@ -1874,6 +1896,14 @@ index 48ac4a6..47f1ada 100644
 +        lastAllowsHex = false;
 +        continue;
 +      }
++      stmtKind = 0;
++      inClassDef = false;
++      inClassStmt = false;
++      seenColon = false;
++      lastAllowsHex = false;
++      continue;
++    }
++    if (stateDiagramDialect && stmtKind !== 1 && (ch === '{' || ch === '}')) {
 +      stmtKind = 0;
 +      inClassDef = false;
 +      inClassStmt = false;

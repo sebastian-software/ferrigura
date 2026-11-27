@@ -173,7 +173,7 @@ index 64d8255..7e22f45 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..2c9740c 100644
+index 49145b2..5225ede 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -184,7 +184,7 @@ index 49145b2..2c9740c 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,478 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,484 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -233,10 +233,16 @@ index 49145b2..2c9740c 100644
 +};
 +
 +const resolvePlaceholdersAttr = (raw: string): string => {
-+  if (!(raw.includes('ﬂ°') || raw.includes('¶ß')) && !raw.includes('¶ß')) {
++  if (!raw.includes('ﬂ°') && !raw.includes('¶ß')) {
 +    return raw;
 +  }
-+  const escaped = raw
++  const normalized = raw
++    .replace(/&ﬂ°°(\d+)¶ß/g, 'ﬂ°°$1¶ß')
++    .replace(/&ﬂ°[xX]([0-9a-fA-F]+)¶ß/g, (_m, hex: string) => {
++      const cp = Number.parseInt(hex, 16);
++      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? `ﬂ°°${cp}¶ß` : 'ﬂ°°65533¶ß';
++    });
++  const escaped = normalized
 +    .replace(/&/g, '&amp;')
 +    .replace(/</g, '&lt;')
 +    .replace(/>/g, '&gt;')
@@ -663,7 +669,7 @@ index 49145b2..2c9740c 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +578,286 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +584,286 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -952,25 +958,3 @@ index 49145b2..2c9740c 100644
    }
  
    const layoutDefinition = layoutAlgorithms[data4Layout.layoutAlgorithm];
-diff --git a/packages/mermaid/src/rendering-util/rendering-elements/edges.js b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
-index 1f88ca4..436d2cf 100644
---- a/packages/mermaid/src/rendering-util/rendering-elements/edges.js
-+++ b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
-@@ -834,7 +834,7 @@ export const insertEdge = function (
- 
-     svgPath = select(svgPathNode)
-       .select('path')
--      .attr('id', `${diagramId}-${edge.id}`)
-+      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
-       .attr(
-         'class',
-         ' ' +
-@@ -857,7 +857,7 @@ export const insertEdge = function (
-     svgPath = elem
-       .append('path')
-       .attr('d', linePath)
--      .attr('id', `${diagramId}-${edge.id}`)
-+      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
-       .attr(
-         'class',
-         ' ' +

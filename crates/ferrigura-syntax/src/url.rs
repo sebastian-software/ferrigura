@@ -368,16 +368,11 @@ fn preserve_encoded_url(url: &str, sanitized: &str) -> Option<String> {
             url_tokens.as_ref(),
         ));
     }
-    if url_scheme(url).is_none() && url_scheme(sanitized).is_none() {
-        return Some(finalize_raw(prepared.into_owned(), url_tokens.as_ref()));
-    }
-    if first_scheme_delimiter_is_relative(url).is_some()
-        && first_scheme_delimiter_is_relative(sanitized).is_some()
+    if !is_http_scheme_prefix(sanitized)
+        && !has_literal_scheme(url)
+        && (url_scheme(url).is_none() || first_scheme_delimiter_is_relative(url).is_some())
     {
-        return Some(finalize_raw(
-            prepared.replace('\\', "/"),
-            url_tokens.as_ref(),
-        ));
+        return Some(finalize_raw(prepared.into_owned(), url_tokens.as_ref()));
     }
     None
 }
@@ -403,9 +398,15 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
         Some(end) => &url[..end],
         None => url,
     };
+    let Some(html_decoded) = decode_sink_prefix_html_only_bounded(head, MAX_DECODE_PASSES) else {
+        return BLANK_URL;
+    };
+    if !html_decoded.chars().all(is_sink_ignored) && !is_allowed_sink_candidate(&html_decoded) {
+        return BLANK_URL;
+    }
     match decode_sink_prefix_bounded(head, MAX_DECODE_PASSES) {
         Some(decoded)
-            if decoded.chars().all(is_sink_ignored) || is_allowed_sink_candidate(&decoded) =>
+            if decoded.chars().all(is_sink_ignored) || !is_blocked_active_scheme(&decoded) =>
         {
             url
         }
@@ -765,6 +766,44 @@ fn truncate_at_scheme_delimiter_bounded(text: &str, max_passes: usize) -> Option
     Some(head)
 }
 
+/// Runs one non-percent obfuscation-decoding step for a render-sink scheme prefix: HTML5 numeric
+/// character references, control entities, control characters, and whitespace escapes, without
+/// percent-decoding (since browsers never percent-decode before scheme parsing).
+fn decode_sink_step_html_only(text: &str) -> String {
+    let entities = decode_html_characters_sink(text);
+    let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
+    let without_controls = remove_ctrl(&without_newlines);
+    let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
+    js_trim(&without_escapes).to_owned()
+}
+
+/// Runs [`decode_sink_step_html_only`] until fixpoint or `max_passes` (without percent-decoding),
+/// so HTML character references such as `notes&#x3A;item` are caught against the full scheme
+/// allowlist while percent-encoded relative paths such as `docs%3Amanual/one.html` remain
+/// relative.
+fn decode_sink_prefix_html_only_bounded(url: &str, max_passes: usize) -> Option<String> {
+    let mut decoded = truncate_at_scheme_delimiter_bounded(js_trim(url), max_passes)?.to_owned();
+    let mut passes_used = 0;
+    while passes_used < max_passes {
+        let step = decode_sink_step_html_only(&decoded);
+        let next_passes = passes_used + usize::from(step != decoded);
+        let next =
+            truncate_at_scheme_delimiter_bounded(&step, max_passes.saturating_sub(next_passes))?
+                .to_owned();
+        if next == decoded && !needs_another_sink_pass(&next) {
+            return Some(decoded);
+        }
+        if next == decoded {
+            return None;
+        }
+        decoded = next;
+        passes_used += 1;
+    }
+    let final_step = decode_sink_step_html_only(&decoded);
+    let check = truncate_at_scheme_delimiter_bounded(&final_step, 0)?;
+    (check == decoded && !needs_another_sink_pass(&decoded)).then_some(decoded)
+}
+
 /// Runs [`decode_sink_step`] on a sink scheme prefix until it reaches a fixpoint (catching
 /// nested percent escapes such as `notes%25253Adoc`, malformed trailing percent escapes such as
 /// `notes%3Afoo%FF`, and nested HTML entities) or exceeds `max_passes`, returning `None`
@@ -880,6 +919,17 @@ fn leading_scheme(text: &str) -> Option<&str> {
             .get(.."&colon;".len())
             .is_some_and(|head| head.eq_ignore_ascii_case("&colon;"));
     has_colon.then_some(&text[..end])
+}
+
+/// Whether `candidate` (after stripping ignored whitespace/controls) starts with a dangerous
+/// active scheme (`javascript:`, `vbscript:`, or `data:`).
+fn is_blocked_active_scheme(candidate: &str) -> bool {
+    let stripped: String = candidate.chars().filter(|&c| !is_sink_ignored(c)).collect();
+    leading_scheme(&stripped).is_some_and(|scheme| {
+        scheme.eq_ignore_ascii_case("javascript")
+            || scheme.eq_ignore_ascii_case("vbscript")
+            || scheme.eq_ignore_ascii_case("data")
+    })
 }
 
 /// Whether `candidate` is non-empty after stripping ignored whitespace/controls and has either no
@@ -2702,10 +2752,9 @@ mod tests {
             "file:///etc/passwd",
             "custom:thing",
             "a:b",
-            "a%3Ab",
-            "notes%25253Adoc",
-            "notes%3Afoo%FF",
-            "notes%253Afoo%FF",
+            "javascript%25253Aalert(1)",
+            "data%3Afoo%FF",
+            "data%253Afoo%FF",
             "notes&#x3A;item",
             "notes&#X3a;item",
             "&#x6a;avascript:alert(1)",
@@ -3211,6 +3260,19 @@ mod tests {
             guard_url("version 1: release notes.html", false),
             "version 1: release notes.html"
         );
+        assert_eq!(
+            format_url("docs%3Amanual/one.html", false).as_deref(),
+            Some("docs%3Amanual/one.html")
+        );
+        assert_eq!(
+            guard_url("docs%3Amanual/one.html", false),
+            "docs%3Amanual/one.html"
+        );
+        assert_eq!(
+            format_url("docs%3Amanual.html", false).as_deref(),
+            Some("docs%3Amanual.html")
+        );
+        assert_eq!(guard_url("a%3Ab", false), "a%3Ab");
         assert_eq!(
             guard_url("chapter two: intro.html", false),
             "chapter two: intro.html"

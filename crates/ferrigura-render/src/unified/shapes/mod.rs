@@ -301,7 +301,7 @@ pub fn node_svg_with_security(
     links: LinkForm,
     loose: bool,
 ) -> String {
-    let dom_id = crate::common::resolve_entity_placeholders(&node.dom_id);
+    let dom_id = ferrigura_syntax::url::resolve_url_entity_placeholders(&node.dom_id);
     node_svg_with_resolved(node, shape, svg_id, links, loose, &dom_id, None)
 }
 

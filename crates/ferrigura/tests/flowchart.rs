@@ -422,7 +422,8 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         "data:text/html,<script>alert(1)</script>",
         "notes://do-your-thing/id",
         "notes#58;meeting",
-        "a%3Ab",
+        "a:b",
+        "javascript%3Aalert(1)",
         "javascript&colon;alert(1)",
         "%6aavascript:alert(1)",
         "java\tscript:alert(1)",
@@ -819,12 +820,16 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
     // Relative filenames with spaces before `:` stay intact, and flowchart image URLs resolve
     // HTML numeric references without inserting a stray `&`.
     let space_and_img_ref = render(
-        "flowchart TD\nA[x]\nB@{ img: \"https://example.org/word&#169;.png\", w: 48, h: 48 }\nclick A \"version 1: release notes.html\"\n",
+        "flowchart TD\nA[x]\nB@{ img: \"https://example.org/word&#169;.png\", w: 48, h: 48 }\nC[z]\nclick A \"version 1: release notes.html\"\nclick C \"docs%3Amanual/one.html\"\n",
         &Value::empty_object(),
     )
     .expect("renders");
     assert!(
         space_and_img_ref.contains("xlink:href=\"version 1: release notes.html\""),
+        "{space_and_img_ref}"
+    );
+    assert!(
+        space_and_img_ref.contains("xlink:href=\"docs%3Amanual/one.html\""),
         "{space_and_img_ref}"
     );
     assert!(

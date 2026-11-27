@@ -579,6 +579,15 @@ fn starts_state_as_keyword(rest: &str) -> bool {
     strip_ascii_ci_word(rest, "as").is_some_and(|after| !after.chars().next().is_some_and(is_word))
 }
 
+/// Whether a `#` immediately after `before` begins a `stateDiagram` line comment (at line start
+/// or immediately after whitespace, `;`, `{`, or `}`).
+fn is_state_comment_boundary(before: &str) -> bool {
+    before
+        .chars()
+        .next_back()
+        .is_none_or(|prev| is_js_space(prev) || matches!(prev, ';' | '{' | '}'))
+}
+
 /// Whether `rest` starts with the `note` keyword (ASCII case-insensitive) followed by whitespace
 /// or line end (since line-by-line scanners strip the trailing newline).
 fn starts_state_note_keyword(rest: &str) -> bool {
@@ -902,6 +911,13 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
         if ch == '%' && line.as_bytes().get(at + 1) == Some(&b'%') {
             break;
         }
+        if dialects.state_diagram_dialect
+            && !in_style_stmt
+            && ch == '#'
+            && is_state_comment_boundary(&line[..at])
+        {
+            break;
+        }
         if ch == '"' && !prev_was_alnum {
             state.in_quotes = true;
             stmt_start = false;
@@ -928,6 +944,12 @@ fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: Enc
         }
         prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
+            stmt_start = true;
+            in_style_stmt = false;
+            in_class_stmt = false;
+            continue;
+        }
+        if dialects.state_diagram_dialect && !in_style_stmt && matches!(ch, '{' | '}') {
             stmt_start = true;
             in_style_stmt = false;
             in_class_stmt = false;
@@ -1319,6 +1341,13 @@ fn color_semicolon_byte(
         if ch == '%' && line.as_bytes().get(at + 1) == Some(&b'%') {
             break;
         }
+        if dialects.state_diagram_dialect
+            && !in_style_or_classdef
+            && ch == '#'
+            && is_state_comment_boundary(&line[..at])
+        {
+            break;
+        }
         if ch == '"' && !prev_was_alnum {
             state.in_quotes = true;
             stmt_start = false;
@@ -1365,6 +1394,15 @@ fn color_semicolon_byte(
                 seen_colon = false;
                 continue;
             }
+            stmt_start = true;
+            in_target_stmt = false;
+            in_style_or_classdef = false;
+            in_class_stmt = false;
+            seen_colon = false;
+            seen_colon_hash = false;
+            continue;
+        }
+        if dialects.state_diagram_dialect && !in_style_or_classdef && matches!(ch, '{' | '}') {
             stmt_start = true;
             in_target_stmt = false;
             in_style_or_classdef = false;
@@ -1798,6 +1836,15 @@ impl StyleStmtTracker {
             self.prev_was_alnum = false;
             return;
         }
+        if self.dialects.state_diagram_dialect
+            && self.kind != StmtKind::Style
+            && ch == '#'
+            && is_state_comment_boundary(&src[..at])
+        {
+            self.in_plain_line = true;
+            self.prev_was_alnum = false;
+            return;
+        }
         if ch == '"' && !self.prev_was_alnum {
             self.state.in_quotes = true;
             if self.kind == StmtKind::Start {
@@ -1838,6 +1885,13 @@ impl StyleStmtTracker {
                 self.last_allows_hex = false;
                 return;
             }
+            self.reset();
+            return;
+        }
+        if self.dialects.state_diagram_dialect
+            && self.kind != StmtKind::Style
+            && matches!(ch, '{' | '}')
+        {
             self.reset();
             return;
         }
@@ -2076,6 +2130,10 @@ mod tests {
             "stateDiagram style A fill:#abc;\n  A --> B\n",
             "stateDiagram-v2\n  A --> B\n  note \"foo\" as Some \"odd text\n  style A fill:#abc;\n",
             "stateDiagram-v2\n  A --> B\n  note \"foo\" as\n    Some \"odd text\n  style A fill:#abc;\n",
+            "stateDiagram-v2\n  state S {\n    A --> B\n  } style C fill:#abc;\n",
+            "stateDiagram-v2\n  state S { style A fill:#abc;\n  }\n",
+            "stateDiagram-v2\n  A --> B\n  # draft \"only one quote\n  style A fill:#abc;\n",
+            "stateDiagram-v2\n  A --> B # \"inline draft\n  style A fill:#abc;\n",
         ] {
             let expected = input.replace("fill:#abc;", "fill:#abc");
             assert_eq!(encode_entities(input), expected, "input={input:?}");
