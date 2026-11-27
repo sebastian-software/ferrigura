@@ -776,12 +776,21 @@ fn sanitize_dictionary(value: &mut Value, pattern: &Regex) {
     let Value::Object(map) = value else {
         return;
     };
-    map.retain(|key, entry| {
-        !(key.starts_with("__")
-            || key.contains("proto")
-            || key.contains("constr")
-            || !matches!(entry, Value::String(text) if pattern.is_match(text)))
-    });
+    let rejected: Vec<String> = map
+        .iter()
+        .filter(|(key, entry)| {
+            key.starts_with("__")
+                || key.contains("proto")
+                || key.contains("constr")
+                || !matches!(entry, Value::String(text) if pattern.is_match(text))
+        })
+        .map(|(key, _)| key.clone())
+        .collect();
+    for key in rejected {
+        if let Some(removed) = map.remove(&key) {
+            drop_iterative(removed);
+        }
+    }
 }
 
 fn theme_value_pattern() -> &'static Regex {

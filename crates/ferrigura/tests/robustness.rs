@@ -789,17 +789,24 @@ fn deeply_nested_config_value_does_not_overflow() {
         "deep configs differing in +0.0 vs -0.0 must not collide on derived SVG ID"
     );
 
-    // Replacing a deep target in `deep_merge` and removing an unknown deep key in
-    // `sanitize_directive` must drop iteratively without overflowing a 2 MiB stack.
+    // Replacing a deep target in `deep_merge` and removing unknown or invalid dictionary deep
+    // values in `sanitize_directive` must drop iteratively without overflowing a 2 MiB stack.
     let mut deep_target = Value::Null;
     let mut unknown_deep = Value::Null;
+    let mut dict_deep = Value::Null;
     for _ in 0..5_000 {
         deep_target = Value::Array(vec![deep_target]);
         unknown_deep = Value::Array(vec![unknown_deep]);
+        dict_deep = Value::Array(vec![dict_deep]);
     }
     deep_merge(&mut deep_target, &Value::Null);
-    let mut dir_with_unknown =
-        Value::Object(BTreeMap::from([("unknown".to_owned(), unknown_deep)]));
+    let mut dir_with_unknown = Value::Object(BTreeMap::from([
+        ("unknown".to_owned(), unknown_deep),
+        (
+            "filenameIcons".to_owned(),
+            Value::Object(BTreeMap::from([("README.md".to_owned(), dict_deep)])),
+        ),
+    ]));
     ferrigura_model::config::sanitize_directive(&mut dir_with_unknown);
 
     drop_iterative(deep_obj);
