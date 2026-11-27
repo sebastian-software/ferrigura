@@ -17,7 +17,7 @@ use ferrigura_text::EmbeddedFamily;
 
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
-use crate::svg::{css_text, font_faces};
+use crate::svg::{css_text_owned, font_faces};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens that the rules name, each declared as a custom property on the diagram's id, in the
@@ -233,9 +233,14 @@ pub fn style_sheet(
         rules.push_str(&design_rules(&id));
     }
 
-    // The diagram's `classDef` rules: the classes' declarations, on every state of the class.
+    // The diagram's `classDef` rules: the classes' declarations, on every state of the class. A
+    // class whose id holds braces or a comma, or whose styles hold braces, is left out so it
+    // cannot break out of the diagram's id scope.
     for class in classes {
-        if class.styles.is_empty() {
+        if class.id.contains(['{', '}', ','])
+            || class.styles.is_empty()
+            || class.styles.iter().any(|style| style.contains(['{', '}']))
+        {
             continue;
         }
         let declarations: Vec<String> = class
@@ -255,7 +260,7 @@ pub fn style_sheet(
     } else {
         font_faces(svg_id, families)
     };
-    css_text(&format!(
+    css_text_owned(format!(
         "{faces}{}{rules}",
         custom_properties(svg_id, theme, globals, design)
     ))
@@ -643,7 +648,7 @@ fn custom_properties(
             let mut declarations = colour_declarations(tokens);
             // The title of a composite state reads the title color, which the state rules do not.
             if let Some(colour) = tokens.title_color.text() {
-                let _ = write!(declarations, "--titleColor:{};", css_text(&colour));
+                let _ = write!(declarations, "--titleColor:{colour};");
             }
             declarations.push_str(design::declarations(tone));
             rule(&id, &declarations)
@@ -680,8 +685,67 @@ fn colour_declarations(tokens: &ThemeTokens) -> String {
     let mut out = String::new();
     for (name, token) in color_tokens(tokens) {
         if let Some(colour) = token.text() {
-            out.push_str(&format!("--{name}:{};", css_text(&colour)));
+            out.push_str(&format!("--{name}:{colour};"));
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use ferrigura_model::config::MermaidConfig;
+    use ferrigura_model::theme::Theme;
+    use ferrigura_model::value::Value;
+
+    use super::*;
+
+    #[test]
+    fn class_def_with_braces_or_comma_is_left_out_and_ampersand_is_escaped_once() {
+        let mut vars = Theme::ReduxColor.variables(None);
+        if let Some(obj) = vars.as_object_mut() {
+            obj.insert("stateBkg".to_owned(), Value::from("a&b"));
+        }
+        let tokens = ThemeTokens::from_value(&vars);
+        let classes = [
+            ClassDef {
+                id: "evilStyle".to_owned(),
+                styles: vec!["fill:red} body{display:none} .x{color:red".to_owned()],
+                text_styles: Vec::new(),
+            },
+            ClassDef {
+                id: "evil,body".to_owned(),
+                styles: vec!["fill:red".to_owned()],
+                text_styles: Vec::new(),
+            },
+            ClassDef {
+                id: "evil{x}".to_owned(),
+                styles: vec!["fill:red".to_owned()],
+                text_styles: Vec::new(),
+            },
+            ClassDef {
+                id: "good".to_owned(),
+                styles: vec!["fill:green".to_owned()],
+                text_styles: Vec::new(),
+            },
+        ];
+        let sheet = style_sheet(
+            "state-test",
+            ThemeView {
+                light: &tokens,
+                dark: None,
+            },
+            &Globals::of(&MermaidConfig::default()),
+            &classes,
+            &[],
+            None,
+        );
+        assert!(sheet.contains("--stateBkg:a&amp;b;"), "{sheet}");
+        assert!(!sheet.contains("&amp;amp;"), "{sheet}");
+        assert!(!sheet.contains("body"), "{sheet}");
+        assert!(!sheet.contains("evil"), "{sheet}");
+        assert!(
+            sheet.contains("#state-test .good &gt; *{fill:green !important;}"),
+            "{sheet}"
+        );
+    }
 }

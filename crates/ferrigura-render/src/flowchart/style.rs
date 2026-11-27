@@ -19,7 +19,7 @@ use ferrigura_text::EmbeddedFamily;
 use super::policy::FlowchartRouting;
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
-use crate::svg::{css_text_into, css_text_owned, escape, font_faces_into};
+use crate::svg::{css_text_owned, escape, font_faces_into};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the rules, each declared as a custom property on the diagram's id, in the order
@@ -387,12 +387,10 @@ fn write_color_declarations(css: &mut String, tokens: &ThemeTokens) {
     }
 }
 
-/// One custom property whose value is a theme's text. The value is escaped for XML here, and the
-/// whole sheet once more when it is complete.
+/// One custom property whose value is a theme's text. The whole sheet is escaped for XML once when
+/// it is complete.
 fn write_property(css: &mut String, name: fmt::Arguments<'_>, value: &str) {
-    let _ = write!(css, "{name}:");
-    css_text_into(css, value);
-    css.push(';');
+    let _ = write!(css, "{name}:{value};");
 }
 
 /// The entry of a list at an index, wrapped around; `None` for an empty list.
@@ -434,11 +432,15 @@ fn write_palette_rules(css: &mut String, id: &str, look: &str, palette: &Palette
 
 /// The `classDef` rules of the classes (`createCssStyles` in `mermaidAPI.ts`): each class styles the
 /// shapes of its nodes with `!important`, and the text of its labels when it has a color. A class
-/// whose styles hold braces is left out: the reference would scope such text under the id, which is
-/// not worth reproducing for a style that could only be an attack.
+/// whose id holds braces or a comma, or whose styles hold braces, is left out: the reference would
+/// scope such text under the id, which is not worth reproducing for a style that could only be an
+/// attack.
 fn write_class_rules(css: &mut String, id: &str, classes: &[FlowClass]) {
     for class in classes {
         let class_id = &class.id;
+        if class_id.contains(['{', '}', ',']) {
+            continue;
+        }
         if let Some(declarations) = important(&class.styles) {
             for element in ["rect", "polygon", "ellipse", "circle", "path"] {
                 let _ = write!(css, "{id} .{class_id} {element}{{{declarations}}}");
@@ -637,10 +639,20 @@ mod tests {
 
     #[test]
     fn a_class_with_braces_is_left_out() {
-        let classes = [FlowClass {
-            id: "bad".to_owned(),
-            styles: vec!["fill:red}body{color:blue".to_owned()],
-        }];
+        let classes = [
+            FlowClass {
+                id: "bad".to_owned(),
+                styles: vec!["fill:red}body{color:blue".to_owned()],
+            },
+            FlowClass {
+                id: "bad,body".to_owned(),
+                styles: vec!["fill:red".to_owned()],
+            },
+            FlowClass {
+                id: "bad{x}".to_owned(),
+                styles: vec!["fill:red".to_owned()],
+            },
+        ];
         let sheet = style_sheet(
             "flowchart",
             ThemeView {
@@ -652,6 +664,27 @@ mod tests {
             FlowchartRouting::Mermaid,
         );
         assert!(!sheet.contains(".bad"), "{sheet}");
+        assert!(!sheet.contains("body"), "{sheet}");
+    }
+
+    #[test]
+    fn ampersand_in_theme_variables_is_escaped_once() {
+        let mut vars = light();
+        if let Some(obj) = vars.as_object_mut() {
+            obj.insert("nodeBorder".to_owned(), Value::from("a&b"));
+        }
+        let sheet = style_sheet(
+            "flowchart",
+            ThemeView {
+                light: &ThemeTokens::from_value(&vars),
+                dark: None,
+            },
+            &globals("redux-color", "neo"),
+            &[],
+            FlowchartRouting::Mermaid,
+        );
+        assert!(sheet.contains("--nodeBorder:a&amp;b;"), "{sheet}");
+        assert!(!sheet.contains("&amp;amp;"), "{sheet}");
     }
 
     #[test]

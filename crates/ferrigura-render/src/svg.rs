@@ -162,9 +162,9 @@ pub fn xlink_declaration(links: bool) -> &'static str {
 /// Text for a `<style>` element: the characters that would end the element or start a reference
 /// are escaped, and the quotes of CSS are kept as they are.
 pub fn css_text(css: &str) -> String {
-    css.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
+    let mut out = String::with_capacity(css.len());
+    css_text_into(&mut out, css);
+    out
 }
 
 /// Appends the style text to `out`, escaped as [`css_text`] escapes it. The runs between the
@@ -187,8 +187,11 @@ pub(crate) fn css_text_into(out: &mut String, css: &str) {
 
 /// Escape owned style text, retaining its allocation when no XML escaping is needed.
 pub(crate) fn css_text_owned(css: String) -> String {
-    if memchr::memchr3(b'&', b'<', b'>', css.as_bytes()).is_some() {
-        css_text(&css)
+    if let Some(first) = memchr::memchr3(b'&', b'<', b'>', css.as_bytes()) {
+        let mut out = String::with_capacity(css.len() + 8);
+        out.push_str(&css[..first]);
+        css_text_into(&mut out, &css[first..]);
+        out
     } else {
         css
     }

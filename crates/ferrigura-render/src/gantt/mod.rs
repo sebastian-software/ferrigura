@@ -110,19 +110,17 @@ pub fn render_with_animation(
     } else {
         font_faces(input.id, &families)
     };
-    let mut style = style::style_element(input.id, input.theme, &family, &faces);
+    let mut extra = String::new();
     if let Some(css) = chart.regular.css_reference() {
-        style = style.replace(
-            "</style>",
-            &format!("#{} .grid{{font-family:{css};}}</style>", input.id),
-        );
+        extra.push_str(&format!("#{} .grid{{font-family:{css};}}", input.id));
     }
     if let Some(css) = italic.css_reference() {
-        style = style.replace(
-            "</style>",
-            &format!("#{} .milestoneText{{font-family:{css};}}</style>", input.id),
-        );
+        extra.push_str(&format!(
+            "#{} .milestoneText{{font-family:{css};}}",
+            input.id
+        ));
     }
+    let style = style::style_element(input.id, input.theme, &family, &faces, &extra);
     let title = input.diagram.acc_title.as_str();
     let description = input.diagram.acc_descr.as_str();
     let accessibility = a11y::children(input.id, title, description);

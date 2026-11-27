@@ -345,7 +345,8 @@ fn definition_xml(
         ),
     };
     format!(
-        "<marker id=\"{id}\" class=\"{class}\" viewBox=\"{}\" refX=\"{}\" refY=\"{}\" markerUnits=\"userSpaceOnUse\" markerWidth=\"{}\" markerHeight=\"{}\" orient=\"auto\">{child}</marker>",
+        "<marker id=\"{}\" class=\"{class}\" viewBox=\"{}\" refX=\"{}\" refY=\"{}\" markerUnits=\"userSpaceOnUse\" markerWidth=\"{}\" markerHeight=\"{}\" orient=\"auto\">{child}</marker>",
+        escape(id),
         definition.view_box,
         definition.ref_x,
         definition.ref_y,
@@ -442,7 +443,7 @@ pub fn point_markers(svg_id: &str, diagram_type: &str) -> String {
 /// The ids are `<svgId>_<diagramType>-barbEnd` and `-barbEnd-margin`.
 #[must_use]
 pub fn barb_markers(svg_id: &str, diagram_type: &str, neo: bool, transition_color: &str) -> String {
-    let id = format!("{svg_id}_{diagram_type}-barbEnd");
+    let id = escape(&format!("{svg_id}_{diagram_type}-barbEnd"));
     if !neo {
         return format!(
             "<defs><marker id=\"{id}\" refX=\"19\" refY=\"7\" markerWidth=\"20\" markerHeight=\"14\" markerUnits=\"userSpaceOnUse\" orient=\"auto\"><path d=\"M 19,7 L9,13 L14,7 L9,1 Z\"></path></marker></defs>"
@@ -465,7 +466,8 @@ pub fn design_barb_markers(svg_id: &str, diagram_type: &str, neo: bool) -> Strin
     let id = format!("{svg_id}_{diagram_type}-barbEnd");
     let marker = |id: &str, ref_x: &str| {
         format!(
-            "<defs><marker id=\"{id}\" viewBox=\"0 0 10 9\" refX=\"{ref_x}\" refY=\"4.5\" markerWidth=\"10\" markerHeight=\"9\" markerUnits=\"userSpaceOnUse\" orient=\"auto\"><path d=\"{DESIGN_HEAD}\"></path></marker></defs>"
+            "<defs><marker id=\"{}\" viewBox=\"0 0 10 9\" refX=\"{ref_x}\" refY=\"4.5\" markerWidth=\"10\" markerHeight=\"9\" markerUnits=\"userSpaceOnUse\" orient=\"auto\"><path d=\"{DESIGN_HEAD}\"></path></marker></defs>",
+            escape(id)
         )
     };
     let mut out = marker(&id, "10");
@@ -819,6 +821,23 @@ mod tests {
     fn a_colored_polygon_keeps_its_attributes() {
         let marker = coloured_marker("svg", FLOWCHART, Kind::Point, true, true, "red");
         assert!(!marker.contains("stroke=\"red\""), "{marker}");
+    }
+
+    #[test]
+    fn marker_ids_escape_special_xml_characters_in_svg_id() {
+        let id = "id\"&<>";
+        let escaped = "id&quot;&amp;&lt;&gt;";
+        for svg in [
+            markers(id, FLOWCHART),
+            point_markers(id, FLOWCHART),
+            barb_markers(id, "stateDiagram", false, "#000"),
+            barb_markers(id, "stateDiagram", true, "#000"),
+            design_barb_markers(id, "stateDiagram", true),
+            coloured_marker(id, FLOWCHART, Kind::Point, false, false, "#f00"),
+        ] {
+            assert!(svg.contains(&format!("id=\"{escaped}_")), "{svg}");
+            assert!(!svg.contains("id=\"id\""), "{svg}");
+        }
     }
 }
 

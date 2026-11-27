@@ -22,7 +22,7 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::context::{Context, ThemeView};
-use crate::svg::{arc_path, css_text, escape, font_faces, number};
+use crate::svg::{arc_path, css_text_into, css_text_owned, escape, font_faces, number};
 
 const MARGIN: f64 = 40.0;
 const LEGEND_RECT_SIZE: f64 = 18.0;
@@ -433,11 +433,7 @@ fn attribute(name: &str, token: &Token) -> String {
 fn declarations(tokens: &ThemeTokens) -> String {
     color_tokens(tokens)
         .iter()
-        .filter_map(|(name, token)| {
-            token
-                .text()
-                .map(|colour| format!("--{name}: {};", css_text(&colour)))
-        })
+        .filter_map(|(name, token)| token.text().map(|colour| format!("--{name}: {colour};")))
         .collect()
 }
 
@@ -489,11 +485,6 @@ fn style_element(
             )
         })
         .collect();
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(id, families)
-    };
     let rules = format!(
         "#{id} .pieCircle{{stroke: var(--pieStrokeColor);stroke-width: {stroke_width};opacity: {opacity};}}\
 #{id} .pieCircle.highlighted{{scale: 1.05;opacity: 1;}}\
@@ -504,10 +495,15 @@ fn style_element(
 #{id} .legend text{{fill: var(--pieLegendTextColor);font-family: {family};font-size: {legend_size};}}\
 #{id} text{{white-space: pre;}}"
     );
-    format!(
-        "<style>{}{declared}{rules}{slots}</style>",
-        css_text(&faces)
-    )
+    let mut out = String::from("<style>");
+    if !families.is_empty() {
+        out.push_str(&css_text_owned(font_faces(id, families)));
+    }
+    css_text_into(&mut out, &declared);
+    css_text_into(&mut out, &rules);
+    css_text_into(&mut out, &slots);
+    out.push_str("</style>");
+    out
 }
 
 /// A length rounded to the browser's layout unit of 1/64 px. A width that is not on that grid makes

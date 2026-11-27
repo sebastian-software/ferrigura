@@ -86,6 +86,427 @@ fn typed_entities_are_written_as_xml_reads_them() {
     }
 }
 
+#[test]
+fn style_breakout_payloads_stay_well_formed_without_script_injection() {
+    let payload = "16px}</style><script>alert(1)</script><style>";
+    let cases: [(&str, &str, serde_json::Value, bool); 11] = [
+        (
+            "pie-directive",
+            "%%{init: {'themeVariables': {'pieTitleTextSize': '25px}</style><script>alert(1)</script><style>'}}}%%\npie\naccTitle: T\naccDescr: D\n\"A\": 60\n\"B\": 40\n",
+            serde_json::json!({}),
+            true,
+        ),
+        (
+            "pie",
+            "pie\naccTitle: T\naccDescr: D\n\"A\": 60\n\"B\": 40\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "pieTitleTextSize": payload,
+                    "pieSectionTextSize": payload,
+                    "pieLegendTextSize": payload,
+                    "pieStrokeWidth": payload,
+                    "pieOuterStrokeWidth": payload,
+                    "pieOpacity": payload,
+                    "fontFamily": payload,
+                }
+            }),
+            true,
+        ),
+        (
+            "gantt",
+            "gantt\naccTitle: T\naccDescr: D\ndateFormat YYYY-MM-DD\nsection S\nTask :t1, 2024-01-01, 2d\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "fontSize": payload,
+                    "fontFamily": payload,
+                    "titleColor": payload,
+                }
+            }),
+            true,
+        ),
+        (
+            "flowchart",
+            "flowchart LR\naccTitle: T\naccDescr: D\nA --> B\nclassDef ok fill:#f00\nclass A ok\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "nodeBorder": payload,
+                    "fontFamily": payload,
+                }
+            }),
+            true,
+        ),
+        (
+            "state",
+            "stateDiagram-v2\naccTitle: T\naccDescr: D\n[*] --> Idle\nclassDef evil fill:red} body{display:none} .x{color:red\nclass Idle evil\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "stateBkg": payload,
+                    "fontFamily": payload,
+                }
+            }),
+            false,
+        ),
+        (
+            "class",
+            "classDiagram\naccTitle: T\naccDescr: D\nclass Animal\nAnimal <|-- Dog\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "nodeBorder": payload,
+                    "classText": payload,
+                }
+            }),
+            false,
+        ),
+        (
+            "er",
+            "erDiagram\naccTitle: T\naccDescr: D\nCUSTOMER ||--o{ ORDER : places\n",
+            serde_json::json!({
+                "look": "neo]{body{display:none}",
+                "themeVariables": {
+                    "nodeBorder": payload,
+                    "mainBkg": payload,
+                }
+            }),
+            false,
+        ),
+        (
+            "mindmap",
+            "mindmap\n  Root\n    Leaf\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "nodeBorder": payload,
+                    "fontFamily": payload,
+                }
+            }),
+            true,
+        ),
+        (
+            "sequence",
+            "sequenceDiagram\naccTitle: T\naccDescr: D\nAlice->>Bob: hi\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "actorBorder": payload,
+                    "fontFamily": payload,
+                }
+            }),
+            false,
+        ),
+        (
+            "xychart",
+            "xychart-beta\naccTitle: T\naccDescr: D\nx-axis [a, b]\nbar [1, 2]\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "textColor": payload,
+                    "fontFamily": payload,
+                }
+            }),
+            true,
+        ),
+        (
+            "quadrant",
+            "quadrantChart\naccTitle: T\naccDescr: D\nx-axis Low --> High\ny-axis Low --> High\nPoint A: [0.3, 0.6]\n",
+            serde_json::json!({
+                "themeVariables": {
+                    "textColor": payload,
+                    "fontFamily": payload,
+                }
+            }),
+            false,
+        ),
+    ];
+
+    for (name, text, config, animated) in cases {
+        let config = Value::from(config);
+        let options = RenderOptions {
+            now: Some(NOW),
+            animation: animated.then(ferrigura::Animation::default),
+            ..RenderOptions::default()
+        };
+        let svg = render_with(text, &config, &options)
+            .unwrap_or_else(|error| panic!("{name} failed to render: {error}"));
+        let doc = roxmltree::Document::parse(&svg)
+            .unwrap_or_else(|error| panic!("{name} is not well-formed XML ({error}): {svg}"));
+        assert!(
+            !doc.descendants().any(|node| node.has_tag_name("script")),
+            "{name} injected a <script> element"
+        );
+        assert!(
+            !svg.contains("</style><script>"),
+            "{name} broke out of <style>"
+        );
+        if name == "state" || name == "er" {
+            assert!(
+                !svg.contains("body{display:none}"),
+                "{name} broke out of diagram id scope"
+            );
+        }
+    }
+}
+
+#[test]
+fn direct_renderers_escape_special_characters_in_svg_id() {
+    use ferrigura_model::config::{MermaidConfig, defaults, typed};
+    use ferrigura_model::theme::{Theme, ThemeTokens};
+    use ferrigura_render::context::{Context, Globals, ThemeView};
+
+    let config: MermaidConfig = typed(&defaults()).unwrap();
+    let globals = Globals::of(&config);
+    let tokens = ThemeTokens::from_value(&Theme::ReduxColor.variables(None));
+    let theme = ThemeView {
+        light: &tokens,
+        dark: None,
+    };
+    let bad_id = "id\"&</style><script>alert(1)</script>";
+    let anim = Some(ferrigura_render::animation::Animation::default());
+    let unified = ferrigura_render::unified::Section::of(&config);
+
+    let pie_model =
+        ferrigura_syntax::pie::parse("pie\naccTitle: T\naccDescr: D\n\"A\": 60\n\"B\": 40\n")
+            .unwrap();
+    let gantt_model = ferrigura_syntax::gantt::parse(
+        "gantt\naccTitle: T\naccDescr: D\ndateFormat YYYY-MM-DD\nsection S\nTask :t1, 2024-01-01, 2d\n",
+    )
+    .unwrap();
+    let flow_model =
+        ferrigura_syntax::flowchart::parse("flowchart LR\naccTitle: T\naccDescr: D\nA --> B\n")
+            .unwrap();
+    let state_model =
+        ferrigura_syntax::state::parse("stateDiagram-v2\naccTitle: T\naccDescr: D\n[*] --> Idle\n")
+            .unwrap();
+    let class_model = ferrigura_syntax::class::parse(
+        "classDiagram\naccTitle: T\naccDescr: D\nclass Animal\nAnimal <|-- Dog\n",
+    )
+    .unwrap();
+    let er_model = ferrigura_syntax::er::parse(
+        "erDiagram\naccTitle: T\naccDescr: D\nCUSTOMER ||--o{ ORDER : places\n",
+    )
+    .unwrap();
+    let mindmap_model = ferrigura_syntax::mindmap::parse("mindmap\n  Root\n    Leaf\n").unwrap();
+    let sequence_model = ferrigura_syntax::sequence::parse(
+        "sequenceDiagram\naccTitle: T\naccDescr: D\nAlice->>Bob: hi\n",
+    )
+    .unwrap();
+    let xychart_model = ferrigura_syntax::xychart::parse(
+        "xychart-beta\naccTitle: T\naccDescr: D\nx-axis [a, b]\nbar [1, 2]\n",
+    )
+    .unwrap();
+    let quadrant_model = ferrigura_syntax::quadrant_chart::parse(
+        "quadrantChart\naccTitle: T\naccDescr: D\nx-axis Low --> High\ny-axis Low --> High\nPoint A: [0.3, 0.6]\n",
+    )
+    .unwrap();
+
+    let gantt_section = ferrigura_render::gantt::GanttSection {
+        config: &config.gantt,
+        now: NOW,
+    };
+    let mindmap_section = ferrigura_render::mindmap::MindmapSection {
+        mindmap: &config.mindmap,
+        unified,
+    };
+
+    let svgs: [(&str, String); 10] = [
+        (
+            "pie",
+            ferrigura_render::pie::render_with_animation(
+                &Context {
+                    fonts: None,
+                    diagram: &pie_model,
+                    section: &config.pie,
+                    globals: &globals,
+                    theme,
+                    id: bad_id,
+                },
+                anim,
+            )
+            .unwrap(),
+        ),
+        (
+            "gantt",
+            ferrigura_render::gantt::render_with_animation(
+                &Context {
+                    fonts: None,
+                    diagram: &gantt_model,
+                    section: &gantt_section,
+                    globals: &globals,
+                    theme,
+                    id: bad_id,
+                },
+                anim,
+            )
+            .unwrap(),
+        ),
+        (
+            "flowchart",
+            ferrigura_render::flowchart::render_with_animation(
+                &Context {
+                    fonts: None,
+                    diagram: &flow_model,
+                    section: &unified,
+                    globals: &globals,
+                    theme,
+                    id: bad_id,
+                },
+                anim,
+            )
+            .unwrap(),
+        ),
+        (
+            "state",
+            ferrigura_render::state::render(&Context {
+                fonts: None,
+                diagram: &state_model,
+                section: &unified,
+                globals: &globals,
+                theme,
+                id: bad_id,
+            })
+            .unwrap(),
+        ),
+        (
+            "class",
+            ferrigura_render::class::render(&Context {
+                fonts: None,
+                diagram: &class_model,
+                section: &unified,
+                globals: &globals,
+                theme,
+                id: bad_id,
+            })
+            .unwrap(),
+        ),
+        (
+            "er",
+            ferrigura_render::er::render(&Context {
+                fonts: None,
+                diagram: &er_model,
+                section: &unified,
+                globals: &globals,
+                theme,
+                id: bad_id,
+            })
+            .unwrap(),
+        ),
+        (
+            "mindmap",
+            ferrigura_render::mindmap::render_with_animation(
+                &Context {
+                    fonts: None,
+                    diagram: &mindmap_model,
+                    section: &mindmap_section,
+                    globals: &globals,
+                    theme,
+                    id: bad_id,
+                },
+                anim,
+            )
+            .unwrap(),
+        ),
+        (
+            "sequence",
+            ferrigura_render::sequence::render(&Context {
+                fonts: None,
+                diagram: &sequence_model,
+                section: &config.sequence,
+                globals: &globals,
+                theme,
+                id: bad_id,
+            })
+            .unwrap(),
+        ),
+        (
+            "xychart",
+            ferrigura_render::xychart::render_with_animation(
+                &Context {
+                    fonts: None,
+                    diagram: &xychart_model,
+                    section: &config.xy_chart,
+                    globals: &globals,
+                    theme,
+                    id: bad_id,
+                },
+                anim,
+            )
+            .unwrap(),
+        ),
+        (
+            "quadrant",
+            ferrigura_render::quadrant_chart::render(&Context {
+                fonts: None,
+                diagram: &quadrant_model,
+                section: &config.quadrant_chart,
+                globals: &globals,
+                theme,
+                id: bad_id,
+            })
+            .unwrap(),
+        ),
+    ];
+
+    for (name, svg) in svgs {
+        let doc = roxmltree::Document::parse(&svg)
+            .unwrap_or_else(|error| panic!("{name} is not well-formed XML ({error}): {svg}"));
+        assert!(
+            !doc.descendants().any(|node| node.has_tag_name("script")),
+            "{name} injected a <script> element"
+        );
+        assert!(
+            !svg.contains("</style><script>"),
+            "{name} broke out of <style>"
+        );
+    }
+}
+
+#[test]
+fn css_ampersand_in_theme_variables_is_not_double_escaped() {
+    let cases: [(&str, &str, &str); 10] = [
+        ("flowchart", "flowchart LR\nA --> B\n", "nodeBorder"),
+        ("class", "classDiagram\nclass Animal\n", "nodeBorder"),
+        ("er", "erDiagram\nA ||--o{ B : has\n", "nodeBorder"),
+        ("state", "stateDiagram-v2\n[*] --> A\n", "stateBkg"),
+        ("pie", "pie\n\"A\": 1\n", "pieStrokeColor"),
+        (
+            "gantt",
+            "gantt\ndateFormat YYYY-MM-DD\nsection S\nTask :t1, 2024-01-01, 2d\n",
+            "titleColor",
+        ),
+        ("mindmap", "mindmap\n  Root\n    Leaf\n", "nodeBorder"),
+        ("sequence", "sequenceDiagram\nA->>B: hi\n", "actorBorder"),
+        (
+            "xychart",
+            "xychart-beta\nx-axis [a, b]\nbar [1, 2]\n",
+            "textColor",
+        ),
+        (
+            "quadrant",
+            "quadrantChart\nx-axis Low --> High\ny-axis Low --> High\nPoint A: [0.3, 0.6]\n",
+            "textColor",
+        ),
+    ];
+    for (name, text, token) in cases {
+        let config = Value::from(serde_json::json!({
+            "themeVariables": {
+                token: "x&y",
+            }
+        }));
+        let options = RenderOptions {
+            now: Some(NOW),
+            ..RenderOptions::default()
+        };
+        let svg = render_with(text, &config, &options)
+            .unwrap_or_else(|error| panic!("{name} failed to render: {error}"));
+        roxmltree::Document::parse(&svg)
+            .unwrap_or_else(|error| panic!("{name} is not well-formed XML: {error}"));
+        assert!(
+            svg.contains("x&amp;y"),
+            "{name} did not preserve single-escaped ampersand"
+        );
+        assert!(
+            !svg.contains("&amp;amp;"),
+            "{name} double-escaped ampersand in CSS"
+        );
+    }
+}
+
 /// What one input gave: not rendered, or rendered with the parser's error if there is one.
 enum Outcome {
     Refused,

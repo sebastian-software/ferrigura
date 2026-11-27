@@ -11,7 +11,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::ThemeView;
-use crate::svg::{css_text, font_faces};
+use crate::svg::{css_text_owned, font_faces};
 
 /// The `<style>` text of the base rules for the diagram with the id `svg_id`, with the embedded
 /// `@font-face` rules first. The font family is `font_family` as CSS reads it (quoted when it is a
@@ -92,7 +92,7 @@ pub fn base_style_sheet(
 {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:var(--nodeBorder);filter:{shadow};}}\
 :root{{--mermaid-font-family:{root_font};}}"
     );
-    css_text(&format!("{faces}{colours}{rules}"))
+    css_text_owned(format!("{faces}{colours}{rules}"))
 }
 
 /// The custom properties of the base colors of a theme's tokens, as `--name:value;` pairs. A color
