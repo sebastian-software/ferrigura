@@ -387,14 +387,56 @@ fn comment_match_end(text: &str, start: usize) -> Option<usize> {
     Some(end)
 }
 
+/// Whether the diagram's first non-blank, non-comment line is a flowchart header (`flowchart` or
+/// `graph`), where `;` separates diagram statements and `classDef` properties are comma-separated.
+fn is_flowchart_text(text: &str) -> bool {
+    for line in text.split(JS_LINE_TERMINATORS) {
+        let trimmed = line.trim_start_matches(is_js_space);
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+        return trimmed
+            .strip_prefix("flowchart")
+            .or_else(|| trimmed.strip_prefix("graph"))
+            .is_some_and(|after| {
+                after
+                    .chars()
+                    .next()
+                    .is_none_or(|c| is_js_space(c) || c == '-')
+            });
+    }
+    false
+}
+
+/// Whether `rest` (at the first non-whitespace token of a line outside quotes) starts a plain-text
+/// directive or comment (`%%`, `accTitle`, `accDescr`, `title`) whose literal `"` characters do
+/// not open a multiline quoted string.
+fn is_plain_text_line(rest: &str) -> bool {
+    if rest.starts_with("%%") {
+        return true;
+    }
+    for kw in ["accTitle", "accDescr", "title"] {
+        if let Some(after) = rest.strip_prefix(kw)
+            && after
+                .chars()
+                .next()
+                .is_some_and(|c| c == ':' || is_js_space(c))
+        {
+            return true;
+        }
+    }
+    false
+}
+
 /// `encodeEntities`: the semicolon that ends a `style` or `classDef` line with a color is dropped,
 /// and `#name;` or `#123;` become placeholders that the renderer decodes.
 pub(crate) fn encode_entities(text: &str) -> String {
     if !text.contains('#') {
         return text.to_owned();
     }
-    let text = drop_color_semicolons(text, "style");
-    let text = drop_color_semicolons(&text, "classDef");
+    let allow_classdef_css_semi = !is_flowchart_text(text);
+    let text = drop_color_semicolons(text, "style", allow_classdef_css_semi);
+    let text = drop_color_semicolons(&text, "classDef", allow_classdef_css_semi);
     encode_hash_entities(&text)
 }
 
@@ -412,6 +454,7 @@ pub(crate) fn remap_encoded_error(
     let Some(target_line) = error.line.checked_sub(1 + line_offset) else {
         return error;
     };
+    let allow_classdef_css_semi = !is_flowchart_text(cleaned);
     let mut initial_in_quotes = false;
     let mut lines = cleaned.split('\n');
     for _ in 0..target_line {
@@ -426,33 +469,45 @@ pub(crate) fn remap_encoded_error(
     if !orig_line.contains('#') {
         return error;
     }
-    error.column = remap_encoded_line_column(orig_line, error.column, initial_in_quotes);
+    error.column = remap_encoded_line_column(
+        orig_line,
+        error.column,
+        initial_in_quotes,
+        allow_classdef_css_semi,
+    );
     error
 }
 
-/// Advances the multiline double-quote state across a single line (skipping `%%` comment lines
-/// outside quotes and matching Mermaid's lexer where `"` closes a string without backslash
+/// Advances the multiline double-quote state across a single line (skipping `%%`, `accTitle`,
+/// `accDescr`, and `title` plain-text lines outside quotes, ignoring inch marks after
+/// alphanumerics, and matching Mermaid's lexer where `"` closes a string without backslash
 /// escaping).
 fn advance_quote_state(line: &str, in_quotes: &mut bool) {
     let mut at_line_start = true;
+    let mut prev_was_alnum = false;
     for (at, ch) in line.char_indices() {
         if *in_quotes {
             if ch == '"' {
                 *in_quotes = false;
             }
+            prev_was_alnum = false;
             continue;
         }
         if at_line_start {
             if is_js_space(ch) {
+                prev_was_alnum = false;
                 continue;
             }
             at_line_start = false;
-            if line[at..].starts_with("%%") {
+            if is_plain_text_line(&line[at..]) {
                 break;
             }
         }
-        if ch == '"' {
+        if ch == '"' && !prev_was_alnum {
             *in_quotes = true;
+            prev_was_alnum = false;
+        } else {
+            prev_was_alnum = ch.is_ascii_alphanumeric();
         }
     }
 }
@@ -466,6 +521,7 @@ fn remap_encoded_line_column(
     orig_line: &str,
     encoded_column: usize,
     initial_in_quotes: bool,
+    allow_classdef_css_semi: bool,
 ) -> usize {
     let mut chars: Vec<(char, usize)> = orig_line
         .chars()
@@ -479,7 +535,9 @@ fn remap_encoded_line_column(
         let mut in_quotes = initial_in_quotes;
         for segment in current.split_inclusive(JS_LINE_TERMINATORS) {
             let content = segment.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(segment);
-            if let Some(semi_byte) = color_semicolon_byte(content, word, &mut in_quotes) {
+            if let Some(semi_byte) =
+                color_semicolon_byte(content, word, &mut in_quotes, allow_classdef_css_semi)
+            {
                 to_remove.push(char_offset + content[..semi_byte].chars().count());
             }
             char_offset += segment.chars().count();
@@ -562,14 +620,13 @@ pub fn decode_entities(text: &str) -> String {
         .replace("¶ß", ";")
 }
 
-/// Whether `rest` starts (after optional horizontal JS whitespace) with a lowercase ASCII CSS
-/// property declaration (`<name>:` not followed by another `:`, with at least two characters and
-/// no flowchart edge/node operators on the rest of the line), such as `color:#abcdef` in
-/// `classDef late fill:#123456;color:#abcdef`, while keeping `;` before flowchart statements like
-/// `B:::red;` or `X:Y --> Z;`.
+/// Whether the next semicolon-bounded statement in `rest` (which is already on a single line)
+/// starts with a lowercase ASCII CSS property declaration (`<name>:` not followed by another `:`,
+/// with at least two characters and no diagram edge/node operators inside that single statement),
+/// such as `color:#abcdef` in `classDef late fill:#123456;color:#abcdef`. Bounds its scan to the
+/// next `;` so single-line diagrams with many declarations stay strictly O(n).
 fn starts_with_css_property(rest: &str) -> bool {
-    let line = rest.split(JS_LINE_TERMINATORS).next().unwrap_or(rest);
-    let trimmed = line.trim_start_matches(|c: char| is_js_space(c));
+    let trimmed = rest.trim_start_matches(is_js_space);
     let mut letter_count = 0usize;
     let mut after_colon_start = None;
     for (idx, ch) in trimmed.char_indices() {
@@ -587,7 +644,11 @@ fn starts_with_css_property(rest: &str) -> bool {
     let Some(after_idx) = after_colon_start else {
         return false;
     };
-    let after_colon = &trimmed[after_idx..];
+    let tail = &trimmed[after_idx..];
+    let stmt_end = tail
+        .find([';', '\n', '\r', '\u{2028}', '\u{2029}'])
+        .unwrap_or(tail.len());
+    let after_colon = &tail[..stmt_end];
     ![
         "-->", "---", "==>", "-.", "<--", "~~~", ":::", "o--", "x--", "--o", "--x", "[", "{",
     ]
@@ -599,14 +660,20 @@ fn starts_with_css_property(rest: &str) -> bool {
 /// `classDef` declaration (`<word> .*:\S*#.*;`), if any. Only matches `word` followed by whitespace
 /// at the start of an unquoted statement (line start or after an unquoted `;`), skips non-hex
 /// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and only drops a
-/// semicolon at end-of-line (or before a following CSS property on `classDef`) so statement
-/// separators like `style A fill:#abc,stroke-width:1px; B --> C;` stay intact.
-fn color_semicolon_byte(line: &str, word: &str, in_quotes: &mut bool) -> Option<usize> {
+/// semicolon at end-of-line (or before a following CSS property on non-flowchart `classDef` lines)
+/// so flowchart statement separators stay intact.
+fn color_semicolon_byte(
+    line: &str,
+    word: &str,
+    in_quotes: &mut bool,
+    allow_classdef_css_semi: bool,
+) -> Option<usize> {
     let mut at_line_start = true;
     let mut stmt_start = true;
     let mut in_target_stmt = false;
     let mut seen_colon = false;
     let mut seen_colon_hash = false;
+    let mut prev_was_alnum = false;
     let mut last_semi = None;
     let mut chars = line.char_indices();
 
@@ -615,31 +682,37 @@ fn color_semicolon_byte(line: &str, word: &str, in_quotes: &mut bool) -> Option<
             if ch == '"' {
                 *in_quotes = false;
             }
+            prev_was_alnum = false;
             continue;
         }
         if at_line_start {
             if is_js_space(ch) {
+                prev_was_alnum = false;
                 continue;
             }
             at_line_start = false;
-            if line[at..].starts_with("%%") {
+            if is_plain_text_line(&line[at..]) {
                 break;
             }
         }
-        if ch == '"' {
+        if ch == '"' && !prev_was_alnum {
             *in_quotes = true;
             stmt_start = false;
+            prev_was_alnum = false;
             if in_target_stmt {
                 seen_colon = false;
             }
             continue;
         }
+        prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
             let after = &line[at + 1..];
             if in_target_stmt
                 && seen_colon_hash
                 && (is_horizontal_ws_to_eol(after)
-                    || (word == "classDef" && starts_with_css_property(after)))
+                    || (allow_classdef_css_semi
+                        && word == "classDef"
+                        && starts_with_css_property(after)))
             {
                 last_semi = Some(at);
             }
@@ -682,6 +755,7 @@ fn color_semicolon_byte(line: &str, word: &str, in_quotes: &mut bool) -> Option<
                         for _ in 0..=name_len {
                             let _ = chars.next();
                         }
+                        prev_was_alnum = false;
                     }
                 }
             }
@@ -691,12 +765,14 @@ fn color_semicolon_byte(line: &str, word: &str, in_quotes: &mut bool) -> Option<
 }
 
 /// `<word> .*:\S*#.*;` with the color-terminating semicolon removed on each JavaScript line.
-fn drop_color_semicolons(text: &str, word: &str) -> String {
+fn drop_color_semicolons(text: &str, word: &str, allow_classdef_css_semi: bool) -> String {
     let mut out = String::with_capacity(text.len());
     let mut in_quotes = false;
     for line in text.split_inclusive(JS_LINE_TERMINATORS) {
         let content = line.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(line);
-        if let Some(semicolon) = color_semicolon_byte(content, word, &mut in_quotes) {
+        if let Some(semicolon) =
+            color_semicolon_byte(content, word, &mut in_quotes, allow_classdef_css_semi)
+        {
             out.push_str(&line[..semicolon]);
             out.push_str(&line[semicolon + 1..]);
         } else {
@@ -737,8 +813,9 @@ struct StyleStmtTracker {
     seen_colon: bool,
     last_allows_hex: bool,
     at_line_start: bool,
-    in_comment: bool,
+    in_plain_line: bool,
     in_quotes: bool,
+    prev_was_alnum: bool,
 }
 
 impl StyleStmtTracker {
@@ -752,8 +829,9 @@ impl StyleStmtTracker {
             seen_colon: false,
             last_allows_hex: false,
             at_line_start: true,
-            in_comment: false,
+            in_plain_line: false,
             in_quotes,
+            prev_was_alnum: false,
         }
     }
 
@@ -766,7 +844,8 @@ impl StyleStmtTracker {
     fn reset_line(&mut self) {
         self.reset();
         self.at_line_start = true;
-        self.in_comment = false;
+        self.in_plain_line = false;
+        self.prev_was_alnum = false;
     }
 
     fn finish_entity(&mut self) {
@@ -775,6 +854,7 @@ impl StyleStmtTracker {
         }
         self.at_line_start = false;
         self.last_allows_hex = false;
+        self.prev_was_alnum = false;
     }
 
     fn push(&mut self, src: &str, at: usize, ch: char) {
@@ -784,34 +864,40 @@ impl StyleStmtTracker {
             } else if ch == '"' {
                 self.in_quotes = false;
             }
+            self.prev_was_alnum = false;
             return;
         }
         if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
             self.reset_line();
             return;
         }
-        if self.in_comment {
+        if self.in_plain_line {
+            self.prev_was_alnum = false;
             return;
         }
         if self.at_line_start {
             if is_js_space(ch) {
+                self.prev_was_alnum = false;
                 return;
             }
             self.at_line_start = false;
-            if src[at..].starts_with("%%") {
-                self.in_comment = true;
+            if is_plain_text_line(&src[at..]) {
+                self.in_plain_line = true;
                 self.kind = StmtKind::Other;
+                self.prev_was_alnum = false;
                 return;
             }
         }
-        if ch == '"' {
+        if ch == '"' && !self.prev_was_alnum {
             self.in_quotes = true;
             if self.kind == StmtKind::Start {
                 self.kind = StmtKind::Other;
             }
             self.last_allows_hex = false;
+            self.prev_was_alnum = false;
             return;
         }
+        self.prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
             self.reset();
             return;
@@ -841,7 +927,7 @@ impl StyleStmtTracker {
 
     fn allows_hex_color(&self, name: &str) -> bool {
         !self.in_quotes
-            && !self.in_comment
+            && !self.in_plain_line
             && self.kind == StmtKind::Style
             && self.seen_colon
             && self.last_allows_hex

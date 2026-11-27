@@ -31,10 +31,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..895ce33 100644
+index 48ac4a6..fd331f9 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,461 @@ export function interpolateToCurve(
+@@ -244,6 +244,469 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -493,26 +493,30 @@ index 48ac4a6..895ce33 100644
 +  return restoreRawTokens(safe, prefix, values);
 +};
 +
++const startsWithFragmentMarker = (url: string): boolean => {
++  if (url.startsWith('#')) {
++    return true;
++  }
++  const placeholder = decodeMermaidPlaceholderAt(url, 0);
++  return placeholder !== null && placeholder[1] === '#';
++};
++
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +707,14 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +715,10 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
 -    return sanitizeUrl(url);
-+    if (url.startsWith('#')) {
-+      const sanitized = sanitizeHttpUrlWithEntities(url);
-+      if (sanitized === 'about:blank') {
-+        return sanitized;
-+      }
++    if (startsWithFragmentMarker(url)) {
 +      return url.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
 +    }
 +    return sanitizeHttpUrlWithEntities(url);
    }
  
    return url;
-@@ -895,23 +1357,267 @@ export default {
+@@ -895,23 +1361,312 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -522,10 +526,37 @@ index 48ac4a6..895ce33 100644
 -  txt = txt.replace(/classDef.*:\S*#.*;/g, function (s): string {
 -    return s.substring(0, s.length - 1);
 -  });
--
++  const isFlowchartText = (s: string): boolean => {
++    for (const line of s.split(/[\n\r\u2028\u2029]/)) {
++      const trimmed = line.trimStart();
++      if (!trimmed || trimmed.startsWith('%%')) {
++        continue;
++      }
++      return /^(?:flowchart|graph)(?:$|\s|-)/.test(trimmed);
++    }
++    return false;
++  };
++  const isPlainTextLine = (s: string, at: number): boolean => {
++    if (s.startsWith('%%', at)) {
++      return true;
++    }
++    for (const kw of ['accTitle', 'accDescr', 'title']) {
++      if (s.startsWith(kw, at)) {
++        const next = s[at + kw.length];
++        if (next === ':' || (next !== undefined && /\s/.test(next))) {
++          return true;
++        }
++      }
++    }
++    return false;
++  };
++  const isAsciiAlnum = (c: string): boolean =>
++    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+ 
 -  txt = txt.replace(/#\w+;/g, function (s) {
 -    const innerTxt = s.substring(1, s.length - 1);
--
++  const allowClassDefCssSemi = !isFlowchartText(txt);
+ 
 -    const isInt = /^\+?\d+$/.test(innerTxt);
 -    if (isInt) {
 -      return 'ﬂ°°' + innerTxt + '¶ß';
@@ -545,31 +576,20 @@ index 48ac4a6..895ce33 100644
 +    return true;
 +  };
 +  const startsWithCssProp = (s: string, start: number): boolean => {
-+    let end = start;
-+    while (
-+      end < s.length &&
-+      s[end] !== '\n' &&
-+      s[end] !== '\r' &&
-+      s[end] !== '\u2028' &&
-+      s[end] !== '\u2029'
-+    ) {
-+      end++;
-+    }
-+    const line = s.slice(start, end);
-+    let k = 0;
-+    while (k < line.length && /\s/.test(line[k])) {
++    let k = start;
++    while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
 +      k++;
 +    }
 +    let letterCount = 0;
 +    let afterColonIdx = -1;
-+    while (k < line.length) {
-+      const c = line[k];
++    while (k < s.length) {
++      const c = s[k];
 +      if (c >= 'a' && c <= 'z') {
 +        letterCount++;
 +      } else if (c === '-' && letterCount > 0) {
 +        // continue
 +      } else {
-+        if (letterCount >= 2 && c === ':' && line[k + 1] !== ':') {
++        if (letterCount >= 2 && c === ':' && s[k + 1] !== ':') {
 +          afterColonIdx = k + 1;
 +        }
 +        break;
@@ -579,7 +599,18 @@ index 48ac4a6..895ce33 100644
 +    if (afterColonIdx === -1) {
 +      return false;
 +    }
-+    const afterColon = line.slice(afterColonIdx);
++    let stmtEnd = afterColonIdx;
++    while (
++      stmtEnd < s.length &&
++      s[stmtEnd] !== ';' &&
++      s[stmtEnd] !== '\n' &&
++      s[stmtEnd] !== '\r' &&
++      s[stmtEnd] !== '\u2028' &&
++      s[stmtEnd] !== '\u2029'
++    ) {
++      stmtEnd++;
++    }
++    const afterColon = s.slice(afterColonIdx, stmtEnd);
 +    return !/(?:-->|---|==>|-\.|<--|~~~|:::|o--|x--|--o|--x|\[|\{)/.test(afterColon);
 +  };
 +  const dropColorSemicolons = (input: string, word: string): string => {
@@ -594,6 +625,7 @@ index 48ac4a6..895ce33 100644
 +      let inTarget = false;
 +      let seenColon = false;
 +      let seenColonHash = false;
++      let prevWasAlnum = false;
 +      let lastSemi = -1;
 +      for (let i = 0; i < line.length; i++) {
 +        const c = line[i];
@@ -601,31 +633,35 @@ index 48ac4a6..895ce33 100644
 +          if (c === '"') {
 +            inQuotes = false;
 +          }
++          prevWasAlnum = false;
 +          continue;
 +        }
 +        if (atLineStart) {
 +          if (/\s/.test(c)) {
++            prevWasAlnum = false;
 +            continue;
 +          }
 +          atLineStart = false;
-+          if (line.startsWith('%%', i)) {
++          if (isPlainTextLine(line, i)) {
 +            break;
 +          }
 +        }
-+        if (c === '"') {
++        if (c === '"' && !prevWasAlnum) {
 +          inQuotes = true;
 +          stmtStart = false;
++          prevWasAlnum = false;
 +          if (inTarget) {
 +            seenColon = false;
 +          }
 +          continue;
 +        }
++        prevWasAlnum = isAsciiAlnum(c);
 +        if (c === ';') {
 +          if (
 +            inTarget &&
 +            seenColonHash &&
 +            (isHorizontalWsToEol(line, i + 1) ||
-+              (word === 'classDef' && startsWithCssProp(line, i + 1)))
++              (allowClassDefCssSemi && word === 'classDef' && startsWithCssProp(line, i + 1)))
 +          ) {
 +            lastSemi = i;
 +          }
@@ -668,6 +704,7 @@ index 48ac4a6..895ce33 100644
 +                !/^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(name)
 +              ) {
 +                i = j;
++                prevWasAlnum = false;
 +              }
 +            }
 +          }
@@ -691,8 +728,9 @@ index 48ac4a6..895ce33 100644
 +  let seenColon = false;
 +  let lastAllowsHex = false;
 +  let atLineStart = true;
-+  let inComment = false;
++  let inPlainLine = false;
 +  let inQuotes = false;
++  let prevWasAlnum = false;
 +  let copyFrom = 0;
 +  for (let i = 0; i < txt.length; i++) {
 +    const ch = txt[i];
@@ -706,7 +744,7 @@ index 48ac4a6..895ce33 100644
 +        out += txt.slice(copyFrom, i);
 +        if (
 +          !inQuotes &&
-+          !inComment &&
++          !inPlainLine &&
 +          stmtKind === 1 &&
 +          seenColon &&
 +          lastAllowsHex &&
@@ -717,13 +755,15 @@ index 48ac4a6..895ce33 100644
 +          seenColon = false;
 +          lastAllowsHex = false;
 +          atLineStart = false;
++          prevWasAlnum = false;
 +        } else {
 +          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
-+          if (!inQuotes && !inComment && stmtKind === 0) {
++          if (!inQuotes && !inPlainLine && stmtKind === 0) {
 +            stmtKind = 2;
 +          }
 +          atLineStart = false;
 +          lastAllowsHex = false;
++          prevWasAlnum = false;
 +        }
 +        copyFrom = j + 1;
 +        i = j;
@@ -736,10 +776,11 @@ index 48ac4a6..895ce33 100644
 +        seenColon = false;
 +        lastAllowsHex = false;
 +        atLineStart = true;
-+        inComment = false;
++        inPlainLine = false;
 +      } else if (ch === '"') {
 +        inQuotes = false;
 +      }
++      prevWasAlnum = false;
 +      continue;
 +    }
 +    if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
@@ -747,31 +788,37 @@ index 48ac4a6..895ce33 100644
 +      seenColon = false;
 +      lastAllowsHex = false;
 +      atLineStart = true;
-+      inComment = false;
++      inPlainLine = false;
++      prevWasAlnum = false;
 +      continue;
 +    }
-+    if (inComment) {
++    if (inPlainLine) {
++      prevWasAlnum = false;
 +      continue;
 +    }
 +    if (atLineStart) {
 +      if (/\s/.test(ch)) {
++        prevWasAlnum = false;
 +        continue;
 +      }
 +      atLineStart = false;
-+      if (txt.startsWith('%%', i)) {
-+        inComment = true;
++      if (isPlainTextLine(txt, i)) {
++        inPlainLine = true;
 +        stmtKind = 2;
++        prevWasAlnum = false;
 +        continue;
 +      }
 +    }
-+    if (ch === '"') {
++    if (ch === '"' && !prevWasAlnum) {
 +      inQuotes = true;
 +      if (stmtKind === 0) {
 +        stmtKind = 2;
 +      }
 +      lastAllowsHex = false;
++      prevWasAlnum = false;
 +      continue;
 +    }
++    prevWasAlnum = isAsciiAlnum(ch);
 +    if (ch === ';') {
 +      stmtKind = 0;
 +      seenColon = false;

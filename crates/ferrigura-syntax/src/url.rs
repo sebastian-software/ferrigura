@@ -84,11 +84,21 @@ const SAFE_DATA_IMAGE_SUBTYPES: &[&str] = &[
 /// prevent quadratic decoding work.
 const MAX_DECODE_PASSES: usize = 8;
 
+/// Whether `url` starts with a same-document fragment marker — either literal `#` or a leading
+/// Mermaid entity placeholder that decodes to `#` (such as `#35;` / `ﬂ°°35¶ß` or `#num;` /
+/// `ﬂ°num¶ß`).
+fn starts_with_fragment_marker(url: &str) -> bool {
+    url.starts_with('#')
+        || decode_mermaid_placeholder_at(url, 0).is_some_and(|(_, decoded)| decoded == "#")
+}
+
 /// `formatUrl` of the reference.
 ///
 /// The link is trimmed with JavaScript's `trim`, and an empty result gives `None`. `loose` is
 /// `securityLevel === 'loose'`: the trimmed link is returned as it is, and otherwise it goes
-/// through [`sanitize_url`].
+/// through [`sanitize_url`], except same-document fragments (starting with `#` or an entity
+/// spelling of `#` like `#35;`), which enforce the bounded decoding limit without running scheme
+/// detection on the fragment body and preserve their percent-encoded spelling for DOM lookup.
 #[must_use]
 pub fn format_url(link: &str, loose: bool) -> Option<String> {
     let url = js_trim(link);
@@ -96,21 +106,15 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
         None
     } else if loose {
         Some(url.to_owned())
-    } else if url.starts_with('#') {
-        // Same-document fragment links have no scheme and cannot trigger javascript:/data:/vbscript:.
-        // Validate through `sanitize_url` (enforcing bounded obfuscation decoding), then preserve
-        // the original percent-encoded fragment spelling (e.g. `#graph-flowchart-A%2520B-0`) so
-        // DOM target lookup still reaches nodes whose ID contains literal `%20`.
-        let sanitized = sanitize_url(url);
-        if sanitized == BLANK_URL {
-            Some(sanitized)
-        } else {
-            let cleaned: String = url
-                .chars()
-                .filter(|&c| !matches!(c, '\u{0000}'..='\u{001F}' | '\u{007F}'..='\u{009F}'))
-                .collect();
-            Some(cleaned)
+    } else if starts_with_fragment_marker(url) {
+        if decode_url_obfuscations_bounded(url, MAX_DECODE_PASSES).is_none() {
+            return Some(BLANK_URL.to_owned());
         }
+        let cleaned: String = url
+            .chars()
+            .filter(|&c| !matches!(c, '\u{0000}'..='\u{001F}' | '\u{007F}'..='\u{009F}'))
+            .collect();
+        Some(cleaned)
     } else {
         Some(sanitize_url(url))
     }
@@ -2664,10 +2668,19 @@ mod tests {
             "about:blank"
         );
         // Same-document fragment links preserve their percent-encoded spelling in `format_url`
-        // while still failing closed on over-budget nested encodings.
+        // (for both literal `#` and entity `#35;`), never misread colons like `#database:overview`
+        // as schemes, and still fail closed on over-budget nested encodings.
         assert_eq!(
             format_url("#graph-flowchart-A%2520B-0", false).as_deref(),
             Some("#graph-flowchart-A%2520B-0")
+        );
+        assert_eq!(
+            format_url("ﬂ°°35¶ßgraph-classId-A%2520B", false).as_deref(),
+            Some("ﬂ°°35¶ßgraph-classId-A%2520B")
+        );
+        assert_eq!(
+            format_url("#database:overview", false).as_deref(),
+            Some("#database:overview")
         );
         assert_eq!(
             format_url("#foo%25252525252525252541", false).as_deref(),

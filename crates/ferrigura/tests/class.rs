@@ -1751,4 +1751,58 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         double_pct_scheme.contains("xlink:href=\"https://example.org/part%3Fone\""),
         "{double_pct_scheme}"
     );
+
+    // Inch marks in `accTitle` do not open a multiline quoted string in flowcharts or class diagrams.
+    let acc_quote_flow = ferrigura::render(
+        "flowchart LR\n  accTitle: 6\" pipe\n  A\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(acc_quote_flow.contains("fill:#abc"), "{acc_quote_flow}");
+    let acc_quote_class = ferrigura::render(
+        "classDiagram\n  accTitle: 6\" pipe\n  class A\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(acc_quote_class.contains("fill:#abc"), "{acc_quote_class}");
+    assert!(!acc_quote_class.contains("&abc;"), "{acc_quote_class}");
+
+    // Standalone colon-named flowchart nodes after `classDef ...;` keep the statement separator.
+    let colon_standalone = ferrigura::render(
+        "flowchart LR\n  classDef hot fill:#abc,stroke:red; alpha:beta;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        colon_standalone.contains("alpha:beta"),
+        "{colon_standalone}"
+    );
+
+    // Colons inside fragment anchors (such as `#database:overview`) are not mistaken for `data:`.
+    let colon_frag = ferrigura::render(
+        "flowchart LR\n  A\n  click A \"#database:overview\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        colon_frag.contains("xlink:href=\"#database:overview\""),
+        "{colon_frag}"
+    );
+
+    // Entity-encoded `#35;` fragment markers preserve `%2520` spelling for exact DOM target lookup.
+    let entity_frag = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `A%20B`\n  class `A B`\n  click `A%20B` href \"#35;graph-classId-A%2520B\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let entity_frag_doc = roxmltree::Document::parse(&entity_frag).expect("well-formed SVG XML");
+    let entity_frag_href = entity_frag_doc
+        .descendants()
+        .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(entity_frag_href, "#graph-classId-A%2520B");
 }
