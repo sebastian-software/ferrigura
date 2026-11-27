@@ -12,7 +12,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::{Globals, ThemeView};
-use crate::svg::{css_text, escape, font_faces};
+use crate::svg::{css_text_owned, font_faces};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the entity, edge and cluster rules, in the order of the custom properties. A
@@ -302,7 +302,7 @@ pub fn style_sheet(
     } else {
         font_faces(svg_id, families)
     };
-    css_text(&format!(
+    css_text_owned(format!(
         "{faces}{}{}",
         custom_properties(svg_id, theme, globals),
         rules.concat()
@@ -356,12 +356,12 @@ fn declarations(tokens: &ThemeTokens, flood: &str, palette: Option<&Palette>) ->
     let mut out = String::new();
     for (name, token) in color_tokens(tokens) {
         if let Some(colour) = token.text() {
-            out.push_str(&format!("--{name}:{};", css_text(&colour)));
+            out.push_str(&format!("--{name}:{colour};"));
         }
     }
     if let Some(palette) = palette {
         for (index, colour) in palette.border.iter().enumerate() {
-            out.push_str(&format!("--borderColor{index}:{};", css_text(colour)));
+            out.push_str(&format!("--borderColor{index}:{colour};"));
         }
         let fills = palette.background.len();
         for index in 0..palette.border.len() {
@@ -371,7 +371,7 @@ fn declarations(tokens: &ThemeTokens, flood: &str, palette: Option<&Palette>) ->
                 palette.background.get(index % fills).cloned()
             };
             if let Some(colour) = colour {
-                out.push_str(&format!("--bkgColor{index}:{};", css_text(&colour)));
+                out.push_str(&format!("--bkgColor{index}:{colour};"));
             }
         }
     }
@@ -383,13 +383,11 @@ fn declarations(tokens: &ThemeTokens, flood: &str, palette: Option<&Palette>) ->
 /// the slot's border, and its fill when the palette has fills. The slots are the border palette's
 /// length, so each entity's `data-color-id` has a rule.
 fn palette_rules(id: &str, look: &str, palette: &Palette) -> String {
+    let look = safe_look(look);
     let fills = palette.background.len();
     let mut css = String::new();
     for index in 0..palette.border.len() {
-        let slot = format!(
-            "{id} [data-look=\"{}\"][data-color-id=\"color-{index}\"]",
-            escape(look)
-        );
+        let slot = format!("{id} [data-look=\"{look}\"][data-color-id=\"color-{index}\"]");
         let stroke = format!("stroke:var(--borderColor{index});");
         let fill = if fills == 0 {
             String::new()
@@ -406,6 +404,15 @@ fn palette_rules(id: &str, look: &str, palette: &Palette) -> String {
         ));
     }
     css
+}
+
+/// The look a stylesheet is written for: a bare word, else `classic` (`safeLook` in `colorThemeGate.ts`).
+fn safe_look(look: &str) -> &str {
+    let bare = !look.is_empty()
+        && look
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+    if bare { look } else { "classic" }
 }
 
 /// The color of a token as `khroma.rgba(channel…, alpha)` writes it: the red, green and blue

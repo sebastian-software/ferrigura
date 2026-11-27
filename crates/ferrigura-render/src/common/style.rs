@@ -11,7 +11,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::ThemeView;
-use crate::svg::{css_text, font_faces};
+use crate::svg::{css_declaration_value, css_text_owned, font_faces};
 
 /// The `<style>` text of the base rules for the diagram with the id `svg_id`, with the embedded
 /// `@font-face` rules first. The font family is `font_family` as CSS reads it (quoted when it is a
@@ -41,7 +41,10 @@ pub fn base_style_sheet(
         ),
     };
     let tokens = theme.light;
+    let font_family = css_declaration_value(font_family, "sans-serif");
+    let font_size = css_declaration_value(font_size, "16px");
     let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
+    let stroke_width = css_declaration_value(&stroke_width, "1");
     let shadow = match tokens.drop_shadow.text() {
         Some(value) if !value.is_empty() => value.replacen(
             "url(#drop-shadow)",
@@ -51,11 +54,13 @@ pub fn base_style_sheet(
         ),
         _ => "none".to_owned(),
     };
+    let shadow = css_declaration_value(&shadow, "none");
     // `:root` names the configured family (mermaidAPI.ts), not the embedded subset of this diagram.
-    let root_font = tokens
+    let root_font_raw = tokens
         .font_family
         .text()
         .unwrap_or_else(|| font_family.to_owned());
+    let root_font = css_declaration_value(&root_font_raw, font_family);
     let faces = if families.is_empty() {
         String::new()
     } else {
@@ -92,7 +97,7 @@ pub fn base_style_sheet(
 {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:var(--nodeBorder);filter:{shadow};}}\
 :root{{--mermaid-font-family:{root_font};}}"
     );
-    css_text(&format!("{faces}{colours}{rules}"))
+    css_text_owned(format!("{faces}{colours}{rules}"))
 }
 
 /// The custom properties of the base colors of a theme's tokens, as `--name:value;` pairs. A color

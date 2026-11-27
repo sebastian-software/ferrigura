@@ -41,11 +41,14 @@ pub fn root_attributes(
     if !description.is_empty() {
         out.push_str(&format!(
             " aria-describedby=\"{}\"",
-            description_id(base_id)
+            escape(&description_id(base_id))
         ));
     }
     if !title.is_empty() {
-        out.push_str(&format!(" aria-labelledby=\"{}\"", title_id(base_id)));
+        out.push_str(&format!(
+            " aria-labelledby=\"{}\"",
+            escape(&title_id(base_id))
+        ));
     }
     out
 }
@@ -59,14 +62,14 @@ pub(crate) fn children_raw(base_id: &str, title: &str, description: &str) -> Str
     if !title.is_empty() {
         out.push_str(&format!(
             "<title id=\"{}\">{}</title>",
-            title_id(base_id),
+            escape(&title_id(base_id)),
             escape(title)
         ));
     }
     if !description.is_empty() {
         out.push_str(&format!(
             "<desc id=\"{}\">{}</desc>",
-            description_id(base_id),
+            escape(&description_id(base_id)),
             escape(description)
         ));
     }
@@ -86,7 +89,7 @@ pub fn children(base_id: &str, title: &str, description: &str) -> String {
         };
         out.push_str(&format!(
             "<title id=\"{}\">{}</title>",
-            title_id(base_id),
+            escape(&title_id(base_id)),
             escape(&resolved)
         ));
     }
@@ -98,7 +101,7 @@ pub fn children(base_id: &str, title: &str, description: &str) -> String {
         };
         out.push_str(&format!(
             "<desc id=\"{}\">{}</desc>",
-            description_id(base_id),
+            escape(&description_id(base_id)),
             escape(&resolved)
         ));
     }
@@ -192,5 +195,20 @@ mod tests {
         let children = children("id", "a < b", "x & y");
         assert!(children.contains("a &lt; b"));
         assert!(children.contains("x &amp; y"));
+    }
+
+    #[test]
+    fn the_base_id_is_escaped_in_attributes_and_children() {
+        let id = "a\"&<b>";
+        let attrs = root_attributes(id, "pie", "Title", "Desc");
+        assert!(attrs.contains("aria-labelledby=\"chart-title-a&quot;&amp;&lt;b&gt;\""));
+        assert!(attrs.contains("aria-describedby=\"chart-desc-a&quot;&amp;&lt;b&gt;\""));
+        for kids in [
+            children(id, "Title", "Desc"),
+            children_raw(id, "Title", "Desc"),
+        ] {
+            assert!(kids.contains("<title id=\"chart-title-a&quot;&amp;&lt;b&gt;\">Title</title>"));
+            assert!(kids.contains("<desc id=\"chart-desc-a&quot;&amp;&lt;b&gt;\">Desc</desc>"));
+        }
     }
 }

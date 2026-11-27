@@ -569,13 +569,14 @@ impl<'a> Renderer<'a> {
         ));
         open.push('>');
         let accessibility = a11y::children_raw(input.id, &diagram.acc_title, &diagram.acc_descr);
-        let svg = format!("{open}{accessibility}{content}<style>{style}</style><g/>{rest}</svg>");
-        // The entities the parser encoded are decoded in the whole document, as the reference
-        // does after rendering (`mermaidAPI.ts:359`), and the references XML does not define are
-        // rewritten. `xlink:href` attributes already resolved their entity placeholders in
-        // attribute context and are preserved verbatim so text-context entity matching (e.g.
-        // `&not` inside `&notebook;`) and double-decoding cannot alter URLs.
-        Ok(decode_sequence_svg(&svg))
+        // Decode Mermaid entity placeholders and HTML-only character references across the
+        // diagram markup, skipping `<style>` so placeholders in `fontFamily` or theme values
+        // cannot turn into CSS declaration terminators (`;`) or tags after stylesheet escaping.
+        // `xlink:href` attributes already resolved their entity placeholders in attribute context
+        // and are preserved verbatim by `decode_sequence_svg`.
+        let prefix = decode_sequence_svg(&format!("{open}{accessibility}{content}"));
+        let suffix = decode_sequence_svg(&format!("<g/>{rest}</svg>"));
+        Ok(format!("{prefix}<style>{style}</style>{suffix}"))
     }
 
     /// The embedded font faces of the text the diagram draws, and the family name the style

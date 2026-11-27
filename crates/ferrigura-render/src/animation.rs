@@ -6,7 +6,7 @@ use std::fmt::Write as _;
 use std::str::FromStr;
 
 use crate::RenderError;
-use crate::svg::{escape, number};
+use crate::svg::{css_text, escape, number};
 use crate::unified::data::{Edge, Node};
 use crate::unified::edges::{Painted, format_path};
 use crate::unified::path::path_length;
@@ -329,7 +329,10 @@ impl Animator {
 
     fn fade(&mut self, svg: &str, timing: Timing, part: &str) -> String {
         let class = self.class(&format!("{}-appear", self.prefix), timing, "ease-out");
-        format!("<g class=\"{class}\" data-draw-part=\"{part}\">{svg}</g>")
+        format!(
+            "<g class=\"{}\" data-draw-part=\"{part}\">{svg}</g>",
+            escape(&class)
+        )
     }
 
     pub(crate) fn node(&mut self, index: usize, svg: &str) -> String {
@@ -410,7 +413,7 @@ impl Animator {
         );
         let bbox = crate::unified::path::path_bounds(d).unwrap_or_default();
         let padding = width / 2.0 + 32.0;
-        write!(self.definitions, "<mask id=\"{mask_id}\" maskUnits=\"userSpaceOnUse\" maskContentUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" mask-type=\"luminance\"><path d=\"{}\" pathLength=\"1\" fill=\"none\" stroke=\"white\" stroke-width=\"{}\" stroke-linecap=\"butt\" stroke-dasharray=\"1\" stroke-dashoffset=\"0\" class=\"{mask_class}\" data-draw-part=\"mask\" data-draw-length=\"{}\"/></mask>", number(bbox.x - padding), number(bbox.y - padding), number(bbox.width + padding * 2.0), number(bbox.height + padding * 2.0), escape(d), number(width), number(length)).unwrap();
+        write!(self.definitions, "<mask id=\"{}\" maskUnits=\"userSpaceOnUse\" maskContentUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" mask-type=\"luminance\"><path d=\"{}\" pathLength=\"1\" fill=\"none\" stroke=\"white\" stroke-width=\"{}\" stroke-linecap=\"butt\" stroke-dasharray=\"1\" stroke-dashoffset=\"0\" class=\"{}\" data-draw-part=\"mask\" data-draw-length=\"{}\"/></mask>", escape(&mask_id), number(bbox.x - padding), number(bbox.y - padding), number(bbox.width + padding * 2.0), number(bbox.height + padding * 2.0), escape(d), number(width), escape(&mask_class), number(length)).unwrap();
         let release = format!("{}-release-{serial}", self.prefix);
         write!(
             self.keyframes,
@@ -422,7 +425,10 @@ impl Animator {
             duration: timing.duration.min(1.0),
         };
         let class = self.class(&release, end, "linear");
-        format!("<g class=\"{class}\" data-draw-part=\"edge\">{svg}</g>")
+        format!(
+            "<g class=\"{}\" data-draw-part=\"edge\">{svg}</g>",
+            escape(&class)
+        )
     }
 
     pub(crate) fn finish(self) -> String {
@@ -430,8 +436,8 @@ impl Animator {
             "<defs data-draw-defs=\"\">{}</defs><style data-draw-style=\"\" data-draw-duration=\"{}\">{}@media (prefers-reduced-motion:no-preference){{{}}}</style>",
             self.definitions,
             number(self.plan.duration),
-            self.keyframes,
-            self.rules
+            css_text(&self.keyframes),
+            css_text(&self.rules)
         )
     }
 }
@@ -705,5 +711,26 @@ mod tests {
             ),
             Err(RenderError::Options(_))
         ));
+    }
+
+    #[test]
+    fn special_characters_in_id_are_escaped_in_attributes_and_style() {
+        let (nodes, edges) = graph(&["a", "b"], &[("a", "b")]);
+        let mut animator = Animator::from_lengths(
+            "x\"&</style><script>",
+            &nodes,
+            &edges,
+            vec![100.0],
+            Animation::default(),
+        )
+        .unwrap();
+        let node = animator.node(0, "<rect/>");
+        let edge = animator.edge(0, "<path/>", "M0,0L10,0");
+        let finish = animator.finish();
+        assert!(node.contains("class=\"x&quot;&amp;&lt;/style&gt;&lt;script&gt;-draw-0\""));
+        assert!(edge.contains("class=\"x&quot;&amp;&lt;/style&gt;&lt;script&gt;-draw-2\""));
+        assert!(finish.contains("id=\"x&quot;&amp;&lt;/style&gt;&lt;script&gt;-draw-mask-1\""));
+        assert!(!finish.contains("<script>"));
+        assert!(finish.contains("&lt;/style&gt;&lt;script&gt;"));
     }
 }

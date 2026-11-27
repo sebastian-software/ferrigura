@@ -16,7 +16,7 @@ use std::fmt::Write as _;
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
 use crate::flowchart::style::look_defs_for;
-use crate::svg::{css_text, font_faces};
+use crate::svg::{css_text_owned, font_faces};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the class rules, the theme variables that `styles.js` reads, in the order of the
@@ -119,7 +119,7 @@ pub fn style_sheet(
     if design.is_some() {
         css.push_str(&design_rules(&id));
     }
-    css_text(&format!("{faces}{css}"))
+    css_text_owned(format!("{faces}{css}"))
 }
 
 /// The `<defs>` of the look (the drop shadows and the gradient), which the class diagram writes after
@@ -271,7 +271,7 @@ fn custom_properties(
             let mut out = String::new();
             for (name, token) in color_tokens(tokens) {
                 if let Some(colour) = token.text() {
-                    let _ = write!(out, "--{name}:{};", css_text(&colour));
+                    let _ = write!(out, "--{name}:{colour};");
                 }
             }
             out.push_str(design::declarations(tone));
@@ -315,12 +315,12 @@ fn declarations(tokens: &ThemeTokens, palette: Option<Palette>, flood: &str) -> 
     let mut out = String::new();
     for (name, token) in color_tokens(tokens) {
         if let Some(colour) = token.text() {
-            out.push_str(&format!("--{name}:{};", css_text(&colour)));
+            out.push_str(&format!("--{name}:{colour};"));
         }
     }
     if let Some(palette) = palette {
         for (index, colour) in palette.border.iter().enumerate() {
-            out.push_str(&format!("--borderColor{index}:{};", css_text(colour)));
+            out.push_str(&format!("--borderColor{index}:{colour};"));
         }
         let fills = tokens.bkg_color_array.texts();
         for index in 0..palette.background.len() {
@@ -329,7 +329,7 @@ fn declarations(tokens: &ThemeTokens, palette: Option<Palette>, flood: &str) -> 
             } else {
                 fills[index % fills.len()].clone()
             };
-            out.push_str(&format!("--bkgColor{index}:{};", css_text(&colour)));
+            out.push_str(&format!("--bkgColor{index}:{colour};"));
         }
     }
     out.push_str(&format!("--floodColor:{flood};"));

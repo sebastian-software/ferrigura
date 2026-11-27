@@ -319,9 +319,10 @@ pub(crate) fn node_svg_with_resolved(
 ) -> String {
     let kind = registry::resolve_node(node);
     let styles = util::styles2string(node);
+    let escaped_svg_id = escape(svg_id);
     let shape_svg = shape.svg.replace(
         &format!("filter:url(#{SVG_ID_TOKEN}-drop-shadow-small)"),
-        &format!("filter:url(#{svg_id}-drop-shadow-small)"),
+        &format!("filter:url(#{escaped_svg_id}-drop-shadow-small)"),
     );
     let after_label = &shape.after_label;
 
@@ -780,6 +781,16 @@ mod tests {
         assert!(
             stacked_svg.contains("stroke-width=\"2&quot;x\""),
             "{stacked_svg}"
+        );
+
+        // Special XML characters in `svg_id` are escaped in the substituted drop-shadow filter.
+        let mut start_node = node("stateStart", "neo");
+        start_node.dom_id = "state-root_start-0".to_owned();
+        let start_shape = draw_box(&start_node, &LabelLayout::of_box(BBox::default()));
+        let start_svg = node_svg(&start_node, &start_shape, "a\"&<>", LinkForm::Flowchart);
+        assert!(
+            start_svg.contains("filter:url(#a&quot;&amp;&lt;&gt;-drop-shadow-small)"),
+            "{start_svg}"
         );
     }
 }

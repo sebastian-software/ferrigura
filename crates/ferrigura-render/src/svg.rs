@@ -9,6 +9,20 @@ use ferrigura_text::EmbeddedFamily;
 
 use crate::common::d3::d3_number;
 
+/// Returns `value` unchanged when it cannot terminate or break out of a CSS declaration
+/// (`;`, `{`, `}`, `\`, `\n`, `\r`), or `fallback` otherwise.
+#[must_use]
+pub(crate) fn css_declaration_value<'a>(value: &'a str, fallback: &'a str) -> &'a str {
+    if value
+        .bytes()
+        .any(|b| matches!(b, b';' | b'{' | b'}' | b'\\' | b'\n' | b'\r'))
+    {
+        fallback
+    } else {
+        value
+    }
+}
+
 /// Escapes text for an XML element or attribute value. A character that XML 1.0 cannot hold (a
 /// control other than tab, line feed and carriage return) is written as U+FFFD.
 #[must_use]
@@ -162,9 +176,9 @@ pub fn xlink_declaration(links: bool) -> &'static str {
 /// Text for a `<style>` element: the characters that would end the element or start a reference
 /// are escaped, and the quotes of CSS are kept as they are.
 pub fn css_text(css: &str) -> String {
-    css.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
+    let mut out = String::with_capacity(css.len());
+    css_text_into(&mut out, css);
+    out
 }
 
 /// Appends the style text to `out`, escaped as [`css_text`] escapes it. The runs between the
@@ -187,8 +201,11 @@ pub(crate) fn css_text_into(out: &mut String, css: &str) {
 
 /// Escape owned style text, retaining its allocation when no XML escaping is needed.
 pub(crate) fn css_text_owned(css: String) -> String {
-    if memchr::memchr3(b'&', b'<', b'>', css.as_bytes()).is_some() {
-        css_text(&css)
+    if let Some(first) = memchr::memchr3(b'&', b'<', b'>', css.as_bytes()) {
+        let mut out = String::with_capacity(css.len() + 8);
+        out.push_str(&css[..first]);
+        css_text_into(&mut out, &css[first..]);
+        out
     } else {
         css
     }

@@ -10,7 +10,7 @@ use std::fmt::Write as _;
 use ferrigura_model::theme::{ThemeTokens, Token};
 
 use crate::context::ThemeView;
-use crate::svg::css_text;
+use crate::svg::css_text_into;
 
 /// The color tokens of the gantt theme (`styles.js`): every color a rule names, with its name, in
 /// the order the sheet declares them.
@@ -182,8 +182,14 @@ pub(crate) fn attribute(name: &str, token: &Token) -> String {
 
 /// The `<style>` element of the chart: the color tokens (one set, or `light-dark()` pairs for a light and a
 /// dark set), the embedded font faces, and the rules of `styles.js` with every
-/// selector starting with the diagram's id.
-pub(crate) fn style_element(id: &str, theme: ThemeView<'_>, family: &str, faces: &str) -> String {
+/// selector starting with the diagram's id, followed by any `extra` CSS rules.
+pub(crate) fn style_element(
+    id: &str,
+    theme: ThemeView<'_>,
+    family: &str,
+    faces: &str,
+    extra: &str,
+) -> String {
     let tokens = match theme.dark {
         None => format!("#{id}{{{}}}", declarations(theme.light)),
         Some(dark) => crate::scheme::both(
@@ -193,9 +199,9 @@ pub(crate) fn style_element(id: &str, theme: ThemeView<'_>, family: &str, faces:
     };
     // `family` is the quoted `font-family` list of the embedded faces, or empty.
     let font = if family.is_empty() {
-        "sans-serif".to_owned()
+        "sans-serif"
     } else {
-        family.to_owned()
+        crate::svg::css_declaration_value(family, "sans-serif")
     };
     // `font-size` of the root is the theme's `fontSize`, as `getStyles` writes it (`styles.ts`).
     let size = theme
@@ -203,9 +209,10 @@ pub(crate) fn style_element(id: &str, theme: ThemeView<'_>, family: &str, faces:
         .font_size
         .text()
         .unwrap_or_else(|| "16px".to_owned());
+    let size = crate::svg::css_declaration_value(&size, "16px");
     let root = format!("#{id}{{font-family: {font};font-size: {size};fill: var(--textColor);}}");
     let mut scoped_rules = String::new();
-    for (selectors, body) in rules(&font) {
+    for (selectors, body) in rules(font) {
         for (index, selector) in selectors.split(',').enumerate() {
             if index > 0 {
                 scoped_rules.push_str(", ");
@@ -214,21 +221,21 @@ pub(crate) fn style_element(id: &str, theme: ThemeView<'_>, family: &str, faces:
         }
         let _ = write!(scoped_rules, "{{{body}}}");
     }
-    format!(
-        "<style>{}{tokens}{root}{scoped_rules}</style>",
-        css_text(faces)
-    )
+    let mut out = String::from("<style>");
+    css_text_into(&mut out, faces);
+    css_text_into(&mut out, &tokens);
+    css_text_into(&mut out, &root);
+    css_text_into(&mut out, &scoped_rules);
+    css_text_into(&mut out, extra);
+    out.push_str("</style>");
+    out
 }
 
 /// The custom property declarations of the color tokens a set gives.
 fn declarations(tokens: &ThemeTokens) -> String {
     color_tokens(tokens)
         .into_iter()
-        .filter_map(|(name, token)| {
-            token
-                .text()
-                .map(|colour| format!("--{name}: {};", css_text(&colour)))
-        })
+        .filter_map(|(name, token)| token.text().map(|colour| format!("--{name}: {colour};")))
         .collect()
 }
 
