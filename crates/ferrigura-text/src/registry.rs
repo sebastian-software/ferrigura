@@ -18,6 +18,8 @@ use crate::measure::ShapePlans;
 use crate::{Face, FontFamily, FontStyle, FontWeight, TextError};
 
 const MAX_RESOLVED_CACHE_ENTRIES: usize = 256;
+const MAX_RESOLVED_CACHE_BYTES: usize = 16 * 1024;
+const MAX_RESOLVED_KEY_BYTES: usize = 1024;
 
 trait ResolveKeyRef {
     fn parts(&self) -> (&str, u16, FontStyle);
@@ -87,15 +89,26 @@ impl ResolveKeyRef for ResolveLookup<'_> {
     }
 }
 
+struct ResolveEntry {
+    face: Arc<Face>,
+    seq: u64,
+}
+
 #[derive(Default)]
-struct ResolveCache(RwLock<HashMap<ResolveKey, Arc<Face>>>);
+struct ResolveCacheState {
+    entries: HashMap<ResolveKey, ResolveEntry>,
+    key_bytes: usize,
+    seq: u64,
+}
+
+#[derive(Default)]
+struct ResolveCache(RwLock<ResolveCacheState>);
 
 impl ResolveCache {
     fn clear(&self) {
-        self.0
-            .write()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clear();
+        let mut state = self.0.write().unwrap_or_else(PoisonError::into_inner);
+        state.entries.clear();
+        state.key_bytes = 0;
     }
 }
 
@@ -269,13 +282,15 @@ impl FontRegistry {
             weight: weight_value,
             style,
         };
-        if let Some(hit) = self
-            .resolved_cache
-            .0
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .get(&lookup as &dyn ResolveKeyRef)
-            .cloned()
+        if families.len() <= MAX_RESOLVED_KEY_BYTES
+            && let Some(hit) = self
+                .resolved_cache
+                .0
+                .read()
+                .unwrap_or_else(PoisonError::into_inner)
+                .entries
+                .get(&lookup as &dyn ResolveKeyRef)
+                .map(|entry| Arc::clone(&entry.face))
         {
             return Ok(hit);
         }
@@ -311,19 +326,49 @@ impl FontRegistry {
         }
         let _ = resolved.css_variable();
         let resolved = Arc::new(resolved);
-        let mut cache = self
-            .resolved_cache
-            .0
-            .write()
-            .unwrap_or_else(PoisonError::into_inner);
-        if cache.len() < MAX_RESOLVED_CACHE_ENTRIES {
-            cache
-                .entry(ResolveKey {
-                    families: families.to_owned(),
-                    weight: weight_value,
-                    style,
-                })
-                .or_insert_with(|| Arc::clone(&resolved));
+        if families.len() <= MAX_RESOLVED_KEY_BYTES {
+            let mut cache = self
+                .resolved_cache
+                .0
+                .write()
+                .unwrap_or_else(PoisonError::into_inner);
+            if !cache.entries.contains_key(&lookup as &dyn ResolveKeyRef) {
+                let key_len = families.len();
+                while cache.entries.len() >= MAX_RESOLVED_CACHE_ENTRIES
+                    || cache.key_bytes.saturating_add(key_len) > MAX_RESOLVED_CACHE_BYTES
+                {
+                    let Some(oldest) =
+                        cache
+                            .entries
+                            .iter()
+                            .min_by_key(|(_, entry)| entry.seq)
+                            .map(|(key, _)| ResolveKey {
+                                families: key.families.clone(),
+                                weight: key.weight,
+                                style: key.style,
+                            })
+                    else {
+                        break;
+                    };
+                    if cache.entries.remove(&oldest).is_some() {
+                        cache.key_bytes = cache.key_bytes.saturating_sub(oldest.families.len());
+                    }
+                }
+                cache.seq = cache.seq.wrapping_add(1);
+                let seq = cache.seq;
+                cache.key_bytes = cache.key_bytes.saturating_add(key_len);
+                cache.entries.insert(
+                    ResolveKey {
+                        families: families.to_owned(),
+                        weight: weight_value,
+                        style,
+                    },
+                    ResolveEntry {
+                        face: Arc::clone(&resolved),
+                        seq,
+                    },
+                );
+            }
         }
         Ok(resolved)
     }
@@ -543,5 +588,45 @@ mod tests {
             .unwrap();
         assert!(!Arc::ptr_eq(&with_fallback, &replaced));
         assert_ne!(first.data_fingerprint(), replaced.data_fingerprint());
+    }
+
+    #[test]
+    fn resolve_cache_evicts_and_bounds_key_memory() {
+        let mut registry = FontRegistry::new();
+        let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
+            .data()
+            .to_vec();
+        registry
+            .register("AppSans", sans, FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+
+        // Oversized family strings are resolved without pinning memory in the cache.
+        let oversized = format!("{}, AppSans", "UnknownFamily, ".repeat(100));
+        assert!(oversized.len() > MAX_RESOLVED_KEY_BYTES);
+        let resolved_big = registry
+            .resolve(&oversized, FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        assert_eq!(resolved_big.family_name(), "AppSans");
+        assert_eq!(registry.resolved_cache.0.read().unwrap().entries.len(), 0);
+
+        // Filling past the entry/byte budget evicts old entries so new hot keys still cache.
+        for i in 0..(MAX_RESOLVED_CACHE_ENTRIES + 32) {
+            let list = format!("Unknown{i:04}, AppSans");
+            let _ = registry
+                .resolve(&list, FontWeight::Normal, FontStyle::Normal)
+                .unwrap();
+        }
+        {
+            let state = registry.resolved_cache.0.read().unwrap();
+            assert!(state.entries.len() <= MAX_RESOLVED_CACHE_ENTRIES);
+            assert!(state.key_bytes <= MAX_RESOLVED_CACHE_BYTES);
+        }
+        let fresh_first = registry
+            .resolve("HotFamily, AppSans", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let fresh_second = registry
+            .resolve("HotFamily, AppSans", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        assert!(Arc::ptr_eq(&fresh_first, &fresh_second));
     }
 }

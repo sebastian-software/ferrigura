@@ -115,12 +115,14 @@ impl CacheKeyRef for LookupKey<'_> {
     }
 }
 
-/// A subset (or complete CFF font) paired with its precomputed base64 payload and single-face
-/// FNV-1a hash state so repeated renders skip both re-hashing and re-encoding.
+/// A subset (or complete CFF font) paired with its precomputed single-face FNV-1a hash state and
+/// optional precomputed base64 payload so repeated renders skip both re-hashing and re-encoding.
+/// When a subset fits in the cache budget on its own but adding a cached base64 copy would exceed
+/// the budget, `base64` is left `None` so the subset bytes remain cached and are encoded on demand.
 #[derive(Debug)]
 pub(crate) struct EmbeddedSubset {
     pub(crate) bytes: Arc<Vec<u8>>,
-    pub(crate) base64: String,
+    pub(crate) base64: Option<String>,
     pub(crate) solo_weight: u16,
     pub(crate) solo_style: FontStyle,
     pub(crate) solo_hash: u64,
@@ -128,9 +130,19 @@ pub(crate) struct EmbeddedSubset {
 
 impl EmbeddedSubset {
     pub(crate) fn new(bytes: Arc<Vec<u8>>, weight: u16, style: FontStyle) -> Self {
+        Self::new_with_base64(bytes, weight, style, true)
+    }
+
+    pub(crate) fn new_with_base64(
+        bytes: Arc<Vec<u8>>,
+        weight: u16,
+        style: FontStyle,
+        include_base64: bool,
+    ) -> Self {
         let mut hasher = Fnv1a::new();
         hash_face_subset(&mut hasher, weight, style, bytes.as_slice());
-        let base64 = base64::engine::general_purpose::STANDARD.encode(bytes.as_slice());
+        let base64 = include_base64
+            .then(|| base64::engine::general_purpose::STANDARD.encode(bytes.as_slice()));
         Self {
             bytes,
             base64,
@@ -498,23 +510,24 @@ fn cached_subset(face: &Face, characters: &[char]) -> Result<SubsetData, TextErr
         }
     }
     let subset_bytes = subset_sorted_characters(face, characters)?;
-    let estimated_base64 = base64::encoded_len(subset_bytes.len(), true).unwrap_or(usize::MAX);
-    let estimated_charge = ENTRY_OVERHEAD
+    let base_charge = ENTRY_OVERHEAD
         .saturating_add(std::mem::size_of_val(characters))
-        .saturating_add(subset_bytes.capacity())
-        .saturating_add(estimated_base64);
-    if estimated_charge > CACHE_BUDGET {
+        .saturating_add(subset_bytes.capacity());
+    if base_charge > CACHE_BUDGET {
         return Ok(SubsetData::Uncached(subset_bytes));
     }
-    let subset = Arc::new(EmbeddedSubset::new(
+    let estimated_base64 = base64::encoded_len(subset_bytes.len(), true).unwrap_or(usize::MAX);
+    let include_base64 = base_charge.saturating_add(estimated_base64) <= CACHE_BUDGET;
+    let subset = Arc::new(EmbeddedSubset::new_with_base64(
         Arc::new(subset_bytes),
         face.weight().css_value(),
         face.style(),
+        include_base64,
     ));
     let charge = ENTRY_OVERHEAD
         .saturating_add(std::mem::size_of_val(characters))
         .saturating_add(subset.bytes.capacity())
-        .saturating_add(subset.base64.capacity());
+        .saturating_add(subset.base64.as_ref().map_or(0, String::capacity));
     if charge <= CACHE_BUDGET {
         let key = CacheKey {
             data_address,
@@ -737,7 +750,10 @@ fn font_face_rules(name: &str, subsets: &[(&Face, SubsetData)]) -> Result<String
     for (face, data) in subsets {
         let variations = variation_defaults(face)?;
         let encoded_len = match data {
-            SubsetData::Cached(entry) => entry.base64.len(),
+            SubsetData::Cached(entry) => entry.base64.as_ref().map_or_else(
+                || base64::encoded_len(entry.bytes.len(), true).unwrap_or(0),
+                String::len,
+            ),
             SubsetData::Uncached(bytes) => base64::encoded_len(bytes.len(), true).unwrap_or(0),
         };
         capacity = capacity
@@ -761,7 +777,14 @@ fn font_face_rules(name: &str, subsets: &[(&Face, SubsetData)]) -> Result<String
             face.style().css_keyword(),
         );
         match data {
-            SubsetData::Cached(entry) => css.push_str(&entry.base64),
+            SubsetData::Cached(entry) => {
+                if let Some(encoded) = &entry.base64 {
+                    css.push_str(encoded);
+                } else {
+                    base64::engine::general_purpose::STANDARD
+                        .encode_string(entry.bytes.as_slice(), &mut css);
+                }
+            }
             SubsetData::Uncached(bytes) => {
                 base64::engine::general_purpose::STANDARD.encode_string(bytes, &mut css);
             }
@@ -1014,8 +1037,36 @@ mod cache_tests {
                 panic!("expected cached payload");
             };
             assert!(Arc::ptr_eq(&first, &second));
-            assert!(!first.base64.is_empty());
+            assert!(first.base64.as_deref().is_some_and(|b64| !b64.is_empty()));
         });
+    }
+
+    #[test]
+    fn large_subset_without_cached_base64_still_renders_identical_rules() {
+        let bytes = Arc::new(b"0001large-subset-payload".to_vec());
+        let with_b64 = Arc::new(EmbeddedSubset::new_with_base64(
+            Arc::clone(&bytes),
+            400,
+            FontStyle::Normal,
+            true,
+        ));
+        let without_b64 = Arc::new(EmbeddedSubset::new_with_base64(
+            bytes,
+            400,
+            FontStyle::Normal,
+            false,
+        ));
+        assert!(with_b64.base64.is_some());
+        assert!(without_b64.base64.is_none());
+        assert_eq!(with_b64.solo_hash, without_b64.solo_hash);
+        let css_with =
+            font_face_rules("fg-test-sans", &[(regular(), SubsetData::Cached(with_b64))]).unwrap();
+        let css_without = font_face_rules(
+            "fg-test-sans",
+            &[(regular(), SubsetData::Cached(without_b64))],
+        )
+        .unwrap();
+        assert_eq!(css_with, css_without);
     }
 
     #[test]

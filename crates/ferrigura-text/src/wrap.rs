@@ -84,7 +84,7 @@ where
     F: FnMut(&[Word]) -> Result<bool, TextError>,
 {
     let mut used = Word {
-        text: String::with_capacity(word.text.len()),
+        text: String::new(),
         face: word.face,
     };
     let mut rest_offset = 0;
@@ -351,5 +351,23 @@ mod tests {
             split_line_to_fit_width(&line, &mut |_| Ok(true)),
             Err(TextError::NewlineInLine)
         ));
+    }
+
+    #[test]
+    fn split_word_does_not_over_allocate_capacity_for_long_words() {
+        let long = "a".repeat(4_000);
+        let wrapped = split_line_to_fit_width(&[word(&long)], &mut |words| {
+            let len: usize = words.iter().map(|w| w.text.len()).sum();
+            Ok(len <= 8)
+        })
+        .unwrap();
+        assert_eq!(wrapped.len(), 500);
+        let total_cap: usize = wrapped
+            .iter()
+            .flat_map(|line| line.iter())
+            .map(|w| w.text.capacity())
+            .sum();
+        // Linear in the output length, not quadratic in word length.
+        assert!(total_cap <= 16_000, "unexpected total capacity {total_cap}");
     }
 }
