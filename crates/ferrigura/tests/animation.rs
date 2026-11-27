@@ -93,10 +93,6 @@ const CHARTS: &[(&str, &str)] = &[
         "gantt\n dateFormat YYYY-MM-DD\n todayMarker off\n section Work\n Design :a, 2026-01-05, 3d\n Build :b, after a, 4d\n Ship :milestone, after b, 0d\n",
     ),
     (
-        "gitgraph",
-        "gitGraph\n commit id: \"Start\"\n branch docs\n commit id: \"Guide\"\n checkout main\n commit id: \"Fix\"\n merge docs id: \"Merge\"\n",
-    ),
-    (
         "mindmap",
         "---\nconfig:\n layout: tidy-tree\n---\nmindmap\n root((Release))\n  Research\n   Interviews\n  Build\n   Parser\n   SVG\n",
     ),

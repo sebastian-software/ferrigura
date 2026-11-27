@@ -34,7 +34,7 @@ export declare class Renderer {
 
 /**
  * Options for one-time, script-free SVG draw animation.
- * Supports flowcharts, Gantt, Git graphs, mind maps, pie charts, and XY charts.
+ * Supports flowcharts, Gantt, mind maps, pie charts, and XY charts.
  */
 export interface AnimationInput {
   /**

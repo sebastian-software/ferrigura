@@ -9,9 +9,9 @@
 // The numbers come from tools/size/measure.mjs, which builds the addon once
 // per diagram type and takes minutes; run it, then this script, when a change
 // moves the sizes. The charts are Mermaid text that Ferrigura draws, so the
-// page shows its own output. Writing renders with the release the homepage's
-// other drawings come from (app/data/diagram-samples.json); the check renders
-// again with the recorded release.
+// page shows its own output. Writing and the check both render with the
+// release that size-charts.json records; to move to another release, change
+// it there.
 import assert from 'node:assert/strict';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
@@ -25,45 +25,22 @@ const data = new URL('../app/data/', import.meta.url);
 const target = new URL('size-charts.json', data);
 const svgDirectory = new URL('size/', data);
 const size = JSON.parse(await readFile(new URL('size.json', data), 'utf8'));
-const recorded = check ? JSON.parse(await readFile(target, 'utf8')) : undefined;
-const samples = JSON.parse(await readFile(new URL('diagram-samples.json', data), 'utf8'));
-const version = recorded?.renderedWith[name] ?? samples.renderedWith[name];
+const recorded = JSON.parse(await readFile(target, 'utf8'));
+const version = recorded.renderedWith[name];
 const platform = `${process.platform}-${process.arch}`;
 
 /** The names the diagram pages use, by the addon's feature names. */
 const labels = {
   pie: 'Pie',
   flowchart: 'Flowchart',
-  timeline: 'Timeline',
-  journey: 'User journey',
-  git_graph: 'Git graph',
   er: 'Entity relationship',
   class: 'Class',
   sequence: 'Sequence',
   state: 'State',
   gantt: 'Gantt',
   mindmap: 'Mindmap',
-  block: 'Block',
-  packet: 'Packet',
   xy_chart: 'XY chart',
-  sankey: 'Sankey',
   quadrant_chart: 'Quadrant chart',
-  requirement: 'Requirement',
-  c4: 'C4',
-  kanban: 'Kanban',
-  architecture: 'Architecture',
-  treemap: 'Treemap',
-  ishikawa: 'Ishikawa',
-  event_modeling: 'Event modeling',
-  agentflow: 'Agent flow',
-  cynefin: 'Cynefin',
-  radar: 'Radar',
-  railroad: 'Railroad',
-  swimlanes: 'Swimlanes',
-  tree_view: 'Tree view',
-  use_case: 'Use case',
-  venn: 'Venn',
-  wardley: 'Wardley map',
 };
 for (const { type } of size.types) assert(labels[type], `No label for the diagram type ${type}`);
 
@@ -90,8 +67,7 @@ xychart-beta horizontal
   {
     id: 'sets',
     title: 'The addon by the types it draws',
-    description:
-      'Builds of the addon with the cargo features of a few type sets, in MB, stripped. The core is the build with the info diagram alone.',
+    description: `Builds of the addon with the cargo features of a few type sets, in MB, stripped. The core is the build with the ${labels[size.core.type].toLowerCase()} alone.`,
     source: `${chartConfig(300)}
 xychart-beta horizontal
   x-axis ["Core", ${size.sets.map(({ label }) => `"${label}"`).join(', ')}]
@@ -103,7 +79,7 @@ xychart-beta horizontal
     id: 'share',
     title: 'Core and diagram types in the full addon',
     description:
-      'The published addon, which draws every type, split into the core and what the 32 other types add together, in MB.',
+      'The published addon, which draws every type, split into the core and what the nine other types add together, in MB.',
     source: `pie showData
   "Core" : ${MB(size.core.bytes)}
   "Diagram types" : ${MB(size.sets.at(-1).bytes - size.core.bytes)}

@@ -38,11 +38,11 @@
       "file": "er.svg"
     },
     {
-      "id": "gitgraph",
-      "label": "Git graph",
-      "description": "A docs branch leaves main, gains two commits and is merged back after a fix on main.",
-      "source": "gitGraph\n  commit id: \"Initial\"\n  branch docs\n  checkout docs\n  commit id: \"Add guide\"\n  commit id: \"Add diagrams\"\n  checkout main\n  commit id: \"Fix build\"\n  merge docs\n  commit id: \"Release\"\n",
-      "file": "gitgraph.svg"
+      "id": "gantt",
+      "label": "Gantt",
+      "description": "A guide is drafted and its diagrams drawn at the same time; review follows both, and the guide is published once review ends.",
+      "source": "gantt\n  dateFormat YYYY-MM-DD\n  axisFormat %b %d\n  todayMarker off\n  section Writing\n    Draft the guide: draft, 2026-03-02, 5d\n    Draw the diagrams: diagrams, 2026-03-02, 4d\n  section Release\n    Review: review, after draft diagrams, 3d\n    Publish: milestone, after review, 0d\n",
+      "file": "gantt.svg"
     }
   ],
   "modes": {
@@ -79,6 +79,24 @@
         "source": "flowchart TD\n  write[Write the guide] --> review[Review it]\n  review --> approve[Approve it]\n  approve --> publish[Publish it]\n  write -->|typo fix| publish\n  review -->|changes requested| write\n  publish --> announce([Announce the release])\n",
         "plain": "design-review-default.svg",
         "designed": "design-review.svg"
+      },
+      {
+        "id": "state",
+        "label": "States",
+        "stacked": false,
+        "description": "A guide starts as a draft. Submitting it puts it in review, where it is approved and published or sent back with requested changes. A published guide is archived at the end. A note says that two editors read every guide.",
+        "source": "stateDiagram-v2\n  [*] --> Draft\n  Draft --> Review : submit\n  Review --> Draft : request changes\n  Review --> Published : approve\n  Published --> Archived : archive\n  Archived --> [*]\n  note right of Review\n    Two editors read\n    every guide.\n  end note\n",
+        "plain": "design-state-default.svg",
+        "designed": "design-state.svg"
+      },
+      {
+        "id": "classes",
+        "label": "Classes",
+        "stacked": false,
+        "description": "Shape is an interface with an area. Circle and the abstract class Polygon realize it, and Triangle and Rectangle are polygons.",
+        "source": "classDiagram\n  class Shape {\n    <<interface>>\n    +area() double\n  }\n  class Polygon {\n    <<abstract>>\n    #List~Point~ vertices\n    +perimeter() double\n  }\n  class Circle {\n    -double radius\n    +area() double\n  }\n  class Triangle {\n    +area() double\n  }\n  class Rectangle {\n    -double width\n    -double height\n    +area() double\n  }\n  Shape <|.. Circle\n  Shape <|.. Polygon\n  Polygon <|-- Triangle\n  Polygon <|-- Rectangle\n",
+        "plain": "design-classes-default.svg",
+        "designed": "design-classes.svg"
       }
     ],
     "dark": "design-decision-dark.svg"

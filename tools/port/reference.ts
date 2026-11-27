@@ -31,8 +31,8 @@ export interface Reference {
 
 /**
  * Opens the reference's module loader. `extraPlugins` lets one exporter add a transform of its
- * own, such as a read of a module's state that the module does not export (`export-kanban.ts`);
- * the reference's source is not changed.
+ * own, such as a read of a module's state that the module does not export; the reference's source
+ * is not changed.
  */
 export async function openReference(extraPlugins: Plugin[] = []): Promise<Reference> {
   requireReference();
@@ -80,10 +80,9 @@ export type PortOutput =
   | { id: number; ok: false; error: string };
 
 /**
- * Registers the detectors of the diagram types the port covers: the P1 types, and the P2 and P3
- * types whose parsers are not ported yet. The reference's directive handling calls `detectType`, which
- * throws unless the detectors of the diagrams are registered, as `mermaidAPI` does when it loads
- * the diagrams.
+ * Registers the detectors of Mermaid's diagram types, the ones ferrigura draws and the others, as
+ * `mermaidAPI` does when it loads the diagrams. The reference's directive handling calls
+ * `detectType`, which throws unless the detectors of the diagrams are registered.
  */
 export async function registerDetectors(reference: Reference): Promise<void> {
   const [

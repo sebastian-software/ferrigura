@@ -17,8 +17,8 @@ Its headline is speed against mermaid-cli: 100 to 1,400 times faster by its own 
 | Goal             | Mermaid's syntax, its own drawing; Mermaid's output not claimed               | Mermaid's output: the same geometry within 0.05 px on every comparable fixture                          |
 | Mermaid version  | None named; Mermaid 11 in its tools                                           | 12.2.0                                                                                                  |
 | How it checks    | Invariants of the drawing in CI; mermaid-cli compared by a development script | The models against the running reference on every input, the geometry in Chromium, hashes of its output |
-| Diagram types    | 23                                                                            | 33 of 33 families of Mermaid 12.2.0                                                                     |
-| Layout           | Its own layered layout; Dagre-style engines as an option                      | Mermaid's engines, ported: ELK Layered, cose-bilkent, fcose, the tidy tree                              |
+| Diagram types    | 23                                                                            | 10 of the 33 families of Mermaid 12.2.0, each one completely                                            |
+| Layout           | Its own layered layout; Dagre-style engines as an option                      | Mermaid's engines, ported: ELK Layered, cose-bilkent, the tidy tree                                     |
 | Text measurement | The fonts installed on the machine; the output differs between machines       | The bundled faces, shaped with HarfRust; the same on every host                                         |
 | Fonts            | The viewer's                                                                  | Embedded in the SVG as a subset of the glyphs used                                                      |
 | Themes           | Its own `modern` by default; Mermaid's themes and `themeVariables`            | `redux-color` and `redux-dark-color` as CSS custom properties                                           |

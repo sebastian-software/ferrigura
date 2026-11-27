@@ -388,24 +388,39 @@ fn comment_match_end(text: &str, start: usize) -> Option<usize> {
 }
 
 /// Whether the diagram's first non-blank, non-comment line is a dialect whose `classDef`
-/// declarations accept semicolon-separated CSS properties (`treemap` / `stateDiagram`). All
-/// flowchart and flowchart-derived dialects (`flowchart`, `graph`, `agentflow-beta`,
-/// `swimlane-beta`, etc.) use `;` as a statement separator instead.
+/// declarations accept semicolon-separated CSS properties (`stateDiagram`). Flowchart dialects use
+/// `;` as a statement separator instead.
 fn allows_classdef_semicolon_css(text: &str) -> bool {
     for line in text.split(JS_LINE_TERMINATORS) {
         let trimmed = line.trim_start_matches(is_js_space);
         if trimmed.is_empty() || trimmed.starts_with("%%") {
             continue;
         }
-        return trimmed
-            .strip_prefix("treemap")
-            .or_else(|| trimmed.strip_prefix("stateDiagram"))
-            .is_some_and(|after| {
-                after
-                    .chars()
-                    .next()
-                    .is_none_or(|c| is_js_space(c) || c == '-')
-            });
+        return trimmed.strip_prefix("stateDiagram").is_some_and(|after| {
+            after
+                .chars()
+                .next()
+                .is_none_or(|c| is_js_space(c) || c == '-')
+        });
+    }
+    false
+}
+
+/// Whether the diagram's first non-blank, non-comment line is `classDiagram` (or `classDiagram-v2`),
+/// whose `class ... { ... }` bodies contain plain-text member rows whose literal `"` characters do
+/// not open multiline quoted strings.
+fn is_class_diagram_dialect(text: &str) -> bool {
+    for line in text.split(JS_LINE_TERMINATORS) {
+        let trimmed = line.trim_start_matches(is_js_space);
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+        return trimmed.strip_prefix("classDiagram").is_some_and(|after| {
+            after
+                .chars()
+                .next()
+                .is_none_or(|c| is_js_space(c) || c == '-')
+        });
     }
     false
 }
@@ -471,11 +486,49 @@ fn starts_style_or_classdef(rest: &str) -> bool {
         .is_some_and(|after| after.chars().next().is_some_and(is_js_space))
 }
 
+/// Whether `rest` starts a `classDef` statement (keyword followed by whitespace).
+fn starts_classdef(rest: &str) -> bool {
+    rest.strip_prefix("classDef")
+        .is_some_and(|after| after.chars().next().is_some_and(is_js_space))
+}
+
+/// Whether `rest` starts a `class` declaration statement (`class` followed by whitespace).
+fn starts_class_stmt(rest: &str) -> bool {
+    rest.strip_prefix("class")
+        .is_some_and(|after| after.chars().next().is_some_and(is_js_space))
+}
+
 /// Whether the `:` at byte offset `at` in `src` is a standalone single colon (not part of `::` or
 /// `:::`).
 fn is_single_colon(src: &str, at: usize) -> bool {
     let bytes = src.as_bytes();
     (at == 0 || bytes[at - 1] != b':') && bytes.get(at + 1) != Some(&b':')
+}
+
+/// Dialect flags computed once from the diagram header for entity encoding and error remapping.
+#[derive(Clone, Copy)]
+struct EncodeDialects {
+    allow_classdef_css_semi: bool,
+    colon_label_dialect: bool,
+    class_diagram_dialect: bool,
+}
+
+impl EncodeDialects {
+    fn of(text: &str) -> Self {
+        Self {
+            allow_classdef_css_semi: allows_classdef_semicolon_css(text),
+            colon_label_dialect: is_colon_label_dialect(text),
+            class_diagram_dialect: is_class_diagram_dialect(text),
+        }
+    }
+}
+
+/// Multiline scanning state carried across lines during entity preprocessing.
+#[derive(Clone, Copy, Default)]
+struct MultilineScanState {
+    in_quotes: bool,
+    in_acc_descr_block: bool,
+    class_body_depth: usize,
 }
 
 /// `encodeEntities`: the semicolon that ends a `style` or `classDef` line with a color is dropped,
@@ -484,16 +537,10 @@ pub(crate) fn encode_entities(text: &str) -> String {
     if !text.contains('#') {
         return text.to_owned();
     }
-    let allow_classdef_css_semi = allows_classdef_semicolon_css(text);
-    let colon_label_dialect = is_colon_label_dialect(text);
-    let text = drop_color_semicolons(text, "style", allow_classdef_css_semi, colon_label_dialect);
-    let text = drop_color_semicolons(
-        &text,
-        "classDef",
-        allow_classdef_css_semi,
-        colon_label_dialect,
-    );
-    encode_hash_entities(&text, colon_label_dialect)
+    let dialects = EncodeDialects::of(text);
+    let text = drop_color_semicolons(text, "style", dialects);
+    let text = drop_color_semicolons(&text, "classDef", dialects);
+    encode_hash_entities(&text, dialects)
 }
 
 /// Maps a [`ParseError`](crate::error::ParseError) produced on `encode_entities(cleaned)` back to
@@ -510,21 +557,14 @@ pub(crate) fn remap_encoded_error(
     let Some(target_line) = error.line.checked_sub(1 + line_offset) else {
         return error;
     };
-    let allow_classdef_css_semi = allows_classdef_semicolon_css(cleaned);
-    let colon_label_dialect = is_colon_label_dialect(cleaned);
-    let mut initial_in_quotes = false;
-    let mut initial_in_acc_descr_block = false;
+    let dialects = EncodeDialects::of(cleaned);
+    let mut state = MultilineScanState::default();
     let mut lines = cleaned.split('\n');
     for _ in 0..target_line {
         let Some(prev_line) = lines.next() else {
             return error;
         };
-        advance_quote_state(
-            prev_line,
-            &mut initial_in_quotes,
-            &mut initial_in_acc_descr_block,
-            colon_label_dialect,
-        );
+        advance_quote_state(prev_line, &mut state, dialects);
     }
     let Some(orig_line) = lines.next() else {
         return error;
@@ -532,41 +572,46 @@ pub(crate) fn remap_encoded_error(
     if !orig_line.contains('#') {
         return error;
     }
-    error.column = remap_encoded_line_column(
-        orig_line,
-        error.column,
-        initial_in_quotes,
-        initial_in_acc_descr_block,
-        allow_classdef_css_semi,
-        colon_label_dialect,
-    );
+    error.column = remap_encoded_line_column(orig_line, error.column, state, dialects);
     error
 }
 
-/// Advances the multiline double-quote and `accDescr { ... }` block state across a single line.
-fn advance_quote_state(
-    line: &str,
-    in_quotes: &mut bool,
-    in_acc_descr_block: &mut bool,
-    colon_label_dialect: bool,
-) {
+/// Advances the multiline double-quote, `accDescr { ... }`, and `class ... { ... }` body state
+/// across a single line.
+fn advance_quote_state(line: &str, state: &mut MultilineScanState, dialects: EncodeDialects) {
     let mut at_line_start = true;
     let mut stmt_start = true;
     let mut in_style_stmt = false;
+    let mut in_class_stmt = false;
     let mut prev_was_alnum = false;
     for (at, ch) in line.char_indices() {
-        if *in_acc_descr_block {
+        if state.in_acc_descr_block {
             if ch == '}' {
-                *in_acc_descr_block = false;
+                state.in_acc_descr_block = false;
                 stmt_start = true;
                 in_style_stmt = false;
+                in_class_stmt = false;
             }
             prev_was_alnum = false;
             continue;
         }
-        if *in_quotes {
+        if state.class_body_depth > 0 {
+            if ch == '{' {
+                state.class_body_depth += 1;
+            } else if ch == '}' {
+                state.class_body_depth -= 1;
+                if state.class_body_depth == 0 {
+                    stmt_start = true;
+                    in_style_stmt = false;
+                    in_class_stmt = false;
+                }
+            }
+            prev_was_alnum = false;
+            continue;
+        }
+        if state.in_quotes {
             if ch == '"' {
-                *in_quotes = false;
+                state.in_quotes = false;
             }
             prev_was_alnum = false;
             continue;
@@ -582,7 +627,7 @@ fn advance_quote_state(
                 if let Some(brace) = rest.find('{')
                     && !rest[brace + 1..].contains('}')
                 {
-                    *in_acc_descr_block = true;
+                    state.in_acc_descr_block = true;
                 }
                 break;
             }
@@ -591,7 +636,7 @@ fn advance_quote_state(
             }
         }
         if ch == '"' && !prev_was_alnum {
-            *in_quotes = true;
+            state.in_quotes = true;
             stmt_start = false;
             prev_was_alnum = false;
             continue;
@@ -600,6 +645,7 @@ fn advance_quote_state(
         if ch == ';' {
             stmt_start = true;
             in_style_stmt = false;
+            in_class_stmt = false;
             continue;
         }
         if stmt_start {
@@ -607,9 +653,18 @@ fn advance_quote_state(
                 continue;
             }
             stmt_start = false;
-            in_style_stmt = starts_style_or_classdef(&line[at..]);
+            let rest = &line[at..];
+            in_style_stmt = starts_style_or_classdef(rest);
+            in_class_stmt = dialects.class_diagram_dialect && starts_class_stmt(rest);
         }
-        if colon_label_dialect && !in_style_stmt && ch == ':' && is_single_colon(line, at) {
+        if dialects.class_diagram_dialect && in_class_stmt && ch == '{' {
+            state.class_body_depth = 1;
+            in_class_stmt = false;
+            prev_was_alnum = false;
+            continue;
+        }
+        if dialects.colon_label_dialect && !in_style_stmt && ch == ':' && is_single_colon(line, at)
+        {
             break;
         }
     }
@@ -619,14 +674,12 @@ fn advance_quote_state(
 const JS_LINE_TERMINATORS: [char; 4] = ['\n', '\r', '\u{2028}', '\u{2029}'];
 
 /// Maps a 1-based column in `encode_entities(orig_line)` back to its 1-based column in `orig_line`,
-/// given the quote and `accDescr { ... }` block state carried in from preceding lines.
+/// given the multiline scan state carried in from preceding lines.
 fn remap_encoded_line_column(
     orig_line: &str,
     encoded_column: usize,
-    initial_in_quotes: bool,
-    initial_in_acc_descr_block: bool,
-    allow_classdef_css_semi: bool,
-    colon_label_dialect: bool,
+    initial_state: MultilineScanState,
+    dialects: EncodeDialects,
 ) -> usize {
     let mut chars: Vec<(char, usize)> = orig_line
         .chars()
@@ -637,18 +690,10 @@ fn remap_encoded_line_column(
         let current: String = chars.iter().map(|&(c, _)| c).collect();
         let mut to_remove = Vec::new();
         let mut char_offset = 0usize;
-        let mut in_quotes = initial_in_quotes;
-        let mut in_acc_descr_block = initial_in_acc_descr_block;
+        let mut state = initial_state;
         for segment in current.split_inclusive(JS_LINE_TERMINATORS) {
             let content = segment.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(segment);
-            if let Some(semi_byte) = color_semicolon_byte(
-                content,
-                word,
-                &mut in_quotes,
-                &mut in_acc_descr_block,
-                allow_classdef_css_semi,
-                colon_label_dialect,
-            ) {
+            if let Some(semi_byte) = color_semicolon_byte(content, word, &mut state, dialects) {
                 to_remove.push(char_offset + content[..semi_byte].chars().count());
             }
             char_offset += segment.chars().count();
@@ -670,11 +715,7 @@ fn remap_encoded_line_column(
     }
     let current: String = chars.iter().map(|&(c, _)| c).collect();
     let mut mapped_cols: Vec<usize> = Vec::with_capacity(chars.len());
-    let mut tracker = StyleStmtTracker::with_state(
-        initial_in_quotes,
-        initial_in_acc_descr_block,
-        colon_label_dialect,
-    );
+    let mut tracker = StyleStmtTracker::with_state(initial_state, dialects);
     let mut char_idx = 0usize;
     let mut byte_idx = 0usize;
     while char_idx < chars.len() {
@@ -687,7 +728,8 @@ fn remap_encoded_line_column(
             if name_len > 0 && after[name_len..].starts_with(';') {
                 let name = &after[..name_len];
                 if tracker.allows_hex_color(name) {
-                    let keep_len = if is_horizontal_ws_to_eol(&after[name_len + 1..]) {
+                    let rest_after_semi = &after[name_len + 1..];
+                    let keep_len = if is_horizontal_ws_to_eol(rest_after_semi) {
                         1 + name_len
                     } else {
                         1 + name_len + 1
@@ -695,7 +737,7 @@ fn remap_encoded_line_column(
                     for &(_, c_col) in &chars[char_idx..char_idx + keep_len] {
                         mapped_cols.push(c_col);
                     }
-                    tracker.reset();
+                    tracker.after_hex_semicolon(rest_after_semi);
                     char_idx += 1 + name_len + 1;
                     byte_idx += 1 + name_len + 1;
                     continue;
@@ -771,24 +813,22 @@ fn starts_with_css_property(rest: &str) -> bool {
     .any(|op| after_colon.contains(op))
 }
 
-/// Byte offset of the color-terminating semicolon to drop on a single line for a `style` or
+/// Byte offset of the color-terminating semicolon to drop at end-of-line for a `style` or
 /// `classDef` declaration (`<word> .*:\S*#.*;`), if any. Only matches `word` followed by whitespace
 /// at the start of an unquoted statement (line start or after an unquoted `;`), skips non-hex
-/// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and only drops a
-/// semicolon at end-of-line (or before a following CSS property on non-flowchart `classDef` lines)
-/// so flowchart statement separators stay intact.
+/// entities like `#44;` inside CSS values (such as `rgb(255#44;0#44;0);`), and preserves interior
+/// semicolons between semicolon-separated CSS properties on `stateDiagram` `classDef` lines.
 fn color_semicolon_byte(
     line: &str,
     word: &str,
-    in_quotes: &mut bool,
-    in_acc_descr_block: &mut bool,
-    allow_classdef_css_semi: bool,
-    colon_label_dialect: bool,
+    state: &mut MultilineScanState,
+    dialects: EncodeDialects,
 ) -> Option<usize> {
     let mut at_line_start = true;
     let mut stmt_start = true;
     let mut in_target_stmt = false;
     let mut in_style_or_classdef = false;
+    let mut in_class_stmt = false;
     let mut seen_colon = false;
     let mut seen_colon_hash = false;
     let mut prev_was_alnum = false;
@@ -796,18 +836,33 @@ fn color_semicolon_byte(
     let mut chars = line.char_indices();
 
     while let Some((at, ch)) = chars.next() {
-        if *in_acc_descr_block {
+        if state.in_acc_descr_block {
             if ch == '}' {
-                *in_acc_descr_block = false;
+                state.in_acc_descr_block = false;
                 stmt_start = true;
                 in_style_or_classdef = false;
+                in_class_stmt = false;
             }
             prev_was_alnum = false;
             continue;
         }
-        if *in_quotes {
+        if state.class_body_depth > 0 {
+            if ch == '{' {
+                state.class_body_depth += 1;
+            } else if ch == '}' {
+                state.class_body_depth -= 1;
+                if state.class_body_depth == 0 {
+                    stmt_start = true;
+                    in_style_or_classdef = false;
+                    in_class_stmt = false;
+                }
+            }
+            prev_was_alnum = false;
+            continue;
+        }
+        if state.in_quotes {
             if ch == '"' {
-                *in_quotes = false;
+                state.in_quotes = false;
             }
             prev_was_alnum = false;
             continue;
@@ -823,7 +878,7 @@ fn color_semicolon_byte(
                 if let Some(brace) = rest.find('{')
                     && !rest[brace + 1..].contains('}')
                 {
-                    *in_acc_descr_block = true;
+                    state.in_acc_descr_block = true;
                 }
                 break;
             }
@@ -832,7 +887,7 @@ fn color_semicolon_byte(
             }
         }
         if ch == '"' && !prev_was_alnum {
-            *in_quotes = true;
+            state.in_quotes = true;
             stmt_start = false;
             prev_was_alnum = false;
             if in_target_stmt {
@@ -843,18 +898,23 @@ fn color_semicolon_byte(
         prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
             let after = &line[at + 1..];
-            if in_target_stmt
-                && seen_colon_hash
-                && (is_horizontal_ws_to_eol(after)
-                    || (allow_classdef_css_semi
-                        && word == "classDef"
-                        && starts_with_css_property(after)))
-            {
+            if in_target_stmt && seen_colon_hash && is_horizontal_ws_to_eol(after) {
                 last_semi = Some(at);
+            }
+            if in_target_stmt
+                && dialects.allow_classdef_css_semi
+                && word == "classDef"
+                && starts_with_css_property(after)
+            {
+                // Preserve interior property separators on `stateDiagram` `classDef` lines and
+                // keep the statement active for any trailing color or EOL terminator.
+                seen_colon = false;
+                continue;
             }
             stmt_start = true;
             in_target_stmt = false;
             in_style_or_classdef = false;
+            in_class_stmt = false;
             seen_colon = false;
             seen_colon_hash = false;
             continue;
@@ -866,6 +926,7 @@ fn color_semicolon_byte(
             stmt_start = false;
             let rest = &line[at..];
             in_style_or_classdef = starts_style_or_classdef(rest);
+            in_class_stmt = dialects.class_diagram_dialect && starts_class_stmt(rest);
             if let Some(after) = rest.strip_prefix(word)
                 && after.chars().next().is_some_and(is_js_space)
             {
@@ -873,7 +934,17 @@ fn color_semicolon_byte(
             }
             continue;
         }
-        if colon_label_dialect && !in_style_or_classdef && ch == ':' && is_single_colon(line, at) {
+        if dialects.class_diagram_dialect && in_class_stmt && ch == '{' {
+            state.class_body_depth = 1;
+            in_class_stmt = false;
+            prev_was_alnum = false;
+            continue;
+        }
+        if dialects.colon_label_dialect
+            && !in_style_or_classdef
+            && ch == ':'
+            && is_single_colon(line, at)
+        {
             break;
         }
         if in_target_stmt {
@@ -907,25 +978,12 @@ fn color_semicolon_byte(
 }
 
 /// `<word> .*:\S*#.*;` with the color-terminating semicolon removed on each JavaScript line.
-fn drop_color_semicolons(
-    text: &str,
-    word: &str,
-    allow_classdef_css_semi: bool,
-    colon_label_dialect: bool,
-) -> String {
+fn drop_color_semicolons(text: &str, word: &str, dialects: EncodeDialects) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut in_quotes = false;
-    let mut in_acc_descr_block = false;
+    let mut state = MultilineScanState::default();
     for line in text.split_inclusive(JS_LINE_TERMINATORS) {
         let content = line.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(line);
-        if let Some(semicolon) = color_semicolon_byte(
-            content,
-            word,
-            &mut in_quotes,
-            &mut in_acc_descr_block,
-            allow_classdef_css_semi,
-            colon_label_dialect,
-        ) {
+        if let Some(semicolon) = color_semicolon_byte(content, word, &mut state, dialects) {
             out.push_str(&line[..semicolon]);
             out.push_str(&line[semicolon + 1..]);
         } else {
@@ -960,43 +1018,59 @@ enum StmtKind {
 /// Single-pass O(n) forward tracker for whether the current `#<hex>;` sits inside an unquoted
 /// `style` or `classDef` declaration value (after `:` and a CSS token separator), resetting
 /// statement state on every line terminator and unquoted `;` while preserving quote context across
-/// multiline quoted labels and ignoring literal quotes inside `accDescr { ... }` blocks and
-/// single-line `:` labels in `classDiagram` / `stateDiagram`.
+/// multiline quoted labels and ignoring literal quotes inside `accDescr { ... }` blocks,
+/// `class ... { ... }` member blocks, and single-line `:` labels in `classDiagram` / `stateDiagram`.
 struct StyleStmtTracker {
     kind: StmtKind,
+    in_classdef: bool,
+    in_class_stmt: bool,
     seen_colon: bool,
     last_allows_hex: bool,
     at_line_start: bool,
     in_plain_line: bool,
-    in_acc_descr_block: bool,
-    in_quotes: bool,
+    state: MultilineScanState,
     prev_was_alnum: bool,
-    colon_label_dialect: bool,
+    dialects: EncodeDialects,
 }
 
 impl StyleStmtTracker {
-    fn new(colon_label_dialect: bool) -> Self {
-        Self::with_state(false, false, colon_label_dialect)
+    fn new(dialects: EncodeDialects) -> Self {
+        Self::with_state(MultilineScanState::default(), dialects)
     }
 
-    fn with_state(in_quotes: bool, in_acc_descr_block: bool, colon_label_dialect: bool) -> Self {
+    fn with_state(state: MultilineScanState, dialects: EncodeDialects) -> Self {
         Self {
             kind: StmtKind::Start,
+            in_classdef: false,
+            in_class_stmt: false,
             seen_colon: false,
             last_allows_hex: false,
             at_line_start: true,
             in_plain_line: false,
-            in_acc_descr_block,
-            in_quotes,
+            state,
             prev_was_alnum: false,
-            colon_label_dialect,
+            dialects,
         }
     }
 
     fn reset(&mut self) {
         self.kind = StmtKind::Start;
+        self.in_classdef = false;
+        self.in_class_stmt = false;
         self.seen_colon = false;
         self.last_allows_hex = false;
+    }
+
+    fn after_hex_semicolon(&mut self, rest_after_semi: &str) {
+        if self.dialects.allow_classdef_css_semi
+            && self.in_classdef
+            && starts_with_css_property(rest_after_semi)
+        {
+            self.seen_colon = false;
+            self.last_allows_hex = false;
+        } else {
+            self.reset();
+        }
     }
 
     fn reset_line(&mut self) {
@@ -1016,21 +1090,35 @@ impl StyleStmtTracker {
     }
 
     fn push(&mut self, src: &str, at: usize, ch: char) {
-        if self.in_acc_descr_block {
+        if self.state.in_acc_descr_block {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
                 self.reset_line();
             } else if ch == '}' {
-                self.in_acc_descr_block = false;
+                self.state.in_acc_descr_block = false;
                 self.reset();
             }
             self.prev_was_alnum = false;
             return;
         }
-        if self.in_quotes {
+        if self.state.class_body_depth > 0 {
+            if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                self.reset_line();
+            } else if ch == '{' {
+                self.state.class_body_depth += 1;
+            } else if ch == '}' {
+                self.state.class_body_depth -= 1;
+                if self.state.class_body_depth == 0 {
+                    self.reset();
+                }
+            }
+            self.prev_was_alnum = false;
+            return;
+        }
+        if self.state.in_quotes {
             if matches!(ch, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
                 self.reset_line();
             } else if ch == '"' {
-                self.in_quotes = false;
+                self.state.in_quotes = false;
             }
             self.prev_was_alnum = false;
             return;
@@ -1051,7 +1139,7 @@ impl StyleStmtTracker {
             self.at_line_start = false;
             let rest = &src[at..];
             if starts_acc_descr_block(rest) {
-                self.in_acc_descr_block = true;
+                self.state.in_acc_descr_block = true;
                 self.kind = StmtKind::Other;
                 self.prev_was_alnum = false;
                 return;
@@ -1064,7 +1152,7 @@ impl StyleStmtTracker {
             }
         }
         if ch == '"' && !self.prev_was_alnum {
-            self.in_quotes = true;
+            self.state.in_quotes = true;
             if self.kind == StmtKind::Start {
                 self.kind = StmtKind::Other;
             }
@@ -1074,6 +1162,14 @@ impl StyleStmtTracker {
         }
         self.prev_was_alnum = ch.is_ascii_alphanumeric();
         if ch == ';' {
+            if self.dialects.allow_classdef_css_semi
+                && self.in_classdef
+                && starts_with_css_property(&src[at + 1..])
+            {
+                self.seen_colon = false;
+                self.last_allows_hex = false;
+                return;
+            }
             self.reset();
             return;
         }
@@ -1081,13 +1177,22 @@ impl StyleStmtTracker {
             if is_js_space(ch) {
                 return;
             }
-            self.kind = if starts_style_or_classdef(&src[at..]) {
-                StmtKind::Style
+            let rest = &src[at..];
+            if starts_style_or_classdef(rest) {
+                self.kind = StmtKind::Style;
+                self.in_classdef = starts_classdef(rest);
             } else {
-                StmtKind::Other
-            };
+                self.kind = StmtKind::Other;
+                self.in_class_stmt = self.dialects.class_diagram_dialect && starts_class_stmt(rest);
+            }
         }
-        if self.colon_label_dialect
+        if self.dialects.class_diagram_dialect && self.in_class_stmt && ch == '{' {
+            self.state.class_body_depth = 1;
+            self.in_class_stmt = false;
+            self.prev_was_alnum = false;
+            return;
+        }
+        if self.dialects.colon_label_dialect
             && self.kind == StmtKind::Other
             && ch == ':'
             && is_single_colon(src, at)
@@ -1105,9 +1210,10 @@ impl StyleStmtTracker {
     }
 
     fn allows_hex_color(&self, name: &str) -> bool {
-        !self.in_quotes
+        !self.state.in_quotes
             && !self.in_plain_line
-            && !self.in_acc_descr_block
+            && !self.state.in_acc_descr_block
+            && self.state.class_body_depth == 0
             && self.kind == StmtKind::Style
             && self.seen_colon
             && self.last_allows_hex
@@ -1118,9 +1224,9 @@ impl StyleStmtTracker {
 
 /// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name, except for CSS hex
 /// colors inside the current `style` / `classDef` statement.
-fn encode_hash_entities(text: &str, colon_label_dialect: bool) -> String {
+fn encode_hash_entities(text: &str, dialects: EncodeDialects) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut tracker = StyleStmtTracker::new(colon_label_dialect);
+    let mut tracker = StyleStmtTracker::new(dialects);
     let mut cursor = 0;
     let mut chars = text.char_indices();
     while let Some((at, ch)) = chars.next() {
@@ -1134,12 +1240,13 @@ fn encode_hash_entities(text: &str, colon_label_dialect: bool) -> String {
                 out.push_str(&text[cursor..at]);
                 let end = at + 1 + name_len + 1;
                 if tracker.allows_hex_color(name) {
+                    let rest_after_semi = &after[name_len + 1..];
                     out.push('#');
                     out.push_str(name);
-                    if !is_horizontal_ws_to_eol(&after[name_len + 1..]) {
+                    if !is_horizontal_ws_to_eol(rest_after_semi) {
                         out.push(';');
                     }
-                    tracker.reset();
+                    tracker.after_hex_semicolon(rest_after_semi);
                 } else {
                     if name.bytes().all(|b| b.is_ascii_digit()) {
                         out.push_str("ﬂ°°");
@@ -1194,5 +1301,29 @@ mod tests {
         let encoded = encode_entities("a #9829; b #amp; c #x;y");
         assert_eq!(encoded, "a ﬂ°°9829¶ß b ﬂ°amp¶ß c ﬂ°x¶ßy");
         assert_eq!(decode_entities(&encoded), "a &#9829; b &amp; c &x;y");
+    }
+
+    #[test]
+    fn state_classdef_keeps_interior_semicolons_and_hex_colors() {
+        assert_eq!(
+            encode_entities(
+                "stateDiagram-v2\n  classDef hot stroke:#abc,stroke-width:2px;opacity:0.5;\n"
+            ),
+            "stateDiagram-v2\n  classDef hot stroke:#abc,stroke-width:2px;opacity:0.5\n"
+        );
+        assert_eq!(
+            encode_entities("stateDiagram-v2\n  classDef hot fill:#abc;color:#def;opacity:0.5;\n"),
+            "stateDiagram-v2\n  classDef hot fill:#abc;color:#def;opacity:0.5\n"
+        );
+    }
+
+    #[test]
+    fn class_member_quotes_do_not_leak_into_later_styles() {
+        let input =
+            "classDiagram\n  class A {\n    +char quote = '\"'\n  }\n  style A fill:#abc;\n";
+        assert_eq!(
+            encode_entities(input),
+            "classDiagram\n  class A {\n    +char quote = '\"'\n  }\n  style A fill:#abc\n"
+        );
     }
 }

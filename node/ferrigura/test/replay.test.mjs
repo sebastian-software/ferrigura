@@ -27,14 +27,7 @@ function assertReplay(first, second) {
 test('representative diagrams replay byte for byte in independent processes', () => {
   const first = renderInNewProcess('A');
   const second = renderInNewProcess('A');
-  assert.deepEqual(Object.keys(first), [
-    'flow-default',
-    'flow-compat',
-    'gantt',
-    'venn',
-    'architecture',
-    'font',
-  ]);
+  assert.deepEqual(Object.keys(first), ['flow-default', 'flow-compat', 'gantt', 'mindmap', 'font']);
   assert.deepEqual(Object.keys(second), Object.keys(first));
   for (const [name, svg] of Object.entries(first)) {
     assert.match(svg, /<svg/);

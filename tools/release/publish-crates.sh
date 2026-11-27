@@ -7,7 +7,7 @@
 #
 # The first release is published this way, not by .github/workflows/publish.yml: crates.io's Trusted
 # Publishing can be enabled only for a crate that exists, and crates.io lets an account create only
-# a few new crates in a row (about five, then one about every ten minutes), so twelve new crates
+# a few new crates in a row (about five, then one about every ten minutes), so ten new crates
 # take more than an hour. Later releases are the workflow's.
 #
 # The script checks out the tag in a temporary worktree, so the checkout it runs from stays as it
@@ -30,7 +30,7 @@ set -euo pipefail
 RATE_LIMIT_WAIT="${RATE_LIMIT_WAIT:-600}"
 RETRY_DELAY="${RETRY_DELAY:-30}"
 INDEX_TIMEOUT="${INDEX_TIMEOUT:-300}"
-# How often one crate waits for crates.io's limit on new crates: of twelve new crates, five go at
+# How often one crate waits for crates.io's limit on new crates: of ten new crates, five go at
 # once and the others one by one.
 RATE_LIMIT_TRIES=10
 REPOSITORY="sebastian-software/ferrigura"

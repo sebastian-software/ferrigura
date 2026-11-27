@@ -85,8 +85,6 @@ jobs:
             ferrigura-elk
             ferrigura-path
             ferrigura-cose
-            ferrigura-venn
-            ferrigura-swimlane
             ferrigura-syntax
             ferrigura-render
             ferrigura

@@ -235,31 +235,6 @@ const examples = [
 `,
   },
   {
-    id: 'gitgraph',
-    title: 'Git graph',
-    description:
-      'A feature branch and a hotfix leave main; the hotfix is merged and tagged, main is merged into the feature, and the feature is merged and tagged.',
-    source: `gitGraph
-  commit id: "init"
-  commit id: "readme"
-  branch feature
-  checkout feature
-  commit id: "parser"
-  commit id: "tests"
-  checkout main
-  branch hotfix
-  checkout hotfix
-  commit id: "fix crash"
-  checkout main
-  merge hotfix tag: "v1.0.1"
-  checkout feature
-  merge main
-  commit id: "renderer"
-  checkout main
-  merge feature tag: "v1.1.0"
-`,
-  },
-  {
     id: 'mindmap',
     title: 'Mindmap',
     description:

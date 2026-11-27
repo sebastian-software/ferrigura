@@ -22,59 +22,32 @@ const specPatterns: Record<string, RegExp> = { er: /\.(spec|test)\.[jt]s$/ };
  * the reference's two headers.
  */
 const fixtureFolders: Record<string, string[]> = {
-  gitgraph: ['e2e/diagrams/git/'],
   er: ['e2e/diagrams/er-diagram/'],
   class: ['e2e/diagrams/class-diagram/'],
   quadrantChart: ['e2e/diagrams/quadrant-chart/'],
-  treeView: ['e2e/diagrams/tree-view/'],
   state: [
     'e2e/diagrams/state-diagram/',
     'e2e/diagrams/state-diagram-v2/',
     'e2e/platform/dev-diagrams/',
   ],
-  // The kanban probes are probes of the geometry harness, not fixtures under e2e/diagrams.
-  kanban: ['e2e/diagrams/kanban/', 'tools/port/geometry/probes/kanban/'],
 };
 
 /**
- * The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). The four
- * stable types take their `-beta` keyword too, as upstream Mermaid and ferrigura do, and end at a
- * word boundary, as patch 08 of the reference makes them do.
+ * The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). The XY
+ * chart takes its `-beta` keyword too, as upstream Mermaid and ferrigura do, and ends at a word
+ * boundary, as patch 08 of the reference makes it do.
  */
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
-  info: /^\s*info/,
   flowchart: /^\s*(graph|flowchart)/,
-  timeline: /^\s*timeline/,
-  journey: /^\s*journey/,
-  gitgraph: /^\s*gitGraph/,
   er: /^\s*erDiagram/,
   class: /^\s*classDiagram/,
   sequence: /^\s*sequenceDiagram/,
   state: /^\s*stateDiagram/,
   gantt: /^\s*gantt/,
   mindmap: /^\s*mindmap/,
-  block: /^\s*block(?:-beta)?(?![\w-])/,
-  packet: /^\s*packet(?:-beta)?(?![\w-])/,
   xychart: /^\s*xychart(?:-beta)?(?![\w-])/,
-  sankey: /^\s*sankey(?:-beta)?(?![\w-])/,
   quadrantChart: /^\s*quadrantChart/,
-  requirement: /^\s*requirementDiagram/,
-  c4: /^\s*(?:C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)/,
-  kanban: /^\s*kanban/,
-  architecture: /^\s*architecture/,
-  treemap: /^\s*treemap/,
-  ishikawa: /^\s*ishikawa(-beta)?\b/i,
-  eventmodeling: /^\s*eventmodeling/,
-  agentflow: /^\s*agentflow-beta\b/,
-  swimlanes: /^\s*swimlane-beta\b/,
-  treeView: /^\s*treeView-beta/,
-  radar: /^\s*radar-beta/,
-  railroad: /^\s*railroad-(?:ebnf-|abnf-|peg-)?beta/i,
-  venn: /^\s*venn-beta/,
-  wardley: /^\s*wardley-beta/i,
-  cynefin: /^\s*cynefin-beta(?:[\s:]|$)/,
-  usecase: /^\s*usecase-beta(?:\s|$)/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
@@ -139,7 +112,7 @@ export async function collectInputs(type: string): Promise<PortInput[]> {
   const candidates: { source: string; text: string }[] = [];
 
   // The state fixtures are in two folders, and some state inputs sit in the platform's dev folder.
-  // Those are kept by detector, and the info smoke test in the state folders is dropped the same way.
+  // Those are kept by detector.
   for (const folder of fixtureFolders[type] ?? [`e2e/diagrams/${type}/`]) {
     const fixtures = await walk(repositoryRoot, folder, (path) => path.endsWith('.mmd'));
     for (const fixture of fixtures) {

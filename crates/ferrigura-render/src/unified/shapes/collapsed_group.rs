@@ -1,6 +1,5 @@
 //! The collapsed subgraph (`flowchart` `@{ view: collapsed }`): a box with its title, a dashed
-//! separator and three dots. A port of `shapes/collapsedGroup.ts`, for the default container type
-//! (the `flow` type of agentflow is the same geometry with other colors and a stroke width).
+//! separator and three dots. A port of `shapes/collapsedGroup.ts`, for the default container type.
 //! The colors of the box are the style task's; the geometry and the structure are here.
 
 use super::util::{Part, attribute, label_helper, styles2string};

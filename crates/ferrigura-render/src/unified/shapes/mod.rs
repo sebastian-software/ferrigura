@@ -13,7 +13,6 @@
 //! geometry with plain elements.
 
 mod arcs;
-mod block_arrow;
 mod braces;
 mod circle;
 mod class_box;
@@ -26,25 +25,18 @@ mod decorated;
 mod er_box;
 mod icon;
 mod intersect;
-pub mod kanban_item;
-pub mod kanban_section;
 mod person;
 mod polygon;
 mod rect;
 mod rect_with_title;
 mod rects;
 mod registry;
-mod requirement_box;
 mod rough;
 mod stadium;
 mod state;
 mod symbols;
 #[cfg(test)]
 mod test_support;
-mod usecase_actor;
-pub(crate) mod usecase_boundary;
-mod usecase_ellipse;
-mod usecase_json_table;
 mod util;
 mod wave;
 
@@ -61,7 +53,6 @@ use crate::common::decode_entities;
 use crate::design::{Role, Roles};
 use crate::svg::{escape, escape_url_attr, number};
 use registry::Kind;
-pub(crate) use util::styles_from_array;
 
 /// Whether the shape uses its resolved layout direction.
 pub(super) fn uses_direction(node: &Node) -> bool {
@@ -190,16 +181,6 @@ impl Intersect {
     }
 }
 
-pub(super) fn node_fonts(node: &Node, config: &Config<'_>) -> crate::fonts::FontContext {
-    node.use_case
-        .as_ref()
-        .and_then(|fields| fields.font_family.as_deref())
-        .map_or_else(
-            || config.fonts.clone(),
-            |family| config.fonts.with_family(family),
-        )
-}
-
 /// Lays out a node's label as `labelHelper` does before it draws the shape: the label text at
 /// `width`, or else the node's wrapping width (`node.width || node.wrappingWidth ||
 /// flowchart.wrappingWidth`). `None` when the shape draws no label.
@@ -264,7 +245,7 @@ pub fn node_label(
     // label of an `@{ label }` node, which the DB did not sanitize, is sanitized here.
     let text = sanitize_text(&decode_entities(&node.label));
     let spec = LabelSpec {
-        fonts: node_fonts(node, config),
+        fonts: config.fonts.clone(),
         text: if kind.is_some_and(Kind::empties_label) {
             ""
         } else {
@@ -279,9 +260,7 @@ pub fn node_label(
         anchor,
         wrap_in_style: true,
         styles: &declarations,
-        font_size: node.font_size.unwrap_or_else(|| {
-            util::theme_number(&config.theme.font_size).unwrap_or(config.globals.font_size)
-        }),
+        font_size: util::theme_number(&config.theme.font_size).unwrap_or(config.globals.font_size),
         title: false,
     };
     // The reference's `labelHelper` takes the label's box from `text.getBBox()` (shapes/util.ts
@@ -359,7 +338,7 @@ pub(crate) fn node_svg_with_resolved(
         let label_class = if kind == Some(Kind::Note) {
             "label noteLabel"
         } else {
-            kind.and_then(Kind::label_class).unwrap_or("label")
+            "label"
         };
         label_svg = format!(
             "<g class=\"{label_class}\"{style} transform=\"translate({}, {})\"><rect></rect>{}</g>",
@@ -522,30 +501,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::ImageSquare => icon::image_square(input)?,
         // The entity draws its own labels and their group box, so it returns its output whole.
         Kind::ErBox => return er_box::er_box(input),
-        // The requirement's box draws its own labels as well (`requirementBox.ts`).
-        Kind::RequirementBox => return requirement_box::requirement_box(input),
         Kind::Composite => composite::composite(input),
-        Kind::BlockArrow => block_arrow::block_arrow(input),
-        Kind::UsecaseActor
-        | Kind::UsecaseActorHollow
-        | Kind::UsecaseActorAwesome
-        | Kind::UsecaseActorIcon => {
-            let variant = usecase_actor::variant_of_kind(kind);
-            let (part, rows) = usecase_actor::actor(input, variant)?;
-            texts = rows;
-            part
-        }
-        Kind::UsecaseEllipse => usecase_ellipse::ellipse(input),
-        Kind::UsecaseBusiness => {
-            let (part, rows) = usecase_ellipse::business(input)?;
-            texts = rows;
-            part
-        }
-        Kind::UsecaseJsonTable => {
-            let (part, rows) = usecase_json_table::json_table(input)?;
-            texts = rows;
-            part
-        }
         Kind::ClassBox => {
             // `classBox` stamps the class's palette slot as the collapsed group does
             // (`classBox.ts` 29).

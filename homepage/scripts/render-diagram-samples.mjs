@@ -108,20 +108,20 @@ const gallery = [
 `,
   },
   {
-    id: 'gitgraph',
-    label: 'Git graph',
+    id: 'gantt',
+    label: 'Gantt',
     description:
-      'A docs branch leaves main, gains two commits and is merged back after a fix on main.',
-    source: `gitGraph
-  commit id: "Initial"
-  branch docs
-  checkout docs
-  commit id: "Add guide"
-  commit id: "Add diagrams"
-  checkout main
-  commit id: "Fix build"
-  merge docs
-  commit id: "Release"
+      'A guide is drafted and its diagrams drawn at the same time; review follows both, and the guide is published once review ends.',
+    source: `gantt
+  dateFormat YYYY-MM-DD
+  axisFormat %b %d
+  todayMarker off
+  section Writing
+    Draft the guide: draft, 2026-03-02, 5d
+    Draw the diagrams: diagrams, 2026-03-02, 4d
+  section Release
+    Review: review, after draft diagrams, 3d
+    Publish: milestone, after review, 0d
 `,
   },
 ];
@@ -186,6 +186,59 @@ const designSamples = [
   write -->|typo fix| publish
   review -->|changes requested| write
   publish --> announce([Announce the release])
+`,
+  },
+  {
+    id: 'state',
+    label: 'States',
+    stacked: false,
+    description:
+      'A guide starts as a draft. Submitting it puts it in review, where it is approved and published or sent back with requested changes. A published guide is archived at the end. A note says that two editors read every guide.',
+    source: `stateDiagram-v2
+  [*] --> Draft
+  Draft --> Review : submit
+  Review --> Draft : request changes
+  Review --> Published : approve
+  Published --> Archived : archive
+  Archived --> [*]
+  note right of Review
+    Two editors read
+    every guide.
+  end note
+`,
+  },
+  {
+    id: 'classes',
+    label: 'Classes',
+    stacked: false,
+    description:
+      'Shape is an interface with an area. Circle and the abstract class Polygon realize it, and Triangle and Rectangle are polygons.',
+    source: `classDiagram
+  class Shape {
+    <<interface>>
+    +area() double
+  }
+  class Polygon {
+    <<abstract>>
+    #List~Point~ vertices
+    +perimeter() double
+  }
+  class Circle {
+    -double radius
+    +area() double
+  }
+  class Triangle {
+    +area() double
+  }
+  class Rectangle {
+    -double width
+    -double height
+    +area() double
+  }
+  Shape <|.. Circle
+  Shape <|.. Polygon
+  Polygon <|-- Triangle
+  Polygon <|-- Rectangle
 `,
   },
 ];

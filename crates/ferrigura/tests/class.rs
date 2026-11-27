@@ -443,29 +443,30 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         "graph-id_Invoice Item_Account_1"
     );
 
-    // Colliding resolved DOM IDs are disambiguated across all unified diagrams (e.g. requirement).
-    let req_collide = ferrigura::Renderer::new(&Value::empty_object())
+    // Colliding resolved DOM IDs are disambiguated across all unified diagrams (e.g. flowchart
+    // edge IDs whose raw spellings differ only by an entity placeholder).
+    let edge_collide = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "requirementDiagram\n  requirement \"Order-Item\" {\n    id: 1\n  }\n  requirement \"Order#45;Item\" {\n    id: 2\n  }\n",
+            "flowchart LR\n  A Order-Item@--> B\n  C Order#45;Item@--> D\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
                 ..ferrigura::RenderOptions::default()
             },
         )
         .expect("renders");
-    let req_doc = roxmltree::Document::parse(&req_collide).expect("well-formed SVG XML");
-    let req_ids: Vec<&str> = req_doc
+    let edge_doc = roxmltree::Document::parse(&edge_collide).expect("well-formed SVG XML");
+    let edge_ids: Vec<&str> = edge_doc
         .descendants()
         .filter_map(|node| node.attribute("id"))
         .filter(|id| id.starts_with("graph-Order-Item"))
         .collect();
-    assert_eq!(req_ids, vec!["graph-Order-Item", "graph-Order-Item-1"]);
+    assert_eq!(edge_ids, vec!["graph-Order-Item", "graph-Order-Item-1"]);
 
     // Renderer-owned SVG IDs (e.g. `{svg_id}-drop-shadow`) are reserved before assigning diagram
-    // element IDs so a requirement named `drop#45;shadow` cannot duplicate the drop-shadow filter.
+    // element IDs so an edge named `drop#45;shadow` cannot duplicate the drop-shadow filter.
     let shadow_collide = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "requirementDiagram\n  requirement \"drop#45;shadow\" {\n    id: 1\n  }\n",
+            "flowchart LR\n  A drop#45;shadow@--> B\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
                 ..ferrigura::RenderOptions::default()
@@ -479,23 +480,23 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .filter_map(|node| node.attribute("id"))
         .collect();
     assert!(shadow_filter_ids.contains(&"graph-drop-shadow"));
-    let shadow_node_ids: Vec<&str> = shadow_doc
+    let shadow_path_ids: Vec<&str> = shadow_doc
         .descendants()
-        .filter(|node| node.has_tag_name("g"))
+        .filter(|node| node.has_tag_name("path"))
         .filter_map(|node| node.attribute("id"))
         .filter(|id| id.starts_with("graph-drop-shadow"))
         .collect();
-    assert_eq!(shadow_node_ids, vec!["graph-drop-shadow-1"]);
+    assert_eq!(shadow_path_ids, vec!["graph-drop-shadow-1"]);
 }
 
 #[test]
 fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
     // Optional definitions (such as `{svg_id}-gradient`) are only reserved when the current render
-    // actually emits them: default requirement diagrams emit no gradient, so a requirement named
-    // `gradient` keeps `graph-gradient`, while `useGradient: true` disambiguates it.
+    // actually emits them: default flowcharts emit no gradient, so a subgraph named `gradient`
+    // keeps `graph-gradient`, while `useGradient: true` disambiguates it.
     let no_grad = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "requirementDiagram\n  requirement \"gradient\" {\n    id: 1\n  }\n",
+            "flowchart LR\n  subgraph gradient\n    A\n  end\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
                 ..ferrigura::RenderOptions::default()
@@ -513,7 +514,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
         Value::from(serde_json::json!({ "themeVariables": { "useGradient": true } }));
     let with_grad = ferrigura::Renderer::new(&with_grad_cfg)
         .render_with(
-            "requirementDiagram\n  requirement \"gradient\" {\n    id: 1\n  }\n",
+            "flowchart LR\n  subgraph gradient\n    A\n  end\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
                 ..ferrigura::RenderOptions::default()
@@ -709,7 +710,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
     // present, and left free when no accessibility element is emitted.
     let a11y_collide = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "requirementDiagram\n  accTitle: Main\n  requirement \"title#45;chart\" {\n    id: 1\n  }\n",
+            "flowchart LR\n  accTitle: Main\n  A title#45;chart@--> B\n",
             &ferrigura::RenderOptions {
                 id: Some("chart".to_owned()),
                 ..ferrigura::RenderOptions::default()
@@ -727,13 +728,13 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
     assert!(
         a11y_doc
             .descendants()
-            .any(|node| node.has_tag_name("g")
+            .any(|node| node.has_tag_name("path")
                 && node.attribute("id") == Some("chart-title-chart-1")),
         "{a11y_collide}"
     );
     let a11y_absent = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
-            "requirementDiagram\n  requirement \"title#45;chart\" {\n    id: 1\n  }\n",
+            "flowchart LR\n  A title#45;chart@--> B\n",
             &ferrigura::RenderOptions {
                 id: Some("chart".to_owned()),
                 ..ferrigura::RenderOptions::default()
@@ -744,7 +745,8 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
     assert!(
         a11y_absent_doc
             .descendants()
-            .any(|node| node.has_tag_name("g") && node.attribute("id") == Some("chart-title-chart")),
+            .any(|node| node.has_tag_name("path")
+                && node.attribute("id") == Some("chart-title-chart")),
         "{a11y_absent}"
     );
 
@@ -1285,24 +1287,6 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     );
     roxmltree::Document::parse(&styled_class).expect("well-formed SVG XML");
 
-    // Block diagrams disambiguate colliding placeholder-decoded IDs across all blocks.
-    let block_svg = ferrigura::Renderer::new(&Value::empty_object())
-        .render_with(
-            "block-beta\n  Foo#65;Bar[\"First\"]\n  FooABar[\"Second\"]\n",
-            &ferrigura::RenderOptions {
-                id: Some("graph".to_owned()),
-                ..ferrigura::RenderOptions::default()
-            },
-        )
-        .expect("renders");
-    let block_doc = roxmltree::Document::parse(&block_svg).expect("well-formed SVG XML");
-    let block_ids: Vec<&str> = block_doc
-        .descendants()
-        .filter_map(|n| n.attribute("id"))
-        .filter(|id| id.starts_with("graph-Foo"))
-        .collect();
-    assert_eq!(block_ids, vec!["graph-FooABar-1", "graph-FooABar"]);
-
     // Non-percent fragment links using an equivalent entity spelling (`#Tab;` vs `#9;`) remap to
     // the canonical emitted DOM ID (`Foo Bar` -> `#graph-classId-Foo%20Bar`).
     let equiv_frag = ferrigura::Renderer::new(&Value::empty_object())
@@ -1379,31 +1363,6 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     assert!(b_text.contains("letter: &#100;"), "{b_text:?}");
     assert!(!b_text.contains("letter: #100;"), "{b_text:?}");
 
-    // Block diagrams reserve emitted edge path IDs before assigning block node IDs.
-    let block_edge_collision = ferrigura::Renderer::new(&Value::empty_object())
-        .render_with(
-            "block-beta\n  A\n  B\n  graph#45;1#45;A#45;B\n  A --> B\n",
-            &ferrigura::RenderOptions {
-                id: Some("graph".to_owned()),
-                ..ferrigura::RenderOptions::default()
-            },
-        )
-        .expect("renders");
-    let block_edge_doc =
-        roxmltree::Document::parse(&block_edge_collision).expect("well-formed SVG XML");
-    let mut seen_block_ids = std::collections::HashSet::new();
-    for id in block_edge_doc
-        .descendants()
-        .filter_map(|n| n.attribute("id"))
-    {
-        assert!(
-            seen_block_ids.insert(id),
-            "duplicate block SVG id {id:?} in {block_edge_collision}"
-        );
-    }
-    assert!(seen_block_ids.contains("graph-graph-1-A-B"));
-    assert!(seen_block_ids.contains("graph-graph-1-A-B-1"));
-
     // Loose-mode links bypass URL normalization, so literal percent-encoded filenames stay intact.
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
     let loose_pct = ferrigura::render(
@@ -1438,34 +1397,6 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         quoted_semi.contains("title=\"Example; style A fill: ©\""),
         "{quoted_semi}"
     );
-
-    // Block edges resolve emitted `data-id` attributes alongside their disambiguated `id`.
-    let block_edge_data = ferrigura::Renderer::new(&Value::empty_object())
-        .render_with(
-            "block-beta\n  Foo#65;Bar\n  B\n  Foo#65;Bar -- \"go\" --> B\n",
-            &ferrigura::RenderOptions {
-                id: Some("graph".to_owned()),
-                ..ferrigura::RenderOptions::default()
-            },
-        )
-        .expect("renders");
-    let block_edge_data_doc =
-        roxmltree::Document::parse(&block_edge_data).expect("well-formed SVG XML");
-    assert!(
-        block_edge_data_doc
-            .descendants()
-            .any(|n| n.has_tag_name("path")
-                && n.attribute("id") == Some("graph-graph-1-FooABar-B")
-                && n.attribute("data-id") == Some("graph-1-FooABar-B")),
-        "{block_edge_data}"
-    );
-    assert!(
-        block_edge_data_doc
-            .descendants()
-            .any(|n| n.attribute("data-id") == Some("1-FooABar-B")),
-        "{block_edge_data}"
-    );
-    assert!(!block_edge_data.contains("ﬂ°"), "{block_edge_data}");
 
     // HTTP userinfo placeholders decode only once (never double-decoded after percent-encoding).
     let userinfo_once = ferrigura::render(
@@ -1818,21 +1749,6 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         "{pct_slash_entity}"
     );
 
-    // Flowchart-derived dialects (`swimlane-beta`, `agentflow-beta`) also keep `;` separators
-    // before colon-named nodes after `classDef`.
-    let swimlane_colon = ferrigura::render(
-        "swimlane-beta\n  classDef hot fill:#abc,stroke:red; alpha:beta;\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(swimlane_colon.contains("alpha:beta"), "{swimlane_colon}");
-    let agentflow_colon = ferrigura::render(
-        "agentflow-beta\n  classDef hot fill:#abc,stroke:red; alpha:beta;\n",
-        &Value::empty_object(),
-    )
-    .expect("renders");
-    assert!(agentflow_colon.contains("alpha:beta"), "{agentflow_colon}");
-
     // Literal quotes inside multiline `accDescr { ... }` blocks do not leak past the closing `}`.
     let acc_block_flow = ferrigura::render(
         "flowchart LR\n  accDescr {\n    The \"metric\n  }\n  A\n  style A fill:#abc;\n",
@@ -1891,30 +1807,53 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     assert!(state_rel_quote.contains("fill:#abc"), "{state_rel_quote}");
     assert!(!state_rel_quote.contains("&amp;abc;"), "{state_rel_quote}");
 
-    // Kanban card DOM IDs resolve Mermaid entities consistently with ticket fragment links.
-    let kanban_cfg = Value::from(serde_json::json!({
-        "kanban": { "ticketBaseUrl": "#graph-#TICKET#" }
-    }));
-    let kanban_entity = ferrigura::Renderer::new(&kanban_cfg)
-        .render_with(
-            "kanban\n  todo[Todo]\n    MC#45;42[Card]@{ ticket: \"MC#45;42\" }\n",
-            &ferrigura::RenderOptions {
-                id: Some("graph".to_owned()),
-                ..ferrigura::RenderOptions::default()
-            },
-        )
-        .expect("renders");
+    // State `classDef` declarations preserve comma-separated CSS properties and `#hex` colors.
+    let state_classdef_sep = ferrigura::render(
+        "stateDiagram-v2\n  classDef hot stroke:#abc,stroke-width:2px,opacity:0.5;\n  A:::hot\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
     assert!(
-        kanban_entity.contains("id=\"graph-MC-42\""),
-        "{kanban_entity}"
+        state_classdef_sep
+            .contains("stroke:#abc !important;stroke-width:2px !important;opacity:0.5 !important;"),
+        "{state_classdef_sep}"
     );
     assert!(
-        kanban_entity.contains("xlink:href=\"#graph-MC-42\""),
-        "{kanban_entity}"
+        !state_classdef_sep.contains("&amp;abc;"),
+        "{state_classdef_sep}"
     );
-    assert!(!kanban_entity.contains("ﬂ°"), "{kanban_entity}");
 
-    // Gantt task bar and label DOM IDs resolve Mermaid entities consistently with fragment links.
+    // Literal double quotes inside `class ... { ... }` member blocks (including inside namespaces)
+    // do not enter multiline quote mode and corrupt later `style` declarations.
+    let class_member_quote = ferrigura::render(
+        "classDiagram\n  class A {\n    +char quote = '\"'\n  }\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        class_member_quote.contains("fill:#abc"),
+        "{class_member_quote}"
+    );
+    assert!(
+        !class_member_quote.contains("&amp;abc;"),
+        "{class_member_quote}"
+    );
+    let ns_class_member_quote = ferrigura::render(
+        "classDiagram\n  namespace N {\n    class A {\n      +char quote = '\"'\n    }\n  }\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        ns_class_member_quote.contains("fill:#abc"),
+        "{ns_class_member_quote}"
+    );
+    assert!(
+        !ns_class_member_quote.contains("&amp;abc;"),
+        "{ns_class_member_quote}"
+    );
+
+    // Gantt task bar and label DOM IDs resolve Mermaid entities consistently with fragment links
+    // and allocate unique IDs when an entity-decoded task ID collides with a literal task ID.
     let gantt_entity = ferrigura::Renderer::new(&Value::empty_object())
         .render_with(
             "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  Task : one#45;two, 2024-01-01, 1d\n  click one#45;two href \"#graph-one#45;two\"\n",
@@ -1937,6 +1876,37 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         "{gantt_entity}"
     );
     assert!(!gantt_entity.contains("ﬂ°"), "{gantt_entity}");
+
+    let gantt_collision = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  Entity : one#45;two, 2024-01-01, 1d\n  Literal : one-two, 2024-01-02, 1d\n  click one#45;two href \"#graph-one#45;two\"\n  click one-two href \"#graph-one-two\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let gantt_doc = roxmltree::Document::parse(&gantt_collision).expect("well-formed SVG XML");
+    let mut seen_gantt_ids = std::collections::HashSet::new();
+    for id in gantt_doc.descendants().filter_map(|n| n.attribute("id")) {
+        assert!(
+            seen_gantt_ids.insert(id),
+            "duplicate gantt SVG id {id:?} in {gantt_collision}"
+        );
+    }
+    assert!(seen_gantt_ids.contains("graph-one-two"));
+    assert!(seen_gantt_ids.contains("graph-one-two-text"));
+    assert!(seen_gantt_ids.contains("graph-one-two-2"));
+    assert!(seen_gantt_ids.contains("graph-one-two-2-text"));
+    assert!(
+        gantt_collision.contains("xlink:href=\"#graph-one-two-2\""),
+        "{gantt_collision}"
+    );
+    assert!(
+        gantt_collision.contains("xlink:href=\"#graph-one-two\""),
+        "{gantt_collision}"
+    );
+    assert!(!gantt_collision.contains("ﬂ°"), "{gantt_collision}");
 
     // Entity authority terminator (`#47;`), entity-spelled IPv4 host (`192#46;168.1.1`), host entity
     // with double-encoded query (`?q=A%252526B`), and caret entity in path (`#94;`).

@@ -8,7 +8,7 @@ ferrigura aims at Mermaid's output, not a look of its own:
 
 - **The syntax and the models.** Each type's parser and DB are ported with their quirks, and `pnpm -C tools/port port:diff <type>` compares the model with the reference's on every collected input; every ported type has no difference.
 - **The geometry.** `pnpm -C tools/port port:geometry <type>` renders each fixture with both and pairs every element: boxes, origins, path samples and text agree within 0.05 px on every comparable fixture. The comparison forces SVG labels, the bundled font and the strict security level on both sides, and a theme ferrigura ships. The [side-by-side page](https://ferrigura.dev/comparisons/side-by-side/) shows ten everyday diagrams drawn by both with these settings, colors included.
-- **The layouts.** Mermaid's engines are ported rather than replaced: ELK Layered (the default layout since Mermaid 12.0) in `ferrigura-elk`, cose-bilkent and fcose in `ferrigura-cose`, the tidy tree, and each type's own renderer with its d3 pieces. They match the JavaScript engines exactly on captured inputs.
+- **The layouts.** Mermaid's engines are ported rather than replaced: ELK Layered (the default layout since Mermaid 12.0) in `ferrigura-elk`, cose-bilkent in `ferrigura-cose`, the tidy tree, and each type's own renderer with its d3 pieces. They match the JavaScript engines exactly on captured inputs.
 - **The browser's arithmetic where it shows.** Chromium's text rounding, its `Math` functions (`ferrigura-jsmath`) and its path bounds (`ferrigura-path`) are reproduced, because a force layout turns a one-unit difference into tens of pixels.
 - **Even the bugs the output depends on**, such as an attribute the reference writes as `undefined;;;undefined`. Where the reference crashes, ferrigura names an exception and draws (a mindmap with `layout: elk`).
 
@@ -22,7 +22,7 @@ ferrigura aims at Mermaid's output, not a look of its own:
 | Fonts         | The page's fonts (Trebuchet MS, Verdana, Arial by default), measured by the DOM | Lexica Ultralegible and Atkinson Hyperlegible Mono, embedded as a subset of the glyphs used                             | [0010](../decisions/0010-text-measurement-and-fonts.md) |
 | Themes        | About a dozen themes and `themeVariables`, computed per render                  | `redux-color` and `redux-dark-color` as CSS custom properties with attribute fallbacks; `colorScheme: auto` writes both | [0011](../decisions/0011-themes-as-css-variables.md)    |
 | Interactivity | Click callbacks, tooltips, the `loose` and `sandbox` security levels            | Links stay `<a>`, tooltips become `<title>`; no scripts                                                                 | [0006](../decisions/0006-rust-only-no-browser.md)       |
-| Ids           | The caller's id, and random ids inside some diagrams (mindmap, gitGraph)        | Derived from the input, so the same text gives the same SVG                                                             |                                                         |
+| Ids           | The caller's id, and random ids inside some diagrams (mindmap)                  | Derived from the input, so the same text gives the same SVG                                                             |                                                         |
 
 ## Speed and size
 

@@ -11,7 +11,6 @@ pub mod elk_build;
 pub mod elk_geometry;
 pub mod elk_straighten;
 pub mod elk_tree;
-pub mod flow_group;
 pub mod geom;
 pub mod label;
 pub mod line_jumps;
@@ -24,8 +23,6 @@ pub mod path;
 pub mod pipeline;
 pub(crate) mod room;
 pub mod shapes;
-pub mod swimlane_lane;
-pub mod swimlane_layout;
 pub mod terminal;
 pub mod tidy_tree;
 
@@ -43,8 +40,8 @@ use crate::flowchart::policy::FlowchartRouting;
 /// facade resolves. The `flowchart` section gives the layout's spacing, the curve and the title
 /// margins; the classes, states, entity relations and mindmaps read it as the flowchart does. The `elk`
 /// section gives the layout options. The `class` and `er` sections are read by the shapes of those two
-/// diagrams. The `state` section is read across types too: the class and requirement diagrams take
-/// their title margin and their `useMaxWidth` from it.
+/// diagrams. The `state` section is read across types too: the class diagram takes its title margin
+/// and its `useMaxWidth` from it.
 #[derive(Debug, Clone, Copy)]
 pub struct Section<'a> {
     /// The flowchart's rendering mode. Other diagram types ignore it.

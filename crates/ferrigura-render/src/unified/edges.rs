@@ -307,26 +307,7 @@ pub fn label(
         font_size,
         title: false,
     };
-    let measured = layout(&spec)?;
-    // A diagram whose stylesheet sets the edge labels' font size (the use case's `.edgeLabel`) gets the
-    // background measured at the theme's size, as the reference does before its class is applied, and the
-    // text drawn at the stylesheet's size, wrapped at the theme's size. The group's size is the background
-    // and the text's box centers the group (`positionRenderedEdgeLabel`).
-    let Some(drawn_size) = edge.font_size else {
-        return Ok(Some(measured));
-    };
-    let mut drawn_styles = styles.clone();
-    drawn_styles.push(format!("font-size: {}px", crate::svg::number(drawn_size)));
-    let drawn = layout(&LabelSpec {
-        styles: &drawn_styles,
-        ..spec
-    })?;
-    // The text's own box is the drawn one (it centers the group), and the background is the measured
-    // one, which holds the group's size.
-    Ok(Some(LabelLayout {
-        background: measured.background,
-        ..drawn
-    }))
+    layout(&spec).map(Some)
 }
 
 /// The size `insertEdgeLabel` records for a label: the label group's box, which holds the text and
@@ -440,82 +421,23 @@ fn stroke_color(style: &str) -> Option<&str> {
     None
 }
 
-/// The line hops of the ELK layout: `elk.lineHops` (`elk/lineHops.ts`).
+/// The line hops of the ELK layout, `elk.lineHops` (`elk/lineHops.ts`): `None` when it is `false`;
+/// otherwise the style, `gap` for `'gap'` and `arc` for anything else.
 pub fn jump_style(section: &Section<'_>) -> Option<JumpStyle> {
-    jump_style_of(section.elk.line_hops.as_ref())
-}
-
-/// The line hops that a `lineHops` option gives: `None` when it is `false`; otherwise the style, `gap`
-/// for `'gap'` and `arc` for anything else. The same reading serves `elk.lineHops` and
-/// `swimlane.lineHops` (`applySwimlaneLineJumps`, `adjustLayout.ts` 9-14).
-#[must_use]
-pub fn jump_style_of(line_hops: Option<&Value>) -> Option<JumpStyle> {
-    match line_hops {
+    match section.elk.line_hops.as_ref() {
         Some(Value::Bool(false)) => None,
         Some(value) if value.as_str() == Some("gap") => Some(JumpStyle::Gap),
         _ => Some(JumpStyle::Arc),
     }
 }
 
-/// The tolerance of the swimlane clipping, `TOLERANCE` in `insertEdge` (`edges.js` 675).
-const SWIMLANE_TOLERANCE: f64 = 0.5;
-
-/// The points of a swimlane edge once its ends are clipped to the outlines of its nodes: the swimlane
-/// branch of `insertEdge` (`edges.js` 654-680). A straight edge has both of its ends clipped. A longer
-/// edge keeps its inner bends, and only its first and last segments are clipped: an end that lands on
-/// its inner point within the tolerance is dropped, so that no segment is left with no length.
-///
-/// `tail` and `head` are the outlines of the start and end nodes (`node.intersect`). `points` has at
-/// least two points.
-#[must_use]
-pub fn swimlane_points(
-    points: &[Point],
-    tail: impl Fn(Point) -> Point,
-    head: impl Fn(Point) -> Point,
-) -> Vec<Point> {
-    if let [first, last] = points {
-        return vec![tail(*first), head(*last)];
-    }
-    let inner = &points[1..points.len() - 1];
-    let (first_inner, last_inner) = (inner[0], inner[inner.len() - 1]);
-    let end = points[points.len() - 1];
-
-    let last_is_pinned = near(end, last_inner);
-    let new_first = tail(first_inner);
-    let new_last = if last_is_pinned {
-        last_inner
-    } else {
-        head(last_inner)
-    };
-    let first_is_duplicate = near(new_first, first_inner);
-    let last_is_duplicate = near(new_last, last_inner);
-
-    let mut clipped = Vec::with_capacity(points.len());
-    if !first_is_duplicate {
-        clipped.push(new_first);
-    }
-    clipped.extend_from_slice(inner);
-    if !last_is_duplicate {
-        clipped.push(new_last);
-    }
-    clipped
-}
-
-/// Whether two points are within the swimlane tolerance on both axes (`insertEdge`'s `Math.abs(...) < TOLERANCE`).
-fn near(a: Point, b: Point) -> bool {
-    (a.x - b.x).abs() < SWIMLANE_TOLERANCE && (a.y - b.y).abs() < SWIMLANE_TOLERANCE
-}
-
 /// What the paint of an edge holds before the line hops, and what the hops may change.
 pub(crate) struct Painted {
     id: String,
-    /// The path's `id`: `<diagramId>-<edge id>` (`edges.js` 837 and 860), unless the diagram names
-    /// the path itself.
+    /// The path's `id`: `<diagramId>-<edge id>` (`edges.js` 837 and 860).
     path_id: String,
     /// The `data-points` of the path: its points before the marker offsets, as [`data_points`].
     points: String,
-    /// The attributes after the markers, each with its leading space.
-    path_attributes: String,
     pub(crate) d: Option<String>,
     /// The tight box of `d`, taken when `d` is set.
     bbox: BBox,
@@ -536,20 +458,7 @@ pub fn paint_paths(
     diagram_type: &str,
     section: &Section<'_>,
 ) -> Vec<EdgePath> {
-    paint_paths_with(edges, svg_id, diagram_type, section, jump_style(section))
-}
-
-/// [`paint_paths`], with the line hops given: the swimlane layout's come from `swimlane.lineHops`, not
-/// from `elk.lineHops`. `section` still gives the default curve.
-#[must_use]
-pub fn paint_paths_with(
-    edges: &[Edge],
-    svg_id: &str,
-    diagram_type: &str,
-    section: &Section<'_>,
-    jumps: Option<JumpStyle>,
-) -> Vec<EdgePath> {
-    prepare_paths(edges, svg_id, diagram_type, section, jumps)
+    prepare_paths(edges, svg_id, diagram_type, section, jump_style(section))
         .into_iter()
         .map(|painted| finish_path(painted, None))
         .collect()
@@ -722,14 +631,6 @@ fn paint_edge(
         // A class relation's marker is named by its kind, and a class relation has no color
         // (`edgeMarker.ts` names the marker after the diagram type, and the relation's style is
         // not a stroke color of the class syntax).
-        // The use case's extension marker is its own, named by its diagram (`usecaseRenderer`'s
-        // marker set), not the class diagram's.
-        if diagram_type == markers::USECASE && arrow == "extension" {
-            return Some(format!(
-                "url(#{})",
-                markers::usecase_extension_id(svg_id, start, margin)
-            ));
-        }
         if let Some(class) = markers::ClassKind::from_arrow(arrow) {
             return Some(format!(
                 "url(#{})",
@@ -762,12 +663,8 @@ fn paint_edge(
 
     Painted {
         id: edge.id.clone(),
-        path_id: edge
-            .path_id
-            .clone()
-            .unwrap_or_else(|| format!("{svg_id}-{}", edge.id)),
+        path_id: format!("{svg_id}-{}", edge.id),
         points: data_points(&edge.points),
-        path_attributes: edge.path_attributes.clone(),
         d,
         bbox: geometry.bounds().unwrap_or_default(),
         style,
@@ -803,7 +700,6 @@ pub(crate) fn format_path(painted: &Painted) -> String {
     if let Some(marker) = &painted.marker_end {
         let _ = write!(path, " marker-end=\"{}\"", escape(marker));
     }
-    path.push_str(&painted.path_attributes);
     path.push_str("/>");
     path
 }
@@ -1273,7 +1169,6 @@ mod tests {
             font_size: 14.0,
             title: false,
             anchor: Anchor::Middle,
-            first_line_class: None,
         };
         assert_eq!(label_size(&layout), (24.0, 21.0));
         assert_eq!(label_size(&LabelLayout::of_box(text)), (20.0, 17.0));

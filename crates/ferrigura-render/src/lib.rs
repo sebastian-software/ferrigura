@@ -8,48 +8,25 @@
 #![warn(missing_docs)]
 
 pub mod a11y;
-pub mod agentflow;
 pub mod animation;
-pub mod architecture;
-pub mod block;
-pub mod c4;
 pub mod class;
 pub mod common;
 pub mod context;
-pub mod cynefin;
 pub mod design;
 pub mod er;
-pub mod event_modeling;
 pub mod flowchart;
 pub mod fonts;
 pub mod gantt;
-pub mod git_graph;
-pub mod info;
-pub mod ishikawa;
-pub mod journey;
-pub mod kanban;
 pub mod mindmap;
-pub mod packet;
 pub mod pie;
 pub mod quadrant_chart;
-pub mod radar;
-pub mod railroad;
-pub mod requirement;
-pub mod sankey;
 mod scheme;
 pub mod sequence;
 pub mod state;
 pub mod svg;
-pub mod swimlanes;
-pub mod timeline;
-pub mod tree_view;
-pub mod treemap;
 pub mod unified;
-pub mod use_case;
 #[cfg(test)]
 mod variables;
-pub mod venn;
-pub mod wardley;
 pub mod xychart;
 
 use std::fmt;

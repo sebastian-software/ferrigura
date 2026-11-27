@@ -17,24 +17,8 @@ use crate::RenderError;
 use crate::unified::data::{Edge, LayoutData, Node};
 use crate::unified::geom::BBox;
 use crate::unified::label::{Anchor, LabelLayout};
-use crate::unified::line_jumps::JumpStyle;
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{
-    Config, clusters, edges, elk_apply, elk_build, loops, swimlane_layout, terminal,
-};
-
-/// The layout that placed the nodes of a diagram. It decides how the paint clips the edges and which
-/// line hops it draws: `insertEdge` takes the swimlane branch for the `swimlane` layout (`edges.js`
-/// 654-700), and the hops are the layout's own (`elk.lineHops`, or `swimlane.lineHops` for the swimlane
-/// engine).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Layout {
-    /// ELK Layered: the flowchart, the other unified diagrams, and a swimlane diagram that its
-    /// configuration lays out with ELK.
-    Elk,
-    /// The swimlane engine, with the line hops of `swimlane.lineHops` (`None` when they are off).
-    Swimlane(Option<JumpStyle>),
-}
+use crate::unified::{Config, clusters, edges, elk_apply, elk_build, loops, terminal};
 
 /// The graph handed to ELK and the graph it returned, for the differential comparison with the
 /// reference's capture (`tools/port/geometry/flowchart-geometry.ts`).
@@ -56,8 +40,6 @@ pub struct Measured {
     pub shapes: HashMap<String, ShapeOutput>,
     /// The label of every edge that has one, by edge id.
     pub edge_labels: HashMap<String, LabelLayout>,
-    /// The layout that places the nodes, which [`paint`] follows.
-    pub layout: Layout,
 }
 
 /// What [`paint`] drew: the groups below the root, the box they cover, and every label, so that
@@ -199,21 +181,7 @@ fn busiest_sides(data: &LayoutData) -> Vec<(f64, bool)> {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or a shape is unknown.
-pub fn measure(data: LayoutData, config: &Config<'_>) -> Result<Measured, RenderError> {
-    measure_for(data, config, Layout::Elk)
-}
-
-/// [`measure`], for the layout that will place the nodes. The swimlane engine's groups are measured
-/// wrapped, as `createGraphWithElements` does without `unwrapGroupLabels` (`createGraph.ts` 42-59).
-///
-/// # Errors
-///
-/// Returns an error if a bundled font cannot be read or a shape is unknown.
-pub fn measure_for(
-    mut data: LayoutData,
-    config: &Config<'_>,
-    layout: Layout,
-) -> Result<Measured, RenderError> {
+pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, RenderError> {
     edges::prepare(&mut data);
 
     // Direction is only consumed by fork/join shapes. Resolve those before mutating sizes,
@@ -257,9 +225,8 @@ pub fn measure_for(
         let node = &data.nodes[index];
         if node.is_group {
             // ELK sizes a subgraph from its title, measured unwrapped unless it is Markdown. The
-            // title's box is already a float32 value (`node_label`). The swimlane engine takes the
-            // title wrapped, whatever its type.
-            let unwrapped = layout == Layout::Elk && node.label_type != LabelType::Markdown;
+            // title's box is already a float32 value (`node_label`).
+            let unwrapped = node.label_type != LabelType::Markdown;
             let width = unwrapped.then_some(f64::INFINITY);
             // `measureGroupLabel` gives a group without a label no size (`createGraph.ts` 56-58).
             let size = if node.label.is_empty() {
@@ -271,7 +238,7 @@ pub fn measure_for(
             data.nodes[index].label_bbox = Some(size);
             continue;
         }
-        // A `labelRect` is the label of a swimlane edge, which the stylesheet does not center: its lines start
+        // A `labelRect` is a label that the stylesheet does not center: its lines start
         // at the origin, and `labelRect.ts` moves the label by half its width (`shapes/rect.rs`).
         // A note of a state or a class diagram is a block of text, which the design mode keeps at
         // the left.
@@ -357,7 +324,6 @@ pub fn measure_for(
         data,
         shapes,
         edge_labels,
-        layout,
     })
 }
 
@@ -368,11 +334,7 @@ pub fn measure_for(
 pub fn node_anchor(diagram_type: &str) -> Anchor {
     // The mindmap's stylesheet does not center its labels either: its `centerLabel` offsets the label
     // by half its width instead (`labelHelper`, `util.ts` 149-151).
-    if diagram_type == crate::unified::markers::USECASE {
-        // The use case's stylesheet has no `text-anchor`, and its `labelHelper` offsets the label in y
-        // only (`usecaseRenderer.ts` styles, `shapes/util.ts` 146).
-        Anchor::Origin
-    } else if diagram_type == crate::state::DIAGRAM_TYPE
+    if diagram_type == crate::state::DIAGRAM_TYPE
         || diagram_type == crate::unified::markers::CLASS
         || diagram_type == crate::mindmap::data::DIAGRAM_TYPE
     {
@@ -743,73 +705,10 @@ fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
     None
 }
 
-/// Pre-resolves and disambiguates a flat list of local DOM IDs (such as block-diagram nodes)
-/// against renderer-owned IDs and each other, keeping unchanged literal IDs stable in pass 1 and
-/// suffixing colliding or placeholder-decoded IDs in pass 2.
-pub(crate) fn disambiguate_dom_ids(
-    raw_ids: &[&str],
-    svg_id: &str,
-    defs: ReservedDefs,
-) -> Vec<String> {
-    let canonical_svg_id = canonical_xml_attr(svg_id);
-    let mut reserved: HashSet<String> = HashSet::with_capacity(raw_ids.len());
-    let mut plans: Vec<(String, String, bool)> = Vec::with_capacity(raw_ids.len());
-    for &raw in raw_ids {
-        let had_placeholder = raw.contains("ﬂ°") || raw.contains("¶ß");
-        let canonical_local = canonical_attr_id(raw);
-        let unchanged = !had_placeholder && canonical_local == raw && canonical_svg_id == svg_id;
-        let canonical_full = format!("{canonical_svg_id}-{canonical_local}");
-        reserved.insert(canonical_full.clone());
-        plans.push((canonical_local, canonical_full, unchanged));
-    }
-
-    let mut seen: HashSet<String> = HashSet::with_capacity(raw_ids.len());
-    let mut claimed = vec![false; raw_ids.len()];
-    for (idx, (_, canonical_full, unchanged)) in plans.iter().enumerate() {
-        if *unchanged
-            && !is_renderer_owned_id(canonical_full, &canonical_svg_id, defs)
-            && seen.insert(canonical_full.clone())
-        {
-            claimed[idx] = true;
-        }
-    }
-
-    let mut next_suffix: HashMap<String, usize> = HashMap::new();
-    let mut resolved = Vec::with_capacity(raw_ids.len());
-    for (idx, (canonical_local, canonical_full, _)) in plans.into_iter().enumerate() {
-        if claimed[idx] {
-            resolved.push(canonical_local);
-            continue;
-        }
-        if !is_renderer_owned_id(&canonical_full, &canonical_svg_id, defs)
-            && seen.insert(canonical_full.clone())
-        {
-            resolved.push(canonical_local);
-            continue;
-        }
-        let mut suffix = next_suffix.get(&canonical_full).copied().unwrap_or(1);
-        loop {
-            let candidate_local = format!("{canonical_local}-{suffix}");
-            let candidate_full = format!("{canonical_svg_id}-{candidate_local}");
-            suffix += 1;
-            if !is_renderer_owned_id(&candidate_full, &canonical_svg_id, defs)
-                && !reserved.contains(&candidate_full)
-                && seen.insert(candidate_full)
-            {
-                next_suffix.insert(canonical_full, suffix);
-                resolved.push(candidate_local);
-                break;
-            }
-        }
-    }
-    resolved
-}
-
 /// Pre-resolved, XML-normalized, collision-free DOM and edge IDs for one unified render pass.
 struct ResolvedDomIds {
     nodes: Vec<String>,
     edge_ids: Vec<String>,
-    edge_path_ids: Vec<String>,
     element_owned: HashSet<String>,
     remapped_fragments: HashMap<String, String>,
 }
@@ -867,24 +766,8 @@ impl ResolvedDomIds {
                 }
             }
             for edge in &data.edges {
-                match edge.path_id.as_deref() {
-                    None => {
-                        if !local_seen.insert(edge.id.as_str()) {
-                            return true;
-                        }
-                    }
-                    Some(path) => {
-                        if let Some(local) = path
-                            .strip_prefix(svg_id)
-                            .and_then(|rest| rest.strip_prefix('-'))
-                        {
-                            if !local_seen.insert(local) {
-                                return true;
-                            }
-                        } else if !local_seen.insert(path) {
-                            return true;
-                        }
-                    }
+                if !local_seen.insert(edge.id.as_str()) {
+                    return true;
                 }
             }
             false
@@ -902,10 +785,6 @@ impl ResolvedDomIds {
             || data.edges.iter().any(|edge| {
                 needs_id_normalization(&edge.id)
                     || is_renderer_owned_local(&edge.id, &canonical_svg_id, defs)
-                    || edge.path_id.as_deref().is_some_and(|path| {
-                        needs_id_normalization(path)
-                            || is_renderer_owned_id(path, &canonical_svg_id, defs)
-                    })
             })
             || has_literal_collision();
         if !needs_pass {
@@ -927,30 +806,13 @@ impl ResolvedDomIds {
 
         let mut edge_plans = Vec::with_capacity(data.edges.len());
         for edge in &data.edges {
-            let edge_had_placeholder = edge.id.contains("ﬂ°") || edge.id.contains("¶ß");
-            let canonical_edge_id = canonical_attr_id(&edge.id);
-            let (raw_path, path_had_placeholder, canonical_path) = match edge.path_id.as_deref() {
-                Some(path) => (
-                    path.to_owned(),
-                    path.contains("ﬂ°") || path.contains("¶ß"),
-                    canonical_attr_id(path),
-                ),
-                None => (
-                    format!("{svg_id}-{}", edge.id),
-                    edge_had_placeholder,
-                    format!("{canonical_svg_id}-{canonical_edge_id}"),
-                ),
-            };
-            let unchanged = !path_had_placeholder && canonical_path == raw_path;
-            reserved.insert(canonical_path.clone());
-            edge_plans.push((
-                edge_had_placeholder,
-                canonical_edge_id,
-                raw_path,
-                path_had_placeholder,
-                canonical_path,
-                unchanged,
-            ));
+            let had_placeholder = edge.id.contains("ﬂ°") || edge.id.contains("¶ß");
+            let canonical_local = canonical_attr_id(&edge.id);
+            let canonical_full = format!("{canonical_svg_id}-{canonical_local}");
+            let unchanged =
+                !had_placeholder && canonical_local == edge.id && canonical_svg_id == svg_id;
+            reserved.insert(canonical_full.clone());
+            edge_plans.push((had_placeholder, canonical_local, canonical_full, unchanged));
         }
 
         // Pass 1: claim unchanged literal IDs first so an earlier decoded/normalized ID cannot
@@ -968,12 +830,12 @@ impl ResolvedDomIds {
             }
         }
         let mut edge_claimed = vec![false; edge_plans.len()];
-        for (index, (_, _, _, _, canonical_path, unchanged)) in edge_plans.iter().enumerate() {
+        for (index, (_, _, canonical_full, unchanged)) in edge_plans.iter().enumerate() {
             if *unchanged
-                && !is_renderer_owned_id(canonical_path, &canonical_svg_id, defs)
-                && seen.insert(canonical_path.clone())
+                && !is_renderer_owned_id(canonical_full, &canonical_svg_id, defs)
+                && seen.insert(canonical_full.clone())
             {
-                element_owned.insert(canonical_path.clone());
+                element_owned.insert(canonical_full.clone());
                 edge_claimed[index] = true;
             }
         }
@@ -1032,63 +894,49 @@ impl ResolvedDomIds {
         }
 
         let mut edge_ids = Vec::with_capacity(data.edges.len());
-        let mut edge_path_ids = Vec::with_capacity(data.edges.len());
-        for (
-            index,
-            (
-                edge_had_placeholder,
-                canonical_edge_id,
-                raw_path,
-                path_had_placeholder,
-                canonical_path,
-                _,
-            ),
-        ) in edge_plans.into_iter().enumerate()
+        for (index, (had_placeholder, canonical_local, canonical_full, _)) in
+            edge_plans.into_iter().enumerate()
         {
             let edge = &data.edges[index];
             if edge_claimed[index] {
-                edge_path_ids.push(raw_path);
-                if edge_had_placeholder {
-                    edge_ids.push(canonical_edge_id);
-                } else {
-                    edge_ids.push(edge.id.clone());
-                }
+                edge_ids.push(edge.id.clone());
                 continue;
             }
-            let collided = is_renderer_owned_id(&canonical_path, &canonical_svg_id, defs)
-                || !seen.insert(canonical_path.clone());
-            let final_path = if !collided {
-                element_owned.insert(canonical_path.clone());
-                canonical_path.clone()
+            let canonical_differs = canonical_local != edge.id;
+            let collided = is_renderer_owned_id(&canonical_full, &canonical_svg_id, defs)
+                || !seen.insert(canonical_full.clone());
+            let final_local = if !collided {
+                element_owned.insert(canonical_full.clone());
+                canonical_local
             } else {
-                let suffix = next_suffix.entry(canonical_path.clone()).or_insert(1);
+                let suffix = next_suffix.entry(canonical_full.clone()).or_insert(1);
                 loop {
-                    let candidate = format!("{canonical_path}-{}", *suffix);
+                    let candidate_local = format!("{canonical_local}-{}", *suffix);
+                    let candidate_full = format!("{canonical_svg_id}-{candidate_local}");
                     *suffix += 1;
-                    if !is_renderer_owned_id(&candidate, &canonical_svg_id, defs)
-                        && !reserved.contains(&candidate)
-                        && seen.insert(candidate.clone())
+                    if !is_renderer_owned_id(&candidate_full, &canonical_svg_id, defs)
+                        && !reserved.contains(&candidate_full)
+                        && seen.insert(candidate_full.clone())
                     {
-                        element_owned.insert(candidate.clone());
-                        break candidate;
+                        element_owned.insert(candidate_full);
+                        break candidate_local;
                     }
                 }
             };
-            let raw_distinct_from_owner = path_had_placeholder
-                || canonical_path != raw_path
-                || !element_owned.contains(&canonical_path);
-            if final_path != raw_path && raw_distinct_from_owner {
+            let normalized_changed =
+                had_placeholder || final_local != edge.id || canonical_svg_id != svg_id;
+            let raw_distinct_from_owner = had_placeholder
+                || canonical_differs
+                || canonical_svg_id != svg_id
+                || !element_owned.contains(&canonical_full);
+            if normalized_changed && raw_distinct_from_owner {
+                let target_id = format!("{canonical_svg_id}-{final_local}");
                 remapped_fragments
-                    .entry(format!("#{raw_path}"))
-                    .or_insert_with(|| format_fragment_url(&final_path));
+                    .entry(format!("#{svg_id}-{}", edge.id))
+                    .or_insert_with(|| format_fragment_url(&target_id));
             }
-            if collided || path_had_placeholder {
-                edge_path_ids.push(final_path);
-            } else {
-                edge_path_ids.push(raw_path);
-            }
-            if edge_had_placeholder {
-                edge_ids.push(canonical_edge_id);
+            if collided || had_placeholder {
+                edge_ids.push(final_local);
             } else {
                 edge_ids.push(edge.id.clone());
             }
@@ -1097,7 +945,6 @@ impl ResolvedDomIds {
         Some(Self {
             nodes,
             edge_ids,
-            edge_path_ids,
             element_owned,
             remapped_fragments,
         })
@@ -1130,9 +977,6 @@ pub(crate) fn paint_with_animation<'a>(
 
     let mut clusters = String::new();
     let mut painted_clusters = Vec::new();
-    // The size of each lane once its shape has drawn it: the swimlane edges clip to it (`node.width`
-    // and `node.height` after `swimlane.js`).
-    let mut lanes: HashMap<String, (f64, f64)> = HashMap::new();
     for (index, node) in data
         .nodes
         .iter()
@@ -1148,9 +992,6 @@ pub(crate) fn paint_with_animation<'a>(
             ..node.clone()
         };
         let cluster = clusters::paint_among(&prefixed, config, &data.edges)?;
-        if matches!(measured.layout, Layout::Swimlane(_)) {
-            lanes.insert(node.id.clone(), (cluster.bbox.width, cluster.bbox.height));
-        }
         // The frame of an empty subgraph has no height: an unrendered rect, which `getBBox` leaves
         // out of the drawing's box. Its title is text and counts.
         if !cluster.bbox.is_empty() {
@@ -1214,28 +1055,12 @@ pub(crate) fn paint_with_animation<'a>(
         labels.extend(shape.texts.iter());
     }
 
-    // The swimlane engine's edges are clipped to the outlines of their ends (`insertEdge`'s swimlane
-    // branch) before they are drawn, and so are the line hops that follow from their points.
-    let (mut path_edges, jumps): (Cow<'_, [Edge]>, Option<JumpStyle>) = match measured.layout {
-        Layout::Elk => (
-            Cow::Borrowed(data.edges.as_slice()),
-            edges::jump_style(&config.section),
-        ),
-        Layout::Swimlane(jumps) => (
-            Cow::Owned(swimlane_layout::clip_edges(
-                &data.edges,
-                &data.nodes,
-                &measured.shapes,
-                &lanes,
-            )),
-            jumps,
-        ),
-    };
+    let mut path_edges: Cow<'_, [Edge]> = Cow::Borrowed(data.edges.as_slice());
+    let jumps = edges::jump_style(&config.section);
     if let Some(ids) = &resolved_ids {
         let edges_mut = path_edges.to_mut();
         for (index, edge) in edges_mut.iter_mut().enumerate() {
             edge.id.clone_from(&ids.edge_ids[index]);
-            edge.path_id = Some(ids.edge_path_ids[index].clone());
         }
     }
     let mut edge_paths = String::new();
@@ -1243,7 +1068,6 @@ pub(crate) fn paint_with_animation<'a>(
     let paths = edges::prepare_paths(&path_edges, id, &data.diagram_type, &config.section, jumps);
     let mut animator = animation
         .map(|options| {
-            let mask_prefix = format!("{id}-draw-mask-");
             let mut occupied_mask_ids = HashSet::new();
             for (index, node) in data.nodes.iter().enumerate() {
                 let dom_id = resolved_ids
@@ -1254,11 +1078,7 @@ pub(crate) fn paint_with_animation<'a>(
                 }
             }
             for edge in path_edges.iter() {
-                if let Some(path_id) = edge.path_id.as_deref() {
-                    if path_id.starts_with(&mask_prefix) {
-                        occupied_mask_ids.insert(path_id.to_owned());
-                    }
-                } else if edge.id.starts_with("draw-mask-") {
+                if edge.id.starts_with("draw-mask-") {
                     occupied_mask_ids.insert(format!("{id}-{}", edge.id));
                 }
             }

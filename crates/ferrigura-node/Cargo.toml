@@ -20,72 +20,26 @@ crate-type = ["cdylib"]
 default = ["all"]
 all = [
     "pie",
-    "info",
     "flowchart",
-    "timeline",
-    "journey",
-    "git_graph",
     "er",
     "class",
     "sequence",
     "state",
     "gantt",
     "mindmap",
-    "block",
-    "packet",
     "xy_chart",
-    "sankey",
     "quadrant_chart",
-    "requirement",
-    "c4",
-    "kanban",
-    "architecture",
-    "treemap",
-    "ishikawa",
-    "event_modeling",
-    "agentflow",
-    "cynefin",
-    "radar",
-    "railroad",
-    "swimlanes",
-    "tree_view",
-    "use_case",
-    "venn",
-    "wardley",
 ]
 pie = []
-info = []
 flowchart = []
-timeline = []
-journey = []
-git_graph = []
 er = []
 class = []
 sequence = []
 state = []
 gantt = []
 mindmap = []
-block = []
-packet = []
 xy_chart = []
-sankey = []
 quadrant_chart = []
-requirement = []
-c4 = []
-kanban = []
-architecture = []
-treemap = []
-ishikawa = []
-event_modeling = []
-agentflow = []
-cynefin = []
-radar = []
-railroad = []
-swimlanes = []
-tree_view = []
-use_case = []
-venn = []
-wardley = []
 
 
 [dependencies]

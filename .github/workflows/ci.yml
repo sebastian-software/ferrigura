@@ -125,10 +125,6 @@ jobs:
             crates/ferrigura/tests/snapshots/svg.tsv
             crates/ferrigura/tests/snapshots/animation.tsv
       - run: cargo test --release -p ferrigura-jsmath
-      - name: Venn layout exactly against its Chromium captures (arm64, as they were taken)
-        # The x86-64 test job compares the captures within a tolerance: without fused multiply-adds,
-        # atan2 rounds as V8 does on x86-64 (crates/ferrigura-venn/tests/corpus.rs).
-        run: cargo test --release -p ferrigura-venn --test corpus
 
   # port-diff and port-geometry check ferrigura against upstream Mermaid at the pin of
   # tools/reference, with its patches (docs/decisions/0014-upstream-reference-at-a-pin.md), built once per pin and cached.
@@ -140,44 +136,19 @@ jobs:
         diagram:
           [
             pie,
-            info,
             flowchart,
             sequence,
             class,
             state,
             er,
             gantt,
-            timeline,
-            gitgraph,
-            journey,
             mindmap,
-            block,
-            packet,
             xychart,
-            sankey,
             quadrantChart,
-            requirement,
-            c4,
-            kanban,
-            architecture,
-            treemap,
-            ishikawa,
-            eventmodeling,
-            agentflow,
-            cynefin,
-            radar,
-            railroad,
-            treeView,
-            usecase,
-            venn,
-            wardley,
-            swimlanes,
             flowchart-data,
             class-data,
             state-data,
             er-data,
-            requirement-data,
-            kanban-data,
             config,
             yaml,
             theme,
@@ -253,7 +224,7 @@ jobs:
         # Every type runs, so one failing type does not hide the others.
         run: |
           status=0
-          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling mindmap architecture agentflow cynefin radar railroad treeView usecase venn wardley swimlanes; do
+          for type in sequence class state er gantt xychart quadrantChart mindmap; do
             pnpm -C tools/port port:geometry "$type" || status=1
           done
           exit $status

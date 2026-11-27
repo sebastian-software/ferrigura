@@ -71,6 +71,17 @@ void test('text that is not a diagram throws', () => {
   assert.throws(() => render('not a diagram\n'), /no diagram type detected/);
 });
 
+void test('a type ferrigura does not draw throws an error that names it and the drawn types', () => {
+  assert.throws(
+    () => render('sankey-beta\n  a,b,8\n'),
+    new Error(
+      'ferrigura does not draw sankey diagrams; it draws flowchart, state, class, ER, mindmap, ' +
+        'sequence, gantt, XY chart, pie and quadrant chart diagrams'
+    )
+  );
+  assert.throws(() => new Renderer().render('gitGraph\n  commit\n'), /does not draw Git graph/);
+});
+
 const DIRECTED = '%%{init: {"theme": "forest"}}%%\n' + PIE;
 
 void test('a renderer gives the SVG of render with its configuration', () => {

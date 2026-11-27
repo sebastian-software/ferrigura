@@ -145,9 +145,6 @@ pub(crate) fn is_xml_char(c: char) -> bool {
     matches!(c, '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..)
 }
 
-/// The XLink namespace, which the `xlink:href` of a link or an image is in.
-pub const XLINK_NAMESPACE: &str = "http://www.w3.org/1999/xlink";
-
 /// The declaration of the `xlink` prefix that a root needs when the drawing writes `xlink:href`,
 /// with a space before it, or nothing. Without it the prefix is unbound, and an XML parser rejects
 /// the SVG. The reference declares it after `xmlns` on the root that `mermaid.run` draws

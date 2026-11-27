@@ -41,8 +41,8 @@ impl FromStr for AnimationOrder {
 /// Speed multiplies an average of 700 SVG user units per second; it does not fix the duration of
 /// the diagram. Each path, bar, or sector eases in and out independently.
 /// Nodes fade in over 80 ms. The SVG contains CSS and no script, and shows the complete drawing
-/// when the viewer requests reduced motion. Supported types are flowchart, Gantt, Git graph,
-/// mind map, pie (including donut), and XY chart.
+/// when the viewer requests reduced motion. Supported types are flowchart, Gantt, mind map, pie
+/// (including donut), and XY chart.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Animation {
     // Construction excludes NaN, infinities and zero, preserving Eq for render options.

@@ -31,7 +31,7 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..09df60a 100644
+index 48ac4a6..3654cf9 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
 @@ -244,6 +244,502 @@ export function interpolateToCurve(
@@ -549,7 +549,7 @@ index 48ac4a6..09df60a 100644
    }
  
    return url;
-@@ -895,23 +1394,397 @@ export default {
+@@ -895,23 +1394,509 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -574,9 +574,19 @@ index 48ac4a6..09df60a 100644
 +      if (!trimmed || trimmed.startsWith('%%')) {
 +        continue;
 +      }
-+      return /^(?:treemap|stateDiagram)(?:$|\s|-)/.test(trimmed);
++      return /^stateDiagram(?:$|\s|-)/.test(trimmed);
      }
 -  });
++    return false;
++  };
++  const isClassDiagramDialect = (s: string): boolean => {
++    for (const line of s.split(/[\n\r\u2028\u2029]/)) {
++      const trimmed = line.trimStart();
++      if (!trimmed || trimmed.startsWith('%%')) {
++        continue;
++      }
++      return /^classDiagram(?:$|\s|-)/.test(trimmed);
++    }
 +    return false;
 +  };
 +  const isColonLabelDialect = (s: string): boolean => {
@@ -624,12 +634,17 @@ index 48ac4a6..09df60a 100644
 +    }
 +    return false;
 +  };
++  const startsClassDef = (s: string, at: number): boolean =>
++    s.startsWith('classDef', at) && at + 8 < s.length && /\s/.test(s[at + 8]);
++  const startsClassStmt = (s: string, at: number): boolean =>
++    s.startsWith('class', at) && at + 5 < s.length && /\s/.test(s[at + 5]);
 +  const isSingleColon = (s: string, at: number): boolean =>
 +    (at === 0 || s[at - 1] !== ':') && s[at + 1] !== ':';
 +  const isAsciiAlnum = (c: string): boolean =>
 +    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
 +
 +  const allowClassDefCssSemi = allowsClassDefSemicolonCss(txt);
++  const classDiagramDialect = isClassDiagramDialect(txt);
 +  const colonLabelDialect = isColonLabelDialect(txt);
 +
 +  const isHorizontalWsToEol = (s: string, start: number): boolean => {
@@ -687,6 +702,7 @@ index 48ac4a6..09df60a 100644
 +    let lineStart = 0;
 +    let inQuotes = false;
 +    let inAccDescrBlock = false;
++    let classBodyDepth = 0;
 +    const isLineTerm = (c: string) =>
 +      c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029';
 +    const processLine = (line: string): string => {
@@ -694,6 +710,7 @@ index 48ac4a6..09df60a 100644
 +      let stmtStart = true;
 +      let inTarget = false;
 +      let inStyleOrClassDef = false;
++      let inClassStmt = false;
 +      let seenColon = false;
 +      let seenColonHash = false;
 +      let prevWasAlnum = false;
@@ -705,6 +722,21 @@ index 48ac4a6..09df60a 100644
 +            inAccDescrBlock = false;
 +            stmtStart = true;
 +            inStyleOrClassDef = false;
++            inClassStmt = false;
++          }
++          prevWasAlnum = false;
++          continue;
++        }
++        if (classBodyDepth > 0) {
++          if (c === '{') {
++            classBodyDepth++;
++          } else if (c === '}') {
++            classBodyDepth--;
++            if (classBodyDepth === 0) {
++              stmtStart = true;
++              inStyleOrClassDef = false;
++              inClassStmt = false;
++            }
 +          }
 +          prevWasAlnum = false;
 +          continue;
@@ -744,17 +776,22 @@ index 48ac4a6..09df60a 100644
 +        }
 +        prevWasAlnum = isAsciiAlnum(c);
 +        if (c === ';') {
++          if (inTarget && seenColonHash && isHorizontalWsToEol(line, i + 1)) {
++            lastSemi = i;
++          }
 +          if (
 +            inTarget &&
-+            seenColonHash &&
-+            (isHorizontalWsToEol(line, i + 1) ||
-+              (allowClassDefCssSemi && word === 'classDef' && startsWithCssProp(line, i + 1)))
++            allowClassDefCssSemi &&
++            word === 'classDef' &&
++            startsWithCssProp(line, i + 1)
 +          ) {
-+            lastSemi = i;
++            seenColon = false;
++            continue;
 +          }
 +          stmtStart = true;
 +          inTarget = false;
 +          inStyleOrClassDef = false;
++          inClassStmt = false;
 +          seenColon = false;
 +          seenColonHash = false;
 +          continue;
@@ -765,6 +802,7 @@ index 48ac4a6..09df60a 100644
 +          }
 +          stmtStart = false;
 +          inStyleOrClassDef = startsStyleOrClassDef(line, i);
++          inClassStmt = classDiagramDialect && startsClassStmt(line, i);
 +          if (
 +            line.startsWith(word, i) &&
 +            i + word.length < line.length &&
@@ -772,6 +810,12 @@ index 48ac4a6..09df60a 100644
 +          ) {
 +            inTarget = true;
 +          }
++          continue;
++        }
++        if (classDiagramDialect && inClassStmt && c === '{') {
++          classBodyDepth = 1;
++          inClassStmt = false;
++          prevWasAlnum = false;
 +          continue;
 +        }
 +        if (colonLabelDialect && !inStyleOrClassDef && c === ':' && isSingleColon(line, i)) {
@@ -817,11 +861,14 @@ index 48ac4a6..09df60a 100644
 +
 +  let out = '';
 +  let stmtKind: 0 | 1 | 2 = 0; // 0 = start, 1 = style/classDef, 2 = other
++  let inClassDef = false;
++  let inClassStmt = false;
 +  let seenColon = false;
 +  let lastAllowsHex = false;
 +  let atLineStart = true;
 +  let inPlainLine = false;
 +  let inAccDescrBlock = false;
++  let classBodyDepth = 0;
 +  let inQuotes = false;
 +  let prevWasAlnum = false;
 +  let copyFrom = 0;
@@ -839,20 +886,34 @@ index 48ac4a6..09df60a 100644
 +          !inQuotes &&
 +          !inPlainLine &&
 +          !inAccDescrBlock &&
++          classBodyDepth === 0 &&
 +          stmtKind === 1 &&
 +          seenColon &&
 +          lastAllowsHex &&
 +          /^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(innerTxt)
 +        ) {
 +          out += isHorizontalWsToEol(txt, j + 1) ? `#${innerTxt}` : `#${innerTxt};`;
-+          stmtKind = 0;
-+          seenColon = false;
-+          lastAllowsHex = false;
++          if (allowClassDefCssSemi && inClassDef && startsWithCssProp(txt, j + 1)) {
++            seenColon = false;
++            lastAllowsHex = false;
++          } else {
++            stmtKind = 0;
++            inClassDef = false;
++            inClassStmt = false;
++            seenColon = false;
++            lastAllowsHex = false;
++          }
 +          atLineStart = false;
 +          prevWasAlnum = false;
 +        } else {
 +          out += (/^\+?\d+$/.test(innerTxt) ? 'ﬂ°°' : 'ﬂ°') + innerTxt + '¶ß';
-+          if (!inQuotes && !inPlainLine && !inAccDescrBlock && stmtKind === 0) {
++          if (
++            !inQuotes &&
++            !inPlainLine &&
++            !inAccDescrBlock &&
++            classBodyDepth === 0 &&
++            stmtKind === 0
++          ) {
 +            stmtKind = 2;
 +          }
 +          atLineStart = false;
@@ -867,6 +928,8 @@ index 48ac4a6..09df60a 100644
 +    if (inAccDescrBlock) {
 +      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
 +        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
 +        seenColon = false;
 +        lastAllowsHex = false;
 +        atLineStart = true;
@@ -874,8 +937,34 @@ index 48ac4a6..09df60a 100644
 +      } else if (ch === '}') {
 +        inAccDescrBlock = false;
 +        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
 +        seenColon = false;
 +        lastAllowsHex = false;
++      }
++      prevWasAlnum = false;
++      continue;
++    }
++    if (classBodyDepth > 0) {
++      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
++        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
++        seenColon = false;
++        lastAllowsHex = false;
++        atLineStart = true;
++        inPlainLine = false;
++      } else if (ch === '{') {
++        classBodyDepth++;
++      } else if (ch === '}') {
++        classBodyDepth--;
++        if (classBodyDepth === 0) {
++          stmtKind = 0;
++          inClassDef = false;
++          inClassStmt = false;
++          seenColon = false;
++          lastAllowsHex = false;
++        }
 +      }
 +      prevWasAlnum = false;
 +      continue;
@@ -883,6 +972,8 @@ index 48ac4a6..09df60a 100644
 +    if (inQuotes) {
 +      if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
 +        stmtKind = 0;
++        inClassDef = false;
++        inClassStmt = false;
 +        seenColon = false;
 +        lastAllowsHex = false;
 +        atLineStart = true;
@@ -895,6 +986,8 @@ index 48ac4a6..09df60a 100644
 +    }
 +    if (ch === '\n' || ch === '\r' || ch === '\u2028' || ch === '\u2029') {
 +      stmtKind = 0;
++      inClassDef = false;
++      inClassStmt = false;
 +      seenColon = false;
 +      lastAllowsHex = false;
 +      atLineStart = true;
@@ -936,7 +1029,14 @@ index 48ac4a6..09df60a 100644
 +    }
 +    prevWasAlnum = isAsciiAlnum(ch);
 +    if (ch === ';') {
++      if (allowClassDefCssSemi && inClassDef && startsWithCssProp(txt, i + 1)) {
++        seenColon = false;
++        lastAllowsHex = false;
++        continue;
++      }
 +      stmtKind = 0;
++      inClassDef = false;
++      inClassStmt = false;
 +      seenColon = false;
 +      lastAllowsHex = false;
 +      continue;
@@ -945,7 +1045,19 @@ index 48ac4a6..09df60a 100644
 +      if (/\s/.test(ch)) {
 +        continue;
 +      }
-+      stmtKind = startsStyleOrClassDef(txt, i) ? 1 : 2;
++      if (startsStyleOrClassDef(txt, i)) {
++        stmtKind = 1;
++        inClassDef = startsClassDef(txt, i);
++      } else {
++        stmtKind = 2;
++        inClassStmt = classDiagramDialect && startsClassStmt(txt, i);
++      }
++    }
++    if (classDiagramDialect && inClassStmt && ch === '{') {
++      classBodyDepth = 1;
++      inClassStmt = false;
++      prevWasAlnum = false;
++      continue;
 +    }
 +    if (colonLabelDialect && stmtKind === 2 && ch === ':' && isSingleColon(txt, i)) {
 +      inPlainLine = true;

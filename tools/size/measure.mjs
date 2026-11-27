@@ -6,8 +6,9 @@
 // The addon crate has one cargo feature per diagram type (docs/decisions/0020-diagram-types-as-plugins.md).
 // The script builds it under the `release-node` profile, the one the npm packages ship, once with each
 // type alone, once with a few common sets, and once with every type, and builds the command-line tool
-// too. The smallest build, `info` alone, is the core: configuration, theme, text engine with its
-// bundled fonts, SVG output and the Node binding. What a type adds is its build's size minus the core.
+// too. The smallest single-type build is the core: configuration, theme, the bundled fonts, SVG
+// output, the Node binding and the renderer of that type. What another type adds is its build's
+// size minus the core.
 // Types that share a layout engine each carry it alone, so their additions overlap.
 //
 // Each build is a full fat-LTO link of a minute or two; `--jobs` builds run at once, each in a
@@ -102,7 +103,10 @@ async function worker(slot) {
 await Promise.all(Array.from({ length: jobs }, (_, slot) => worker(`slot-${slot}`)));
 const cliDir = await cargo(['build', '--release', '-p', 'ferrigura-cli'], 'slot-0');
 
-const core = results.get('info');
+const coreType = types.reduce((smallest, type) =>
+  results.get(type).bytes < results.get(smallest).bytes ? type : smallest
+);
+const core = { type: coreType, ...results.get(coreType) };
 const text = (command, args) => execFileSync(command, args, { cwd: root, encoding: 'utf8' }).trim();
 const report = {
   measuredWith: {
@@ -114,7 +118,7 @@ const report = {
   cli: sizes(new URL(`release/${cliBinary}`, cliDir)),
   core,
   types: types
-    .filter((type) => type !== 'info')
+    .filter((type) => type !== coreType)
     .map((type) => {
       const { bytes, gzip } = results.get(type);
       return { type, bytes, gzip, adds: bytes - core.bytes, addsGzip: gzip - core.gzip };

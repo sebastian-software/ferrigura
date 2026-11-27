@@ -34,9 +34,9 @@ Subgraph frames and diagram titles remain visible. For Gantt, pie, and XY,
 flow order starts independent chart elements together. See
 [draw animation](../../docs/animation.md) for the complete option contract.
 
-The ten examples cover three flowcharts, a release Gantt, a Git graph with a
-merge, a branching mind map, pie and donut charts, and XY charts with lines,
-vertical bars, and horizontal bars. Legend entries appear with their sectors or
+The nine examples cover three flowcharts, a release Gantt, a branching mind map,
+pie and donut charts, and XY charts with lines, vertical bars, and horizontal
+bars. Legend entries appear with their sectors or
 series. Axes and other context remain visible while the elements draw.
 
 With the harness dependencies installed, run the browser checks from the

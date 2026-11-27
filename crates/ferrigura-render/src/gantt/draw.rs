@@ -300,11 +300,22 @@ impl Chart<'_> {
         background.push_str("</g>");
         out.push_str(&background);
 
+        // Allocate unique bar and `-text` label DOM IDs across tasks after resolving Mermaid entity
+        // placeholders. Literal task IDs keep their exact emitted IDs while entity-decoded IDs that
+        // collide with a literal task or an earlier decoded task get a numeric suffix, and
+        // same-document fragment links to those tasks are remapped to match.
+        let (task_dom_ids, fragment_map) = self.allocate_task_dom_ids();
+
         // The bars and the labels: all rectangles first, then all texts, in the same group.
         let mut parts: Vec<(usize, String, String)> = Vec::with_capacity(self.array.len());
         for &index in &self.array {
-            let (mut rect, bounds) = self.bar(index);
-            let mut text = self.label_element(index, texts)?;
+            let dom_id = task_dom_ids
+                .as_ref()
+                .map_or(self.model.tasks[index].id.as_str(), |ids| {
+                    ids[index].as_str()
+                });
+            let (mut rect, bounds) = self.bar(index, dom_id);
+            let mut text = self.label_element(index, dom_id, texts)?;
             if let Some(drawing) = drawing.as_deref_mut() {
                 let task = &self.model.tasks[index];
                 let timing = if task.milestone || task.vert {
@@ -342,7 +353,9 @@ impl Chart<'_> {
         // branch wraps it (`ganttRenderer.js:508-531`).
         for (index, rect, text) in &parts {
             if let Some(url) = self.model.links.get(&self.model.tasks[*index].id) {
-                let resolved = crate::common::resolve_entity_placeholders(url);
+                let resolved = Self::remap_task_fragment(url, &fragment_map).unwrap_or_else(|| {
+                    crate::common::resolve_entity_placeholders(url).into_owned()
+                });
                 let guarded = ferrigura_syntax::url::guard_url(&resolved, self.loose);
                 group.push_str(&format!(
                     "<a xlink:href=\"{}\" target=\"_top\">{rect}{text}</a>",
@@ -353,6 +366,84 @@ impl Chart<'_> {
         group.push_str("</g>");
         out.push_str(&group);
         Ok(())
+    }
+
+    /// Allocates unique bar/label DOM IDs when any task ID contains Mermaid entity placeholders,
+    /// returning `(per_task_dom_ids, raw_fragment_to_allocated_fragment)`.
+    fn allocate_task_dom_ids(
+        &self,
+    ) -> (
+        Option<Vec<String>>,
+        std::collections::HashMap<String, String>,
+    ) {
+        let has_placeholders = self
+            .model
+            .tasks
+            .iter()
+            .any(|task| task.id.contains("ﬂ°") || task.id.contains("¶ß"));
+        if !has_placeholders {
+            return (None, std::collections::HashMap::new());
+        }
+        let mut used = std::collections::HashSet::with_capacity(self.model.tasks.len() * 2);
+        let mut allocated = vec![String::new(); self.model.tasks.len()];
+        // Pass 1: preserve every literal task ID verbatim and reserve both its bar and label IDs.
+        for (idx, task) in self.model.tasks.iter().enumerate() {
+            if !task.id.contains("ﬂ°") && !task.id.contains("¶ß") {
+                used.insert(task.id.clone());
+                used.insert(format!("{}-text", task.id));
+                allocated[idx].clone_from(&task.id);
+            }
+        }
+        // Pass 2: resolve entity-bearing task IDs, disambiguating collisions on bar or `-text` IDs.
+        let mut fragment_map = std::collections::HashMap::new();
+        for (idx, task) in self.model.tasks.iter().enumerate() {
+            if task.id.contains("ﬂ°") || task.id.contains("¶ß") {
+                let base = crate::common::resolve_entity_placeholders(&task.id).into_owned();
+                let candidate = if !used.contains(&base) && !used.contains(&format!("{base}-text"))
+                {
+                    base
+                } else {
+                    let mut suffix = 2usize;
+                    loop {
+                        let next = format!("{base}-{suffix}");
+                        if !used.contains(&next) && !used.contains(&format!("{next}-text")) {
+                            break next;
+                        }
+                        suffix += 1;
+                    }
+                };
+                used.insert(candidate.clone());
+                used.insert(format!("{candidate}-text"));
+                fragment_map.insert(
+                    format!("#{}-{}", self.id, task.id),
+                    format!("#{}-{}", self.id, candidate),
+                );
+                fragment_map.insert(
+                    format!("#{}-{}-text", self.id, task.id),
+                    format!("#{}-{}-text", self.id, candidate),
+                );
+                allocated[idx] = candidate;
+            }
+        }
+        (Some(allocated), fragment_map)
+    }
+
+    /// Remaps a raw same-document fragment link targeting an entity-bearing task ID (with either
+    /// literal `#` or entity-spelled `#35;`) to the task's allocated unique DOM ID.
+    fn remap_task_fragment(
+        raw_url: &str,
+        fragment_map: &std::collections::HashMap<String, String>,
+    ) -> Option<String> {
+        if fragment_map.is_empty() {
+            return None;
+        }
+        let trimmed = raw_url.trim();
+        let normalized = if let Some(rest) = trimmed.strip_prefix("ﬂ°°35¶ß") {
+            std::borrow::Cow::Owned(format!("#{rest}"))
+        } else {
+            std::borrow::Cow::Borrowed(trimmed)
+        };
+        fragment_map.get(normalized.as_ref()).cloned()
     }
 
     /// Whether a task has a link, which wraps it in an anchor.
@@ -373,7 +464,7 @@ impl Chart<'_> {
     }
 
     /// One task's bar (`rect`), with its attributes in the reference's order.
-    fn bar(&self, index: usize) -> (String, crate::unified::geom::BBox) {
+    fn bar(&self, index: usize, dom_id: &str) -> (String, crate::unified::geom::BBox) {
         let task = &self.model.tasks[index];
         let conf = self.conf;
         let scale = &self.scale;
@@ -417,11 +508,10 @@ impl Chart<'_> {
             attributes.push_str(&self.colour("stroke", token));
         }
         let class = bar_class(task, section, state_classes(task));
-        let task_dom_id = crate::common::resolve_entity_placeholders(&task.id);
         let svg = format!(
             "<rect id=\"{}-{}\" rx=\"3\" ry=\"3\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" transform-origin=\"{}px {}px\" class=\"{}\"{}></rect>",
             escape(self.id),
-            escape(&task_dom_id),
+            escape(dom_id),
             number(x),
             number(y),
             number(width),
@@ -436,7 +526,12 @@ impl Chart<'_> {
 
     /// One task's label (`text`), measured as the reference measures it: the width is the text's
     /// width in the sans face at the font size, before the element has its class.
-    fn label_element(&self, index: usize, texts: &mut Texts) -> Result<String, RenderError> {
+    fn label_element(
+        &self,
+        index: usize,
+        dom_id: &str,
+        texts: &mut Texts,
+    ) -> Result<String, RenderError> {
         let task = &self.model.tasks[index];
         let conf = self.conf;
         let scale = &self.scale;
@@ -502,11 +597,10 @@ impl Chart<'_> {
             } else {
                 String::new()
             };
-        let task_dom_id = crate::common::resolve_entity_placeholders(&task.id);
         Ok(format!(
             "<text id=\"{}-{}-text\" font-size=\"{}\" x=\"{}\" y=\"{}\" class=\"{}\"{}{}>{}</text>",
             escape(self.id),
-            escape(&task_dom_id),
+            escape(dom_id),
             number(font),
             number(x),
             number(y),

@@ -72,6 +72,7 @@ The renderer ports `ganttRenderer.js` and `styles.js`. `mod.rs` sizes the diagra
 ## Differences from Mermaid
 
 - **Links are anchors.** The reference in strict mode binds a JavaScript click; ferrigura writes an `<a>` and drops callbacks ([0006](../decisions/0006-rust-only-no-browser.md)).
+- **Unique entity-decoded task IDs.** When a task id contains Mermaid entity placeholders whose decoded form collides with a literal task id (or an earlier decoded task id), ferrigura keeps literal task ids stable, allocates a unique bar and `-text` label id pair, and remaps same-document fragment links targeting that task to match ([0014](../decisions/0014-upstream-reference-at-a-pin.md)).
 - **UTC only.** The reference reads dates in the browser's zone; ferrigura runs in UTC, and the `TZ=America/Los_Angeles` test of the DB spec is ignored. Its comparison runs under `TZ=UTC` with a fixed clock.
 - **Colors** are custom properties with attribute fallbacks, and only the two redux themes ship ([0011](../decisions/0011-themes-as-css-variables.md)). The tick text takes the text color, where the reference's attribute `#000` is overridden by its own CSS.
 - **Attributes the sanitizer drops.** The reference's SVG passes through DOMPurify, which drops `text-height` and trims attribute values; ferrigura writes neither.

@@ -192,15 +192,6 @@ fn host_limits_apply_to_raw_text_and_edges() {
                 .contains("maxEdges")
         );
     }
-    let agent = "agentflow-beta TB\n a[\"A\"]\n b[\"B\"]\n a --> b\n";
-    assert!(
-        render(agent, &value(r#"{"maxEdges":0}"#))
-            .unwrap_err()
-            .to_string()
-            .contains("Edge limit")
-    );
-    assert!(render(agent, &value(r#"{"maxEdges":1}"#)).is_ok());
-    assert!(render(agent, &value(r#"{"maxEdges":2}"#)).is_ok());
     let flow = "---\nconfig:\n  maxEdges: 99\n---\nflowchart LR\n A --> B\n B --> C\n";
     for compat in [false, true] {
         let options = RenderOptions {
@@ -216,63 +207,6 @@ fn host_limits_apply_to_raw_text_and_edges() {
                 .contains("Edge limit")
         );
     }
-}
-
-#[test]
-fn c4_wrap_uses_the_effective_top_level_configuration() {
-    const C4: &str = "C4Context\nSystem_Boundary(boundary, \"A very long boundary label that should wrap over multiple lines when wrapping is enabled and continues with more words to exceed the available width of the screen and show the wrapping behavior clearly for everyone reading this diagram\") {\nSystem(first, \"First system\")\nSystem(second, \"Second system\")\nRel(first, second, \"A very long relationship label that should wrap over multiple lines when wrapping is enabled and continues with more words to exceed the available width of the screen and show the wrapping behavior clearly for everyone reading this diagram\")\n}\n";
-    let options = RenderOptions {
-        id: Some("c4-wrap".to_owned()),
-        ..RenderOptions::default()
-    };
-    let render = |prefix: &str, config: &str| {
-        render_with(&format!("{prefix}{C4}"), &value(config), &options).unwrap()
-    };
-    let lines = |svg: &str| {
-        let doc = roxmltree::Document::parse(svg).unwrap();
-        doc.descendants()
-            .filter(|node| {
-                node.has_tag_name("tspan")
-                    && node.attribute("alignment-baseline") == Some("mathematical")
-                    && node.text().is_some_and(|text| {
-                        text.starts_with("A very long boundary")
-                            || text.starts_with("screen and show")
-                    })
-            })
-            .count()
-    };
-    let off = r#"{"wrap":false,"c4":{"wrap":true}}"#;
-    let on = r#"{"wrap":true,"c4":{"wrap":true}}"#;
-    assert_eq!(lines(&render("", off)), 1);
-    assert_eq!(lines(&render("", on)), 2);
-    assert_eq!(render("", r#"{"c4":{"wrap":true}}"#), render("", off));
-    assert!(render("", on).contains("A very long relationship label"));
-    assert_eq!(
-        lines(&render("", r#"{"wrap":"true","c4":{"wrap":true}}"#)),
-        1
-    );
-    assert_eq!(lines(&render("---\nconfig:\n  wrap: true\n---\n", off)), 2);
-    assert_eq!(lines(&render("---\nconfig:\n  wrap: false\n---\n", on)), 1);
-    assert_eq!(lines(&render("%%{init: {\"wrap\": true}}%%\n", off)), 2);
-    assert_eq!(lines(&render("%%{init: {\"wrap\": false}}%%\n", on)), 1);
-    assert_eq!(
-        lines(&render(
-            "---\nconfig:\n  wrap: true\n---\n%%{init: {\"wrap\": false}}%%\n",
-            off
-        )),
-        1
-    );
-    assert_eq!(
-        lines(&render(
-            "---\nconfig:\n  wrap: false\n---\n%%{init: {\"wrap\": true}}%%\n",
-            on
-        )),
-        2
-    );
-    assert_eq!(
-        lines(&render("", r#"{"wrap":true,"c4":{"wrap":false}}"#)),
-        1
-    );
 }
 
 #[test]

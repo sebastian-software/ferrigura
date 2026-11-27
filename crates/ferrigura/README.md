@@ -84,7 +84,7 @@ describes fallback, variation defaults, supported roles and viewer coverage limi
 
 ## Choosing the diagram types
 
-Every diagram type is a plugin of the renderer. `Renderer::new` registers all 33; a builder registers only the types a program draws, and the parsers, renderers and layout engines of the other types are then not linked into it, since nothing refers to them. A program that draws sequence diagrams alone is about half the size of one that draws every type.
+Every diagram type is a plugin of the renderer. `Renderer::new` registers all ten; a builder registers only the types a program draws, and the parsers, renderers and layout engines of the other types are then not linked into it, since nothing refers to them.
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -115,7 +115,7 @@ The constructors of `ferrigura::diagrams` are named after the types (`flowchart`
 | `now`          | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                  |
 | `compat`       | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                          |
 | `design`       | `bool`                | `true` draws flowcharts in the design mode: ferrigura's own look, with hairline outlines, color by a node's role, rounded corners and soft shadows, and with roomier nodes, spacing and group padding. Other diagram types and the combination with `compat` return an option error.            |
-| `animation`    | `Option<Animation>`   | Optional draw animation for flowchart, Gantt, Git graph, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error.                          |
+| `animation`    | `Option<Animation>`   | Optional draw animation for flowchart, Gantt, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error.                          |
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -164,8 +164,8 @@ Each connection, bar, or sector eases in and out independently within its durati
 
 The output embeds CSS and masks without JavaScript. Nodes fade in over 80 ms;
 subgraph frames and the title stay visible. The complete drawing is shown when
-the viewer requests reduced motion. Flowchart, Gantt, Git graph, mind map, pie
-(including donut), and XY chart support this option. For charts, `Flow` starts
+the viewer requests reduced motion. Flowchart, Gantt, mind map, pie (including
+donut), and XY chart support this option. For charts, `Flow` starts
 independent elements together. See [draw animation](../../docs/animation.md)
 for the behavior of each type.
 
@@ -212,43 +212,28 @@ Two themes ship: `redux-color` (light) and `redux-dark-color` (dark), which are 
 
 ## Diagram types
 
-ferrigura renders 33 diagram types. The header keyword of each is the one Mermaid uses:
+ferrigura draws ten diagram types, each one completely: its drawing is compared with Mermaid's, and flowcharts, state diagrams and class diagrams also draw in the design mode. The header keyword of each is the one Mermaid uses:
 
-| Diagram        | Header                                                                                               |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| Flowchart      | `flowchart`, `graph`                                                                                 |
-| Sequence       | `sequenceDiagram`                                                                                    |
-| Class          | `classDiagram`, `classDiagram-v2`                                                                    |
-| State          | `stateDiagram`, `stateDiagram-v2`                                                                    |
-| ER             | `erDiagram`                                                                                          |
-| Gantt          | `gantt`                                                                                              |
-| Pie            | `pie`                                                                                                |
-| Timeline       | `timeline`                                                                                           |
-| gitGraph       | `gitGraph`                                                                                           |
-| User journey   | `journey`                                                                                            |
-| Info           | `info`                                                                                               |
-| Mindmap        | `mindmap`                                                                                            |
-| Block          | `block`                                                                                              |
-| Packet         | `packet`                                                                                             |
-| XY chart       | `xychart`                                                                                            |
-| Sankey         | `sankey`                                                                                             |
-| Quadrant chart | `quadrantChart`                                                                                      |
-| Requirement    | `requirementDiagram`                                                                                 |
-| C4             | `C4Context`, `C4Container`, `C4Component`, `C4Dynamic`, `C4Deployment`                               |
-| Kanban         | `kanban`                                                                                             |
-| Architecture   | `architecture`, `architecture-beta`                                                                  |
-| Treemap        | `treemap`, `treemap-beta`                                                                            |
-| Ishikawa       | `ishikawa`, `ishikawa-beta`, in any letter case                                                      |
-| Event modeling | `eventmodeling`                                                                                      |
-| Agentflow      | `agentflow-beta`                                                                                     |
-| Cynefin        | `cynefin-beta`                                                                                       |
-| Radar          | `radar-beta`                                                                                         |
-| Railroad       | `railroad-beta`, `railroad-ebnf-beta`, `railroad-abnf-beta`, `railroad-peg-beta`, in any letter case |
-| Swimlane       | `swimlane-beta`                                                                                      |
-| Tree view      | `treeView-beta`                                                                                      |
-| Use case       | `usecase-beta`                                                                                       |
-| Venn           | `venn-beta`                                                                                          |
-| Wardley map    | `wardley-beta`, in any letter case                                                                   |
+| Group  | Diagram        | Header                            |
+| ------ | -------------- | --------------------------------- |
+| Graphs | Flowchart      | `flowchart`, `graph`              |
+|        | State          | `stateDiagram`, `stateDiagram-v2` |
+|        | Class          | `classDiagram`, `classDiagram-v2` |
+|        | ER             | `erDiagram`                       |
+| Single | Mindmap        | `mindmap`                         |
+|        | Sequence       | `sequenceDiagram`                 |
+|        | Gantt          | `gantt`                           |
+| Charts | XY chart       | `xychart`, `xychart-beta`         |
+|        | Pie            | `pie`                             |
+|        | Quadrant chart | `quadrantChart`                   |
+
+A text of any other Mermaid diagram type is refused with `Error::Unsupported`, whose message names the type and lists the ten. `DiagramType::ALL` is the list.
+
+```rust
+let error = ferrigura::render("sankey-beta\n  a,b,8\n", &ferrigura::Value::empty_object()).unwrap_err();
+assert!(matches!(error, ferrigura::Error::Unsupported(_)));
+assert!(error.to_string().starts_with("ferrigura does not draw sankey diagrams; it draws flowchart"));
+```
 
 ## How the output differs from Mermaid
 
@@ -261,7 +246,7 @@ ferrigura renders 33 diagram types. The header keyword of each is the one Mermai
 - The output is SVG only.
 - The library does not print warnings. The low-level registry exposes uncovered-character diagnostics through `FontRegistry::missing_glyphs`; layout fallbacks remain silent.
 
-Layouts: flowcharts, class, state, ER, requirement, agentflow and use case diagrams use ELK Layered. Mindmaps use cose-bilkent by default, and Mermaid's tidy tree with `layout: tidy-tree`. Architecture diagrams use fcose. Venn diagrams use the layout of venn.js 2.0.0, and swimlanes have their own layout.
+Layouts: flowcharts, class, state and ER diagrams use ELK Layered. Mindmaps use cose-bilkent by default, and Mermaid's tidy tree with `layout: tidy-tree`.
 
 The geometry of the output (node and label boxes, edge paths and the viewBox) is compared with Mermaid 12.2.0 run in Chromium, on macOS. It agrees within 0.05 px on every fixture that the comparison covers. The comparison leaves out a fixture only for a stated reason, such as `look: handDrawn`, a layout algorithm other than ELK Layered, or a character that no registered fixture face covers.
 
@@ -274,7 +259,6 @@ Registered primary and fallback faces can extend glyph coverage beyond the compa
 - Mermaid's classic themes (`default`, `dark`, `forest` and `neutral`). A theme name that is not one of the two shipped themes gives one of them, as described above.
 - Images and icon packs. In flowcharts an image is not read, so an image shape needs `assetWidth` and `assetHeight`. Icon packs are not supported.
 - ELK layout algorithms other than `elk.layered`. A diagram that names another one is laid out with `elk.layered`.
-- Swimlane diagrams with `ignoreCrossLaneEdges: false` or `automaticLaneOrdering: true`. The render fails with an error that names the option.
 
 ## Alternatives
 
@@ -290,10 +274,10 @@ Other projects render Mermaid's syntax too. Which one fits depends on where the 
 
 ## Licenses
 
-The crates are MIT-licensed, as Mermaid is: ferrigura ports Mermaid 12.2.0, and the license text is the `LICENSE` file of the repository. `ferrigura-elk`, which ports ELK, is licensed under EPL-2.0. Some crates port code or bundle fonts under the licenses of their sources, which their `NOTICE.md` files list: `ferrigura-cose`, `ferrigura-elk`, `ferrigura-jsmath`, `ferrigura-path`, `ferrigura-render` (marked), `ferrigura-swimlane`, `ferrigura-text` and `ferrigura-venn`.
+The crates are MIT-licensed, as Mermaid is: ferrigura ports Mermaid 12.2.0, and the license text is the `LICENSE` file of the repository. `ferrigura-elk`, which ports ELK, is licensed under EPL-2.0. Some crates port code or bundle fonts under the licenses of their sources, which their `NOTICE.md` files list: `ferrigura-cose`, `ferrigura-elk`, `ferrigura-jsmath`, `ferrigura-path`, `ferrigura-render` (marked) and `ferrigura-text`.
 
 The bundled fonts are under the SIL Open Font License 1.1: Lexica Ultralegible, Atkinson Hyperlegible Mono, Noto Sans Math (the arrows) and Noto Sans Symbols 2. The emoji font is a cut of Twemoji Mozilla 0.7.0, whose code is under Apache-2.0. Its art is under the Creative Commons Attribution 4.0 license. The emoji art comes from Twemoji (<https://twitter.github.io/twemoji>), used and redistributed under that license. The font holds only the 1,185 emoji with emoji presentation that the source covers, and its hinting is dropped. The file `crates/ferrigura-text/NOTICE.md` has the details.
 
 ## Input limits
 
-The host configuration supports `maxTextSize` (default 50,000) and `maxEdges` (default 500). Both must be non-negative integers no greater than JavaScript’s maximum safe integer and representable on the host; invalid values return a configuration error. The facade counts the entire input in UTF-16 code units before detection or parsing, including comments, directives, front matter, and line endings. Inputs above `maxTextSize` return an error. Flowchart and agentflow parsers reject edges above `maxEdges` before layout. Diagram configuration cannot change either host limit, even when the host customizes `secure`. These limits apply to the Rust, CLI, and Node rendering interfaces, not direct syntax-crate calls.
+The host configuration supports `maxTextSize` (default 50,000) and `maxEdges` (default 500). Both must be non-negative integers no greater than JavaScript’s maximum safe integer and representable on the host; invalid values return a configuration error. The facade counts the entire input in UTF-16 code units before detection or parsing, including comments, directives, front matter, and line endings. Inputs above `maxTextSize` return an error. The flowchart parser rejects edges above `maxEdges` before layout. Diagram configuration cannot change either host limit, even when the host customizes `secure`. These limits apply to the Rust, CLI, and Node rendering interfaces, not direct syntax-crate calls.

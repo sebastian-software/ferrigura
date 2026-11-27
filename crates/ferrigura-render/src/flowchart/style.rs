@@ -289,30 +289,10 @@ fn flood_color(globals: &Globals) -> &'static str {
     }
 }
 
-/// One rule: the selector and its declarations, in braces.
-pub(crate) fn rule(selector: &str, declarations: &str) -> String {
-    format!("{selector}{{{declarations}}}")
-}
-
-/// The custom properties of the colors, declared on the diagram's id. With one set of variables they
-/// are written as they are; with a light and a dark set, the values that differ are `light-dark()`
-/// pairs, so one SVG follows the page's or the viewer's scheme.
-pub(crate) fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
-    let mut css = String::new();
-    let palette = palette(globals, theme.light);
-    write_custom_properties(
-        &mut css,
-        &format!("#{svg_id}"),
-        theme,
-        globals,
-        None,
-        palette.as_ref(),
-    );
-    css
-}
-
-/// Appends [`custom_properties`] to `css`, on `id` (`#` and the SVG's id), with the palette of the
-/// light (or only) scheme. In the design mode, the mode's own properties take the place of the
+/// Appends the custom properties of the colors to `css`, declared on `id` (`#` and the SVG's id), with
+/// the palette of the light (or only) scheme. With one set of variables they are written as they are;
+/// with a light and a dark set, the values that differ are `light-dark()` pairs, so one SVG follows the
+/// page's or the viewer's scheme. In the design mode, the mode's own properties take the place of the
 /// palette and the look's flood.
 fn write_custom_properties(
     css: &mut String,

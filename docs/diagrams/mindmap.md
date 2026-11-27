@@ -70,7 +70,7 @@ Quirks of the reference that are kept on purpose:
 - **Labels are SVG text,** also with `htmlLabels: true`, which is the reference's default for mindmaps ([0009](../decisions/0009-svg-text-labels.md)).
 - **Only the redux themes ship,** so the default node is always the rounded rectangle; the classic themes' `defaultMindmapNode` is not drawn ([0011](../decisions/0011-themes-as-css-variables.md)).
 - **`look: handDrawn`** takes the classic geometry.
-- **`layout: swimlane`** falls back to cose-bilkent, where the reference's registered swimlane layout would receive the mindmap records.
+- **`layout: swimlane`** falls back to cose-bilkent, where the reference's registered swimlane layout would receive the mindmap records; ferrigura does not draw swimlane diagrams and has no swimlane layout.
 - **ELK for the ELK names.** A mindmap with an ELK layout name is laid out with ELK. The reference's ELK path fails on the mindmap records, which carry `x` and `y` keys with `undefined` values (as the comment in `layout.rs` records), so there is no output to compare, and no fixture sets one.
 
 ## Known gaps

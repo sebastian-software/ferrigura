@@ -41,11 +41,14 @@ test('reports structure, labels, and geometry and rejects incomplete captures', 
     assert.equal(run().status, 0);
     assert.match(readFileSync(output, 'utf8'), /font styles differ; embedded font data match/);
     const wrongNamespace = fixture();
-    wrongNamespace.venn = wrongNamespace.venn.replace('http://www.w3.org/2000/svg', 'urn:not-svg');
+    wrongNamespace.mindmap = wrongNamespace.mindmap.replace(
+      'http://www.w3.org/2000/svg',
+      'urn:not-svg'
+    );
     writeFileSync(join(dir, 'other.json'), JSON.stringify(wrongNamespace));
     assert.notEqual(run().status, 0, 'An invalid SVG namespace must fail');
     const missing = fixture();
-    delete missing.venn;
+    delete missing.mindmap;
     writeFileSync(join(dir, 'other.json'), JSON.stringify(missing));
     assert.notEqual(run().status, 0, 'A missing fixture must fail');
     rmSync(join(dir, 'other.json'));

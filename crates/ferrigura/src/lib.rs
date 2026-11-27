@@ -60,8 +60,8 @@ pub struct RenderOptions {
     /// diagrams support it; other diagram types return an option error, and so does the combination
     /// with `compat`. The user's `themeVariables` and `classDef` styles still apply on top.
     pub design: bool,
-    /// Optional one-time SVG draw animation for flowcharts, Gantt, Git graphs, mind maps,
-    /// pie charts, and XY charts. `None` leaves the SVG unchanged.
+    /// Optional one-time SVG draw animation for flowcharts, Gantt, mind maps, pie charts, and XY
+    /// charts. `None` leaves the SVG unchanged.
     /// The default draws one line at a time, averaging 700 SVG units per second times its speed,
     /// with independent easing for each section. Other diagram types return an option error.
     pub animation: Option<Animation>,
@@ -74,17 +74,6 @@ pub struct RenderOptions {
     /// The current time, in milliseconds since the epoch, for the dates that depend on it (the
     /// gantt diagram's today marker and dates without a day). `None` reads the system clock.
     pub now: Option<i64>,
-    /// The seed of the ids a gitGraph generates for its commits, merges and cherry-picks that have
-    /// no `id:`. `None` derives them from the sequence number. The geometry harness gives the
-    /// reference's seed, so that the ids match the reference's; it is not part of the interface.
-    #[doc(hidden)]
-    pub git_graph_seed: Option<u32>,
-    /// The seed of the random numbers a venn layout draws when it has eight areas or more (the
-    /// reference draws them from `Math.random`). `None` gives the venn renderer's default seed. The
-    /// geometry harness gives the reference's seed, so that the draws match; it is not part of the
-    /// interface.
-    #[doc(hidden)]
-    pub random_seed: Option<u32>,
 }
 
 /// A renderer, with the site configuration resolved once.
@@ -165,7 +154,7 @@ impl Renderer {
         }
     }
 
-    /// The plugin of a diagram type, or the error of a type this renderer does not draw.
+    /// The plugin of a diagram type, or the error of a type this renderer does not register.
     fn plugin(&self, kind: DiagramType) -> Result<Plugin, RenderError> {
         self.plugins
             .iter()
@@ -204,15 +193,17 @@ impl Renderer {
         text: &str,
         options: &RenderOptions,
     ) -> Result<String, RenderError> {
-        let (max_text, max_edges) = self.limits(text)?;
-        let (source, kind) = ferrigura_syntax::prepare_and_detect(text)?;
+        let max_edges = self.limits(text)?;
+        let (source, kind) = ferrigura_syntax::prepare_and_detect(text).map_err(|error| {
+            ferrigura_syntax::detect_unsupported(text)
+                .map_or(RenderError::Parse(error), unsupported)
+        })?;
         let plugin = self.plugin(kind)?;
         if options.animation.is_some()
             && !matches!(
                 kind,
                 DiagramType::Flowchart
                     | DiagramType::Gantt
-                    | DiagramType::GitGraph
                     | DiagramType::Mindmap
                     | DiagramType::Pie
                     | DiagramType::XyChart
@@ -237,11 +228,12 @@ impl Renderer {
                 ));
             }
         }
-        let prepared = self.prepare(text, source, options, plugin, max_text, max_edges)?;
+        let prepared = self.prepare(text, source, options, plugin, max_edges)?;
         plugin.render(&prepared, options)
     }
 
-    fn limits(&self, text: &str) -> Result<(usize, usize), RenderError> {
+    /// Checks the text against `maxTextSize` and returns `maxEdges`.
+    fn limits(&self, text: &str) -> Result<usize, RenderError> {
         let read = |key: &str, default: usize| -> Result<usize, RenderError> {
             match self.site.settings().get(key) {
                 None => Ok(default),
@@ -266,7 +258,7 @@ impl Renderer {
                 "diagram text exceeds maxTextSize of {max_text} UTF-16 code units"
             )));
         }
-        Ok((max_text, max_edges))
+        Ok(max_edges)
     }
 
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
@@ -283,7 +275,6 @@ impl Renderer {
         source: preprocess::Prepared,
         options: &RenderOptions,
         plugin: Plugin,
-        max_text: usize,
         max_edges: usize,
     ) -> Result<Prepared<'_>, RenderError> {
         let id = match &options.id {
@@ -310,7 +301,6 @@ impl Renderer {
                 source,
                 directive,
                 id,
-                max_text,
                 max_edges,
                 design: options.design.then(|| design_tone(scheme, &view)),
                 view,
@@ -348,7 +338,6 @@ impl Renderer {
             source,
             directive,
             id,
-            max_text,
             max_edges,
             design: options.design.then(|| design_tone(scheme, &view)),
             view,
@@ -643,7 +632,9 @@ impl RendererBuilder {
 /// # Errors
 ///
 /// Returns an error if the text is not a diagram that ferrigura renders, if it does not parse, if
-/// the configuration holds a value of the wrong type, or if a bundled font cannot be read.
+/// the configuration holds a value of the wrong type, or if a bundled font cannot be read. A text
+/// of a diagram type that ferrigura does not draw gives [`Error::Unsupported`], which names the type
+/// and the types ferrigura draws ([`DiagramType::ALL`]).
 pub fn render(text: &str, config: &Value) -> Result<String, RenderError> {
     render_with(text, config, &RenderOptions::default())
 }
@@ -669,8 +660,7 @@ pub fn render_with(
 #[derive(Debug)]
 struct View {
     /// The configuration in the diagram's scope, untyped: the facade reads from it what the schema
-    /// does not type as the reference reads it (packet's `bitsPerRow`, the treemap's settings, the
-    /// sequence's `wrap`).
+    /// does not type as the reference reads it (the sequence's `wrap`).
     effective: Value,
     /// The sections of the same configuration that the diagram type's renderer reads, typed; the
     /// other sections keep their defaults, and the top level is read into `globals`.
@@ -788,7 +778,6 @@ fn inherit_font_roles(
 struct Prepared<'a> {
     source: preprocess::Prepared,
     directive: Value,
-    max_text: usize,
     max_edges: usize,
     fonts: Option<&'a Arc<FontRegistry>>,
     id: String,
@@ -915,7 +904,7 @@ pub fn flowchart_elk_stages(
     options: &RenderOptions,
 ) -> Result<serde_json::Value, RenderError> {
     let renderer = Renderer::builder(config).with_all().shared();
-    let (max_text, max_edges) = renderer.limits(text)?;
+    let max_edges = renderer.limits(text)?;
     let Some(source) = preprocess::prepare(text)
         .ok()
         .filter(|source| detect_prepared(source) == Some(DiagramType::Flowchart))
@@ -926,14 +915,7 @@ pub fn flowchart_elk_stages(
             message: "not a flowchart".to_owned(),
         }));
     };
-    let prepared = renderer.prepare(
-        text,
-        source,
-        options,
-        diagrams::flowchart(),
-        max_text,
-        max_edges,
-    )?;
+    let prepared = renderer.prepare(text, source, options, diagrams::flowchart(), max_edges)?;
     let stages = with_flowchart(&prepared, options.compat, flowchart::elk_stages)?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
@@ -1047,6 +1029,17 @@ fn identical_option(a: Option<&Value>, b: Option<&Value>) -> bool {
 /// panic could leave half written.
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// The error of a text whose header starts a diagram type that ferrigura does not draw: it names
+/// that type and lists the types ferrigura draws.
+fn unsupported(name: &str) -> RenderError {
+    let drawn: Vec<&str> = DiagramType::ALL.iter().map(|kind| kind.name()).collect();
+    let (last, rest) = drawn.split_last().unwrap_or((&"", &[]));
+    RenderError::Unsupported(format!(
+        "ferrigura does not draw {name} diagrams; it draws {} and {last} diagrams",
+        rest.join(", ")
+    ))
 }
 
 /// Whether an id can scope the styles of a diagram: a CSS identifier that needs no escaping.
@@ -1210,25 +1203,25 @@ mod font_input_tests {
             .font("Fixture", SANS.to_vec())
             .unwrap()
             .build();
-        let view = renderer.view(diagrams::journey()).unwrap();
+        let view = renderer.view(diagrams::sequence()).unwrap();
         assert_eq!(
             view.effective
-                .get("journey")
-                .and_then(|section| section.get("taskFontFamily"))
+                .get("sequence")
+                .and_then(|section| section.get("actorFontFamily"))
                 .and_then(Value::as_str),
             Some("Fixture")
         );
-        let config = Value::from(serde_json::json!({"journey":{"taskFontFamily":"Open Sans"}}));
+        let config = Value::from(serde_json::json!({"sequence":{"actorFontFamily":"Open Sans"}}));
         let renderer = Renderer::builder(&config)
             .with_all()
             .font("Fixture", SANS.to_vec())
             .unwrap()
             .build();
-        let view = renderer.view(diagrams::journey()).unwrap();
+        let view = renderer.view(diagrams::sequence()).unwrap();
         assert_eq!(
             view.effective
-                .get("journey")
-                .and_then(|section| section.get("taskFontFamily"))
+                .get("sequence")
+                .and_then(|section| section.get("actorFontFamily"))
                 .and_then(Value::as_str),
             Some("Open Sans")
         );
@@ -1327,7 +1320,7 @@ mod view_tests {
                 json(serde_json::json!({
                     "fontFamily": "Fixture",
                     "themeVariables": { "fontFamily": "Fixture" },
-                    "journey": { "taskFontFamily": "Open Sans" },
+                    "sequence": { "actorFontFamily": "Open Sans" },
                 })),
                 true,
             ),
@@ -1340,7 +1333,7 @@ mod view_tests {
             serde_json::json!({ "flowchart": { "theme": "redux-dark-color" } }),
             serde_json::json!({ "themeVariables": { "primaryColor": "#ff0000" } }),
             serde_json::json!({ "fontFamily": "courier" }),
-            serde_json::json!({ "journey": { "taskFontFamily": "courier" } }),
+            serde_json::json!({ "sequence": { "actorFontFamily": "courier" } }),
             serde_json::json!({
                 "flowchart": { "subGraphTitleMargin": { "top": 5 } },
                 "themeVariables": { "xyChart": { "titleColor": "#123456" } },

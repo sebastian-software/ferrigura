@@ -21,7 +21,6 @@ const cases = JSON.parse(
 ) as Case[];
 const decodedDescription = new Set([
   'e2e/diagrams/flowchart/regressions/routing-review-cycle-bt.mmd',
-  'tools/port/geometry/probes/swimlanes/p01-direction-br.mmd',
   'e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-showdata.mmd',
 ]);
 const unmatchedDifferences = new Set(decodedDescription);
@@ -40,19 +39,14 @@ await withPage('const measure = () => ({});', async (page) => {
     const input =
       mode === 'unsupported'
         ? source
-        : mode === 'eventmodeling'
-          ? `${source.slice(0, split)} accTitle: Alpha & title\n${source.slice(split + 1)}\ntf 99 ui X accDescr: A < B & C\n`
-          : `${source.slice(0, split)}\naccTitle: Alpha & title\naccDescr: A < B & C\n${source.slice(split + 1)}`;
+        : `${source.slice(0, split)}\naccTitle: Alpha & title\naccDescr: A < B & C\n${source.slice(split + 1)}`;
     const variants: [string, boolean][] = [
       [input, mode !== 'unsupported'],
       [source, false],
     ];
-    if (path === 'tools/port/geometry/probes/railroad/c18-peg.mmd') {
-      variants.push(['railroad-beta\naccTitle: Named\naccTitle:\nr = terminal("a") ;\n', false]);
-    }
     for (const [inputText, hasMetadata] of variants) {
       // Mermaid shares diagram DBs across renders. A fresh page keeps a previous case from supplying
-      // metadata to the next one (the C4 common description in particular is not reset upstream).
+      // metadata to the next one.
       await page.reload();
       await page.waitForFunction(() => (window as unknown as { ready?: boolean }).ready === true);
       const reference = await renderReference(page, 'a11y-check', inputText, {
@@ -60,11 +54,10 @@ await withPage('const measure = () => ({});', async (page) => {
         seed: 1,
       });
       assert.ok(reference.svg, `${path}: reference failed: ${reference.error}`);
-      const rust = renderFerrigura(inputText, 'a11y-check', 1_760_000_000_000, 1);
+      const rust = renderFerrigura(inputText, 'a11y-check', 1_760_000_000_000);
       assert.ok('svg' in rust, `${path}: ferrigura failed: ${'error' in rust ? rust.error : ''}`);
       const extract = async (svg: string): Promise<Metadata> =>
         page.evaluate((value) => {
-          // HTML parsing also handles the reference's foreignObject in eventmodeling.
           const document = new DOMParser().parseFromString(value, 'text/html');
           const root = document.querySelector('svg');
           if (!root) throw new Error('missing SVG');

@@ -29,7 +29,7 @@ Weighed and not chosen: Mermaid's structure, a global configuration with `getCon
 - The model version, `CANONICAL_VERSION`, changes when a field is added, removed or changes meaning; [canonical-model.md](../canonical-model.md) describes the change before the code changes.
 - A renderer that needs another global option adds it to `Globals`. A test fails when a file below `ferrigura-render/src` names `MermaidConfig` outside its tests and the constructors that read from the whole configuration (`Globals::of`, `unified::Section::of`).
 - A renderer that reads another section names it in its plugin's reader in `crates/ferrigura/src/diagrams.rs`; a section that no reader names keeps its defaults. Tests in `ferrigura-model` check that reading by section gives what reading the whole gives, and that the generated defaults are what serializing `MermaidConfig::default()` gives.
-- Where the schema does not name what the reference reads (the treemap settings, packet's `bitsPerRow`), the section gets a hand-written type beside the generated ones, filled by the facade with the reference's arithmetic, wrong types included.
+- Where the schema does not name what the reference reads (the sequence's `wrap`), the facade reads it from the untyped configuration with the reference's arithmetic, wrong types included.
 - `pnpm -C tools/port port:diff config` and `port:diff theme` check the resolved configuration and the theme variables against the reference.
 
 ## Related
