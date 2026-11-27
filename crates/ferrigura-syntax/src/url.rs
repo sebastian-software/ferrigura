@@ -117,19 +117,68 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
             .filter(|&c| !matches!(c, '\u{0000}'..='\u{001F}' | '\u{007F}'..='\u{009F}'))
             .collect();
         Some(cleaned)
+    } else if let Some(relative) = format_relative_with_path_or_query_delimiter(url) {
+        Some(relative)
     } else {
         let sanitized = sanitize_url(url);
         if sanitized == BLANK_URL {
             return Some(sanitized);
         }
         if url.contains('%')
-            && !needs_another_pass(url)
+            && !has_non_percent_obfuscation(url)
             && let Some(preserved) = preserve_encoded_url(url, &sanitized)
         {
             return Some(preserved);
         }
         Some(sanitized)
     }
+}
+
+/// Whether `text` carries non-percent obfuscation (literal control characters, `&#...` numeric
+/// references, `&tab;`/`&newline;` entities, or literal `\n`/`\r`/`\t` backslash escapes).
+/// Percent-encoded backslashes such as `%5Cn` in an already-validated path/query are not treated
+/// as obfuscation here because `sanitize_url` already checked scheme and authority safety.
+fn has_non_percent_obfuscation(text: &str) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+    chars.iter().any(|&c| is_ctrl(c))
+        || (0..chars.len()).any(|index| {
+            entity_at(&chars, index).is_some()
+                || html_ctrl_entity_at(&chars, index).is_some()
+                || (chars[index] == '\\'
+                    && matches!(chars.get(index + 1).copied(), Some('n' | 'r' | 't')))
+        })
+}
+
+/// Handles relative URLs where a path or query delimiter (`/` or `?`) precedes any colon (such as
+/// `data/chart.svg?time=12:30`), which `@braintree/sanitize-url`'s greedy scheme regex would
+/// otherwise misclassify as a `data:` / `javascript:` / `vbscript:` scheme.
+fn format_relative_with_path_or_query_delimiter(url: &str) -> Option<String> {
+    if matches!(url.chars().next(), Some('.' | '/'))
+        || !first_scheme_delimiter_is_path_or_query(url)
+    {
+        return None;
+    }
+    let delim_pos = url.find(['/', '?'])?;
+    let raw_prefix = &url[..delim_pos];
+    if raw_prefix.contains("ﬂ°") || raw_prefix.contains("¶ß") {
+        return None;
+    }
+    let (prepared, url_tokens) = tokenize_url_entity_placeholders(url);
+    let Some(decoded) = decode_url_obfuscations_bounded(prepared.as_ref(), MAX_DECODE_PASSES)
+    else {
+        return Some(BLANK_URL.to_owned());
+    };
+    if decoded.is_empty()
+        || !first_scheme_delimiter_is_path_or_query(&decoded)
+        || guard_url(url, false) == BLANK_URL
+        || guard_url(&decoded, false) == BLANK_URL
+    {
+        return None;
+    }
+    if !has_non_percent_obfuscation(url) {
+        return Some(url.to_owned());
+    }
+    Some(finalize_raw(decoded, url_tokens.as_ref()))
 }
 
 /// Whether the earliest scheme delimiter (`/`, `?`, `:`, or `&colon;`) in `text` is `/` or `?`,
@@ -2754,6 +2803,47 @@ mod tests {
         assert_eq!(
             sanitize_url("https://example.org/%5f_fg00000000_0__/ﬂ°copy¶ß"),
             "https://example.org/__fg00000000_0__/%C2%A9"
+        );
+        // Relative links whose path/query precedes a colon (like `data/chart.svg?time=12:30`)
+        // stay intact instead of triggering `data:` scheme rejection, while encoded colons before
+        // `/` still fail closed.
+        assert_eq!(
+            format_url("data/chart.svg?time=12:30", false).as_deref(),
+            Some("data/chart.svg?time=12:30")
+        );
+        assert_eq!(
+            format_url("data/chart.svg?time=12:30&q=A%26B", false).as_deref(),
+            Some("data/chart.svg?time=12:30&q=A%26B")
+        );
+        assert_eq!(
+            format_url("javascript/docs.html?t=1:2", false).as_deref(),
+            Some("javascript/docs.html?t=1:2")
+        );
+        assert_eq!(
+            format_url("data%3A/chart.svg", false).as_deref(),
+            Some("about:blank")
+        );
+        assert_eq!(
+            format_url("data&#58;/chart.svg", false).as_deref(),
+            Some("about:blank")
+        );
+        // Encoded backslashes followed by `n`/`r`/`t` inside validated HTTP paths/queries stay
+        // intact while scheme obfuscation (`java%5Cnscript:`) still fails closed.
+        assert_eq!(
+            format_url("https://example.com/backups%5Cnew.zip", false).as_deref(),
+            Some("https://example.com/backups%5Cnew.zip")
+        );
+        assert_eq!(
+            format_url(
+                "https://example.com/files?path=C:%5Ctemp%5Creport.pdf",
+                false
+            )
+            .as_deref(),
+            Some("https://example.com/files?path=C:%5Ctemp%5Creport.pdf")
+        );
+        assert_eq!(
+            format_url("java%5Cnscript:alert(1)", false).as_deref(),
+            Some("about:blank")
         );
     }
 }

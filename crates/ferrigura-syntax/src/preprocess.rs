@@ -814,6 +814,18 @@ fn remap_encoded_line_column(
                 .unwrap_or(after.len());
             if name_len > 0 && after[name_len..].starts_with(';') {
                 let name = &after[..name_len];
+                if byte_idx > 0
+                    && current.as_bytes()[byte_idx - 1] == b'&'
+                    && is_numeric_char_ref_body(name)
+                {
+                    for &(_, c_col) in &chars[char_idx..char_idx + 1 + name_len + 1] {
+                        mapped_cols.push(c_col);
+                    }
+                    tracker.finish_entity();
+                    char_idx += 1 + name_len + 1;
+                    byte_idx += 1 + name_len + 1;
+                    continue;
+                }
                 if tracker.allows_hex_color(name) {
                     let rest_after_semi = &after[name_len + 1..];
                     let keep_len = if is_horizontal_ws_to_eol(rest_after_semi) {
@@ -1348,8 +1360,23 @@ impl StyleStmtTracker {
     }
 }
 
+/// Whether `name` is the body of a complete HTML numeric character reference (`&#169;` or
+/// `&#xA9;`) when immediately preceded by `&`.
+fn is_numeric_char_ref_body(name: &str) -> bool {
+    if name.is_empty() {
+        return false;
+    }
+    if name.bytes().all(|b| b.is_ascii_digit()) {
+        return true;
+    }
+    matches!(name.as_bytes().first(), Some(b'x' | b'X'))
+        && name.len() > 1
+        && name.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit)
+}
+
 /// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name, except for CSS hex
-/// colors inside the current `style` / `classDef` statement.
+/// colors inside the current `style` / `classDef` statement and complete HTML numeric character
+/// references (`&#169;`, `&#xA9;`).
 fn encode_hash_entities(text: &str, dialects: EncodeDialects) -> String {
     let mut out = String::with_capacity(text.len());
     let mut tracker = StyleStmtTracker::new(dialects);
@@ -1365,7 +1392,10 @@ fn encode_hash_entities(text: &str, dialects: EncodeDialects) -> String {
                 let name = &after[..name_len];
                 out.push_str(&text[cursor..at]);
                 let end = at + 1 + name_len + 1;
-                if tracker.allows_hex_color(name) {
+                if at > 0 && text.as_bytes()[at - 1] == b'&' && is_numeric_char_ref_body(name) {
+                    out.push_str(&text[at..end]);
+                    tracker.finish_entity();
+                } else if tracker.allows_hex_color(name) {
                     let rest_after_semi = &after[name_len + 1..];
                     out.push('#');
                     out.push_str(name);
@@ -1450,6 +1480,14 @@ mod tests {
         assert_eq!(
             encode_entities(input),
             "classDiagram\n  class A {\n    +char quote = '\"'\n  }\n  style A fill:#abc\n"
+        );
+    }
+
+    #[test]
+    fn complete_html_numeric_references_stay_verbatim() {
+        assert_eq!(
+            encode_entities("https://example.com/A&#169;B &#xA9; #169;"),
+            "https://example.com/A&#169;B &#xA9; ﬂ°°169¶ß"
         );
     }
 }

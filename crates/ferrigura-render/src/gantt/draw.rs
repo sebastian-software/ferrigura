@@ -521,7 +521,7 @@ impl Chart<'_> {
 
         // Pass 2: assign decoded, normalized, and colliding task IDs.
         let mut task_dom_ids = vec![String::new(); self.model.tasks.len()];
-        let mut remapped_fragments = std::collections::HashMap::new();
+        let mut remap_candidates: Vec<(String, String, String, String, String, bool)> = Vec::new();
         let mut next_suffix: std::collections::HashMap<String, usize> =
             std::collections::HashMap::new();
         for (pos, (index, had_placeholder, canonical_local, canonical_bar, canonical_text, _)) in
@@ -567,24 +567,42 @@ impl Chart<'_> {
             };
             let normalized_changed =
                 had_placeholder || final_local != task.id || canonical_svg_id != self.id;
-            let raw_distinct_from_owner = had_placeholder
-                || canonical_differs
-                || canonical_svg_id != self.id
-                || !element_owned.contains(&canonical_bar);
-            if normalized_changed && raw_distinct_from_owner {
+            if normalized_changed {
+                let raw_prefix_differs =
+                    had_placeholder || canonical_differs || canonical_svg_id != self.id;
                 let target_bar = format!("{canonical_svg_id}-{final_local}");
                 let target_text = format!("{target_bar}-text");
-                remapped_fragments
-                    .entry(format!("#{}-{}", self.id, task.id))
-                    .or_insert_with(|| format_fragment_url(&target_bar));
-                remapped_fragments
-                    .entry(format!("#{}-{}-text", self.id, task.id))
-                    .or_insert_with(|| format_fragment_url(&target_text));
+                remap_candidates.push((
+                    task.id.clone(),
+                    canonical_bar,
+                    canonical_text,
+                    target_bar,
+                    target_text,
+                    raw_prefix_differs,
+                ));
             }
             if collided || had_placeholder || canonical_differs {
                 task_dom_ids[index] = final_local;
             } else {
                 task_dom_ids[index].clone_from(&task.id);
+            }
+        }
+        // Populate fragment remaps only after `element_owned` contains every final emitted bar and
+        // label ID, checking bar and label ownership independently so a renamed task's old `-text`
+        // ID never shadows another task's still-existing bar ID (or vice versa).
+        let mut remapped_fragments = std::collections::HashMap::new();
+        for (raw_id, canonical_bar, canonical_text, target_bar, target_text, raw_prefix_differs) in
+            remap_candidates
+        {
+            if raw_prefix_differs || !element_owned.contains(&canonical_bar) {
+                remapped_fragments
+                    .entry(format!("#{}-{raw_id}", self.id))
+                    .or_insert_with(|| format_fragment_url(&target_bar));
+            }
+            if raw_prefix_differs || !element_owned.contains(&canonical_text) {
+                remapped_fragments
+                    .entry(format!("#{}-{raw_id}-text", self.id))
+                    .or_insert_with(|| format_fragment_url(&target_text));
             }
         }
         Some(ResolvedGanttIds {

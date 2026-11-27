@@ -480,6 +480,24 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         relative_encoded_click.contains("xlink:href=\"/docs/a%2Fb?q=A%26B\""),
         "{relative_encoded_click}"
     );
+    let relative_colon_click = render(
+        "flowchart TD\nA[x]\nclick A \"data/chart.svg?time=12:30\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        relative_colon_click.contains("xlink:href=\"data/chart.svg?time=12:30\""),
+        "{relative_colon_click}"
+    );
+    let encoded_backslash_click = render(
+        "flowchart TD\nA[x]\nclick A \"https://example.com/backups%5Cnew.zip\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        encoded_backslash_click.contains("xlink:href=\"https://example.com/backups%5Cnew.zip\""),
+        "{encoded_backslash_click}"
+    );
     let valid_image = render(
         "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",
         &Value::empty_object(),

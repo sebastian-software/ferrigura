@@ -29,10 +29,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..eec620c 100644
+index 48ac4a6..6175622 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,585 @@ export function interpolateToCurve(
+@@ -244,6 +244,627 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -544,15 +544,57 @@ index 48ac4a6..eec620c 100644
 +  'matrix',
 +]);
 +
-+const needsSanitizePass = (text: string): boolean =>
++const BR_LITERAL_WS_ESCAPE_RE = /\\[nrt]/;
++
++const hasNonPercentObfuscation = (text: string): boolean =>
 +  text.match(BR_CTRL_CHARS_RE) !== null ||
 +  text.match(BR_HTML_ENTITIES_RE) !== null ||
 +  text.match(BR_HTML_CTRL_ENTITY_RE) !== null ||
-+  text.match(BR_WHITESPACE_ESCAPE_RE) !== null;
++  BR_LITERAL_WS_ESCAPE_RE.test(text);
 +
 +const firstSchemeDelimiterIsPathOrQuery = (text: string): boolean => {
 +  const m = /[/?:]|&colon;/i.exec(text);
 +  return m !== null && (m[0] === '/' || m[0] === '?');
++};
++
++const formatRelativeWithPathOrQueryDelimiter = (url: string): string | null => {
++  if (url[0] === '.' || url[0] === '/' || !firstSchemeDelimiterIsPathOrQuery(url)) {
++    return null;
++  }
++  const delimPos = url.search(/[/?]/);
++  if (delimPos <= 0) {
++    return null;
++  }
++  const rawPrefix = url.slice(0, delimPos);
++  if (rawPrefix.includes('ﬂ°') || rawPrefix.includes('¶ß')) {
++    return null;
++  }
++  const rawPrefixHexDecoded = rawPrefix.replace(/&#[xX]([0-9a-fA-F]+);?/g, (_m, hex: string) => {
++    const cp = Number.parseInt(hex, 16);
++    return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
++  });
++  if (rawPrefixHexDecoded.includes(':')) {
++    return null;
++  }
++  const hasPlaceholders = url.includes('ﬂ°') || url.includes('¶ß');
++  let prefix = '';
++  const rawValues: string[] = [];
++  const decodedValues: string[] = [];
++  let prepared = url;
++  if (hasPlaceholders) {
++    const probe = decodeSanitizeUrlOnly(url);
++    prefix = pickTokenPrefix(url, probe);
++    prepared = tokenizeAllPlaceholders(url, prefix, rawValues, decodedValues);
++  }
++  const decoded = decodeSanitizeUrlOnly(prepared);
++  if (!decoded || !firstSchemeDelimiterIsPathOrQuery(decoded)) {
++    return null;
++  }
++  if (!hasNonPercentObfuscation(url)) {
++    return url;
++  }
++  const safe = reencodeDecodedPlaceholders(decoded);
++  return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
 +};
 +
 +const literalAllowedNonHttpScheme = (text: string): string | null => {
@@ -618,7 +660,7 @@ index 48ac4a6..eec620c 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +831,20 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +873,24 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -626,11 +668,15 @@ index 48ac4a6..eec620c 100644
 +    if (startsWithFragmentMarker(url)) {
 +      return url.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
 +    }
++    const relative = formatRelativeWithPathOrQueryDelimiter(url);
++    if (relative !== null) {
++      return relative;
++    }
 +    const sanitized = sanitizeHttpUrlWithEntities(url);
 +    if (sanitized === 'about:blank') {
 +      return sanitized;
 +    }
-+    if (url.includes('%') && !needsSanitizePass(url)) {
++    if (url.includes('%') && !hasNonPercentObfuscation(url)) {
 +      const preserved = preserveEncodedUrl(url, sanitized);
 +      if (preserved !== null) {
 +        return preserved;
@@ -640,7 +686,7 @@ index 48ac4a6..eec620c 100644
    }
  
    return url;
-@@ -895,23 +1487,570 @@ export default {
+@@ -895,23 +1533,585 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -1003,7 +1049,22 @@ index 48ac4a6..eec620c 100644
 +      if (j > i + 1 && txt[j] === ';') {
 +        const innerTxt = txt.slice(i + 1, j);
 +        out += txt.slice(copyFrom, i);
-+        if (
++        if (i > 0 && txt[i - 1] === '&' && /^(?:\d+|[xX][0-9a-fA-F]+)$/.test(innerTxt)) {
++          out += txt.slice(i, j + 1);
++          if (
++            !inQuotes &&
++            !inPlainLine &&
++            !inAccDescrBlock &&
++            !inNoteBlock &&
++            classBodyDepth === 0 &&
++            stmtKind === 0
++          ) {
++            stmtKind = 2;
++          }
++          atLineStart = false;
++          lastAllowsHex = false;
++          prevWasAlnum = false;
++        } else if (
 +          !inQuotes &&
 +          !inPlainLine &&
 +          !inAccDescrBlock &&

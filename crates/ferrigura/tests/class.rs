@@ -2123,4 +2123,40 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
         resolved_fragment_target(gantt_prec_hrefs[1]),
         "graph-A%20B-C"
     );
+
+    // Complete HTML numeric character references (`&#169;`) in class link URLs are not split into
+    // `&` + `#169;` shorthand (`&%C2%A9`).
+    let class_html_num_ref = ferrigura::render(
+        "classDiagram\n  class A\n  click A href \"https://example.com/A&#169;B\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        class_html_num_ref.contains("xlink:href=\"https://example.com/A%C2%A9B\""),
+        "{class_html_num_ref}"
+    );
+
+    // When a Gantt task (`title-chart`) is renamed because of an accessibility title collision
+    // (`chart-title-chart`), a fragment targeting another task's still-existing bar ID
+    // (`#chart-title-chart-text`) stays pointed at that bar instead of being rewritten to the
+    // renamed task's label (`#chart-title-chart-2-text`).
+    let gantt_existing_text = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  accTitle: Demo\n  dateFormat YYYY-MM-DD\n  section S\n  T1 : title-chart, 2024-01-01, 1d\n  T2 : title-chart-text, 2024-01-02, 1d\n  click title-chart href \"#chart-title-chart\"\n  click title-chart-text href \"#chart-title-chart-text\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("chart".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let gantt_exist_doc =
+        roxmltree::Document::parse(&gantt_existing_text).expect("well-formed SVG XML");
+    let gantt_exist_hrefs: Vec<&str> = gantt_exist_doc
+        .descendants()
+        .filter_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(
+        gantt_exist_hrefs,
+        vec!["#chart-title-chart-2", "#chart-title-chart-text"]
+    );
 }

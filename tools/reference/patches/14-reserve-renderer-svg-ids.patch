@@ -161,7 +161,7 @@ index 64d8255..7e22f45 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..24b859b 100644
+index 49145b2..d7b66ec 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -172,7 +172,7 @@ index 49145b2..24b859b 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,420 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,438 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -455,7 +455,14 @@ index 49145b2..24b859b 100644
 +  }
 +  const nextSuffix = new Map<string, number>();
 +  const domIds: string[] = [];
-+  const remappedFragments = new Map<string, string>();
++  const remapCandidates: Array<{
++    raw: string;
++    canonicalBar: string;
++    canonicalText: string;
++    targetBar: string;
++    targetText: string;
++    rawPrefixDiffers: boolean;
++  }> = [];
 +  const protectedIds = new Set<string>();
 +  for (let i = 0; i < plans.length; i++) {
 +    const p = plans[i];
@@ -501,22 +508,18 @@ index 49145b2..24b859b 100644
 +      }
 +    }
 +    const normalizedChanged = p.hadPlaceholder || finalLocal !== p.raw || canonicalSvgId !== svgId;
-+    const rawDistinctFromOwner =
-+      p.hadPlaceholder ||
-+      canonicalDiffers ||
-+      canonicalSvgId !== svgId ||
-+      !elementOwned.has(p.canonicalBar);
-+    if (normalizedChanged && rawDistinctFromOwner) {
++    if (normalizedChanged) {
++      const rawPrefixDiffers = p.hadPlaceholder || canonicalDiffers || canonicalSvgId !== svgId;
 +      const targetBar = `${canonicalSvgId}-${finalLocal}`;
 +      const targetText = `${targetBar}-text`;
-+      const rawBarKey = `#${svgId}-${p.raw}`;
-+      if (!remappedFragments.has(rawBarKey)) {
-+        remappedFragments.set(rawBarKey, formatFragmentUrl(targetBar));
-+      }
-+      const rawTextKey = `#${svgId}-${p.raw}-text`;
-+      if (!remappedFragments.has(rawTextKey)) {
-+        remappedFragments.set(rawTextKey, formatFragmentUrl(targetText));
-+      }
++      remapCandidates.push({
++        raw: p.raw,
++        canonicalBar: p.canonicalBar,
++        canonicalText: p.canonicalText,
++        targetBar,
++        targetText,
++        rawPrefixDiffers,
++      });
 +    }
 +    if (collided || p.hadPlaceholder || canonicalDiffers) {
 +      const fullBar = `${svgId}-${finalLocal}`;
@@ -530,6 +533,21 @@ index 49145b2..24b859b 100644
 +      domIds.push(finalLocal);
 +    } else {
 +      domIds.push(p.raw);
++    }
++  }
++  const remappedFragments = new Map<string, string>();
++  for (const c of remapCandidates) {
++    if (c.rawPrefixDiffers || !elementOwned.has(c.canonicalBar)) {
++      const rawBarKey = `#${svgId}-${c.raw}`;
++      if (!remappedFragments.has(rawBarKey)) {
++        remappedFragments.set(rawBarKey, formatFragmentUrl(c.targetBar));
++      }
++    }
++    if (c.rawPrefixDiffers || !elementOwned.has(c.canonicalText)) {
++      const rawTextKey = `#${svgId}-${c.raw}-text`;
++      if (!remappedFragments.has(rawTextKey)) {
++        remappedFragments.set(rawTextKey, formatFragmentUrl(c.targetText));
++      }
 +    }
 +  }
 +  return { domIds, elementOwned, remappedFragments, protectedIds };
@@ -593,7 +611,7 @@ index 49145b2..24b859b 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +520,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +538,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -672,7 +690,7 @@ index 49145b2..24b859b 100644
 +        elementOwned.add(p.canonicalPath);
 +        edgeClaimed[i] = true;
 +      }
-+    }
+     }
 +
 +    const nextSuffix = new Map<string, number>();
 +    const remapped = new Map<string, string>();
@@ -866,7 +884,7 @@ index 49145b2..24b859b 100644
 +          }
 +        }
 +      }
-     }
++    }
 +
 +    return rendered;
    }
