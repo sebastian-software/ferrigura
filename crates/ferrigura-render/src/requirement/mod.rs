@@ -91,7 +91,15 @@ pub fn render(input: &Context<'_, RequirementDiagram, Section<'_>>) -> Result<St
     let mut measured = measure(input, &config)?;
     pipeline::lay_out_for_render(&mut measured, &config)?;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_for_diagram(
+        &measured,
+        id,
+        &config,
+        pipeline::A11yIds {
+            title: !input.diagram.acc_title.is_empty(),
+            description: !input.diagram.acc_descr.is_empty(),
+        },
+    )?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`requirementRenderer.ts` 31-36): centered over the drawing, at

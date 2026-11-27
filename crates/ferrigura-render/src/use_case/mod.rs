@@ -93,7 +93,15 @@ pub fn render(
     }
 
     pipeline::lay_out_for_render(&mut measured, &config)?;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_for_diagram(
+        &measured,
+        id,
+        &config,
+        pipeline::A11yIds {
+            title: !input.diagram.acc_title.is_empty(),
+            description: !input.diagram.acc_description.is_empty(),
+        },
+    )?;
     let bounds = painted.bounds;
 
     // The fonts of every label are subset once, as the flowchart's are (`embed_runs`).

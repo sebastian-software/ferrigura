@@ -54,7 +54,15 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
     let mut measured = measure(input, &config)?;
     pipeline::lay_out_for_render(&mut measured, &config)?;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_for_diagram(
+        &measured,
+        id,
+        &config,
+        pipeline::A11yIds {
+            title: !input.diagram.acc_title.is_empty(),
+            description: !input.diagram.acc_descr.is_empty(),
+        },
+    )?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`erRenderer-unified.ts` 71-76): centered over the drawing, at

@@ -1,7 +1,7 @@
 //! Optional, self-contained SVG draw animation (decision 0021).
 
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fmt::Write as _;
 use std::str::FromStr;
 
@@ -262,21 +262,25 @@ pub(crate) struct Animator {
     keyframes: String,
     rules: String,
     serial: usize,
+    occupied_mask_ids: HashSet<String>,
 }
 
 impl Animator {
-    pub(crate) fn new(
+    pub(crate) fn new_with_occupied_masks(
         id: &str,
         nodes: &[Node],
         edges: &[Edge],
         paths: &[Painted],
         options: Animation,
+        occupied_mask_ids: HashSet<String>,
     ) -> Result<Self, RenderError> {
         let lengths = paths
             .iter()
             .map(|path| path.d.as_deref().map_or(0.0, path_length))
             .collect();
-        Self::from_lengths(id, nodes, edges, lengths, options)
+        let mut animator = Self::from_lengths(id, nodes, edges, lengths, options)?;
+        animator.occupied_mask_ids = occupied_mask_ids;
+        Ok(animator)
     }
 
     pub(crate) fn from_lengths(
@@ -304,6 +308,7 @@ impl Animator {
             keyframes,
             rules: String::new(),
             serial: 0,
+            occupied_mask_ids: HashSet::new(),
         }
     }
 
@@ -386,7 +391,15 @@ impl Animator {
 
     fn masked(&mut self, svg: &str, d: &str, timing: Timing, width: f64, length: f64) -> String {
         let serial = self.serial;
-        let mask_id = format!("{}-mask-{serial}", self.prefix);
+        let mut mask_serial = serial;
+        let mut mask_id = format!("{}-mask-{mask_serial}", self.prefix);
+        if !self.occupied_mask_ids.is_empty() {
+            while self.occupied_mask_ids.contains(&mask_id) {
+                mask_serial += 1;
+                mask_id = format!("{}-mask-{mask_serial}", self.prefix);
+            }
+            self.occupied_mask_ids.insert(mask_id.clone());
+        }
         let mask_class = self.class(
             &format!("{}-line", self.prefix),
             timing,

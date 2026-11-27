@@ -109,7 +109,15 @@ pub fn render(
     };
 
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_for_diagram(
+        &measured,
+        id,
+        &config,
+        pipeline::A11yIds {
+            title: !input.diagram.acc_title.is_empty(),
+            description: !input.diagram.acc_descr.is_empty(),
+        },
+    )?;
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centered over everything drawn so far, `titleTopMargin` above the origin.

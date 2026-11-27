@@ -47,7 +47,15 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     }
     let mut measured = pipeline::measure(data, &config)?;
     pipeline::lay_out_for_render(&mut measured, &config)?;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_for_diagram(
+        &measured,
+        id,
+        &config,
+        pipeline::A11yIds {
+            title: !diagram.acc_title.is_empty(),
+            description: !diagram.acc_descr.is_empty(),
+        },
+    )?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`classRenderer-v3-unified.ts` 68-73): centered over what is drawn, the
