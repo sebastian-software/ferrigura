@@ -9,6 +9,64 @@ use crate::constants::{
 use crate::engine::Engine;
 use crate::geometry::{PointD, calc_separation_amount, intersection_clip, sign};
 
+/// Minimum cell buffer length retained before shrinking a spiked repulsion grid.
+const MIN_GRID_SHRINK_LEN: usize = 1024;
+
+/// Flat 2D spatial grid for `FDLayout.grid`, reused across grid rebuilds.
+///
+/// Cell `(i, j)` lives at `cells[i * size_y + j]`. Empty cells hold `Vec::new()` (no heap
+/// allocation), and `non_empty` records occupied indices so [`Self::reset`] clears only written
+/// cells while preserving their capacities for the next rebuild.
+#[derive(Default)]
+pub(crate) struct RepulsionGrid {
+    cells: Vec<Vec<usize>>,
+    non_empty: Vec<usize>,
+    size_x: usize,
+    size_y: usize,
+}
+
+impl RepulsionGrid {
+    pub(crate) fn reset(&mut self, size_x: usize, size_y: usize) {
+        for idx in self.non_empty.drain(..) {
+            self.cells[idx].clear();
+        }
+        self.size_x = size_x;
+        self.size_y = size_y;
+        let needed = size_x
+            .checked_mul(size_y)
+            .expect("repulsion grid dimensions overflow");
+        if needed > self.cells.len() {
+            self.cells.resize_with(needed, Vec::new);
+        } else if self.cells.len() > needed.saturating_mul(4).max(MIN_GRID_SHRINK_LEN) {
+            self.cells.truncate(needed);
+            self.cells.shrink_to(needed);
+        }
+    }
+
+    pub(crate) fn push(&mut self, i: usize, j: usize, node: usize) {
+        debug_assert!(i < self.size_x && j < self.size_y);
+        let idx = i * self.size_y + j;
+        let cell = &mut self.cells[idx];
+        if cell.is_empty() {
+            self.non_empty.push(idx);
+        }
+        cell.push(node);
+    }
+
+    pub(crate) fn cell(&self, i: usize, j: usize) -> &[usize] {
+        debug_assert!(i < self.size_x && j < self.size_y);
+        &self.cells[i * self.size_y + j]
+    }
+
+    pub(crate) fn size_x(&self) -> usize {
+        self.size_x
+    }
+
+    pub(crate) fn size_y(&self) -> usize {
+        self.size_y
+    }
+}
+
 impl Engine {
     /// `FDLayout.calcSpringForces` (`FDLayout.js` 113-123): every edge, in order.
     pub(crate) fn calc_spring_forces(&mut self) {
@@ -48,7 +106,7 @@ impl Engine {
     /// with the ideal length. Overlapping rectangles exert no spring.
     fn calc_spring_force(&mut self, e: usize, ideal_length: f64) {
         self.update_length(e);
-        let edge = self.graph.edges[e].clone();
+        let edge = &self.graph.edges[e];
         if edge.overlapping {
             return;
         }
@@ -59,10 +117,12 @@ impl Engine {
         let spring_force = SPRING_STRENGTH * (length - ideal_length);
         let spring_x = spring_force * (edge.length_x / length);
         let spring_y = spring_force * (edge.length_y / length);
-        let source = &mut self.graph.nodes[edge.source].spring;
+        let source_idx = edge.source;
+        let target_idx = edge.target;
+        let source = &mut self.graph.nodes[source_idx].spring;
         source.x += spring_x;
         source.y += spring_y;
-        let target = &mut self.graph.nodes[edge.target].spring;
+        let target = &mut self.graph.nodes[target_idx].spring;
         target.x -= spring_x;
         target.y -= spring_y;
     }
@@ -78,15 +138,12 @@ impl Engine {
             self.update_grid();
         }
         let n = self.graph.nodes.len();
-        let mut processed = vec![false; n];
         for a in 0..n {
             self.calculate_repulsion_force_of_a_node(
                 a,
-                &processed,
                 grid_update_allowed,
                 force_surrounding_update,
             );
-            processed[a] = true;
         }
     }
 
@@ -106,7 +163,7 @@ impl Engine {
             || width < 0.0
             || height < 0.0
         {
-            self.grid = Vec::new();
+            self.grid.reset(0, 0);
             for node in &mut self.graph.nodes {
                 node.start_x = 0;
                 node.finish_x = -2;
@@ -138,7 +195,7 @@ impl Engine {
             };
             (capped_x, capped_y)
         };
-        self.grid = vec![vec![Vec::new(); size_y]; size_x];
+        self.grid.reset(size_x, size_y);
         let cell_x = (width / size_x as f64).max(range);
         let cell_y = (height / size_y as f64).max(range);
         let (left, top) = (self.graph.left, self.graph.top);
@@ -150,8 +207,8 @@ impl Engine {
     /// `FDLayout.addNodeToGrid` (`FDLayout.js` 432-455). The last finish uses `height + y`, as the
     /// source does; the cells are the same as for `y + height` apart from rounding of that sum.
     fn add_node_to_grid(&mut self, v: usize, left: f64, top: f64, cell_x: f64, cell_y: f64) {
-        let grid_x = self.grid.len();
-        let grid_y = self.grid.first().map_or(0, Vec::len);
+        let grid_x = self.grid.size_x();
+        let grid_y = self.grid.size_y();
         if grid_x == 0 || grid_y == 0 {
             let node = &mut self.graph.nodes[v];
             node.start_x = 0;
@@ -169,7 +226,7 @@ impl Engine {
         let finish_y = (((rect.height + rect.y - top) / cell_y).floor() as i64).clamp(0, max_y);
         for i in start_x..=finish_x {
             for j in start_y..=finish_y {
-                self.grid[i as usize][j as usize].push(v);
+                self.grid.push(i as usize, j as usize, v);
             }
         }
         let node = &mut self.graph.nodes[v];
@@ -180,12 +237,12 @@ impl Engine {
     }
 
     /// `FDLayout.calculateRepulsionForceOfANode` (`FDLayout.js` 469-523): on a grid iteration, the
-    /// nodes in the cells around `a` that are not processed yet and are within the repulsion range
-    /// become its `surrounding`; then `a` is repelled by each of them.
+    /// nodes in the cells around `a` that are not processed yet (`b > a`, since
+    /// `calc_repulsion_forces` visits `0..n` in order) and are within the repulsion range become
+    /// its `surrounding`; then `a` is repelled by each of them.
     fn calculate_repulsion_force_of_a_node(
         &mut self,
         a: usize,
-        processed: &[bool],
         grid_update_allowed: bool,
         force_surrounding_update: bool,
     ) {
@@ -193,40 +250,45 @@ impl Engine {
             || force_surrounding_update
         {
             let n = self.graph.nodes.len();
+            if self.surrounding_marks.len() < n {
+                self.surrounding_marks.resize(n, false);
+            }
+            let mut surrounding = std::mem::take(&mut self.graph.nodes[a].surrounding);
+            surrounding.clear();
             let rect_a = self.graph.nodes[a].rect;
             let (start_x, finish_x) = (self.graph.nodes[a].start_x, self.graph.nodes[a].finish_x);
             let (start_y, finish_y) = (self.graph.nodes[a].start_y, self.graph.nodes[a].finish_y);
-            let mut surrounding: Vec<usize> = Vec::new();
-            let grid_x = self.grid.len() as i64;
-            let grid_y = self.grid.first().map_or(0, Vec::len) as i64;
+            let grid_x = self.grid.size_x() as i64;
+            let grid_y = self.grid.size_y() as i64;
             if grid_x > 0 && grid_y > 0 {
-                let mut in_surrounding = vec![false; n];
                 let lo_x = start_x.saturating_sub(1).max(0);
                 let hi_x = finish_x.saturating_add(2).min(grid_x);
                 let lo_y = start_y.saturating_sub(1).max(0);
                 let hi_y = finish_y.saturating_add(2).min(grid_y);
                 for i in lo_x..hi_x {
                     for j in lo_y..hi_y {
-                        for &b in &self.grid[i as usize][j as usize] {
-                            if a == b {
+                        for &b in self.grid.cell(i as usize, j as usize) {
+                            if b <= a || self.surrounding_marks[b] {
                                 continue;
                             }
-                            if !processed[b] && !in_surrounding[b] {
-                                let rect_b = self.graph.nodes[b].rect;
-                                let distance_x = (rect_a.center_x() - rect_b.center_x()).abs()
-                                    - ((rect_a.width / 2.0) + (rect_b.width / 2.0));
-                                let distance_y = (rect_a.center_y() - rect_b.center_y()).abs()
-                                    - ((rect_a.height / 2.0) + (rect_b.height / 2.0));
-                                if distance_x <= self.repulsion_range
-                                    && distance_y <= self.repulsion_range
-                                {
-                                    surrounding.push(b);
-                                    in_surrounding[b] = true;
-                                }
+                            let rect_b = self.graph.nodes[b].rect;
+                            let distance_x = (rect_a.center_x() - rect_b.center_x()).abs()
+                                - ((rect_a.width / 2.0) + (rect_b.width / 2.0));
+                            let distance_y = (rect_a.center_y() - rect_b.center_y()).abs()
+                                - ((rect_a.height / 2.0) + (rect_b.height / 2.0));
+                            if distance_x <= self.repulsion_range
+                                && distance_y <= self.repulsion_range
+                            {
+                                surrounding.push(b);
+                                self.surrounding_marks[b] = true;
                             }
                         }
                     }
                 }
+            }
+            // Only accepted neighbors were marked; clear those for the next search.
+            for &neighbor in &surrounding {
+                self.surrounding_marks[neighbor] = false;
             }
             self.graph.nodes[a].surrounding = surrounding;
         }
@@ -281,8 +343,8 @@ impl Engine {
 
     /// `FDLayout.calcGravitationalForces` (`FDLayout.js` 170-179): the nodes of a disconnected graph.
     pub(crate) fn calc_gravitational_forces(&mut self) {
-        let nodes = self.nodes_with_gravity.clone();
-        for node in nodes {
+        for i in 0..self.nodes_with_gravity.len() {
+            let node = self.nodes_with_gravity[i];
             self.calc_gravitational_force(node);
         }
     }
@@ -342,6 +404,7 @@ impl Engine {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Node;
     use crate::geometry::RectD;
     use crate::graph::{LGraph, LNode};
 
@@ -363,23 +426,26 @@ mod tests {
             });
         }
         graph.update_bounds();
-        Engine {
-            graph,
-            grid: Vec::new(),
-            total_iterations: 0,
-            max_iterations: 0.0,
-            total_displacement: 0.0,
-            old_total_displacement: 0.0,
-            total_displacement_threshold: 0.0,
-            cooling_factor: 0.5,
-            initial_cooling_factor: 0.5,
-            cooling_cycle: 0.0,
-            max_cooling_cycle: 0.0,
-            final_temperature: 0.0,
-            max_node_displacement: 0.0,
-            repulsion_range: range,
-            nodes_with_gravity: Vec::new(),
+        let mut engine = Engine::new(graph);
+        engine.repulsion_range = range;
+        engine
+    }
+
+    fn test_engine(rects: &[RectD]) -> Engine {
+        let nodes: Vec<Node> = rects
+            .iter()
+            .enumerate()
+            .map(|(i, rect)| Node {
+                id: i.to_string(),
+                width: rect.width,
+                height: rect.height,
+            })
+            .collect();
+        let mut graph = LGraph::build(&nodes, &[]).expect("valid graph");
+        for (node, &rect) in graph.nodes.iter_mut().zip(rects) {
+            node.rect = rect;
         }
+        Engine::new(graph)
     }
 
     #[test]
@@ -409,7 +475,87 @@ mod tests {
             50.0,
         );
         huge.update_grid();
-        assert!(huge.grid.len() * huge.grid[0].len() <= 100_000);
+        assert!(huge.grid.size_x() * huge.grid.size_y() <= 100_000);
         huge.calc_repulsion_forces(true, true);
+    }
+
+    #[test]
+    fn repulsion_grid_reuses_storage_clears_occupied_and_shrinks_after_spike() {
+        let mut grid = RepulsionGrid::default();
+        grid.reset(2, 3);
+        grid.push(0, 1, 10);
+        grid.push(0, 1, 20);
+        grid.push(1, 2, 30);
+        assert_eq!(grid.cell(0, 1), &[10, 20]);
+        assert_eq!(grid.cell(1, 2), &[30]);
+        assert!(grid.cell(0, 0).is_empty());
+
+        let prev_cap = grid.cells[1].capacity();
+        grid.reset(2, 3);
+        assert!(grid.cell(0, 1).is_empty());
+        assert!(grid.cell(1, 2).is_empty());
+        assert_eq!(grid.cells[1].capacity(), prev_cap);
+
+        // Spike above the shrink threshold, then drop back to a small grid.
+        grid.reset(64, 64);
+        grid.push(63, 63, 7);
+        assert_eq!(grid.cell(63, 63), &[7]);
+        grid.reset(2, 2);
+        assert_eq!(grid.cells.len(), 4);
+        assert!(grid.cell(0, 0).is_empty());
+        grid.push(1, 1, 9);
+        assert_eq!(grid.cell(1, 1), &[9]);
+    }
+
+    #[test]
+    fn repeated_neighborhood_searches_keep_first_seen_order_skip_processed_and_clear_marks() {
+        let mut engine = test_engine(&[
+            RectD::new(0.0, 0.0, 10.0, 10.0),
+            RectD::new(20.0, 0.0, 10.0, 10.0),
+            RectD::new(40.0, 0.0, 10.0, 10.0),
+        ]);
+        engine.repulsion_range = 100.0;
+        engine.grid.reset(1, 2);
+        engine.grid.push(0, 0, 0);
+        engine.grid.push(0, 0, 2);
+        engine.grid.push(0, 0, 1);
+        engine.grid.push(0, 1, 1);
+        engine.grid.push(0, 1, 2);
+
+        let mut prev_cap = 0;
+        for run in 0..2 {
+            engine.calculate_repulsion_force_of_a_node(0, false, true);
+            assert_eq!(engine.graph.nodes[0].surrounding, [2, 1]);
+            assert!(engine.surrounding_marks.iter().all(|marked| !marked));
+            if run == 0 {
+                prev_cap = engine.graph.nodes[0].surrounding.capacity();
+            } else {
+                assert_eq!(engine.graph.nodes[0].surrounding.capacity(), prev_cap);
+            }
+        }
+
+        // For node 1, node 0 has already been processed (b <= a), so only node 2 is collected.
+        engine.calculate_repulsion_force_of_a_node(1, false, true);
+        assert_eq!(engine.graph.nodes[1].surrounding, [2]);
+        assert!(engine.surrounding_marks.iter().all(|marked| !marked));
+
+        engine.calculate_repulsion_force_of_a_node(2, false, true);
+        assert!(engine.graph.nodes[2].surrounding.is_empty());
+        assert!(engine.surrounding_marks.iter().all(|marked| !marked));
+    }
+
+    #[test]
+    fn gravitational_forces_pull_distant_nodes_without_cloning() {
+        let mut engine = test_engine(&[
+            RectD::new(0.0, 0.0, 10.0, 10.0),
+            RectD::new(500.0, 0.0, 10.0, 10.0),
+        ]);
+        engine.nodes_with_gravity = vec![0, 1];
+        engine.graph.calc_estimated_size();
+        engine.graph.update_bounds();
+
+        engine.calc_gravitational_forces();
+        assert!(engine.graph.nodes[0].gravitation.x > 0.0);
+        assert!(engine.graph.nodes[1].gravitation.x < 0.0);
     }
 }

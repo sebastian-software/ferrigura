@@ -12,14 +12,17 @@ use crate::constants::{
     MAX_NODE_DISPLACEMENT,
 };
 use crate::error::Error;
+use crate::forces::RepulsionGrid;
 use crate::geometry::{PointD, js_max};
 use crate::graph::LGraph;
 
 /// The state of one layout run.
 pub(crate) struct Engine {
     pub graph: LGraph,
-    /// `FDLayout.grid`: the cells of the repulsion grid, each the nodes it covers.
-    pub grid: Vec<Vec<Vec<usize>>>,
+    /// `FDLayout.grid`: flat spatial grid of the repulsion cells, reused across rebuilds.
+    pub grid: RepulsionGrid,
+    /// Scratch membership flags for one neighborhood search in `calculate_repulsion_force_of_a_node`.
+    pub surrounding_marks: Vec<bool>,
     pub total_iterations: u64,
     pub max_iterations: f64,
     pub total_displacement: f64,
@@ -30,6 +33,8 @@ pub(crate) struct Engine {
     pub cooling_cycle: f64,
     pub max_cooling_cycle: f64,
     pub final_temperature: f64,
+    /// Precomputed exponent `log(100 * (initial_cooling_factor - final_temperature)) / log(max_cooling_cycle)`.
+    pub cooling_exponent: f64,
     pub max_node_displacement: f64,
     pub repulsion_range: f64,
     /// The nodes that gravity acts on: those of a disconnected graph (`calculateNodesToApplyGravitationTo`).
@@ -37,10 +42,12 @@ pub(crate) struct Engine {
 }
 
 impl Engine {
-    fn new(graph: LGraph) -> Engine {
+    pub(crate) fn new(graph: LGraph) -> Engine {
+        let node_count = graph.nodes.len();
         Engine {
             graph,
-            grid: Vec::new(),
+            grid: RepulsionGrid::default(),
+            surrounding_marks: vec![false; node_count],
             total_iterations: 0,
             max_iterations: MAX_ITERATIONS,
             total_displacement: 0.0,
@@ -51,6 +58,7 @@ impl Engine {
             cooling_cycle: 0.0,
             max_cooling_cycle: 0.0,
             final_temperature: 0.0,
+            cooling_exponent: 0.0,
             max_node_displacement: MAX_NODE_DISPLACEMENT,
             repulsion_range: 0.0,
             nodes_with_gravity: Vec::new(),
@@ -107,6 +115,9 @@ impl Engine {
             1.0
         };
         self.initial_cooling_factor = self.cooling_factor;
+        self.cooling_exponent =
+            ferrigura_jsmath::log(100.0 * (self.initial_cooling_factor - self.final_temperature))
+                / ferrigura_jsmath::log(self.max_cooling_cycle);
         self.max_node_displacement = MAX_NODE_DISPLACEMENT;
         self.max_iterations = js_max(s * 5.0, self.max_iterations);
         self.total_displacement_threshold = DISPLACEMENT_THRESHOLD_PER_NODE * s;
@@ -138,12 +149,9 @@ impl Engine {
             self.cooling_cycle += 1.0;
             // The cooling adjuster stays 1 for quality 'proof' (CoSELayout.js 177-184 only change it
             // for quality 0 and 1).
-            let exponent = ferrigura_jsmath::log(
-                100.0 * (self.initial_cooling_factor - self.final_temperature),
-            ) / ferrigura_jsmath::log(self.max_cooling_cycle);
             self.cooling_factor = js_max(
                 self.initial_cooling_factor
-                    - ferrigura_jsmath::pow(self.cooling_cycle, exponent) / 100.0,
+                    - ferrigura_jsmath::pow(self.cooling_cycle, self.cooling_exponent) / 100.0,
                 self.final_temperature,
             );
         }
@@ -189,4 +197,35 @@ pub(crate) fn lay_out(graph: LGraph) -> Result<Vec<PointD>, Error> {
     Ok((0..engine.graph.nodes.len())
         .map(|node| engine.graph.centre(node))
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Node;
+
+    #[test]
+    fn cooling_exponent_is_precomputed_bit_exact() {
+        let nodes = [
+            Node {
+                id: "a".to_string(),
+                width: 40.0,
+                height: 20.0,
+            },
+            Node {
+                id: "b".to_string(),
+                width: 40.0,
+                height: 20.0,
+            },
+        ];
+        let graph = LGraph::build(&nodes, &[]).expect("valid graph");
+        let mut engine = Engine::new(graph);
+        engine.init_parameters();
+        engine.init_spring_embedder();
+
+        let expected = ferrigura_jsmath::log(
+            100.0 * (engine.initial_cooling_factor - engine.final_temperature),
+        ) / ferrigura_jsmath::log(engine.max_cooling_cycle);
+        assert_eq!(engine.cooling_exponent.to_bits(), expected.to_bits());
+    }
 }
