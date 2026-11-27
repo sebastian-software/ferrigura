@@ -672,11 +672,15 @@ impl RendererBuilder {
             return renderer;
         }
         // Two threads that miss at once keep two equal renderers for a while; that costs memory only.
-        let config = self.config.clone();
+        let config = if font_bytes <= SHORTHAND_FONT_BYTE_BUDGET {
+            Some(self.config.clone())
+        } else {
+            None
+        };
         let renderer = Arc::new(self.build());
-        if font_bytes > SHORTHAND_FONT_BYTE_BUDGET {
+        let Some(config) = config else {
             return renderer;
-        }
+        };
         let mut cache = lock(&SHORTHAND);
         while cache.len() >= SHORTHAND_CAPACITY
             || (font_bytes > 0
@@ -704,33 +708,107 @@ impl RendererBuilder {
 
     /// Resolves the configuration and makes the renderer. This does not fail; see [`Renderer::new`].
     #[must_use]
-    pub fn build(self) -> Renderer {
+    pub fn build(mut self) -> Renderer {
         let font_fingerprint = self.fonts.as_ref().map(FontRegistry::fingerprint);
         let site = SiteConfig::new(Some(&self.config));
         let limits = parse_limits(site.settings());
         let overrides = site.user_theme_variables(&Value::empty_object());
+        let configuration = {
+            let mut configuration = serde_json::to_string(&self.config)
+                .unwrap_or_else(|_| canonical_value_json(&self.config));
+            if let Some(fingerprint) = font_fingerprint {
+                configuration.push_str(&format!(";fonts={fingerprint:016x}"));
+            }
+            configuration
+        };
+        let plugins = std::mem::take(&mut self.plugins);
+        let fonts = self.fonts.take().map(Arc::new);
         Renderer {
             limits,
             light_tokens: OnceLock::new(),
             dark_tokens: OnceLock::new(),
             design_light_tokens: OnceLock::new(),
             design_dark_tokens: OnceLock::new(),
-            configuration: {
-                let mut configuration = serde_json::to_string(&self.config).unwrap_or_default();
-                if let Some(fingerprint) = font_fingerprint {
-                    configuration.push_str(&format!(";fonts={fingerprint:016x}"));
-                }
-                configuration
-            },
+            configuration,
             overrides,
             site,
             views: Mutex::new(HashMap::new()),
             directive_views: Mutex::new(Vec::new()),
-            plugins: self.plugins,
-            fonts: self.fonts.map(Arc::new),
+            plugins,
+            fonts,
             subset_cache: Arc::default(),
         }
     }
+}
+
+impl Drop for RendererBuilder {
+    fn drop(&mut self) {
+        ferrigura_model::value::drop_iterative(std::mem::take(&mut self.config));
+    }
+}
+
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        ferrigura_model::value::drop_iterative(std::mem::take(&mut self.overrides));
+    }
+}
+
+/// Iterative JSON-like serialization used as a fallback for [`derived_id`] when `serde_json`
+/// rejects a configuration (for example, nesting beyond 128 levels or non-finite numbers).
+fn canonical_value_json(value: &Value) -> String {
+    enum Step<'a> {
+        Value(&'a Value),
+        Raw(&'static str),
+        Str(&'a str),
+    }
+
+    let mut out = String::new();
+    let mut stack = vec![Step::Value(value)];
+    while let Some(step) = stack.pop() {
+        match step {
+            Step::Raw(text) => out.push_str(text),
+            Step::Str(text) => {
+                out.push_str(&serde_json::to_string(text).unwrap_or_default());
+            }
+            Step::Value(current) => match current {
+                Value::Null => out.push_str("null"),
+                Value::Bool(flag) => out.push_str(if *flag { "true" } else { "false" }),
+                Value::Number(number) => {
+                    if let Ok(json) = serde_json::to_string(number) {
+                        out.push_str(&json);
+                    } else {
+                        out.push_str(&ferrigura_model::value::number_text(*number));
+                    }
+                }
+                Value::String(text) => {
+                    out.push_str(&serde_json::to_string(text).unwrap_or_default());
+                }
+                Value::Array(items) => {
+                    out.push('[');
+                    stack.push(Step::Raw("]"));
+                    for (index, item) in items.iter().enumerate().rev() {
+                        stack.push(Step::Value(item));
+                        if index > 0 {
+                            stack.push(Step::Raw(","));
+                        }
+                    }
+                }
+                Value::Object(map) => {
+                    out.push('{');
+                    stack.push(Step::Raw("}"));
+                    for (index, (key, entry)) in map.iter().enumerate().rev() {
+                        stack.push(Step::Value(entry));
+                        stack.push(Step::Raw(":"));
+                        stack.push(Step::Str(key));
+                        if index > 0 {
+                            stack.push(Step::Raw(","));
+                        }
+                    }
+                }
+            },
+        }
+    }
+    out
 }
 
 /// Renders a diagram to an SVG document.
@@ -913,6 +991,9 @@ fn inherit_font_roles(
     let Value::Object(properties) = value else {
         return;
     };
+    if path.len() >= 128 {
+        return;
+    }
     for (key, child) in properties {
         path.push(key.clone());
         if path.len() > 1
@@ -1167,6 +1248,12 @@ struct Shared {
     renderer: Arc<Renderer>,
 }
 
+impl Drop for Shared {
+    fn drop(&mut self) {
+        ferrigura_model::value::drop_iterative(std::mem::take(&mut self.config));
+    }
+}
+
 /// The renderer that the shorthand keeps for a configuration, a set of kinds, and any supplied
 /// fonts, which becomes the most recently used.
 fn kept(
@@ -1195,22 +1282,28 @@ fn kept(
 /// Whether two configurations are the same value, number by number: `0` and `-0` are not, as the
 /// derived id tells them apart, and a `NaN` is the same `NaN`.
 fn identical(a: &Value, b: &Value) -> bool {
-    match (a, b) {
-        (Value::Null, Value::Null) => true,
-        (Value::Bool(a), Value::Bool(b)) => a == b,
-        (Value::Number(a), Value::Number(b)) => a.to_bits() == b.to_bits(),
-        (Value::String(a), Value::String(b)) => a == b,
-        (Value::Array(a), Value::Array(b)) => {
-            a.len() == b.len() && a.iter().zip(b).all(|(a, b)| identical(a, b))
+    let mut stack = vec![(a, b)];
+    while let Some((left, right)) = stack.pop() {
+        match (left, right) {
+            (Value::Null, Value::Null) => {}
+            (Value::Bool(a), Value::Bool(b)) if a == b => {}
+            (Value::Number(a), Value::Number(b)) if a.to_bits() == b.to_bits() => {}
+            (Value::String(a), Value::String(b)) if a == b => {}
+            (Value::Array(a), Value::Array(b)) if a.len() == b.len() => {
+                stack.extend(a.iter().zip(b.iter()));
+            }
+            (Value::Object(a), Value::Object(b)) if a.len() == b.len() => {
+                for ((key_a, a), (key_b, b)) in a.iter().zip(b.iter()) {
+                    if key_a != key_b {
+                        return false;
+                    }
+                    stack.push((a, b));
+                }
+            }
+            _ => return false,
         }
-        (Value::Object(a), Value::Object(b)) => {
-            a.len() == b.len()
-                && a.iter()
-                    .zip(b)
-                    .all(|((key_a, a), (key_b, b))| key_a == key_b && identical(a, b))
-        }
-        _ => false,
     }
+    true
 }
 
 /// The guard of a cache. A panic in another render does not keep it shut: the caches hold nothing a

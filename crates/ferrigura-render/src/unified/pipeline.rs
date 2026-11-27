@@ -174,14 +174,51 @@ fn busiest_sides(data: &LayoutData) -> Vec<(f64, bool)> {
         .collect()
 }
 
+/// Deepest container nesting accepted by the unified renderer and ELK layout pipeline.
+///
+/// Covers both syntactically nested blocks and hierarchies built indirectly via member references
+/// (such as flowchart subgraphs listing another subgraph's ID).
+pub(crate) const MAX_HIERARCHY_DEPTH: usize = 64;
+
+/// Verifies that no node in `data` sits deeper than [`MAX_HIERARCHY_DEPTH`] containers.
+fn validate_hierarchy_depth(data: &LayoutData) -> Result<(), RenderError> {
+    let parent_by_id: HashMap<&str, &str> = data
+        .nodes
+        .iter()
+        .filter_map(|node| Some((node.id.as_str(), node.parent_id.as_deref()?)))
+        .collect();
+    let mut seen = HashSet::new();
+    for node in &data.nodes {
+        let mut depth = 0usize;
+        let mut current = node.parent_id.as_deref();
+        seen.clear();
+        seen.insert(node.id.as_str());
+        while let Some(parent) = current {
+            if !seen.insert(parent) {
+                break;
+            }
+            depth += 1;
+            if depth > MAX_HIERARCHY_DEPTH {
+                return Err(RenderError::Layout(format!(
+                    "diagram container nesting exceeds {MAX_HIERARCHY_DEPTH} levels"
+                )));
+            }
+            current = parent_by_id.get(parent).copied();
+        }
+    }
+    Ok(())
+}
+
 /// The edge render data and the measure step of `createGraphWithElements`, for the layout data
 /// of a diagram's `getData`, laid out by ELK. `config` gives the sections and the globals, and the
 /// theme's tokens give the sizes.
 ///
 /// # Errors
 ///
-/// Returns an error if a bundled font cannot be read or a shape is unknown.
+/// Returns an error if a bundled font cannot be read, a shape is unknown, or container nesting
+/// exceeds the supported depth limit.
 pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, RenderError> {
+    validate_hierarchy_depth(&data)?;
     edges::prepare(&mut data);
 
     // Direction is only consumed by fork/join shapes. Resolve those before mutating sizes,
@@ -350,6 +387,7 @@ pub fn node_anchor(diagram_type: &str) -> Anchor {
 ///
 /// Returns an error if the layout fails.
 pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages, RenderError> {
+    validate_hierarchy_depth(&measured.data)?;
     let elk = elk_build::build(&measured.data, config);
     let layout = if own_placement(config) {
         ferrigura_elk::placement::layout_with(&elk.graph, false, crate::flowchart::placement::Axes)
@@ -372,6 +410,7 @@ pub(crate) fn lay_out_for_render(
     if config.section.design.is_some() {
         return lay_out_adjusted(measured, config, &[], |_, _, _| true).map(|_| ());
     }
+    validate_hierarchy_depth(&measured.data)?;
     let elk = elk_build::build(&measured.data, config);
     let layout = ferrigura_elk::layout_owned(elk.graph, false)
         .map_err(|error| RenderError::Layout(error.to_string()))?;
@@ -444,6 +483,7 @@ fn lay_out_once(
     config: &Config<'_>,
     adjust: impl FnOnce(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
 ) -> Result<bool, RenderError> {
+    validate_hierarchy_depth(&measured.data)?;
     let elk = elk_build::build(&measured.data, config);
     let mut layout = if own_placement(config) {
         ferrigura_elk::placement::layout_with(&elk.graph, false, crate::flowchart::placement::Axes)

@@ -10,11 +10,15 @@ use super::scanner::{Kind, Token};
 use crate::error::{ParseError, Source};
 use crate::text::js_trim;
 
+/// The deepest subgraph nesting that the ER parser allows.
+const MAX_DEPTH: usize = 128;
+
 /// The parser: the tokens, a position, and the DB the actions write to.
 pub(crate) struct Parser<'a> {
     source: Source<'a>,
     tokens: Vec<Token>,
     pos: usize,
+    depth: usize,
     db: ErDb,
 }
 
@@ -24,6 +28,7 @@ impl<'a> Parser<'a> {
             source,
             tokens,
             pos: 0,
+            depth: 0,
             db,
         }
     }
@@ -92,6 +97,21 @@ impl<'a> Parser<'a> {
             .get(self.pos)
             .map_or(self.source.text().len(), |token| token.start);
         self.source.error(offset, message)
+    }
+
+    fn descend<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        if self.depth >= MAX_DEPTH {
+            return Err(self.error_here(&format!(
+                "the nesting is deeper than the {MAX_DEPTH} levels the parser allows"
+            )));
+        }
+        self.depth += 1;
+        let result = parse(self);
+        self.depth -= 1;
+        result
     }
 
     /// `document`: the lines up to the `end` of a subgraph, or up to the end of the diagram. The
@@ -398,6 +418,10 @@ impl<'a> Parser<'a> {
     /// `subgraphHeader document END`. The depth counts the subgraph from its header, and the
     /// statement's value is the subgraph id.
     fn subgraph_statement(&mut self) -> Result<Vec<Member>, ParseError> {
+        self.descend(|parser| parser.subgraph_statement_body())
+    }
+
+    fn subgraph_statement_body(&mut self) -> Result<Vec<Member>, ParseError> {
         self.bump();
         let id = self.entity_name()?;
         let title = if self.eat(Kind::Sqs) {

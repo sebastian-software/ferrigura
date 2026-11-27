@@ -31,10 +31,14 @@ struct LinkInfo {
     length: Option<u32>,
 }
 
+/// The deepest subgraph nesting that the flowchart parser allows.
+const MAX_DEPTH: usize = 128;
+
 pub(crate) struct Parser<'a> {
     source: Source<'a>,
     tokens: Vec<Token>,
     pos: usize,
+    depth: usize,
     db: Db,
 }
 
@@ -53,6 +57,7 @@ pub(crate) fn parse_text(
         source,
         tokens,
         pos: 0,
+        depth: 0,
         db: Db::new(options, security_level),
     };
     parser.graph_config()?;
@@ -166,6 +171,21 @@ impl Parser<'_> {
 
     fn db<T>(&self, result: Result<T, DbError>) -> Result<T, FlowchartError> {
         result.or_else(|DbError(message)| self.syntax(message))
+    }
+
+    fn descend<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, FlowchartError>,
+    ) -> Result<T, FlowchartError> {
+        if self.depth >= MAX_DEPTH {
+            return self.syntax(format!(
+                "the nesting is deeper than the {MAX_DEPTH} levels the parser allows"
+            ));
+        }
+        self.depth += 1;
+        let result = parse(self);
+        self.depth -= 1;
+        result
     }
 
     /// `graphConfig`: leading blanks, then `graph` with a direction, or with none. The DB gets the
@@ -330,6 +350,10 @@ impl Parser<'_> {
     /// `subgraph`, in its three forms: with an id and a bracketed title, with a title that is
     /// also the id, and without either, which the reference rejects.
     fn subgraph(&mut self) -> Result<Statement, FlowchartError> {
+        self.descend(|parser| parser.subgraph_body())
+    }
+
+    fn subgraph_body(&mut self) -> Result<Statement, FlowchartError> {
         self.take();
         let id: String;
         let id_is_title: bool;

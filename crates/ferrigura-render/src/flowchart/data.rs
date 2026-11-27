@@ -170,26 +170,24 @@ fn declaration_index<'a>(
         }
     }
 
-    fn walk<'a>(
-        id: &'a str,
-        children: &HashMap<&'a str, Vec<&'a str>>,
-        next: &mut u32,
-        index: &mut HashMap<&'a str, u32>,
-    ) {
-        index.insert(id, *next);
-        *next += 1;
-        if let Some(list) = children.get(id) {
-            for child in list {
-                walk(child, children, next, index);
-            }
-        }
-    }
-
     let mut index = HashMap::new();
     let mut next = 0;
+    let mut stack = Vec::new();
     for subgraph in subgraphs {
         if !parent.contains_key(subgraph.id.as_str()) {
-            walk(subgraph.id.as_str(), &children, &mut next, &mut index);
+            stack.push(subgraph.id.as_str());
+            while let Some(id) = stack.pop() {
+                if index.contains_key(id) {
+                    continue;
+                }
+                index.insert(id, next);
+                next += 1;
+                if let Some(list) = children.get(id) {
+                    for &child in list.iter().rev() {
+                        stack.push(child);
+                    }
+                }
+            }
         }
     }
     index

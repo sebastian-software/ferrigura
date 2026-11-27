@@ -71,26 +71,29 @@ pub fn split(graph: &LGraph) -> Result<Vec<LGraph>, LayoutError> {
 
 /// The depth-first search of `ComponentsProcessor.dfs`: the node, then the nodes its ports connect
 /// to, port by port, predecessors before successors.
-fn collect_component(graph: &LGraph, node: usize, visited: &mut [bool], members: &mut Vec<usize>) {
-    if visited[node] {
-        return;
-    }
-    visited[node] = true;
-    members.push(node);
-    for &port in &graph.nodes[node].ports {
-        // `getConnectedPorts`: the sources of the incoming edges, then the targets of the outgoing.
-        let connected = graph.ports[port]
-            .incoming
-            .iter()
-            .map(|&edge| graph.edges[edge].source)
-            .chain(
-                graph.ports[port]
-                    .outgoing
-                    .iter()
-                    .map(|&edge| graph.edges[edge].target),
-            );
-        for other in connected.collect::<Vec<usize>>() {
-            collect_component(graph, graph.ports[other].node, visited, members);
+fn collect_component(graph: &LGraph, start: usize, visited: &mut [bool], members: &mut Vec<usize>) {
+    let mut stack = vec![start];
+    while let Some(node) = stack.pop() {
+        if visited[node] {
+            continue;
+        }
+        visited[node] = true;
+        members.push(node);
+        // Push neighbors in reverse port and edge order so LIFO popping preserves the exact
+        // preorder of `getConnectedPorts` (incoming then outgoing, port by port).
+        for &port in graph.nodes[node].ports.iter().rev() {
+            for &edge in graph.ports[port].outgoing.iter().rev() {
+                let target = graph.ports[graph.edges[edge].target].node;
+                if !visited[target] {
+                    stack.push(target);
+                }
+            }
+            for &edge in graph.ports[port].incoming.iter().rev() {
+                let source = graph.ports[graph.edges[edge].source].node;
+                if !visited[source] {
+                    stack.push(source);
+                }
+            }
         }
     }
 }
@@ -466,5 +469,38 @@ mod tests {
         assert_eq!(position("n0"), KVector { x: 0.0, y: 30.0 });
         assert_eq!(position("n1"), KVector { x: 0.0, y: 30.0 });
         assert_eq!(graph.size, KVector { x: 30.0, y: 50.0 });
+    }
+
+    #[test]
+    fn split_handles_long_chain_iteratively() {
+        let handle = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(|| {
+                let n = 10_000;
+                let mut graph = LGraph::default();
+                for i in 0..n {
+                    graph.nodes.push(LNode {
+                        id: format!("n{i}"),
+                        ports: vec![i],
+                        ..LNode::default()
+                    });
+                    graph.layerless_nodes.push(i);
+                    graph.ports.push(LPort::new(i, PortSide::EAST));
+                }
+                for i in 0..(n - 1) {
+                    graph.edges.push(LEdge {
+                        source: i,
+                        target: i + 1,
+                        ..LEdge::default()
+                    });
+                    graph.ports[i].outgoing.push(i);
+                    graph.ports[i + 1].incoming.push(i);
+                }
+                let components = split(&graph).unwrap();
+                assert_eq!(components.len(), 1);
+                assert_eq!(components[0].layerless_nodes.len(), n);
+            })
+            .expect("spawn thread");
+        handle.join().expect("split long chain without overflow");
     }
 }

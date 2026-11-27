@@ -491,3 +491,332 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
         "expected line 2, column 9 for BOM cycle, got {bom_err}"
     );
 }
+
+#[test]
+fn deeply_nested_html_sanitizer_does_not_overflow() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let deep_html = "<b>".repeat(16_000);
+    let sanitized = ferrigura_syntax::sanitize::sanitize_text(&deep_html);
+    assert!(sanitized.starts_with("<b>"));
+    assert!(sanitized.ends_with("</b>"));
+
+    // Forbidden-content elements at or beyond the depth cap must keep discarding their subtree,
+    // while allowed elements in FORBID_CONTENTS (like <audio>) keep their fallback text.
+    for depth in [255, 256, 260] {
+        let payload = format!(
+            "{}<noscript><p>secret</p></noscript>",
+            "<div>".repeat(depth)
+        );
+        let cleaned = ferrigura_syntax::sanitize::sanitize_text(&payload);
+        assert!(
+            !cleaned.contains("secret"),
+            "noscript content leaked at depth {depth}: {cleaned}"
+        );
+        let audio = format!("{}<audio>fallback</audio>", "<div>".repeat(depth));
+        let cleaned_audio = ferrigura_syntax::sanitize::sanitize_text(&audio);
+        assert!(
+            cleaned_audio.contains("fallback"),
+            "allowed audio fallback lost at depth {depth}: {cleaned_audio}"
+        );
+    }
+
+    let flow_html = format!("flowchart LR\nA[\"{}\"]\n", "<b>".repeat(4_000));
+    let svg = renderer
+        .render(&flow_html)
+        .expect("deeply nested HTML label renders");
+    finite_geometry(&svg, &flow_html, "deep HTML label");
+}
+
+#[test]
+fn deeply_nested_state_ast_drop_does_not_overflow() {
+    use ferrigura_model::state::{StateStmt, Statement};
+
+    // Programmatic deep AST trees drop iteratively without overflowing the stack.
+    let mut state_stmt = StateStmt::new("leaf", Some("default"));
+    for i in 0..10_000 {
+        let mut parent = StateStmt::new(format!("s{i}"), Some("default"));
+        parent.doc = Some(vec![Statement::State(state_stmt)]);
+        state_stmt = parent;
+    }
+    drop(state_stmt);
+}
+
+#[test]
+fn deeply_nested_diagram_parsers_return_clean_errors() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let depth = 500;
+    let mut flowchart = String::from("flowchart TD\n");
+    let mut sequence = String::from("sequenceDiagram\n");
+    let mut class = String::from("classDiagram\n");
+    let mut state = String::from("stateDiagram-v2\n");
+    let mut state_described = String::from("stateDiagram-v2\n");
+    let mut er = String::from("erDiagram\n");
+    for n in 0..depth {
+        flowchart.push_str(&format!("subgraph g{n}\n"));
+        sequence.push_str(&format!("loop l{n}\n"));
+        class.push_str(&format!("namespace n{n} {{\n"));
+        state.push_str(&format!("state s{n} {{\n"));
+        state_described.push_str(&format!("state \"d{n}\" as s{n} {{\n"));
+        er.push_str(&format!("subgraph g{n}\n"));
+    }
+    flowchart.push_str("A --> B\n");
+    sequence.push_str("Alice->>Bob: hi\n");
+    class.push_str("class Leaf\n");
+    state.push_str("[*] --> Ready\n");
+    state_described.push_str("[*] --> Ready\n");
+    er.push_str("USER ||--o{ ORDER : places\n");
+    for _ in 0..depth {
+        flowchart.push_str("end\n");
+        sequence.push_str("end\n");
+        class.push_str("}\n");
+        state.push_str("}\n");
+        state_described.push_str("}\n");
+        er.push_str("end\n");
+    }
+    for (name, source) in [
+        ("flowchart", flowchart),
+        ("sequence", sequence),
+        ("class", class),
+        ("state", state),
+        ("state described", state_described),
+        ("er", er),
+    ] {
+        assert!(
+            renderer.render(&source).is_err(),
+            "{name} should fail cleanly"
+        );
+    }
+}
+
+#[test]
+fn deeply_nested_markdown_does_not_overflow() {
+    let renderer = Renderer::new(&Value::empty_object());
+
+    let markdown_cases = [
+        format!("flowchart LR\nA[\"`{}hi`\"]\n", "> ".repeat(2_000)),
+        format!("flowchart LR\nA[\"`{}hi`\"]\n", "- ".repeat(1_000)),
+        format!(
+            "flowchart LR\nA[\"`{}x{}`\"]\n",
+            "*".repeat(1_000),
+            "*".repeat(1_000)
+        ),
+        format!(
+            "flowchart LR\nA[\"`{}x{}`\"]\n",
+            "~~".repeat(500),
+            "~~".repeat(500)
+        ),
+        format!(
+            "flowchart LR\nA[\"`{}Grüße 🦀 日本語{}`\"]\n",
+            "*".repeat(100),
+            "*".repeat(100)
+        ),
+    ];
+    for (index, source) in markdown_cases.iter().enumerate() {
+        let svg = renderer
+            .render(source)
+            .unwrap_or_else(|error| panic!("markdown case {index} failed: {error}"));
+        finite_geometry(&svg, source, &format!("markdown case {index}"));
+    }
+}
+
+#[test]
+fn deep_container_hierarchies_do_not_overflow_on_small_stack() {
+    let handle = std::thread::Builder::new()
+        .stack_size(2 * 1024 * 1024)
+        .spawn(|| {
+            let renderer = Renderer::new(&Value::empty_object());
+
+            // 100 nested composite states pass the parser limit (128) and must not overflow
+            // `state::data::Fetcher` or the unified layout hierarchy check.
+            let mut state_src = String::from("stateDiagram-v2\n");
+            for n in 0..100 {
+                state_src.push_str(&format!("state s{n} {{\n"));
+            }
+            state_src.push_str("[*] --> Ready\n");
+            for _ in 0..100 {
+                state_src.push_str("}\n");
+            }
+            assert!(
+                renderer.render(&state_src).is_err(),
+                "100-level composite state should fail cleanly at the container depth limit"
+            );
+
+            // Syntactically flat subgraphs linked via member IDs form a deep parent chain.
+            let mut flow_src = String::from("flowchart TD\n");
+            for n in 0..200 {
+                flow_src.push_str(&format!("subgraph g{n}\ng{}\nend\n", n + 1));
+            }
+            flow_src.push_str("subgraph g200\nleaf\nend\n");
+            assert!(
+                renderer.render(&flow_src).is_err(),
+                "200-level member-linked subgraph chain should fail cleanly"
+            );
+        })
+        .expect("spawn thread");
+    handle
+        .join()
+        .expect("deep container hierarchies did not overflow");
+}
+
+#[test]
+fn deep_elk_chain_does_not_overflow() {
+    let handle = std::thread::Builder::new()
+        .stack_size(2 * 1024 * 1024)
+        .spawn(|| {
+            let config = Value::from(serde_json::json!({
+                "maxEdges": 2000,
+                "maxTextSize": 200000
+            }));
+            let renderer = Renderer::new(&config);
+            let mut elk_chain = String::from("---\nconfig:\n  layout: elk\n---\nflowchart TD\n");
+            for n in 0..600 {
+                elk_chain.push_str(&format!("n{n} --> n{}\n", n + 1));
+            }
+            let elk_svg = renderer
+                .render(&elk_chain)
+                .expect("deep ELK chain renders cleanly");
+            finite_geometry(&elk_svg, &elk_chain, "deep ELK chain");
+        })
+        .expect("spawn thread");
+    handle.join().expect("deep ELK chain did not overflow");
+}
+
+#[test]
+fn deeply_nested_config_value_does_not_overflow() {
+    use std::collections::BTreeMap;
+
+    use ferrigura_model::config::{assign_with_depth, deep_merge, effective};
+    use ferrigura_model::value::drop_iterative;
+
+    let renderer = Renderer::new(&Value::empty_object());
+    let control = renderer.render(CONTROL).expect("control renders");
+
+    let mut deep_obj = Value::String("forest".to_owned());
+    let mut deep_arr = Value::String("leaf".to_owned());
+    for _ in 0..5_000 {
+        let mut map = BTreeMap::new();
+        map.insert("flowchart".to_owned(), deep_obj);
+        deep_obj = Value::Object(map);
+        deep_arr = Value::Array(vec![deep_arr]);
+    }
+    let eff_obj = effective(Some(&deep_obj), Some("flowchart"), &deep_obj);
+    let eff_arr = effective(Some(&deep_arr), None, &deep_arr);
+    let mut merged = Value::empty_object();
+    deep_merge(&mut merged, &deep_obj);
+    assign_with_depth(&mut merged, &deep_arr, 2);
+    let deep_renderer = Renderer::new(&deep_obj);
+    let deep_control = deep_renderer
+        .render(CONTROL)
+        .expect("control renders with deep config");
+    finite_geometry(&deep_control, CONTROL, "deep config control");
+    let deep_flow = deep_renderer
+        .render("flowchart LR\nA --> B\n")
+        .expect("flowchart renders with deep config");
+    finite_geometry(
+        &deep_flow,
+        "flowchart LR\nA --> B\n",
+        "deep config flowchart",
+    );
+    let shorthand_control =
+        ferrigura::render(CONTROL, &deep_obj).expect("shorthand render handles deep config");
+    finite_geometry(&shorthand_control, CONTROL, "deep config shorthand");
+
+    // Host theme overrides with deeply nested arrays (e.g. THEME_COLOR_LIMIT) must not overflow
+    // `theme::helpers::string_of`, and deep configs with different themes must get distinct IDs.
+    let mut deep_limit = Value::String("8".to_owned());
+    for _ in 0..2_000 {
+        deep_limit = Value::Array(vec![deep_limit]);
+    }
+    let mut dark_cfg = BTreeMap::new();
+    dark_cfg.insert("theme".to_owned(), Value::String("dark".to_owned()));
+    dark_cfg.insert(
+        "themeVariables".to_owned(),
+        Value::Object(BTreeMap::from([(
+            "THEME_COLOR_LIMIT".to_owned(),
+            deep_limit.clone(),
+        )])),
+    );
+    let dark_cfg = Value::Object(dark_cfg);
+    let mut forest_cfg = BTreeMap::new();
+    forest_cfg.insert("theme".to_owned(), Value::String("forest".to_owned()));
+    forest_cfg.insert(
+        "themeVariables".to_owned(),
+        Value::Object(BTreeMap::from([(
+            "THEME_COLOR_LIMIT".to_owned(),
+            deep_limit,
+        )])),
+    );
+    let forest_cfg = Value::Object(forest_cfg);
+    let dark_svg = Renderer::new(&dark_cfg)
+        .render(CONTROL)
+        .expect("deep dark config renders");
+    let forest_svg = Renderer::new(&forest_cfg)
+        .render(CONTROL)
+        .expect("deep forest config renders");
+    let extract_id = |svg: &str| {
+        let start = svg.find("id=\"").expect("svg has id") + 4;
+        let end = svg[start..].find('"').expect("closing quote");
+        svg[start..start + end].to_owned()
+    };
+    assert_ne!(
+        extract_id(&dark_svg),
+        extract_id(&forest_svg),
+        "deep configs with different themes must not collide on derived SVG ID"
+    );
+
+    // Deep configs differing only in +0.0 vs -0.0 must also keep distinct derived IDs.
+    let mut deep_pad = Value::Null;
+    for _ in 0..200 {
+        deep_pad = Value::Array(vec![deep_pad]);
+    }
+    let pos_zero_cfg = Value::Object(BTreeMap::from([
+        ("x".to_owned(), Value::Number(0.0)),
+        ("deep".to_owned(), deep_pad.clone()),
+    ]));
+    let neg_zero_cfg = Value::Object(BTreeMap::from([
+        ("x".to_owned(), Value::Number(-0.0)),
+        ("deep".to_owned(), deep_pad),
+    ]));
+    let pos_svg = Renderer::new(&pos_zero_cfg)
+        .render(CONTROL)
+        .expect("pos zero deep config renders");
+    let neg_svg = Renderer::new(&neg_zero_cfg)
+        .render(CONTROL)
+        .expect("neg zero deep config renders");
+    assert_ne!(
+        extract_id(&pos_svg),
+        extract_id(&neg_svg),
+        "deep configs differing in +0.0 vs -0.0 must not collide on derived SVG ID"
+    );
+
+    // Replacing a deep target in `deep_merge` and removing unknown or invalid dictionary deep
+    // values in `sanitize_directive` must drop iteratively without overflowing a 2 MiB stack.
+    let mut deep_target = Value::Null;
+    let mut unknown_deep = Value::Null;
+    let mut dict_deep = Value::Null;
+    for _ in 0..5_000 {
+        deep_target = Value::Array(vec![deep_target]);
+        unknown_deep = Value::Array(vec![unknown_deep]);
+        dict_deep = Value::Array(vec![dict_deep]);
+    }
+    deep_merge(&mut deep_target, &Value::Null);
+    let mut dir_with_unknown = Value::Object(BTreeMap::from([
+        ("unknown".to_owned(), unknown_deep),
+        (
+            "filenameIcons".to_owned(),
+            Value::Object(BTreeMap::from([("README.md".to_owned(), dict_deep)])),
+        ),
+    ]));
+    ferrigura_model::config::sanitize_directive(&mut dir_with_unknown);
+
+    drop_iterative(deep_obj);
+    drop_iterative(deep_arr);
+    drop_iterative(eff_obj);
+    drop_iterative(eff_arr);
+    drop_iterative(merged);
+    drop_iterative(dark_cfg);
+    drop_iterative(forest_cfg);
+    drop_iterative(pos_zero_cfg);
+    drop_iterative(neg_zero_cfg);
+    assert_eq!(renderer.render(CONTROL).unwrap(), control);
+}

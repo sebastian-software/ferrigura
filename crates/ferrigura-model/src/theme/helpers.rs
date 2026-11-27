@@ -264,15 +264,15 @@ pub(crate) fn mk_border(value: &Js, dark: bool) -> Res<Js> {
 
 /// `applyOverride(generated, override)` of `theme-helpers.js`. An object keeps every key the theme
 /// generated and takes the override's keys on top; any other override is the value.
-pub(crate) fn apply_override(generated: Js, value: &Value) -> Value {
-    match (generated, value) {
-        (Some(Value::Object(mut merged)), Value::Object(overrides)) => {
+pub(crate) fn apply_override(mut generated: Js, value: &Value) -> Value {
+    match (&mut generated, value) {
+        (Some(Value::Object(merged)), Value::Object(overrides)) => {
             merged.extend(
                 overrides
                     .iter()
                     .map(|(key, value)| (key.clone(), value.clone())),
             );
-            Value::Object(merged)
+            Value::Object(std::mem::take(merged))
         }
         _ => value.clone(),
     }
@@ -394,23 +394,43 @@ fn number_of(value: &Value) -> f64 {
 /// `ToString` of a configuration value, as the string an array or an object turns into.
 fn string_of(value: &Value) -> String {
     match value {
-        Value::Null => "null".to_owned(),
-        Value::Bool(flag) => flag.to_string(),
-        Value::Number(number) => js_number(*number),
-        Value::String(text) => text.clone(),
-        Value::Array(items) => items
-            .iter()
-            .map(|item| {
-                if matches!(item, Value::Null) {
-                    String::new()
-                } else {
-                    string_of(item)
-                }
-            })
-            .collect::<Vec<_>>()
-            .join(","),
-        Value::Object(_) => "[object Object]".to_owned(),
+        Value::Null => return "null".to_owned(),
+        Value::Bool(flag) => return flag.to_string(),
+        Value::Number(number) => return js_number(*number),
+        Value::String(text) => return text.clone(),
+        Value::Object(_) => return "[object Object]".to_owned(),
+        Value::Array(_) => {}
     }
+
+    enum Item<'a> {
+        Value(&'a Value),
+        Comma,
+    }
+
+    let mut out = String::new();
+    let mut stack = vec![Item::Value(value)];
+    while let Some(item) = stack.pop() {
+        match item {
+            Item::Comma => out.push(','),
+            Item::Value(current) => match current {
+                // Inside an array, `null` becomes the empty string as in `Array.prototype.join`.
+                Value::Null => {}
+                Value::Bool(flag) => out.push_str(if *flag { "true" } else { "false" }),
+                Value::Number(number) => out.push_str(&js_number(*number)),
+                Value::String(text) => out.push_str(text),
+                Value::Object(_) => out.push_str("[object Object]"),
+                Value::Array(items) => {
+                    for (index, child) in items.iter().enumerate().rev() {
+                        stack.push(Item::Value(child));
+                        if index > 0 {
+                            stack.push(Item::Comma);
+                        }
+                    }
+                }
+            },
+        }
+    }
+    out
 }
 
 /// Whether a character is white space or a line terminator for JavaScript.

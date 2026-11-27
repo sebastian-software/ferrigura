@@ -207,14 +207,67 @@ fn label_len(label: &Label) -> usize {
 
 impl Fetcher<'_> {
     /// `setupDoc` (`dataFetcher.ts` 111-176): each state of the document goes through
-    /// [`Fetcher::fetch`], each relation visits its two states and then adds its edge.
+    /// [`Fetcher::fetch_one`], each relation visits its two states and then adds its edge.
+    ///
+    /// Driven by an explicit heap stack so deeply nested composite states cannot exhaust the call
+    /// stack before the unified renderer checks container depth.
     fn setup_doc(&mut self, parent: Option<&StateStmt>, doc: &[Statement], alt: bool) {
-        for statement in doc {
-            match statement {
-                Statement::State(state) => self.fetch(parent, state, alt),
-                Statement::Relation(relation) => {
-                    self.fetch(parent, &relation.state1, alt);
-                    self.fetch(parent, &relation.state2, alt);
+        enum Work<'a> {
+            Doc {
+                parent: Option<&'a StateStmt>,
+                doc: &'a [Statement],
+                alt: bool,
+            },
+            State {
+                parent: Option<&'a StateStmt>,
+                item: &'a StateStmt,
+                alt: bool,
+            },
+            RelationEdge(&'a ferrigura_model::state::RelationStmt),
+        }
+
+        let mut stack = vec![Work::Doc { parent, doc, alt }];
+        while let Some(work) = stack.pop() {
+            match work {
+                Work::Doc { parent, doc, alt } => {
+                    for statement in doc.iter().rev() {
+                        match statement {
+                            Statement::State(state) => {
+                                stack.push(Work::State {
+                                    parent,
+                                    item: state,
+                                    alt,
+                                });
+                            }
+                            Statement::Relation(relation) => {
+                                stack.push(Work::RelationEdge(relation));
+                                stack.push(Work::State {
+                                    parent,
+                                    item: &relation.state2,
+                                    alt,
+                                });
+                                stack.push(Work::State {
+                                    parent,
+                                    item: &relation.state1,
+                                    alt,
+                                });
+                            }
+                            // The other statements are not states: `dataFetcher` ignores them.
+                            _ => {}
+                        }
+                    }
+                }
+                Work::State { parent, item, alt } => {
+                    self.fetch_one(parent, item, alt);
+                    if let Some(subdoc) = &item.doc {
+                        stack.push(Work::Doc {
+                            parent: Some(item),
+                            doc: subdoc,
+                            alt: !alt,
+                        });
+                    }
+                }
+                Work::RelationEdge(relation) => {
                     let is_neo = self.look == "neo";
                     self.edges.push(Edge {
                         id: format!("edge{}", self.graph_item_count),
@@ -238,15 +291,14 @@ impl Fetcher<'_> {
                     });
                     self.graph_item_count += 1;
                 }
-                // The other statements are not states: `dataFetcher` ignores them.
-                _ => {}
             }
         }
     }
 
     /// `dataFetcher` (`dataFetcher.ts` 241-477) for one state: its node in `nodeDb`, its
-    /// description and composite shape, its note, and its children.
-    fn fetch(&mut self, parent: Option<&StateStmt>, item: &StateStmt, alt: bool) {
+    /// description and composite shape, and its note. Child documents are pushed by
+    /// [`Fetcher::setup_doc`].
+    fn fetch_one(&mut self, parent: Option<&StateStmt>, item: &StateStmt, alt: bool) {
         let item_id = item.id.as_str();
         let db_state = self.states.get(item_id).copied();
         let class_str = db_state
@@ -434,9 +486,6 @@ impl Fetcher<'_> {
                 self.insert_or_update(node_data);
             }
             self.node_db.insert(item_id.to_owned(), entry);
-        }
-        if let Some(doc) = &item.doc {
-            self.setup_doc(Some(item), doc, !alt);
         }
     }
 

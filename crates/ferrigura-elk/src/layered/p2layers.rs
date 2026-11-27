@@ -93,25 +93,33 @@ fn connected_components(graph: &LGraph, nodes: &[usize]) -> Vec<Vec<usize>> {
     components.into_iter().collect()
 }
 
-/// `connectedComponentsDFS`: the nodes reached from `node`, through the connected edges of
+/// `connectedComponentsDFS`: the nodes reached from `start`, through the connected edges of
 /// each port, in the order the search meets them.
-fn depth_first(graph: &LGraph, node: usize, visited: &mut [bool], component: &mut Vec<usize>) {
-    visited[node] = true;
-    component.push(node);
-    for &port in &graph.nodes[node].ports {
-        for edge in connected_edges(graph, port) {
-            let opposite = opposite_node(graph, port, edge);
-            if !visited[opposite] {
-                depth_first(graph, opposite, visited, component);
+fn depth_first(graph: &LGraph, start: usize, visited: &mut [bool], component: &mut Vec<usize>) {
+    let mut stack = vec![start];
+    while let Some(node) = stack.pop() {
+        if visited[node] {
+            continue;
+        }
+        visited[node] = true;
+        component.push(node);
+        // Push connected edges in reverse port and incoming/outgoing order so LIFO popping visits
+        // the exact same sequence as the recursive DFS.
+        for &port in graph.nodes[node].ports.iter().rev() {
+            let port_data = &graph.ports[port];
+            for &edge in port_data
+                .outgoing
+                .iter()
+                .rev()
+                .chain(port_data.incoming.iter().rev())
+            {
+                let opposite = opposite_node(graph, port, edge);
+                if !visited[opposite] {
+                    stack.push(opposite);
+                }
             }
         }
     }
-}
-
-/// `LPort.getConnectedEdges()`: the incoming edges, then the outgoing ones.
-fn connected_edges(graph: &LGraph, port: usize) -> impl Iterator<Item = usize> + '_ {
-    let port = &graph.ports[port];
-    port.incoming.iter().chain(&port.outgoing).copied()
 }
 
 /// `getOpposite`: the node at the other end of `edge`, seen from `port`.
@@ -155,4 +163,45 @@ fn initialize(graph: &LGraph, component: &[usize]) -> NGraph {
         }
     }
     solver
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::data::enums::PortSide;
+    use crate::layered::lgraph::{LEdge, LNode, LPort};
+
+    #[test]
+    fn connected_components_handles_long_chain_iteratively() {
+        let handle = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(|| {
+                let n = 10_000;
+                let mut graph = LGraph::default();
+                for i in 0..n {
+                    graph.nodes.push(LNode {
+                        ports: vec![i],
+                        ..LNode::default()
+                    });
+                    graph.layerless_nodes.push(i);
+                    graph.ports.push(LPort::new(i, PortSide::EAST));
+                }
+                for i in 0..(n - 1) {
+                    graph.edges.push(LEdge {
+                        source: i,
+                        target: i + 1,
+                        ..LEdge::default()
+                    });
+                    graph.ports[i].outgoing.push(i);
+                    graph.ports[i + 1].incoming.push(i);
+                }
+                let components = connected_components(&graph, &graph.layerless_nodes);
+                assert_eq!(components.len(), 1);
+                assert_eq!(components[0].len(), n);
+            })
+            .expect("spawn thread");
+        handle
+            .join()
+            .expect("connected_components long chain without overflow");
+    }
 }

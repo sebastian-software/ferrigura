@@ -873,12 +873,18 @@ enum PrevChar {
     Surrogate,
 }
 
+/// The deepest block or inline nesting the Markdown lexer descends into before falling back to
+/// plain text.
+const MAX_DEPTH: usize = 64;
+
 struct Lexer {
     rules: &'static Rules,
     links: HashSet<String>,
     queue: Vec<Job>,
     top: bool,
     in_link: bool,
+    block_depth: usize,
+    inline_depth: usize,
 }
 
 impl Lexer {
@@ -889,6 +895,8 @@ impl Lexer {
             queue: Vec::new(),
             top: true,
             in_link: false,
+            block_depth: 0,
+            inline_depth: 0,
         }
     }
 
@@ -995,14 +1003,14 @@ impl Lexer {
 
             // blockquote
             if let Some(token) = self.blockquote(rest) {
-                position += token.raw.len().max(1);
+                position = advance(src, position, token.raw.len());
                 tokens.push(token);
                 continue;
             }
 
             // list
             if let Some(raw) = self.list(rest) {
-                position += raw.len().max(1);
+                position = advance(src, position, raw.len());
                 tokens.push(Token::new(Kind::List, &raw));
                 continue;
             }
@@ -1041,7 +1049,7 @@ impl Lexer {
 
             // table
             if let Some(raw) = self.table(rest) {
-                position += raw.len().max(1);
+                position = advance(src, position, raw.len());
                 tokens.push(Token::new(Kind::Table, &raw));
                 continue;
             }
@@ -1086,7 +1094,7 @@ impl Lexer {
                     }
                 }
                 last_paragraph_clipped = false;
-                position += raw.len().max(1);
+                position = advance(src, position, raw.len());
                 continue;
             }
 
@@ -1125,6 +1133,16 @@ impl Lexer {
     /// The `blockquote` tokenizer: a block quote with its lazy continuations, and the nested
     /// block quote or list that a continuation joins.
     fn blockquote(&mut self, src: &str) -> Option<Token> {
+        if self.block_depth >= MAX_DEPTH {
+            return None;
+        }
+        self.block_depth += 1;
+        let result = self.blockquote_inner(src);
+        self.block_depth -= 1;
+        result
+    }
+
+    fn blockquote_inner(&mut self, src: &str) -> Option<Token> {
         let rules = self.rules;
         let found = exec(&rules.blockquote, src)?.get(0)?;
         let mut lines: Vec<String> = rtrim(found.as_str(), '\n')
@@ -1233,6 +1251,16 @@ impl Lexer {
     /// The `list` tokenizer: the raw text of a list. The items' contents are lexed as marked lexes
     /// them, for the link definitions and the inline jobs they add.
     fn list(&mut self, src: &str) -> Option<String> {
+        if self.block_depth >= MAX_DEPTH {
+            return None;
+        }
+        self.block_depth += 1;
+        let result = self.list_inner(src);
+        self.block_depth -= 1;
+        result
+    }
+
+    fn list_inner(&mut self, src: &str) -> Option<String> {
         let rules = self.rules;
         let captures = exec(&rules.list, src)?;
         let mut bull = js_trim(group(&captures, 1).unwrap_or_default()).to_owned();
@@ -1399,6 +1427,20 @@ impl Lexer {
 
     /// `inlineTokens`: the inline tokens of a text.
     fn inline_tokens(&mut self, src: &str) -> Vec<Inline> {
+        if self.inline_depth >= MAX_DEPTH {
+            return if src.is_empty() {
+                Vec::new()
+            } else {
+                vec![Inline::Text(src.to_owned())]
+            };
+        }
+        self.inline_depth += 1;
+        let tokens = self.inline_tokens_inner(src);
+        self.inline_depth -= 1;
+        tokens
+    }
+
+    fn inline_tokens_inner(&mut self, src: &str) -> Vec<Inline> {
         let rules = self.rules;
         let masked = self.mask(src);
         let mut tokens: Vec<Inline> = Vec::new();
@@ -1434,7 +1476,7 @@ impl Lexer {
 
             // link
             if let Some(length) = self.link(rest) {
-                position += length.max(1);
+                position = advance(src, position, length);
                 tokens.push(Inline::Other);
                 continue;
             }
@@ -1443,11 +1485,11 @@ impl Lexer {
             if let Some(reflink) = self.reflink(rest) {
                 match reflink {
                     Reflink::Text(text) => {
-                        position += text.len();
+                        position = advance(src, position, text.len());
                         push_text(&mut tokens, &text);
                     }
                     Reflink::Link(length) => {
-                        position += length.max(1);
+                        position = advance(src, position, length);
                         tokens.push(Inline::Other);
                     }
                 }
@@ -1456,7 +1498,7 @@ impl Lexer {
 
             // emStrong
             if let Some((length, token)) = self.em_strong(rest, &masked, prev_char) {
-                position += length.max(1);
+                position = advance(src, position, length);
                 tokens.push(token);
                 continue;
             }
@@ -1479,7 +1521,7 @@ impl Lexer {
             if let Some(captures) = exec(&rules.del, rest) {
                 let raw = group(&captures, 0).unwrap_or_default();
                 let text = group(&captures, 2).unwrap_or_default().to_owned();
-                position += raw.len().max(1);
+                position = advance(src, position, raw.len());
                 self.inline_tokens(&text);
                 tokens.push(Inline::Other);
                 continue;
@@ -1496,7 +1538,7 @@ impl Lexer {
             if !self.in_link
                 && let Some(length) = self.url(rest)
             {
-                position += length;
+                position = advance(src, position, length);
                 tokens.push(Inline::Other);
                 continue;
             }
@@ -1504,7 +1546,7 @@ impl Lexer {
             // inlineText
             if let Some(found) = exec(&rules.inline_text, rest).and_then(|c| c.get(0)) {
                 let raw = found.as_str();
-                position += raw.len().max(1);
+                position = advance(src, position, raw.len());
                 if let Some(last) = raw.chars().last()
                     && last != '_'
                 {
@@ -1848,6 +1890,21 @@ fn next_boundary(text: &str, index: usize) -> usize {
         .map_or(text.len() + 1, |character| index + character.len_utf8())
 }
 
+/// Advances `position` by `length`, or by the UTF-8 byte length of the character at `position`
+/// when `length` is zero, keeping `position` on a character boundary.
+fn advance(src: &str, position: usize, length: usize) -> usize {
+    if length == 0 {
+        return next_boundary(src, position);
+    }
+    let mut next = position.saturating_add(length);
+    if next < src.len() {
+        while next < src.len() && !src.is_char_boundary(next) {
+            next += 1;
+        }
+    }
+    next
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1888,5 +1945,27 @@ mod tests {
                 Block::Other("- item".into())
             ]
         );
+    }
+
+    #[test]
+    fn deeply_nested_markdown_and_multibyte_advance_do_not_overflow_or_panic() {
+        let quotes = format!("{}hi", "> ".repeat(5_000));
+        assert!(!lex(&quotes).is_empty());
+
+        let lists = format!("{}hi", "- ".repeat(2_000));
+        assert!(!lex(&lists).is_empty());
+
+        let emphasis = format!("{}x{}", "*".repeat(2_000), "*".repeat(2_000));
+        assert!(!lex(&emphasis).is_empty());
+
+        let strikes = format!("{}x{}", "~~".repeat(1_000), "~~".repeat(1_000));
+        assert!(!lex(&strikes).is_empty());
+
+        // Zero-length advance on multi-byte UTF-8 must step by char::len_utf8(), never +1 byte.
+        let utf8 = "🦀 café 日本語";
+        assert_eq!(advance(utf8, 0, 0), "🦀".len());
+        assert_eq!(advance(utf8, 0, 1), "🦀".len());
+        assert_eq!(advance(utf8, "🦀 ".len(), 0), "🦀 c".len());
+        assert!(!lex(utf8).is_empty());
     }
 }
