@@ -7,11 +7,19 @@
 //! A diagram's own rules (`styles.ts` of the type, such as `flowchart/style.rs`) come between the
 //! `p` rule and the `neo` rules, as the reference's `getStyles` places them.
 
+use std::borrow::Cow;
+use std::fmt::Write as _;
+
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::ThemeView;
-use crate::svg::{css_declaration_value, css_text_owned, font_faces};
+use crate::svg::{
+    css_declaration_value, escape_css_tail_in_place, font_faces_capacity, font_faces_css_into,
+};
+
+/// Room for the base rules besides the font faces and `own_rules`: about 3 KiB.
+const BASE_RULES_CAPACITY: usize = 4 * 1024;
 
 /// The `<style>` text of the base rules for the diagram with the id `svg_id`, with the embedded
 /// `@font-face` rules first. The font family is `font_family` as CSS reads it (quoted when it is a
@@ -32,41 +40,63 @@ pub fn base_style_sheet(
     families: &[EmbeddedFamily],
     own_rules: &str,
 ) -> String {
+    base_style_sheet_with_capacity(
+        svg_id,
+        theme,
+        font_family,
+        font_size,
+        families,
+        own_rules,
+        0,
+    )
+}
+
+/// [`base_style_sheet`] with additional reserved capacity for callers that append diagram-specific
+/// rules directly onto the returned buffer.
+#[must_use]
+pub(crate) fn base_style_sheet_with_capacity(
+    svg_id: &str,
+    theme: ThemeView<'_>,
+    font_family: &str,
+    font_size: &str,
+    families: &[EmbeddedFamily],
+    own_rules: &str,
+    extra_capacity: usize,
+) -> String {
     let id = format!("#{svg_id}");
-    let colours = match theme.dark {
-        None => format!("{id}{{{}}}", declarations(theme.light)),
-        Some(dark) => crate::scheme::both(
-            &format!("{id}{{{}}}", declarations(theme.light)),
-            &format!("{id}{{{}}}", declarations(dark)),
-        ),
-    };
     let tokens = theme.light;
     let font_family = css_declaration_value(font_family, "sans-serif");
     let font_size = css_declaration_value(font_size, "16px");
     let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
     let stroke_width = css_declaration_value(&stroke_width, "1");
-    let shadow = match tokens.drop_shadow.text() {
-        Some(value) if !value.is_empty() => value.replacen(
+    let shadow_raw: Cow<'_, str> = match tokens.drop_shadow.text() {
+        Some(value) if !value.is_empty() => Cow::Owned(value.replacen(
             "url(#drop-shadow)",
             // `svgId` is the selector `#id` in styles.ts, so the reference names `url(#id-drop-shadow)`.
             &format!("url(#{svg_id}-drop-shadow)"),
             1,
-        ),
-        _ => "none".to_owned(),
+        )),
+        _ => Cow::Borrowed("none"),
     };
-    let shadow = css_declaration_value(&shadow, "none");
+    let shadow = css_declaration_value(&shadow_raw, "none");
     // `:root` names the configured family (mermaidAPI.ts), not the embedded subset of this diagram.
-    let root_font_raw = tokens
-        .font_family
-        .text()
-        .unwrap_or_else(|| font_family.to_owned());
-    let root_font = css_declaration_value(&root_font_raw, font_family);
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(svg_id, families)
+    let root_font_raw: Cow<'_, str> = match tokens.font_family.text() {
+        Some(value) => Cow::Owned(value),
+        None => Cow::Borrowed(font_family),
     };
-    let rules = format!(
+    let root_font = css_declaration_value(&root_font_raw, font_family);
+
+    let mut css = String::with_capacity(
+        font_faces_capacity(svg_id, families)
+            + own_rules.len()
+            + BASE_RULES_CAPACITY
+            + extra_capacity,
+    );
+    font_faces_css_into(&mut css, svg_id, families);
+    let rules_start = css.len();
+    write_colors(&mut css, &id, theme);
+    let _ = write!(
+        css,
         "{id}{{font-family:{font_family};font-size:{font_size};fill:var(--textColor);}}\
 @keyframes edge-animation-frame{{from{{stroke-dashoffset:0;}}}}\
 @keyframes dash{{to{{stroke-dashoffset:0;}}}}\
@@ -97,22 +127,49 @@ pub fn base_style_sheet(
 {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:var(--nodeBorder);filter:{shadow};}}\
 :root{{--mermaid-font-family:{root_font};}}"
     );
-    css_text_owned(format!("{faces}{colours}{rules}"))
+    escape_css_tail_in_place(&mut css, rules_start);
+    css
 }
 
-/// The custom properties of the base colors of a theme's tokens, as `--name:value;` pairs. A color
-/// the theme does not give falls back to the default of `redux-color`.
-fn declarations(tokens: &ThemeTokens) -> String {
+/// Appends the custom property block of the base colors to `css`.
+fn write_colors(css: &mut String, id: &str, theme: ThemeView<'_>) {
+    match theme.dark {
+        None => {
+            css.push_str(id);
+            css.push('{');
+            write_declarations(css, theme.light);
+            css.push('}');
+        }
+        Some(dark) => {
+            let mut light_block = String::new();
+            light_block.push_str(id);
+            light_block.push('{');
+            write_declarations(&mut light_block, theme.light);
+            light_block.push('}');
+            let mut dark_block = String::new();
+            dark_block.push_str(id);
+            dark_block.push('{');
+            write_declarations(&mut dark_block, dark);
+            dark_block.push('}');
+            css.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
+    }
+}
+
+/// Appends the custom properties of the base colors of a theme's tokens, as `--name:value;` pairs.
+/// A color the theme does not give falls back to the default of `redux-color`.
+fn write_declarations(css: &mut String, tokens: &ThemeTokens) {
     let colour =
         |token: &Token, fallback: &str| token.text().unwrap_or_else(|| fallback.to_owned());
-    format!(
+    let _ = write!(
+        css,
         "--textColor:{};--lineColor:{};--nodeBorder:{};--errorBkgColor:{};--errorTextColor:{};",
         colour(&tokens.text_color, "#333333"),
         colour(&tokens.line_color, "#333333"),
         colour(&tokens.node_border, "#9370DB"),
         colour(&tokens.error_bkg_color, "#552222"),
         colour(&tokens.error_text_color, "#552222"),
-    )
+    );
 }
 
 #[cfg(test)]

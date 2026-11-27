@@ -9,7 +9,8 @@
 //! the reference's `undefined` fallback does. The `//` comments are not CSS, and are not written; the
 //! nested `text` rule of `.state-note` is written flat, as stylis writes it.
 
-use std::fmt::Write as _;
+use std::borrow::Cow;
+use std::fmt::{self, Write as _};
 
 use ferrigura_model::state::ClassDef;
 use ferrigura_model::theme::{ThemeTokens, Token};
@@ -17,7 +18,7 @@ use ferrigura_text::EmbeddedFamily;
 
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
-use crate::svg::{css_text_owned, font_faces};
+use crate::svg::{escape_css_tail_in_place, font_faces_capacity, font_faces_css_into};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens that the rules name, each declared as a custom property on the diagram's id, in the
@@ -61,6 +62,9 @@ const DARK_FLOOD: &str = "#FFFFFF";
 /// The fill of an alternate composite and of a region when the theme gives no `altBackground`.
 const ALT_BACKGROUND: &str = "#efefef";
 
+/// Room for the rules of a state style sheet besides its font faces: about 14 KiB with a palette.
+const RULES_CAPACITY: usize = 16 * 1024;
+
 /// The `<style>` element's content for a state diagram with the id `svg_id`, escaped for XML so that
 /// it can be written as the element's text. `families` are the embedded font subsets of the text,
 /// whose `@font-face` rules come first, as for the flowchart. In the design mode (`design`), the
@@ -77,160 +81,92 @@ pub fn style_sheet(
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
-    let font = families.first().map_or_else(
-        || {
+    let font: Cow<'_, str> = match families.first() {
+        Some(family) => Cow::Borrowed(&family.css_family),
+        None => Cow::Owned(
             tokens
                 .font_family
                 .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+                .unwrap_or_else(|| "sans-serif".to_owned()),
+        ),
+    };
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
-    let shadow = match tokens.drop_shadow.text() {
-        Some(shadow) if !shadow.is_empty() => shadow.replacen(
+    let shadow: Cow<'_, str> = match tokens.drop_shadow.text() {
+        Some(shadow) if !shadow.is_empty() => Cow::Owned(shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
             1,
-        ),
-        _ => "none".to_owned(),
+        )),
+        _ => Cow::Borrowed("none"),
     };
-    let stroke_neo = if tokens.use_gradient.truthy() {
-        format!("url(#{svg_id}-gradient)")
+    let stroke_neo: Cow<'_, str> = if tokens.use_gradient.truthy() {
+        Cow::Owned(format!("url(#{svg_id}-gradient)"))
     } else {
-        colour(&[("nodeBorder", &tokens.node_border)])
+        Cow::Owned(colour(&[("nodeBorder", &tokens.node_border)]))
     };
     let radius = tokens.radius.text().unwrap_or_else(|| "5".to_owned());
 
-    let mut rules = String::new();
+    let mut css = String::with_capacity(font_faces_capacity(svg_id, families) + RULES_CAPACITY);
+    font_faces_css_into(&mut css, svg_id, families);
+    let rules_start = css.len();
+    write_custom_properties(&mut css, &id, theme, globals, design);
+
     // styles.ts: the global rules every diagram gets.
-    rules.push_str(&rule(
-        &id,
-        &format!(
-            "font-family:{font};font-size:{font_size};fill:{};",
-            colour(&[("textColor", &tokens.text_color)])
-        ),
-    ));
-    rules.push_str("@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}");
-    rules.push_str("@keyframes dash{to{stroke-dashoffset:0;}}");
-    rules.push_str(&scoped(
-        &id,
-        ".edge-animation-slow",
-        "stroke-dasharray:9,5 !important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;",
-    ));
-    rules.push_str(&scoped(
-        &id,
-        ".edge-animation-fast",
-        "stroke-dasharray:9,5 !important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;",
-    ));
+    let _ = write!(
+        css,
+        "{id}{{font-family:{font};font-size:{font_size};fill:{};}}\
+@keyframes edge-animation-frame{{from{{stroke-dashoffset:0;}}}}\
+@keyframes dash{{to{{stroke-dashoffset:0;}}}}\
+{id} .edge-animation-slow{{stroke-dasharray:9,5 !important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}}\
+{id} .edge-animation-fast{{stroke-dasharray:9,5 !important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}}",
+        colour(&[("textColor", &tokens.text_color)]),
+    );
     if tokens.error_bkg_color.text().is_some() {
-        rules.push_str(&scoped(
-            &id,
-            ".error-icon",
-            &format!(
-                "fill:{};",
-                colour(&[("errorBkgColor", &tokens.error_bkg_color)])
-            ),
-        ));
+        let _ = write!(
+            css,
+            "{id} .error-icon{{fill:{};}}",
+            colour(&[("errorBkgColor", &tokens.error_bkg_color)]),
+        );
     }
     if tokens.error_text_color.text().is_some() {
         let text = colour(&[("errorTextColor", &tokens.error_text_color)]);
-        rules.push_str(&scoped(
-            &id,
-            ".error-text",
-            &format!("fill:{text};stroke:{text};"),
-        ));
+        let _ = write!(css, "{id} .error-text{{fill:{text};stroke:{text};}}");
     }
-    rules.push_str(&scoped(
-        &id,
-        ".edge-thickness-normal",
-        &format!("stroke-width:{stroke_width}px;"),
-    ));
-    rules.push_str(&scoped(&id, ".edge-thickness-thick", "stroke-width:3.5px;"));
-    rules.push_str(&scoped(&id, ".edge-pattern-solid", "stroke-dasharray:0;"));
-    rules.push_str(&scoped(
-        &id,
-        ".edge-thickness-invisible",
-        "stroke-width:0;fill:none;",
-    ));
-    rules.push_str(&scoped(&id, ".edge-pattern-dashed", "stroke-dasharray:3;"));
-    rules.push_str(&scoped(&id, ".edge-pattern-dotted", "stroke-dasharray:2;"));
     let line = colour(&[("lineColor", &tokens.line_color)]);
-    rules.push_str(&scoped(
-        &id,
-        ".marker",
-        &format!("fill:{line};stroke:{line};"),
-    ));
-    rules.push_str(&scoped(&id, ".marker.cross", &format!("stroke:{line};")));
-    rules.push_str(&scoped(
-        &id,
-        "svg",
-        &format!("font-family:{font};font-size:{font_size};"),
-    ));
-    rules.push_str(&scoped(&id, "p", "margin:0;"));
-    rules.push_str(&scoped(
-        &id,
-        ".node .neo-node",
-        &format!("stroke:{};", colour(&[("nodeBorder", &tokens.node_border)])),
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].node rect,[data-look=\"neo\"].cluster rect,[data-look=\"neo\"].node polygon",
-        &format!("stroke:{stroke_neo};filter:{shadow};"),
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].swimlane.cluster rect",
-        "filter:none;",
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].node path",
-        &format!("stroke:{stroke_neo};stroke-width:{stroke_width}px;"),
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].node .outer-path",
-        &format!("filter:{shadow};"),
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].node .neo-line path",
-        &format!(
-            "stroke:{};filter:none;",
-            colour(&[("nodeBorder", &tokens.node_border)])
-        ),
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].node circle",
-        &format!("stroke:{stroke_neo};filter:{shadow};"),
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].node circle .state-start",
-        "fill:#000000;",
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].icon-shape .icon",
-        &format!("fill:{stroke_neo};filter:{shadow};"),
-    ));
-    rules.push_str(&scoped(
-        &id,
-        "[data-look=\"neo\"].icon-shape .icon-neo path",
-        &format!("stroke:{stroke_neo};filter:{shadow};"),
-    ));
+    let node_border = colour(&[("nodeBorder", &tokens.node_border)]);
+    let _ = write!(
+        css,
+        "{id} .edge-thickness-normal{{stroke-width:{stroke_width}px;}}\
+{id} .edge-thickness-thick{{stroke-width:3.5px;}}\
+{id} .edge-pattern-solid{{stroke-dasharray:0;}}\
+{id} .edge-thickness-invisible{{stroke-width:0;fill:none;}}\
+{id} .edge-pattern-dashed{{stroke-dasharray:3;}}\
+{id} .edge-pattern-dotted{{stroke-dasharray:2;}}\
+{id} .marker{{fill:{line};stroke:{line};}}\
+{id} .marker.cross{{stroke:{line};}}\
+{id} svg{{font-family:{font};font-size:{font_size};}}\
+{id} p{{margin:0;}}\
+{id} .node .neo-node{{stroke:{node_border};}}\
+{id} [data-look=\"neo\"].node rect,{id} [data-look=\"neo\"].cluster rect,{id} [data-look=\"neo\"].node polygon{{stroke:{stroke_neo};filter:{shadow};}}\
+{id} [data-look=\"neo\"].swimlane.cluster rect{{filter:none;}}\
+{id} [data-look=\"neo\"].node path{{stroke:{stroke_neo};stroke-width:{stroke_width}px;}}\
+{id} [data-look=\"neo\"].node .outer-path{{filter:{shadow};}}\
+{id} [data-look=\"neo\"].node .neo-line path{{stroke:{node_border};filter:none;}}\
+{id} [data-look=\"neo\"].node circle{{stroke:{stroke_neo};filter:{shadow};}}\
+{id} [data-look=\"neo\"].node circle .state-start{{fill:#000000;}}\
+{id} [data-look=\"neo\"].icon-shape .icon{{fill:{stroke_neo};filter:{shadow};}}\
+{id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:{stroke_neo};filter:{shadow};}}"
+    );
 
     // styles.js: the palette rules of each container slot, then the state rules. The design mode
     // uses no palette: its groups are neutral.
     if design.is_none() {
-        rules.push_str(&palette_rules(&id, globals, tokens));
+        write_palette_rules(&mut css, &id, globals, tokens);
     }
-    rules.push_str(&state_rules(&id, tokens, &stroke_width, &radius, &shadow));
+    write_state_rules(&mut css, &id, tokens, &stroke_width, &radius, &shadow);
     if design.is_some() {
-        rules.push_str(&design_rules(&id));
+        write_design_rules(&mut css, &id);
     }
 
     // The diagram's `classDef` rules: the classes' declarations, on every state of the class. A
@@ -243,41 +179,30 @@ pub fn style_sheet(
         {
             continue;
         }
-        let declarations: Vec<String> = class
-            .styles
-            .iter()
-            .map(|style| format!("{style} !important"))
-            .collect();
-        rules.push_str(&scoped(
-            &id,
-            &format!(".{} > *", class.id),
-            &format!("{};", declarations.join(";")),
-        ));
+        let _ = write!(css, "{id} .{} > *{{", class.id);
+        for style in &class.styles {
+            let _ = write!(css, "{style} !important;");
+        }
+        css.push('}');
     }
 
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(svg_id, families)
-    };
-    css_text_owned(format!(
-        "{faces}{}{rules}",
-        custom_properties(svg_id, theme, globals, design)
-    ))
+    escape_css_tail_in_place(&mut css, rules_start);
+    css
 }
 
 /// The rules of the design mode, after the state rules and before the `classDef` rules, which keep
 /// the last word (`docs/decisions/0023-design-mode.md`): hairlines, rounder states, an edge label
 /// without a background, a neutral composite state with its title in a row of its own, a
 /// concurrency region as a dashed frame without a fill, a flat note, and the colors of the roles.
-fn design_rules(id: &str) -> String {
+fn write_design_rules(out: &mut String, id: &str) {
     let node_width = design::NODE_STROKE_WIDTH;
     let edge_width = design::EDGE_STROKE_WIDTH;
     let thick_width = design::THICK_EDGE_STROKE_WIDTH;
     let radius = design::NODE_RADIUS;
     let group_radius = design::GROUP_RADIUS;
     let region_radius = design::REGION_RADIUS;
-    let mut out = format!(
+    let _ = write!(
+        out,
         "{id} .edge-thickness-normal,{id} .transition{{stroke-width:{edge_width};}}\
 {id} .edge-thickness-thick{{stroke-width:{thick_width};}}\
 {id} .node rect,{id} .node polygon,{id} [data-look=\"neo\"].node path{{stroke-width:{node_width};}}\
@@ -310,17 +235,17 @@ fn design_rules(id: &str) -> String {
 {end} > path[fill=\"none\"]{{fill:none;stroke:var(--{stroke});}}\
 {end} g path{{fill:var(--{fill});stroke:var(--{fill});}}"
     );
-    out
 }
 
 /// The state rules of `styles.js` `getStyles`, in the reference's order, after the palette rules.
-fn state_rules(
+fn write_state_rules(
+    out: &mut String,
     id: &str,
     tokens: &ThemeTokens,
     stroke_width: &str,
     radius: &str,
     shadow: &str,
-) -> String {
+) {
     let transition = colour(&[("transitionColor", &tokens.transition_color)]);
     let main_bkg = colour(&[("mainBkg", &tokens.main_bkg)]);
     let state_border = colour(&[
@@ -360,227 +285,303 @@ fn state_rules(
         ("stateBkg", &tokens.state_bkg),
         ("mainBkg", &tokens.main_bkg),
     ]);
-    let stroke_px = format!("{stroke_width}px");
-    let rounded = format!("{radius}px");
-
-    let mut out = String::new();
-    let mut add = |selector: &str, declarations: &str| {
-        out.push_str(&scoped(id, selector, declarations));
+    let neo_cluster_stroke: Cow<'_, str> = if tokens.use_gradient.truthy() {
+        Cow::Owned(format!("url(#{}-gradient)", id.trim_start_matches('#')))
+    } else {
+        Cow::Borrowed(state_border.as_str())
     };
-    add(
+
+    write_scoped(
+        out,
+        id,
         "defs [id$=\"-barbEnd\"]",
-        &format!("fill:{transition};stroke:{transition};"),
+        format_args!("fill:{transition};stroke:{transition};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         "g.stateGroup text",
-        &format!("fill:{node_border};stroke:none;font-size:10px;"),
+        format_args!("fill:{node_border};stroke:none;font-size:10px;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         "g.stateGroup text",
-        &format!("fill:{text};stroke:none;font-size:10px;"),
+        format_args!("fill:{text};stroke:none;font-size:10px;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         "g.stateGroup .state-title",
-        &format!("font-weight:bolder;fill:{state_label};"),
+        format_args!("font-weight:bolder;fill:{state_label};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         "g.stateGroup rect",
-        &format!("fill:{main_bkg};stroke:{node_border};"),
+        format_args!("fill:{main_bkg};stroke:{node_border};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         "g.stateGroup line",
-        &format!("stroke:{line};stroke-width:{stroke_width};"),
+        format_args!("stroke:{line};stroke-width:{stroke_width};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".transition",
-        &format!("stroke:{transition};stroke-width:{stroke_width};fill:none;"),
+        format_args!("stroke:{transition};stroke-width:{stroke_width};fill:none;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".stateGroup .composit",
-        &format!("fill:{background};border-bottom:1px;"),
+        format_args!("fill:{background};border-bottom:1px;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".stateGroup .alt-composit",
-        "fill:#e0e0e0;border-bottom:1px;",
+        format_args!("fill:#e0e0e0;border-bottom:1px;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".state-note",
-        &format!("stroke:{note_border};fill:{note_bkg};"),
+        format_args!("stroke:{note_border};fill:{note_bkg};"),
     );
     // The nested `text` rule of `.state-note`, which stylis flattens.
-    add(
+    write_scoped(
+        out,
+        id,
         ".state-note text",
-        &format!("fill:{note_text};stroke:none;font-size:10px;"),
+        format_args!("fill:{note_text};stroke:none;font-size:10px;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".stateLabel .box",
-        &format!("stroke:none;stroke-width:0;fill:{main_bkg};opacity:0.5;"),
+        format_args!("stroke:none;stroke-width:0;fill:{main_bkg};opacity:0.5;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".edgeLabel .label rect",
-        &format!("fill:{label_background};opacity:0.5;"),
+        format_args!("fill:{label_background};opacity:0.5;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".edgeLabel",
-        &format!("background-color:{edge_label};text-align:center;"),
+        format_args!("background-color:{edge_label};text-align:center;"),
     );
-    add(".edgeLabel p", &format!("background-color:{edge_label};"));
-    add(
+    write_scoped(
+        out,
+        id,
+        ".edgeLabel p",
+        format_args!("background-color:{edge_label};"),
+    );
+    write_scoped(
+        out,
+        id,
         ".edgeLabel rect",
-        &format!("opacity:0.5;background-color:{edge_label};fill:{edge_label};"),
+        format_args!("opacity:0.5;background-color:{edge_label};fill:{edge_label};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".edgeLabel .label text",
-        &format!("fill:{transition_label};"),
+        format_args!("fill:{transition_label};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".label div .edgeLabel",
-        &format!("color:{transition_label};"),
+        format_args!("color:{transition_label};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".stateLabel text",
-        &format!("fill:{state_label};font-size:10px;font-weight:bold;"),
+        format_args!("fill:{state_label};font-size:10px;font-weight:bold;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".node circle.state-start",
-        &format!("fill:{special};stroke:{special};"),
+        format_args!("fill:{special};stroke:{special};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".node .fork-join",
-        &format!("fill:{special};stroke:{special};"),
+        format_args!("fill:{special};stroke:{special};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".node circle.state-end",
-        &format!("fill:{inner_end};stroke:{background};stroke-width:1.5;"),
+        format_args!("fill:{inner_end};stroke:{background};stroke-width:1.5;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".end-state-inner",
-        &format!("fill:{composite_background};stroke-width:1.5;"),
+        format_args!("fill:{composite_background};stroke-width:1.5;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".node rect",
-        &format!("fill:{state_bkg};stroke:{state_border};stroke-width:{stroke_px};"),
+        format_args!("fill:{state_bkg};stroke:{state_border};stroke-width:{stroke_width}px;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".node polygon",
-        &format!("fill:{main_bkg};stroke:{state_border};stroke-width:{stroke_px};"),
+        format_args!("fill:{main_bkg};stroke:{state_border};stroke-width:{stroke_width}px;"),
     );
-    add("[id$=\"-barbEnd\"]", &format!("fill:{line};"));
-    add(
+    write_scoped(out, id, "[id$=\"-barbEnd\"]", format_args!("fill:{line};"));
+    write_scoped(
+        out,
+        id,
         ".statediagram-cluster rect",
-        &format!("fill:{composite_title};stroke:{state_border};stroke-width:{stroke_px};"),
+        format_args!("fill:{composite_title};stroke:{state_border};stroke-width:{stroke_width}px;"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".cluster-label, .nodeLabel",
-        &format!("color:{state_label};"),
+        format_args!("color:{state_label};"),
     );
-    add(".statediagram-cluster rect.outer", "rx:5px;ry:5px;");
-    add(
+    write_scoped(
+        out,
+        id,
+        ".statediagram-cluster rect.outer",
+        format_args!("rx:5px;ry:5px;"),
+    );
+    write_scoped(
+        out,
+        id,
         ".statediagram-state .divider",
-        &format!("stroke:{state_border};"),
+        format_args!("stroke:{state_border};"),
     );
-    add(".statediagram-state .title-state", "rx:5px;ry:5px;");
-    add(
+    write_scoped(
+        out,
+        id,
+        ".statediagram-state .title-state",
+        format_args!("rx:5px;ry:5px;"),
+    );
+    write_scoped(
+        out,
+        id,
         ".statediagram-cluster.statediagram-cluster .inner",
-        &format!("fill:{composite_background};"),
+        format_args!("fill:{composite_background};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".statediagram-cluster.statediagram-cluster-alt .inner",
-        &format!("fill:{alt_background};"),
+        format_args!("fill:{alt_background};"),
     );
-    add(".statediagram-cluster .inner", "rx:0;ry:0;");
-    add(".statediagram-state rect.basic", "rx:5px;ry:5px;");
-    add(
+    write_scoped(
+        out,
+        id,
+        ".statediagram-cluster .inner",
+        format_args!("rx:0;ry:0;"),
+    );
+    write_scoped(
+        out,
+        id,
+        ".statediagram-state rect.basic",
+        format_args!("rx:5px;ry:5px;"),
+    );
+    write_scoped(
+        out,
+        id,
         ".statediagram-state rect.divider",
-        &format!("stroke-dasharray:10,10;fill:{alt_background};"),
+        format_args!("stroke-dasharray:10,10;fill:{alt_background};"),
     );
-    add(".note-edge", "stroke-dasharray:5;");
-    add(
+    write_scoped(out, id, ".note-edge", format_args!("stroke-dasharray:5;"));
+    write_scoped(
+        out,
+        id,
         ".statediagram-note rect",
-        &format!("fill:{note_bkg};stroke:{note_border};stroke-width:1px;rx:0;ry:0;"),
+        format_args!("fill:{note_bkg};stroke:{note_border};stroke-width:1px;rx:0;ry:0;"),
     );
-    add(".statediagram-note text", &format!("fill:{note_text};"));
-    add(
+    write_scoped(
+        out,
+        id,
+        ".statediagram-note text",
+        format_args!("fill:{note_text};"),
+    );
+    write_scoped(
+        out,
+        id,
         ".statediagram-note .nodeLabel",
-        &format!("color:{note_text};"),
+        format_args!("color:{note_text};"),
     );
-    add(".statediagram .edgeLabel", "color:red;");
-    add(
+    write_scoped(
+        out,
+        id,
+        ".statediagram .edgeLabel",
+        format_args!("color:red;"),
+    );
+    write_scoped(
+        out,
+        id,
         "[id$=\"-dependencyStart\"], [id$=\"-dependencyEnd\"]",
-        &format!("fill:{line};stroke:{line};stroke-width:{stroke_width};"),
+        format_args!("fill:{line};stroke:{line};stroke-width:{stroke_width};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         ".statediagramTitleText",
-        &format!("text-anchor:middle;font-size:18px;fill:{text};"),
+        format_args!("text-anchor:middle;font-size:18px;fill:{text};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         "[data-look=\"neo\"].statediagram-cluster rect",
-        &format!(
-            "fill:{main_bkg};stroke:{};stroke-width:{stroke_width};",
-            if tokens.use_gradient.truthy() {
-                format!("url(#{}-gradient)", id.trim_start_matches('#'))
-            } else {
-                state_border.clone()
-            }
-        ),
+        format_args!("fill:{main_bkg};stroke:{neo_cluster_stroke};stroke-width:{stroke_width};"),
     );
-    add(
+    write_scoped(
+        out,
+        id,
         "[data-look=\"neo\"].statediagram-cluster rect.outer",
-        &format!("rx:{rounded};ry:{rounded};filter:{shadow};"),
+        format_args!("rx:{radius}px;ry:{radius}px;filter:{shadow};"),
     );
-    out
 }
 
 /// The palette rules of `genColor` (`styles.js` 21-99): for each slot of the border palette, the
 /// outline and the tint of its containers. A theme without a palette, or one that is not a color
 /// theme, has none.
-fn palette_rules(id: &str, globals: &Globals, tokens: &ThemeTokens) -> String {
+fn write_palette_rules(out: &mut String, id: &str, globals: &Globals, tokens: &ThemeTokens) {
     let Some(palette) = palette(globals, tokens) else {
-        return String::new();
+        return;
     };
     let look = safe_look(&globals.look);
-    let mut out = String::new();
+    let mut slot = String::new();
     for index in 0..palette.border.len() {
-        let slot = format!("[data-look=\"{look}\"][data-color-id=\"color-{index}\"]");
+        slot.clear();
+        let _ = write!(
+            slot,
+            "{id} [data-look=\"{look}\"][data-color-id=\"color-{index}\"]"
+        );
         let border = &palette.border[index];
         let tint = tint(&palette, index);
-        out.push_str(&scoped(
-            id,
-            &format!("{slot}.statediagram-cluster rect.outer"),
-            &format!("stroke:{border};{tint}"),
-        ));
-        out.push_str(&scoped(
-            id,
-            &format!("{slot}.statediagram-cluster rect.inner"),
-            &format!("stroke:{border};"),
-        ));
-        out.push_str(&scoped(
-            id,
-            &format!("{slot}.statediagram-cluster rect.divider"),
-            &format!("stroke:{border};{tint}"),
-        ));
-        out.push_str(&scoped(
-            id,
-            &format!("{slot}.statediagram-cluster .outer path[stroke='none']"),
-            &tint,
-        ));
-        out.push_str(&scoped(
-            id,
-            &format!("{slot}.statediagram-cluster .outer path[fill='none']"),
-            &format!("stroke:{border};"),
-        ));
-        out.push_str(&scoped(
-            id,
-            &format!("{slot}.statediagram-cluster .divider path[stroke='none']"),
-            &tint,
-        ));
-        out.push_str(&scoped(
-            id,
-            &format!("{slot}.statediagram-cluster .divider path[fill='none']"),
-            &format!("stroke:{border};"),
-        ));
+        let _ = write!(
+            out,
+            "{slot}.statediagram-cluster rect.outer{{stroke:{border};{tint}}}\
+{slot}.statediagram-cluster rect.inner{{stroke:{border};}}\
+{slot}.statediagram-cluster rect.divider{{stroke:{border};{tint}}}\
+{slot}.statediagram-cluster .outer path[stroke='none']{{{tint}}}\
+{slot}.statediagram-cluster .outer path[fill='none']{{stroke:{border};}}\
+{slot}.statediagram-cluster .divider path[stroke='none']{{{tint}}}\
+{slot}.statediagram-cluster .divider path[fill='none']{{stroke:{border};}}"
+        );
     }
-    out
 }
 
 /// The fill of a slot: the palette's background at the slot's index, wrapped to its length, or
@@ -615,52 +616,60 @@ fn colour(names: &[(&str, &Token)]) -> String {
     format!("var(--{name})")
 }
 
-/// One rule under the diagram's id: the selectors of `selectors`, each scoped to `id`.
-fn scoped(id: &str, selectors: &str, declarations: &str) -> String {
-    let mut scoped = String::new();
+/// Appends one rule under the diagram's id: the selectors of `selectors`, each scoped to `id`.
+fn write_scoped(out: &mut String, id: &str, selectors: &str, declarations: fmt::Arguments<'_>) {
     for (index, selector) in selectors.split(',').enumerate() {
         if index > 0 {
-            scoped.push(',');
+            out.push(',');
         }
-        let _ = write!(scoped, "{id} {}", selector.trim());
+        let _ = write!(out, "{id} {}", selector.trim());
     }
-    rule(&scoped, declarations)
+    let _ = write!(out, "{{{declarations}}}");
 }
 
-/// One rule: the selector and its declarations, in braces.
-fn rule(selector: &str, declarations: &str) -> String {
-    format!("{selector}{{{declarations}}}")
-}
-
-/// The custom properties of the colors, declared on the diagram's id. With one set of variables they
-/// are written as they are; with a light and a dark set, the values that differ are
+/// Appends the custom properties of the colors, declared on the diagram's id. With one set of
+/// variables they are written as they are; with a light and a dark set, the values that differ are
 /// `light-dark()` pairs, as the flowchart writes them. In the design mode, the mode's own
 /// properties for the tone of each set take the place of the look's flood.
-fn custom_properties(
-    svg_id: &str,
+fn write_custom_properties(
+    css: &mut String,
+    id: &str,
     theme: ThemeView<'_>,
     globals: &Globals,
     design: Option<Tone>,
-) -> String {
-    let id = format!("#{svg_id}");
-    let block = |tokens: &ThemeTokens, flood: &str, tone: Tone| match design {
-        Some(_) => {
-            let mut declarations = colour_declarations(tokens);
-            // The title of a composite state reads the title color, which the state rules do not.
-            if let Some(colour) = tokens.title_color.text() {
-                let _ = write!(declarations, "--titleColor:{colour};");
+) {
+    let write_block = |out: &mut String, tokens: &ThemeTokens, flood: &str, tone: Tone| {
+        out.push_str(id);
+        out.push('{');
+        write_color_declarations(out, tokens);
+        match design {
+            Some(_) => {
+                // The title of a composite state reads the title color, which the state rules do not.
+                if let Some(color) = tokens.title_color.text() {
+                    let _ = write!(out, "--titleColor:{color};");
+                }
+                out.push_str(design::declarations(tone));
             }
-            declarations.push_str(design::declarations(tone));
-            rule(&id, &declarations)
+            None => {
+                let _ = write!(out, "--floodColor:{flood};");
+            }
         }
-        None => rule(&id, &declarations(tokens, flood)),
+        out.push('}');
     };
     match theme.dark {
-        None => block(theme.light, flood(globals), design.unwrap_or(Tone::Light)),
-        Some(dark) => crate::scheme::both(
-            &block(theme.light, LIGHT_FLOOD, Tone::Light),
-            &block(dark, DARK_FLOOD, Tone::Dark),
+        None => write_block(
+            css,
+            theme.light,
+            flood(globals),
+            design.unwrap_or(Tone::Light),
         ),
+        Some(dark) => {
+            let mut light_block = String::new();
+            write_block(&mut light_block, theme.light, LIGHT_FLOOD, Tone::Light);
+            let mut dark_block = String::new();
+            write_block(&mut dark_block, dark, DARK_FLOOD, Tone::Dark);
+            css.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
     }
 }
 
@@ -673,22 +682,13 @@ fn flood(globals: &Globals) -> &'static str {
     }
 }
 
-/// The declarations of the custom properties of one set of variables.
-fn declarations(tokens: &ThemeTokens, flood: &str) -> String {
-    let mut out = colour_declarations(tokens);
-    out.push_str(&format!("--floodColor:{flood};"));
-    out
-}
-
-/// The declarations of the color tokens of one set of variables.
-fn colour_declarations(tokens: &ThemeTokens) -> String {
-    let mut out = String::new();
+/// Appends the declarations of the color tokens of one set of variables.
+fn write_color_declarations(out: &mut String, tokens: &ThemeTokens) {
     for (name, token) in color_tokens(tokens) {
-        if let Some(colour) = token.text() {
-            out.push_str(&format!("--{name}:{colour};"));
+        if let Some(color) = token.text() {
+            let _ = write!(out, "--{name}:{color};");
         }
     }
-    out
 }
 
 #[cfg(test)]

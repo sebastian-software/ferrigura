@@ -135,7 +135,7 @@ pub fn draw_rect(rect: &RectData) -> Element {
         element.set("ry", number(ry));
     }
     for (name, value) in &rect.attrs {
-        element.set(name, value.as_str());
+        element.set(name.clone(), value.as_str());
     }
     if let Some(class) = non_empty(rect.class.as_deref()) {
         element.set("class", class);

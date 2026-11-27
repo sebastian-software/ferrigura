@@ -8,15 +8,16 @@
 //! color slot (`genColor`, `styles.js` 14-38). The elements carry no color attribute of their own,
 //! as the flowchart's do not (`flowchart/style.rs`).
 
+use std::borrow::Cow;
+use std::fmt::Write as _;
+
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
-
-use std::fmt::Write as _;
 
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
 use crate::flowchart::style::look_defs_for;
-use crate::svg::{css_text_owned, font_faces};
+use crate::svg::{escape_css_tail_in_place, font_faces_capacity, font_faces_css_into};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the class rules, the theme variables that `styles.js` reads, in the order of the
@@ -42,6 +43,9 @@ const LIGHT_FLOOD: &str = "#000000";
 /// The flood of the drop shadows in a dark scheme (`insertLookDefs.ts:30`).
 const DARK_FLOOD: &str = "#FFFFFF";
 
+/// Room for the rules of a class style sheet besides its font faces: about 8 KiB.
+const RULES_CAPACITY: usize = 10 * 1024;
+
 /// The `<style>` element's text of a class diagram with the id `svg_id`. The font of the rules is
 /// the embedded family of the diagram when it has one (`families`), else the theme's `fontFamily`.
 /// In the design mode (`design`), the mode's rules follow the class rules, and the mode's own
@@ -57,39 +61,38 @@ pub fn style_sheet(
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
-    let font = families.first().map_or_else(
-        || {
+    let font: Cow<'_, str> = match families.first() {
+        Some(family) => Cow::Borrowed(&family.css_family),
+        None => Cow::Owned(
             tokens
                 .font_family
                 .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+                .unwrap_or_else(|| "sans-serif".to_owned()),
+        ),
+    };
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
-    let shadow = match tokens.drop_shadow.text() {
-        Some(shadow) if !shadow.is_empty() => shadow.replacen(
+    let shadow: Cow<'_, str> = match tokens.drop_shadow.text() {
+        Some(shadow) if !shadow.is_empty() => Cow::Owned(shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
             1,
-        ),
-        _ => "none".to_owned(),
+        )),
+        _ => Cow::Borrowed("none"),
     };
-    let neo_stroke = if tokens.use_gradient.truthy() {
-        format!("url(#{svg_id}-gradient)")
+    let neo_stroke: Cow<'_, str> = if tokens.use_gradient.truthy() {
+        Cow::Owned(format!("url(#{svg_id}-gradient)"))
     } else {
-        "var(--nodeBorder)".to_owned()
+        Cow::Borrowed("var(--nodeBorder)")
     };
     let look = safe_look(&globals.look);
 
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(svg_id, families)
-    };
-    let mut css = custom_properties(svg_id, theme, globals, design);
-    css.push_str(&format!(
+    let mut css = String::with_capacity(font_faces_capacity(svg_id, families) + RULES_CAPACITY);
+    font_faces_css_into(&mut css, svg_id, families);
+    let rules_start = css.len();
+    write_custom_properties(&mut css, &id, theme, globals, design);
+    let _ = write!(
+        css,
         "{id}{{font-family:{font};font-size:{font_size};fill:var(--textColor);}}\
          @keyframes dash{{to{{stroke-dashoffset:0;}}}}\
          {id} .edge-animation-slow{{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}}\
@@ -114,12 +117,22 @@ pub fn style_sheet(
          {id} [data-look=\"neo\"].node circle .state-start{{fill:#000000;}}\
          {id} [data-look=\"neo\"].icon-shape .icon{{fill:{neo_stroke};filter:{shadow};}}\
          {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:{neo_stroke};filter:{shadow};}}"
-    ));
-    css.push_str(&class_rules(svg_id, look, &font, tokens, globals, design));
+    );
+    write_class_rules(
+        &mut css,
+        &id,
+        look,
+        &font,
+        &stroke_width,
+        tokens,
+        globals,
+        design,
+    );
     if design.is_some() {
-        css.push_str(&design_rules(&id));
+        write_design_rules(&mut css, &id);
     }
-    css_text_owned(format!("{faces}{css}"))
+    escape_css_tail_in_place(&mut css, rules_start);
+    css
 }
 
 /// The `<defs>` of the look (the drop shadows and the gradient), which the class diagram writes after
@@ -134,11 +147,12 @@ pub fn defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals, design: Optio
 /// marks, edge labels and cardinalities, a group frame without the node's shadow, a flat note, and
 /// the colors of the roles. A class's own styles are written on its elements and keep the last
 /// word.
-fn design_rules(id: &str) -> String {
+fn write_design_rules(out: &mut String, id: &str) {
     let node_width = design::NODE_STROKE_WIDTH;
     let edge_width = design::EDGE_STROKE_WIDTH;
     let thick_width = design::THICK_EDGE_STROKE_WIDTH;
-    let mut out = format!(
+    let _ = write!(
+        out,
         "{id} .edge-thickness-normal,{id} .relation{{stroke-width:{edge_width};}}\
 {id} .edge-thickness-thick{{stroke-width:{thick_width};}}\
 {id} .edge-pattern-dashed,{id} .dashed-line{{stroke-dasharray:5 4;}}\
@@ -164,29 +178,29 @@ fn design_rules(id: &str) -> String {
 {node} .label-group text,{node} .members-group .label text,{node} .methods-group .label text{{fill:var(--{text});}}"
         );
     }
-    out
 }
 
 /// The class rules of `styles.js` (lines 42-241) after the common ones, with the palette rules first
 /// (`genColor`).
-fn class_rules(
-    svg_id: &str,
+#[allow(clippy::too_many_arguments)]
+fn write_class_rules(
+    css: &mut String,
+    id: &str,
     look: &str,
     font: &str,
+    stroke_width: &str,
     tokens: &ThemeTokens,
     globals: &Globals,
     design: Option<Tone>,
-) -> String {
-    let id = format!("#{svg_id}");
-    // `${options.strokeWidth}`, written as the value: the theme declares no custom property for it.
-    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
+) {
     // The design mode uses no palette: a class is neutral unless its role says otherwise.
-    let mut css = if design.is_some() {
-        String::new()
-    } else {
-        palette_rules(&id, look, palette(globals, tokens).as_ref())
-    };
-    css.push_str(&format!(
+    if design.is_none()
+        && let Some(palette) = palette(globals, tokens)
+    {
+        write_palette_rules(css, id, look, &palette);
+    }
+    let _ = write!(
+        css,
         "{id} g.classGroup text{{fill:var(--nodeBorder);stroke:none;font-family:{font};font-size:10px;}}\
          {id} g.classGroup text .title{{font-weight:bolder;}}\
          {id} .cluster-label text{{fill:var(--titleColor);}}\
@@ -228,47 +242,49 @@ fn class_rules(
          {id} .edgeLabel[data-look=\"neo\"] p{{background-color:var(--edgeLabelBackground);}}\
          {id} .edgeLabel[data-look=\"neo\"] rect{{opacity:0.5;background-color:var(--edgeLabelBackground);fill:var(--edgeLabelBackground);}}\
          {id} .edgeLabel[data-look=\"neo\"]{{text-align:center;}}"
-    ));
-    css
+    );
 }
 
 /// `genColor` (`styles.js` 14-38): for each color slot of the palette, the outline of a class box
 /// takes the slot's border and fill, and its divider the border. The rules name the look and the
 /// slot in their selectors, and the custom properties of the slot.
-fn palette_rules(id: &str, look: &str, palette: Option<&Palette>) -> String {
-    let Some(palette) = palette else {
-        return String::new();
-    };
+fn write_palette_rules(css: &mut String, id: &str, look: &str, palette: &Palette) {
     let fills = palette.background.len();
-    let mut css = String::new();
+    let mut slot = String::new();
     for index in 0..palette.border.len() {
-        let slot = format!("{id} [data-look=\"{look}\"][data-color-id=\"color-{index}\"].node");
-        let fill = if fills == 0 {
-            String::new()
-        } else {
-            format!("fill:var(--bkgColor{});", index % fills)
-        };
-        css.push_str(&format!(
-            "{slot} .outer-path path{{stroke:var(--borderColor{index});{fill}}}\
-             {slot} .divider path{{stroke:var(--borderColor{index});}}"
-        ));
+        slot.clear();
+        let _ = write!(
+            slot,
+            "{id} [data-look=\"{look}\"][data-color-id=\"color-{index}\"].node"
+        );
+        let _ = write!(
+            css,
+            "{slot} .outer-path path{{stroke:var(--borderColor{index});"
+        );
+        if fills > 0 {
+            let _ = write!(css, "fill:var(--bkgColor{});", index % fills);
+        }
+        let _ = write!(
+            css,
+            "}}{slot} .divider path{{stroke:var(--borderColor{index});}}"
+        );
     }
-    css
 }
 
-/// The custom properties of the colors, declared on the diagram's id. With one set they are
+/// Appends the custom properties of the colors, declared on the diagram's id. With one set they are
 /// written as they are; with a light and a dark set, the values that differ
 /// are `light-dark()` pairs (decision 0011).
-fn custom_properties(
-    svg_id: &str,
+fn write_custom_properties(
+    css: &mut String,
+    id: &str,
     theme: ThemeView<'_>,
     globals: &Globals,
     design: Option<Tone>,
-) -> String {
-    let id = format!("#{svg_id}");
+) {
     if let Some(tone) = design {
-        let block = |tokens: &ThemeTokens, tone: Tone| {
-            let mut out = String::new();
+        let write_block = |out: &mut String, tokens: &ThemeTokens, tone: Tone| {
+            out.push_str(id);
+            out.push('{');
             for (name, token) in color_tokens(tokens) {
                 if let Some(colour) = token.text() {
                     let _ = write!(out, "--{name}:{colour};");
@@ -276,14 +292,19 @@ fn custom_properties(
             }
             out.push_str(design::declarations(tone));
             out.push_str(design::class_declarations(tone));
-            format!("{id}{{{out}}}")
+            out.push('}');
         };
-        return match theme.dark {
-            None => block(theme.light, tone),
+        match theme.dark {
+            None => write_block(css, theme.light, tone),
             Some(dark) => {
-                crate::scheme::both(&block(theme.light, Tone::Light), &block(dark, Tone::Dark))
+                let mut light_block = String::new();
+                write_block(&mut light_block, theme.light, Tone::Light);
+                let mut dark_block = String::new();
+                write_block(&mut dark_block, dark, Tone::Dark);
+                css.push_str(&crate::scheme::both(&light_block, &dark_block));
             }
-        };
+        }
+        return;
     }
     match theme.dark {
         None => {
@@ -292,48 +313,65 @@ fn custom_properties(
             } else {
                 LIGHT_FLOOD
             };
-            format!(
-                "{id}{{{}}}",
-                declarations(theme.light, palette(globals, theme.light), flood)
-            )
+            css.push_str(id);
+            css.push('{');
+            write_declarations(
+                css,
+                theme.light,
+                palette(globals, theme.light).as_ref(),
+                flood,
+            );
+            css.push('}');
         }
-        Some(dark) => crate::scheme::both(
-            &format!(
-                "{id}{{{}}}",
-                declarations(theme.light, palette(globals, theme.light), LIGHT_FLOOD)
-            ),
-            &format!(
-                "{id}{{{}}}",
-                declarations(dark, palette(globals, dark), DARK_FLOOD)
-            ),
-        ),
+        Some(dark) => {
+            let mut light_block = format!("{id}{{");
+            write_declarations(
+                &mut light_block,
+                theme.light,
+                palette(globals, theme.light).as_ref(),
+                LIGHT_FLOOD,
+            );
+            light_block.push('}');
+            let mut dark_block = format!("{id}{{");
+            write_declarations(
+                &mut dark_block,
+                dark,
+                palette(globals, dark).as_ref(),
+                DARK_FLOOD,
+            );
+            dark_block.push('}');
+            css.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
     }
 }
 
-/// The declarations of the custom properties of one set of variables.
-fn declarations(tokens: &ThemeTokens, palette: Option<Palette>, flood: &str) -> String {
-    let mut out = String::new();
+/// Appends the declarations of the custom properties of one set of variables.
+fn write_declarations(
+    out: &mut String,
+    tokens: &ThemeTokens,
+    palette: Option<&Palette>,
+    flood: &str,
+) {
     for (name, token) in color_tokens(tokens) {
-        if let Some(colour) = token.text() {
-            out.push_str(&format!("--{name}:{colour};"));
+        if let Some(color) = token.text() {
+            let _ = write!(out, "--{name}:{color};");
         }
     }
     if let Some(palette) = palette {
-        for (index, colour) in palette.border.iter().enumerate() {
-            out.push_str(&format!("--borderColor{index}:{colour};"));
+        for (index, color) in palette.border.iter().enumerate() {
+            let _ = write!(out, "--borderColor{index}:{color};");
         }
         let fills = tokens.bkg_color_array.texts();
         for index in 0..palette.background.len() {
-            let colour = if fills.is_empty() {
-                tokens.cluster_bkg.text().unwrap_or_default()
+            let color: Cow<'_, str> = if fills.is_empty() {
+                Cow::Owned(tokens.cluster_bkg.text().unwrap_or_default())
             } else {
-                fills[index % fills.len()].clone()
+                Cow::Borrowed(&fills[index % fills.len()])
             };
-            out.push_str(&format!("--bkgColor{index}:{colour};"));
+            let _ = write!(out, "--bkgColor{index}:{color};");
         }
     }
-    out.push_str(&format!("--floodColor:{flood};"));
-    out
+    let _ = write!(out, "--floodColor:{flood};");
 }
 
 /// The look a stylesheet is written for: a bare word, else `classic` (`safeLook`).

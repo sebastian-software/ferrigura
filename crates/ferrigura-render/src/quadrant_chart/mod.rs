@@ -96,7 +96,7 @@ pub fn render(
         config.use_max_width,
     );
     for (name, value) in sizes.iter().filter(|(name, _)| *name == "width") {
-        root.set(name, value.clone());
+        root.set(*name, value.clone());
     }
     root.set("xmlns", SVG_NAMESPACE);
     for (name, value) in sizes.into_iter().filter(|(name, _)| *name != "width") {
@@ -393,17 +393,17 @@ fn text_element(text: &Text) -> Element {
 /// An attribute that is set only when its value is there: d3 removes an attribute given
 /// `undefined`, and a theme that gives no color gives none.
 trait OptionalAttribute {
-    fn with_optional(self, name: &str, value: Option<&str>) -> Self;
-    fn set_optional(&mut self, name: &str, value: Option<&str>);
+    fn with_optional(self, name: &'static str, value: Option<&str>) -> Self;
+    fn set_optional(&mut self, name: &'static str, value: Option<&str>);
 }
 
 impl OptionalAttribute for Element {
-    fn with_optional(mut self, name: &str, value: Option<&str>) -> Self {
+    fn with_optional(mut self, name: &'static str, value: Option<&str>) -> Self {
         self.set_optional(name, value);
         self
     }
 
-    fn set_optional(&mut self, name: &str, value: Option<&str>) {
+    fn set_optional(&mut self, name: &'static str, value: Option<&str>) {
         if let Some(value) = value {
             self.set(name, value);
         }

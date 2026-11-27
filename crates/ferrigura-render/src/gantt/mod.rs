@@ -23,7 +23,7 @@ use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 use crate::RenderError;
 use crate::a11y;
 use crate::context::{Context, ThemeView};
-use crate::svg::{escape, font_faces, number, xlink_declaration};
+use crate::svg::{escape, number, xlink_declaration};
 
 use scale::TimeScale;
 
@@ -105,11 +105,6 @@ pub fn render_with_animation(
             .map(|family: &EmbeddedFamily| family.css_family.clone())
             .unwrap_or_default()
     });
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(input.id, &families)
-    };
     let mut extra = String::new();
     if let Some(css) = chart.regular.css_reference() {
         extra.push_str(&format!("#{} .grid{{font-family:{css};}}", input.id));
@@ -120,7 +115,7 @@ pub fn render_with_animation(
             input.id
         ));
     }
-    let style = style::style_element(input.id, input.theme, &family, &faces, &extra);
+    let style = style::style_element(input.id, input.theme, &family, &families, &extra);
     let title = input.diagram.acc_title.as_str();
     let description = input.diagram.acc_descr.as_str();
     let accessibility = a11y::children(input.id, title, description);
