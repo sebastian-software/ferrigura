@@ -417,10 +417,11 @@ impl Chart<'_> {
             attributes.push_str(&self.colour("stroke", token));
         }
         let class = bar_class(task, section, state_classes(task));
+        let task_dom_id = crate::common::resolve_entity_placeholders(&task.id);
         let svg = format!(
             "<rect id=\"{}-{}\" rx=\"3\" ry=\"3\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" transform-origin=\"{}px {}px\" class=\"{}\"{}></rect>",
             escape(self.id),
-            escape(&task.id),
+            escape(&task_dom_id),
             number(x),
             number(y),
             number(width),
@@ -501,10 +502,11 @@ impl Chart<'_> {
             } else {
                 String::new()
             };
+        let task_dom_id = crate::common::resolve_entity_placeholders(&task.id);
         Ok(format!(
             "<text id=\"{}-{}-text\" font-size=\"{}\" x=\"{}\" y=\"{}\" class=\"{}\"{}{}>{}</text>",
             escape(self.id),
-            escape(&task.id),
+            escape(&task_dom_id),
             number(font),
             number(x),
             number(y),

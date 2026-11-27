@@ -1847,4 +1847,122 @@ fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
     .expect("renders");
     assert!(acc_block_class.contains("fill:#abc"), "{acc_block_class}");
     assert!(!acc_block_class.contains("&amp;abc;"), "{acc_block_class}");
+
+    // Flowchart nodes named `title` or `accTitle` are not mistaken for plain-text directives,
+    // so a `style` statement after `;` on the same line keeps its `#hex` color intact.
+    let title_node_style = ferrigura::render(
+        "flowchart LR\n  title --> B; style B fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(title_node_style.contains("fill:#abc"), "{title_node_style}");
+    assert!(
+        !title_node_style.contains("&amp;abc;"),
+        "{title_node_style}"
+    );
+    let acctitle_node_style = ferrigura::render(
+        "flowchart LR\n  accTitle --> B; style B fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        acctitle_node_style.contains("fill:#abc"),
+        "{acctitle_node_style}"
+    );
+    assert!(
+        !acctitle_node_style.contains("&amp;abc;"),
+        "{acctitle_node_style}"
+    );
+
+    // Literal quotes in single-line relation labels in class and state diagrams do not leak into
+    // following `style` lines.
+    let class_rel_quote = ferrigura::render(
+        "classDiagram\n  A --> B : Width (\")\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(class_rel_quote.contains("fill:#abc"), "{class_rel_quote}");
+    assert!(!class_rel_quote.contains("&amp;abc;"), "{class_rel_quote}");
+    let state_rel_quote = ferrigura::render(
+        "stateDiagram-v2\n  A --> B : Width (\")\n  style A fill:#abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(state_rel_quote.contains("fill:#abc"), "{state_rel_quote}");
+    assert!(!state_rel_quote.contains("&amp;abc;"), "{state_rel_quote}");
+
+    // Kanban card DOM IDs resolve Mermaid entities consistently with ticket fragment links.
+    let kanban_cfg = Value::from(serde_json::json!({
+        "kanban": { "ticketBaseUrl": "#graph-#TICKET#" }
+    }));
+    let kanban_entity = ferrigura::Renderer::new(&kanban_cfg)
+        .render_with(
+            "kanban\n  todo[Todo]\n    MC#45;42[Card]@{ ticket: \"MC#45;42\" }\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        kanban_entity.contains("id=\"graph-MC-42\""),
+        "{kanban_entity}"
+    );
+    assert!(
+        kanban_entity.contains("xlink:href=\"#graph-MC-42\""),
+        "{kanban_entity}"
+    );
+    assert!(!kanban_entity.contains("ﬂ°"), "{kanban_entity}");
+
+    // Gantt task bar and label DOM IDs resolve Mermaid entities consistently with fragment links.
+    let gantt_entity = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "gantt\n  dateFormat YYYY-MM-DD\n  section S\n  Task : one#45;two, 2024-01-01, 1d\n  click one#45;two href \"#graph-one#45;two\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        gantt_entity.contains("id=\"graph-one-two\""),
+        "{gantt_entity}"
+    );
+    assert!(
+        gantt_entity.contains("id=\"graph-one-two-text\""),
+        "{gantt_entity}"
+    );
+    assert!(
+        gantt_entity.contains("xlink:href=\"#graph-one-two\""),
+        "{gantt_entity}"
+    );
+    assert!(!gantt_entity.contains("ﬂ°"), "{gantt_entity}");
+
+    // Entity authority terminator (`#47;`), entity-spelled IPv4 host (`192#46;168.1.1`), host entity
+    // with double-encoded query (`?q=A%252526B`), and caret entity in path (`#94;`).
+    let entity_url_cases = [
+        (
+            "https://example.org#47;docs#63;b",
+            "https://example.org/docs%3Fb",
+        ),
+        ("https://192#46;168.1.1/x", "https://192.168.1.1/x"),
+        (
+            "https://example#46;org/?q=A%252526B",
+            "https://example.org/?q=A%26B",
+        ),
+        ("https://example.org/a#94;b", "https://example.org/a%5Eb"),
+    ];
+    for (raw, expected) in entity_url_cases {
+        let svg = ferrigura::render(
+            &format!("classDiagram\n  class A\n  click A href \"{raw}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        let doc = roxmltree::Document::parse(&svg).expect("well-formed SVG XML");
+        let href = doc
+            .descendants()
+            .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+            .expect("href");
+        assert_eq!(href, expected, "raw={raw}");
+    }
 }

@@ -31,10 +31,10 @@ index c6cb9d5..5e20321 100644
  import { ZERO_WIDTH_SPACE, parseFontSize } from '../../utils.js';
  import common, {
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..ec64535 100644
+index 48ac4a6..09df60a 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
-@@ -244,6 +244,419 @@ export function interpolateToCurve(
+@@ -244,6 +244,502 @@ export function interpolateToCurve(
   * @param config - Configuration passed to MermaidJS
   * @returns The formatted URL or `undefined`.
   */
@@ -107,6 +107,7 @@ index 48ac4a6..ec64535 100644
 +          byte === 0x3c ||
 +          byte === 0x3e ||
 +          byte === 0x3f ||
++          byte === 0x5e ||
 +          byte === 0x60 ||
 +          byte === 0x7b ||
 +          byte === 0x7d;
@@ -381,66 +382,148 @@ index 48ac4a6..ec64535 100644
 +  return { text: trimmed, changed: false };
 +};
 +
++const BR_INVALID_PROTOCOL_RE = /^([^\w]*)(javascript|data|vbscript)/im;
++const BR_HTML_ENTITIES_RE = /&#(\w+)(^\w|;)?/g;
++const BR_HTML_CTRL_ENTITY_RE = /&(newline|tab);/gi;
++const BR_CTRL_CHARS_RE = /[\u0000-\u001F\u007F-\u009F\u2000-\u200D\uFEFF]/gim;
++const BR_URL_SCHEME_RE = /^.+(:|&colon;)/gim;
++const BR_WHITESPACE_ESCAPE_RE = /(\\|%5[cC])((%(6[eE]|72|74))|[nrt])/g;
++
++const decodeSanitizeUrlOnly = (raw: string): string => {
++  const decodeUriSafe = (uri: string): string => {
++    try {
++      return decodeURIComponent(uri);
++    } catch {
++      return uri;
++    }
++  };
++  let decodedUrl = decodeUriSafe(raw.trim());
++  let charsToDecode: RegExpMatchArray | null;
++  do {
++    decodedUrl = decodedUrl
++      .replace(BR_CTRL_CHARS_RE, '')
++      .replace(BR_HTML_ENTITIES_RE, (_m, dec: string) => String.fromCharCode(Number(dec)))
++      .replace(BR_HTML_CTRL_ENTITY_RE, '')
++      .replace(BR_CTRL_CHARS_RE, '')
++      .replace(BR_WHITESPACE_ESCAPE_RE, '')
++      .trim();
++    decodedUrl = decodeUriSafe(decodedUrl);
++    charsToDecode =
++      decodedUrl.match(BR_CTRL_CHARS_RE) ||
++      decodedUrl.match(BR_HTML_ENTITIES_RE) ||
++      decodedUrl.match(BR_HTML_CTRL_ENTITY_RE) ||
++      decodedUrl.match(BR_WHITESPACE_ESCAPE_RE);
++  } while (charsToDecode && charsToDecode.length > 0);
++  return decodedUrl;
++};
++
++const resolveHttpHostTokens = (url: string, prefix: string, decodedValues: string[]): string => {
++  const schemeMatch = /^https?:/i.exec(url);
++  if (!schemeMatch) {
++    return url;
++  }
++  let authorityStart = schemeMatch[0].length;
++  while (authorityStart < url.length && url[authorityStart] === '/') {
++    authorityStart += 1;
++  }
++  const rest = url.slice(authorityStart);
++  const endOffset = rest.search(/[/?#]/);
++  const authorityEnd = endOffset === -1 ? url.length : authorityStart + endOffset;
++  const authority = url.slice(authorityStart, authorityEnd);
++  const atIndex = authority.lastIndexOf('@');
++  const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
++  const hostPort = url.slice(hostStart, authorityEnd);
++  if (!hostPort.includes(prefix)) {
++    return url;
++  }
++  let out = url.slice(0, hostStart);
++  let cursor = 0;
++  while (cursor < hostPort.length) {
++    const pos = hostPort.indexOf(prefix, cursor);
++    if (pos === -1) {
++      out += hostPort.slice(cursor);
++      break;
++    }
++    out += hostPort.slice(cursor, pos);
++    const matched = matchTokenAt(hostPort, pos, prefix, decodedValues);
++    if (matched) {
++      const [end, value] = matched;
++      if (/[\\/?#]/.test(value)) {
++        out += value.replace(/\\/g, '/');
++        out += hostPort.slice(end);
++        break;
++      }
++      out += value;
++      cursor = end;
++      continue;
++    }
++    out += prefix;
++    cursor = pos + prefix.length;
++  }
++  return out + url.slice(authorityEnd);
++};
++
 +export const sanitizeHttpUrlWithEntities = (rawUrl: string): string => {
-+  if (!rawUrl || (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß'))) {
++  if (!rawUrl) {
++    return 'about:blank';
++  }
++  if (!rawUrl.includes('ﬂ°') && !rawUrl.includes('¶ß')) {
 +    const sanitized = sanitizeUrl(rawUrl);
 +    if (/^https?:/i.test(sanitized) && !URL.canParse(sanitized)) {
 +      return 'about:blank';
 +    }
 +    return reencodeDecodedPlaceholders(sanitized);
 +  }
-+  const pctDecoded = rawUrl.replace(/%([0-9A-Fa-f]{2})/g, (_m, hex: string) =>
-+    String.fromCharCode(Number.parseInt(hex, 16))
-+  );
-+  const probe = sanitizeUrl(rawUrl);
-+  const prefix = pickTokenPrefix(rawUrl, pctDecoded, probe);
++  const probe = decodeSanitizeUrlOnly(rawUrl);
++  const prefix = pickTokenPrefix(rawUrl, probe);
 +  const rawValues: string[] = [];
 +  const decodedValues: string[] = [];
 +  const tokenized = tokenizeAllPlaceholders(rawUrl, prefix, rawValues, decodedValues);
-+  let sanitized = sanitizeUrl(tokenized);
-+  const trimmed = sanitized.trimStart();
-+  const schemeResolved = resolveDecodedHttpSchemeTokens(trimmed, prefix, decodedValues);
-+  let needsResanitize = schemeResolved.changed;
-+  let candidate = schemeResolved.changed ? schemeResolved.text : sanitized;
-+
-+  if (/^https?:/i.test(candidate)) {
-+    const schemeMatch = /^https?:/i.exec(candidate);
-+    if (schemeMatch) {
-+      let authorityStart = schemeMatch[0].length;
-+      while (authorityStart < candidate.length && candidate[authorityStart] === '/') {
-+        authorityStart += 1;
++  const decoded = decodeSanitizeUrlOnly(tokenized);
++  if (!decoded) {
++    return 'about:blank';
++  }
++  const finalizeRaw = (s: string): string => {
++    const safe = reencodeDecodedPlaceholders(s);
++    return rawValues.length === 0 ? safe : restoreRawTokens(safe, prefix, rawValues);
++  };
++  if (decoded[0] === '.' || decoded[0] === '/') {
++    return finalizeRaw(decoded);
++  }
++  const trimmed = decoded.trimStart();
++  const effectiveTrimmed = resolveDecodedHttpSchemeTokens(trimmed, prefix, decodedValues).text;
++  const urlSchemeParseResults = effectiveTrimmed.match(BR_URL_SCHEME_RE);
++  if (!urlSchemeParseResults) {
++    return finalizeRaw(decoded);
++  }
++  const urlScheme = urlSchemeParseResults[0].toLowerCase().trim();
++  if (BR_INVALID_PROTOCOL_RE.test(urlScheme)) {
++    return 'about:blank';
++  }
++  const backSanitized = effectiveTrimmed.replace(/\\/g, '/');
++  if (urlScheme === 'mailto:' || urlScheme.includes('://')) {
++    if (/^https?:/i.test(backSanitized)) {
++      const resolved = resolveHttpHostTokens(backSanitized, prefix, decodedValues);
++      if (!URL.canParse(resolved)) {
++        return 'about:blank';
 +      }
-+      const rest = candidate.slice(authorityStart);
-+      const endOffset = rest.search(/[/?#]/);
-+      const authorityEnd = endOffset === -1 ? candidate.length : authorityStart + endOffset;
-+      const authority = candidate.slice(authorityStart, authorityEnd);
-+      const atIndex = authority.lastIndexOf('@');
-+      const hostStart = atIndex === -1 ? authorityStart : authorityStart + atIndex + 1;
-+      const hostPort = candidate.slice(hostStart, authorityEnd);
-+      if (hostPort.includes(prefix)) {
-+        const resolvedHost = restoreRawTokens(hostPort, prefix, decodedValues);
-+        candidate = candidate.slice(0, hostStart) + resolvedHost + candidate.slice(authorityEnd);
-+        needsResanitize = true;
-+      }
++      const safe = reencodeDecodedPlaceholders(resolved);
++      return restoreHttpTokensByComponent(safe, prefix, decodedValues);
 +    }
-+    if (needsResanitize) {
-+      candidate = sanitizeUrl(candidate);
-+    }
-+    if (/^https?:/i.test(candidate) && !URL.canParse(candidate)) {
++    return finalizeRaw(backSanitized);
++  }
++  if (urlScheme === 'http:' || urlScheme === 'https:') {
++    const resolved = resolveHttpHostTokens(backSanitized, prefix, decodedValues);
++    if (!URL.canParse(resolved)) {
 +      return 'about:blank';
 +    }
-+    const safe = reencodeDecodedPlaceholders(candidate);
-+    if (decodedValues.length === 0 || !/^https?:/i.test(safe)) {
-+      return safe;
-+    }
++    const parsed = new URL(resolved);
++    parsed.protocol = parsed.protocol.toLowerCase();
++    parsed.hostname = parsed.hostname.toLowerCase();
++    const safe = reencodeDecodedPlaceholders(parsed.toString());
 +    return restoreHttpTokensByComponent(safe, prefix, decodedValues);
 +  }
-+
-+  const safe = reencodeDecodedPlaceholders(sanitized);
-+  if (rawValues.length === 0) {
-+    return safe;
-+  }
-+  return restoreRawTokens(safe, prefix, rawValues);
++  return finalizeRaw(backSanitized);
 +};
 +
 +const startsWithFragmentMarker = (url: string): boolean => {
@@ -454,7 +537,7 @@ index 48ac4a6..ec64535 100644
  export function formatUrl(linkStr: string, config: MermaidConfig): string | undefined {
    const url = linkStr.trim();
  
-@@ -252,7 +665,10 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
+@@ -252,7 +748,10 @@ export function formatUrl(linkStr: string, config: MermaidConfig): string | unde
    }
  
    if (config.securityLevel !== 'loose') {
@@ -466,7 +549,7 @@ index 48ac4a6..ec64535 100644
    }
  
    return url;
-@@ -895,23 +1311,362 @@ export default {
+@@ -895,23 +1394,397 @@ export default {
  export const encodeEntities = function (text: string): string {
    let txt = text;
  
@@ -476,6 +559,15 @@ index 48ac4a6..ec64535 100644
 -  txt = txt.replace(/classDef.*:\S*#.*;/g, function (s): string {
 -    return s.substring(0, s.length - 1);
 -  });
+-
+-  txt = txt.replace(/#\w+;/g, function (s) {
+-    const innerTxt = s.substring(1, s.length - 1);
+-
+-    const isInt = /^\+?\d+$/.test(innerTxt);
+-    if (isInt) {
+-      return 'ﬂ°°' + innerTxt + '¶ß';
+-    } else {
+-      return 'ﬂ°' + innerTxt + '¶ß';
 +  const allowsClassDefSemicolonCss = (s: string): boolean => {
 +    for (const line of s.split(/[\n\r\u2028\u2029]/)) {
 +      const trimmed = line.trimStart();
@@ -483,6 +575,17 @@ index 48ac4a6..ec64535 100644
 +        continue;
 +      }
 +      return /^(?:treemap|stateDiagram)(?:$|\s|-)/.test(trimmed);
+     }
+-  });
++    return false;
++  };
++  const isColonLabelDialect = (s: string): boolean => {
++    for (const line of s.split(/[\n\r\u2028\u2029]/)) {
++      const trimmed = line.trimStart();
++      if (!trimmed || trimmed.startsWith('%%')) {
++        continue;
++      }
++      return /^(?:classDiagram|stateDiagram)(?:$|\s|-)/.test(trimmed);
 +    }
 +    return false;
 +  };
@@ -500,28 +603,35 @@ index 48ac4a6..ec64535 100644
 +    if (s.startsWith('%%', at)) {
 +      return true;
 +    }
-+    for (const kw of ['accTitle', 'accDescr', 'title']) {
++    for (const kw of ['accTitle', 'accDescr']) {
 +      if (s.startsWith(kw, at)) {
-+        const next = s[at + kw.length];
-+        if (next === ':' || (next !== undefined && /\s/.test(next))) {
++        let k = at + kw.length;
++        while (k < s.length && /[^\S\n\r\u2028\u2029]/.test(s[k])) {
++          k++;
++        }
++        if (s[k] === ':') {
 +          return true;
 +        }
 +      }
 +    }
 +    return false;
 +  };
++  const startsStyleOrClassDef = (s: string, at: number): boolean => {
++    for (const kw of ['style', 'classDef']) {
++      if (s.startsWith(kw, at) && at + kw.length < s.length && /\s/.test(s[at + kw.length])) {
++        return true;
++      }
++    }
++    return false;
++  };
++  const isSingleColon = (s: string, at: number): boolean =>
++    (at === 0 || s[at - 1] !== ':') && s[at + 1] !== ':';
 +  const isAsciiAlnum = (c: string): boolean =>
 +    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
- 
--  txt = txt.replace(/#\w+;/g, function (s) {
--    const innerTxt = s.substring(1, s.length - 1);
++
 +  const allowClassDefCssSemi = allowsClassDefSemicolonCss(txt);
- 
--    const isInt = /^\+?\d+$/.test(innerTxt);
--    if (isInt) {
--      return 'ﬂ°°' + innerTxt + '¶ß';
--    } else {
--      return 'ﬂ°' + innerTxt + '¶ß';
++  const colonLabelDialect = isColonLabelDialect(txt);
++
 +  const isHorizontalWsToEol = (s: string, start: number): boolean => {
 +    for (let k = start; k < s.length; k++) {
 +      const c = s[k];
@@ -531,8 +641,7 @@ index 48ac4a6..ec64535 100644
 +      if (!/\s/.test(c)) {
 +        return false;
 +      }
-     }
--  });
++    }
 +    return true;
 +  };
 +  const startsWithCssProp = (s: string, start: number): boolean => {
@@ -584,6 +693,7 @@ index 48ac4a6..ec64535 100644
 +      let atLineStart = true;
 +      let stmtStart = true;
 +      let inTarget = false;
++      let inStyleOrClassDef = false;
 +      let seenColon = false;
 +      let seenColonHash = false;
 +      let prevWasAlnum = false;
@@ -594,6 +704,7 @@ index 48ac4a6..ec64535 100644
 +          if (c === '}') {
 +            inAccDescrBlock = false;
 +            stmtStart = true;
++            inStyleOrClassDef = false;
 +          }
 +          prevWasAlnum = false;
 +          continue;
@@ -643,6 +754,7 @@ index 48ac4a6..ec64535 100644
 +          }
 +          stmtStart = true;
 +          inTarget = false;
++          inStyleOrClassDef = false;
 +          seenColon = false;
 +          seenColonHash = false;
 +          continue;
@@ -652,6 +764,7 @@ index 48ac4a6..ec64535 100644
 +            continue;
 +          }
 +          stmtStart = false;
++          inStyleOrClassDef = startsStyleOrClassDef(line, i);
 +          if (
 +            line.startsWith(word, i) &&
 +            i + word.length < line.length &&
@@ -660,6 +773,9 @@ index 48ac4a6..ec64535 100644
 +            inTarget = true;
 +          }
 +          continue;
++        }
++        if (colonLabelDialect && !inStyleOrClassDef && c === ':' && isSingleColon(line, i)) {
++          break;
 +        }
 +        if (inTarget) {
 +          if (c === ':') {
@@ -829,8 +945,12 @@ index 48ac4a6..ec64535 100644
 +      if (/\s/.test(ch)) {
 +        continue;
 +      }
-+      const rest = txt.slice(i);
-+      stmtKind = /^(?:style|classDef)\s/.test(rest) ? 1 : 2;
++      stmtKind = startsStyleOrClassDef(txt, i) ? 1 : 2;
++    }
++    if (colonLabelDialect && stmtKind === 2 && ch === ':' && isSingleColon(txt, i)) {
++      inPlainLine = true;
++      prevWasAlnum = false;
++      continue;
 +    }
 +    if (stmtKind === 1) {
 +      if (ch === ':') {

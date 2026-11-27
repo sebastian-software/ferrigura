@@ -749,7 +749,10 @@ fn percent_encode_component(out: &mut String, decoded: &str, component: UrlEncod
             UrlEncodeComponent::Path => {
                 byte <= 0x20
                     || byte >= 0x7F
-                    || matches!(byte, b'"' | b'#' | b'<' | b'>' | b'?' | b'`' | b'{' | b'}')
+                    || matches!(
+                        byte,
+                        b'"' | b'#' | b'<' | b'>' | b'?' | b'^' | b'`' | b'{' | b'}'
+                    )
             }
             UrlEncodeComponent::SpecialQuery => {
                 byte <= 0x20 || byte >= 0x7F || matches!(byte, b'"' | b'#' | b'\'' | b'<' | b'>')
@@ -1112,6 +1115,10 @@ fn resolve_decoded_http_scheme_tokens<'a>(
 
 /// Resolves any tokenized Mermaid entity placeholders inside the decoded `host[:port]` authority
 /// slice of an `http:` / `https:` URL before WHATWG authority validation and IDNA parsing.
+/// Stops substituting as soon as a token expands to an authority-ending delimiter (`/`, `\`, `?`,
+/// or `#`), turning `\` into `/` and leaving later tokens intact so
+/// `restore_http_tokens_by_component` reclassifies them into their new path, query, or fragment
+/// component.
 fn resolve_http_host_tokens<'a>(
     url: &'a str,
     tokens: Option<&UrlEntityTokens>,
@@ -1142,13 +1149,35 @@ fn resolve_http_host_tokens<'a>(
         .rfind('@')
         .map_or(authority_start, |at| authority_start + at + 1);
     let host_port = &url[host_start..authority_end];
-    if !host_port.contains(tokens.prefix.as_str()) {
+    let prefix = tokens.prefix.as_str();
+    if !host_port.contains(prefix) {
         return std::borrow::Cow::Borrowed(url);
     }
-    let resolved_host = substitute_token_values(host_port, &tokens.prefix, &tokens.decoded);
     let mut out = String::with_capacity(url.len());
     out.push_str(&url[..host_start]);
-    out.push_str(&resolved_host);
+    let mut cursor = 0;
+    while cursor < host_port.len() {
+        let Some(rel) = host_port[cursor..].find(prefix) else {
+            out.push_str(&host_port[cursor..]);
+            break;
+        };
+        let pos = cursor + rel;
+        out.push_str(&host_port[cursor..pos]);
+        if let Some((end, value)) = match_token_at(host_port, pos, prefix, &tokens.decoded) {
+            if value.contains(['/', '\\', '?', '#']) {
+                for ch in value.chars() {
+                    out.push(if ch == '\\' { '/' } else { ch });
+                }
+                out.push_str(&host_port[end..]);
+                break;
+            }
+            out.push_str(value);
+            cursor = end;
+            continue;
+        }
+        out.push_str(prefix);
+        cursor = pos + prefix.len();
+    }
     out.push_str(&url[authority_end..]);
     std::borrow::Cow::Owned(out)
 }
@@ -2532,6 +2561,31 @@ mod tests {
         assert_eq!(
             sanitize_url("https://example.org%2Fdocsﬂ°°63¶ßb"),
             "https://example.org/docs%3Fb"
+        );
+        // Entity-encoded authority terminators (`#47;` / `#92;`) stop host-token substitution so
+        // following entities like `#63;` are classified and percent-encoded in the path.
+        assert_eq!(
+            sanitize_url("https://example.orgﬂ°°47¶ßdocsﬂ°°63¶ßb"),
+            "https://example.org/docs%3Fb"
+        );
+        assert_eq!(
+            sanitize_url("https://example.orgﬂ°°92¶ßdocsﬂ°°63¶ßb"),
+            "https://example.org/docs%3Fb"
+        );
+        // Entity-encoded dots in IPv4 hosts resolve before WHATWG URL parsing, and resolving a
+        // host entity never triggers a second percent-decoding pass on the query string.
+        assert_eq!(
+            sanitize_url("https://192ﬂ°°46¶ß168.1.1/x"),
+            "https://192.168.1.1/x"
+        );
+        assert_eq!(
+            sanitize_url("https://exampleﬂ°°46¶ßorg/?q=A%252526B"),
+            "https://example.org/?q=A%26B"
+        );
+        // Carets (`^`) restored into HTTP paths are percent-encoded per WHATWG URL path rules.
+        assert_eq!(
+            sanitize_url("https://example.org/aﬂ°°94¶ßb"),
+            "https://example.org/a%5Eb"
         );
         // Same-document fragment links preserve their percent-encoded spelling in `format_url`
         // (for both literal `#` and entity `#35;`), never misread colons like `#database:overview`

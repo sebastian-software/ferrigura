@@ -147,9 +147,13 @@ pub fn render(
             let priority: Option<&Value> = item.priority.as_ref();
             let link = ticket_link(item, &input.section.kanban.ticket_base_url);
             links |= link.is_some();
+            let dom_id = format!(
+                "{id}-{}",
+                crate::common::resolve_entity_placeholders(&item.id)
+            );
             let shape = kanban_item_with_security(
                 &KanbanItem {
-                    dom_id: &format!("{id}-{}", item.id),
+                    dom_id: &dom_id,
                     title: &labels.title,
                     ticket: &labels.ticket,
                     assigned: &labels.assigned,
@@ -191,8 +195,12 @@ pub fn render(
                 label: &slot.label,
                 text: &palette.text_color,
             });
+        let section_dom_id = format!(
+            "{id}-{}",
+            crate::common::resolve_entity_placeholders(&section.node.id)
+        );
         let shape = kanban_section(&KanbanSection {
-            dom_id: &format!("{id}-{}", section.node.id),
+            dom_id: &section_dom_id,
             number: section.number,
             look: section.node.look.as_deref().unwrap_or_default(),
             x: section.x,
