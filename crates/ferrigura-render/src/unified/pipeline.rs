@@ -752,6 +752,37 @@ impl ResolvedDomIds {
     /// or a collision with a renderer-owned SVG ID emitted by this render.
     fn resolve(data: &LayoutData, svg_id: &str, defs: ReservedDefs) -> Option<Self> {
         let canonical_svg_id = canonical_xml_attr(svg_id);
+        let has_literal_collision = || {
+            let mut local_seen: HashSet<&str> =
+                HashSet::with_capacity(data.nodes.len() + data.edges.len());
+            for node in &data.nodes {
+                if !local_seen.insert(node.dom_id.as_str()) {
+                    return true;
+                }
+            }
+            for edge in &data.edges {
+                match edge.path_id.as_deref() {
+                    None => {
+                        if !local_seen.insert(edge.id.as_str()) {
+                            return true;
+                        }
+                    }
+                    Some(path) => {
+                        if let Some(local) = path
+                            .strip_prefix(svg_id)
+                            .and_then(|rest| rest.strip_prefix('-'))
+                        {
+                            if !local_seen.insert(local) {
+                                return true;
+                            }
+                        } else if !local_seen.insert(path) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        };
         let needs_pass = canonical_svg_id != svg_id
             || data.nodes.iter().any(|node| {
                 needs_id_normalization(&node.dom_id)
@@ -764,7 +795,8 @@ impl ResolvedDomIds {
                         needs_id_normalization(path)
                             || is_renderer_owned_id(path, &canonical_svg_id, defs)
                     })
-            });
+            })
+            || has_literal_collision();
         if !needs_pass {
             return None;
         }
@@ -813,12 +845,14 @@ impl ResolvedDomIds {
         // Pass 1: claim unchanged literal IDs first so an earlier decoded/normalized ID cannot
         // steal an existing element's ID and break external selectors or links.
         let mut seen: HashSet<String> = HashSet::with_capacity(reserved.len());
+        let mut element_owned: HashSet<String> = HashSet::with_capacity(reserved.len());
         let mut node_claimed = vec![false; node_plans.len()];
         for (index, (_, _, canonical_full, unchanged)) in node_plans.iter().enumerate() {
             if *unchanged
                 && !is_renderer_owned_id(canonical_full, &canonical_svg_id, defs)
                 && seen.insert(canonical_full.clone())
             {
+                element_owned.insert(canonical_full.clone());
                 node_claimed[index] = true;
             }
         }
@@ -828,6 +862,7 @@ impl ResolvedDomIds {
                 && !is_renderer_owned_id(canonical_path, &canonical_svg_id, defs)
                 && seen.insert(canonical_path.clone())
             {
+                element_owned.insert(canonical_path.clone());
                 edge_claimed[index] = true;
             }
         }
@@ -848,22 +883,29 @@ impl ResolvedDomIds {
             let collided = is_renderer_owned_id(&canonical_full, &canonical_svg_id, defs)
                 || !seen.insert(canonical_full.clone());
             let final_local = if !collided {
+                element_owned.insert(canonical_full.clone());
                 canonical_local
             } else {
-                let suffix = next_suffix.entry(canonical_full).or_insert(1);
+                let suffix = next_suffix.entry(canonical_full.clone()).or_insert(1);
                 loop {
                     let candidate_local = format!("{canonical_local}-{}", *suffix);
                     let candidate_full = format!("{canonical_svg_id}-{candidate_local}");
                     *suffix += 1;
                     if !is_renderer_owned_id(&candidate_full, &canonical_svg_id, defs)
                         && !reserved.contains(&candidate_full)
-                        && seen.insert(candidate_full)
+                        && seen.insert(candidate_full.clone())
                     {
+                        element_owned.insert(candidate_full);
                         break candidate_local;
                     }
                 }
             };
-            if final_local != node.dom_id || canonical_svg_id != svg_id {
+            let normalized_changed =
+                had_placeholder || final_local != node.dom_id || canonical_svg_id != svg_id;
+            let raw_distinct_from_owner = had_placeholder
+                || format!("{canonical_svg_id}-{final_local}") == canonical_full
+                || !element_owned.contains(&canonical_full);
+            if normalized_changed && raw_distinct_from_owner {
                 let target_id = format!("{canonical_svg_id}-{final_local}");
                 remapped_fragments
                     .entry(format!("#{svg_id}-{}", node.dom_id))
@@ -903,7 +945,8 @@ impl ResolvedDomIds {
             let collided = is_renderer_owned_id(&canonical_path, &canonical_svg_id, defs)
                 || !seen.insert(canonical_path.clone());
             let final_path = if !collided {
-                canonical_path
+                element_owned.insert(canonical_path.clone());
+                canonical_path.clone()
             } else {
                 let suffix = next_suffix.entry(canonical_path.clone()).or_insert(1);
                 loop {
@@ -913,11 +956,15 @@ impl ResolvedDomIds {
                         && !reserved.contains(&candidate)
                         && seen.insert(candidate.clone())
                     {
+                        element_owned.insert(candidate.clone());
                         break candidate;
                     }
                 }
             };
-            if final_path != raw_path {
+            let raw_distinct_from_owner = path_had_placeholder
+                || canonical_path != raw_path
+                || !element_owned.contains(&canonical_path);
+            if final_path != raw_path && raw_distinct_from_owner {
                 remapped_fragments
                     .entry(format!("#{raw_path}"))
                     .or_insert_with(|| format_fragment_url(&final_path));

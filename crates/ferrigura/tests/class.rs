@@ -792,6 +792,63 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .expect("href");
     assert_eq!(http_href, "https://example.org/Chapter%20One?q=A%26B");
 
+    // Hostname entities (such as `#46;` for `.`) resolve before WHATWG/IDNA host normalization
+    // instead of turning into Punycode (`xn--...`), while invalid hostname entities fail closed.
+    let host_entity = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class A\n  class B\n  click A href \"https://example#46;org/Chapter#32;One\"\n  click B href \"https://example#32;org/docs\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let host_doc = roxmltree::Document::parse(&host_entity).expect("well-formed SVG XML");
+    let host_hrefs: Vec<&str> = host_doc
+        .descendants()
+        .filter_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .collect();
+    assert_eq!(
+        host_hrefs,
+        vec!["https://example.org/Chapter%20One", "about:blank"]
+    );
+
+    // When a subgraph `foo` keeps `graph-foo` and a colliding edge `foo@-->` is disambiguated to
+    // `graph-foo-1`, fragment links to `#graph-foo` remain on the subgraph (with or without an
+    // unrelated `drop-shadow` edge).
+    for extra_edge in ["", "\n  A drop-shadow@--> B"] {
+        let source = format!(
+            "flowchart LR\n  subgraph foo\n    A\n  end\n  A foo@--> B{extra_edge}\n  click B \"#graph-foo\"\n"
+        );
+        let sub_svg = ferrigura::Renderer::new(&Value::empty_object())
+            .render_with(
+                &source,
+                &ferrigura::RenderOptions {
+                    id: Some("graph".to_owned()),
+                    ..ferrigura::RenderOptions::default()
+                },
+            )
+            .expect("renders");
+        let sub_doc = roxmltree::Document::parse(&sub_svg).expect("well-formed SVG XML");
+        assert!(
+            sub_doc
+                .descendants()
+                .any(|node| node.has_tag_name("g") && node.attribute("id") == Some("graph-foo")),
+            "{sub_svg}"
+        );
+        assert!(
+            sub_doc.descendants().any(
+                |node| node.has_tag_name("path") && node.attribute("id") == Some("graph-foo-1")
+            ),
+            "{sub_svg}"
+        );
+        let sub_href = sub_doc
+            .descendants()
+            .find_map(|node| node.attribute(("http://www.w3.org/1999/xlink", "href")))
+            .expect("href");
+        assert_eq!(sub_href, "#graph-foo");
+    }
+
     // When both `A%20B#45;C` and `A B#45;C` exist in loose mode, `#graph-classId-A%20B#45;C`
     // resolves to `A B-C` (decoded target first), while `%2520` targets `A%20B-C`.
     let disambig_pct = ferrigura::Renderer::new(&loose_config)

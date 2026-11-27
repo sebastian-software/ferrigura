@@ -658,6 +658,38 @@ pub fn sanitize_url(url: &str) -> String {
     back_sanitized
 }
 
+/// Resolves Mermaid entity placeholders (`ﬂ°°<digits>¶ß` / `ﬂ°<name>¶ß`) inside the authority
+/// (host/userinfo/port) portion of an `http:` or `https:` URL before WHATWG host/IDNA
+/// normalization, while leaving path, query, and fragment escapes untouched.
+fn resolve_http_authority_entities(candidate: &str) -> std::borrow::Cow<'_, str> {
+    if !candidate.contains("ﬂ°") {
+        return std::borrow::Cow::Borrowed(candidate);
+    }
+    let Some(colon) = candidate.find(':') else {
+        return std::borrow::Cow::Borrowed(candidate);
+    };
+    let after_colon = &candidate[colon + 1..];
+    let slashes = after_colon.bytes().take_while(|&b| b == b'/').count();
+    let authority_start = colon + 1 + slashes;
+    let authority_end = candidate[authority_start..]
+        .find(['/', '?', '#'])
+        .map_or(candidate.len(), |offset| authority_start + offset);
+    let authority = &candidate[authority_start..authority_end];
+    if !authority.contains("ﬂ°") {
+        return std::borrow::Cow::Borrowed(candidate);
+    }
+    let escaped = authority
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
+    let resolved = crate::sanitize::decode_attribute_references(&crate::decode_entities(&escaped));
+    let mut out = String::with_capacity(candidate.len());
+    out.push_str(&candidate[..authority_start]);
+    out.push_str(&resolved);
+    out.push_str(&candidate[authority_end..]);
+    std::borrow::Cow::Owned(out)
+}
+
 /// The `http:` and `https:` branch of `sanitizeUrl`: `about:blank` when `URL.canParse` is false,
 /// otherwise the serialized `URL`.
 ///
@@ -667,7 +699,8 @@ pub fn sanitize_url(url: &str) -> String {
 /// The `url` crate rejects an `xn--` label whose punycode does not decode, where node 24 keeps the
 /// label, so the reference's URL becomes `about:blank` here.
 fn normalize_http(candidate: &str) -> String {
-    match ::url::Url::parse(candidate) {
+    let resolved = resolve_http_authority_entities(candidate);
+    match ::url::Url::parse(resolved.as_ref()) {
         Ok(parsed) => parsed.to_string(),
         Err(_) => BLANK_URL.to_owned(),
     }

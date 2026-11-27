@@ -1,7 +1,7 @@
-Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient) and disambiguate colliding decoded node IDs in the shared unified renderer without letting decoded IDs steal existing literal IDs.
+Reserve renderer-owned SVG IDs (the root SVG ID, emitted accessibility title/description IDs, look drop-shadow filters, and optional gradient), disambiguate colliding node and edge path IDs in the shared unified renderer without letting decoded IDs steal literal IDs or redirecting links away from winning literal elements, and protect single-decoded IDs from a second decodeEntities pass.
 
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index b2bed00..a428b53 100644
+index eacddcc..8389875 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
 @@ -43,6 +43,7 @@ import type {
@@ -12,7 +12,15 @@ index b2bed00..a428b53 100644
  import { toBase64 } from './utils/base64.js';
  import { sanitizeCss } from './utils/sanitizeDirective.js';
  
-@@ -645,6 +646,9 @@ const renderDiagram = async function (
+@@ -406,6 +407,7 @@ export const cleanUpSvgCode = (
+   }
+ 
+   cleanedUpSvg = decodeEntities(cleanedUpSvg);
++  cleanedUpSvg = cleanedUpSvg.replaceAll('\uE000__FG_FL__\uE000', 'ﬂ');
+   cleanedUpSvg = decodePercentEncodedEntities(cleanedUpSvg);
+ 
+   // replace old br tags with newer style
+@@ -651,6 +653,9 @@ const renderDiagram = async function (
  
    // -------------------------------------------------------------------------------
    // Draw the diagram with the renderer
@@ -22,7 +30,7 @@ index b2bed00..a428b53 100644
    try {
      if (injected.profiling) {
        await profiler.span('draw', () => diag.renderer.draw(text, id, injected.version, diag));
-@@ -658,6 +662,8 @@ const renderDiagram = async function (
+@@ -664,6 +669,8 @@ const renderDiagram = async function (
        errorRenderer.draw(text, id, injected.version);
      }
      throw e;
@@ -32,7 +40,7 @@ index b2bed00..a428b53 100644
  
    // This is the d3 node for the svg element
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..4aacf03 100644
+index 49145b2..2d84b50 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -43,7 +51,7 @@ index 49145b2..4aacf03 100644
  import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
  
  // console.log('MUST be removed, this only for keeping dev server working');
-@@ -97,6 +98,114 @@ const registerDefaultLayoutLoaders = () => {
+@@ -97,6 +98,117 @@ const registerDefaultLayoutLoaders = () => {
  
  registerDefaultLayoutLoaders();
  
@@ -108,6 +116,9 @@ index 49145b2..4aacf03 100644
 +
 +const canonicalAttrId = (raw: string): string => canonicalXmlAttr(resolvePlaceholdersAttr(raw));
 +
++const protectResolvedId = (value: string): string =>
++  value.includes('ﬂ°') ? value.replace(/ﬂ(?=°)/g, '\uE000__FG_FL__\uE000') : value;
++
 +const formatFragmentUrl = (id: string): string => {
 +  let out = '#';
 +  for (const byte of new TextEncoder().encode(id)) {
@@ -158,7 +169,7 @@ index 49145b2..4aacf03 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,9 +214,97 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,9 +217,187 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -181,7 +192,7 @@ index 49145b2..4aacf03 100644
 +      rendererOwned.add(`chart-desc-${canonicalSvgId}`);
 +    }
 +
-+    const plans = data4Layout.nodes.map((node) => {
++    const nodePlans = data4Layout.nodes.map((node) => {
        const originalDomId = node.domId || node.id;
 -      node.domId = `${data4Layout.diagramId}-${originalDomId}`;
 +      const hadPlaceholder = originalDomId.includes('ﬂ°');
@@ -191,21 +202,54 @@ index 49145b2..4aacf03 100644
 +        !hadPlaceholder && canonicalLocal === originalDomId && canonicalSvgId === svgId;
 +      return { node, originalDomId, hadPlaceholder, canonicalLocal, canonicalFull, unchanged };
 +    });
-+    const reserved = new Set<string>(plans.map((p) => p.canonicalFull));
++    const edgePlans = (data4Layout.edges ?? []).map((edge) => {
++      const originalEdgeId = edge.id ?? '';
++      const edgeHadPlaceholder = originalEdgeId.includes('ﬂ°');
++      const canonicalEdgeId = canonicalAttrId(originalEdgeId);
++      const rawPath = `${svgId}-${originalEdgeId}`;
++      const canonicalPath = `${canonicalSvgId}-${canonicalEdgeId}`;
++      const unchanged = !edgeHadPlaceholder && canonicalPath === rawPath;
++      return {
++        edge,
++        originalEdgeId,
++        edgeHadPlaceholder,
++        canonicalEdgeId,
++        rawPath,
++        canonicalPath,
++        unchanged,
++      };
++    });
++
++    const reserved = new Set<string>([
++      ...nodePlans.map((p) => p.canonicalFull),
++      ...edgePlans.map((p) => p.canonicalPath),
++    ]);
 +    const seen = new Set<string>();
-+    const claimed = plans.map(() => false);
-+    for (let i = 0; i < plans.length; i++) {
-+      const p = plans[i];
++    const elementOwned = new Set<string>();
++    const nodeClaimed = nodePlans.map(() => false);
++    for (let i = 0; i < nodePlans.length; i++) {
++      const p = nodePlans[i];
 +      if (p.unchanged && !rendererOwned.has(p.canonicalFull) && !seen.has(p.canonicalFull)) {
 +        seen.add(p.canonicalFull);
-+        claimed[i] = true;
++        elementOwned.add(p.canonicalFull);
++        nodeClaimed[i] = true;
 +      }
 +    }
++    const edgeClaimed = edgePlans.map(() => false);
++    for (let i = 0; i < edgePlans.length; i++) {
++      const p = edgePlans[i];
++      if (p.unchanged && !rendererOwned.has(p.canonicalPath) && !seen.has(p.canonicalPath)) {
++        seen.add(p.canonicalPath);
++        elementOwned.add(p.canonicalPath);
++        edgeClaimed[i] = true;
++      }
++    }
++
 +    const nextSuffix = new Map<string, number>();
 +    const remapped = new Map<string, string>();
-+    for (let i = 0; i < plans.length; i++) {
-+      const p = plans[i];
-+      if (claimed[i]) {
++    for (let i = 0; i < nodePlans.length; i++) {
++      const p = nodePlans[i];
++      if (nodeClaimed[i]) {
 +        p.node.domId = `${svgId}-${p.originalDomId}`;
 +        continue;
 +      }
@@ -213,6 +257,7 @@ index 49145b2..4aacf03 100644
 +      let finalLocal = p.canonicalLocal;
 +      if (!collided) {
 +        seen.add(p.canonicalFull);
++        elementOwned.add(p.canonicalFull);
 +      } else {
 +        let suffix = nextSuffix.get(p.canonicalFull) ?? 1;
 +        while (true) {
@@ -226,20 +271,76 @@ index 49145b2..4aacf03 100644
 +          ) {
 +            nextSuffix.set(p.canonicalFull, suffix);
 +            seen.add(candidateFull);
++            elementOwned.add(candidateFull);
 +            finalLocal = candidateLocal;
 +            break;
 +          }
 +        }
 +      }
-+      if (finalLocal !== p.originalDomId || canonicalSvgId !== svgId) {
++      const normalizedChanged =
++        p.hadPlaceholder || finalLocal !== p.originalDomId || canonicalSvgId !== svgId;
++      const rawDistinctFromOwner =
++        p.hadPlaceholder ||
++        `${canonicalSvgId}-${finalLocal}` === p.canonicalFull ||
++        !elementOwned.has(p.canonicalFull);
++      if (normalizedChanged && rawDistinctFromOwner) {
 +        const key = `#${svgId}-${p.originalDomId}`;
 +        if (!remapped.has(key)) {
 +          remapped.set(key, formatFragmentUrl(`${canonicalSvgId}-${finalLocal}`));
 +        }
 +      }
 +      p.node.domId =
-+        collided || p.hadPlaceholder ? `${svgId}-${finalLocal}` : `${svgId}-${p.originalDomId}`;
++        collided || p.hadPlaceholder
++          ? `${svgId}-${protectResolvedId(finalLocal)}`
++          : `${svgId}-${p.originalDomId}`;
 +    }
++
++    for (let i = 0; i < edgePlans.length; i++) {
++      const p = edgePlans[i];
++      if (edgeClaimed[i]) {
++        continue;
++      }
++      const collided = rendererOwned.has(p.canonicalPath) || seen.has(p.canonicalPath);
++      let finalPath = p.canonicalPath;
++      if (!collided) {
++        seen.add(p.canonicalPath);
++        elementOwned.add(p.canonicalPath);
++      } else {
++        let suffix = nextSuffix.get(p.canonicalPath) ?? 1;
++        while (true) {
++          const candidate = `${p.canonicalPath}-${suffix}`;
++          suffix += 1;
++          if (
++            !rendererOwned.has(candidate) &&
++            !reserved.has(candidate) &&
++            !seen.has(candidate)
++          ) {
++            nextSuffix.set(p.canonicalPath, suffix);
++            seen.add(candidate);
++            elementOwned.add(candidate);
++            finalPath = candidate;
++            break;
++          }
++        }
++      }
++      const rawDistinctFromOwner =
++        p.edgeHadPlaceholder ||
++        p.canonicalPath !== p.rawPath ||
++        !elementOwned.has(p.canonicalPath);
++      if (finalPath !== p.rawPath && rawDistinctFromOwner) {
++        const key = `#${p.rawPath}`;
++        if (!remapped.has(key)) {
++          remapped.set(key, formatFragmentUrl(finalPath));
++        }
++      }
++      if (collided || p.edgeHadPlaceholder) {
++        (p.edge as { pathId?: string }).pathId = protectResolvedId(finalPath);
++      }
++      if (p.edgeHadPlaceholder) {
++        p.edge.id = protectResolvedId(p.canonicalEdgeId);
++      }
++    }
++
 +    for (const node of data4Layout.nodes) {
 +      if (typeof node.link === 'string' && node.link.startsWith('#')) {
 +        const fragment = node.link.slice(1);
@@ -258,3 +359,25 @@ index 49145b2..4aacf03 100644
      }
    }
  
+diff --git a/packages/mermaid/src/rendering-util/rendering-elements/edges.js b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
+index 1f88ca4..436d2cf 100644
+--- a/packages/mermaid/src/rendering-util/rendering-elements/edges.js
++++ b/packages/mermaid/src/rendering-util/rendering-elements/edges.js
+@@ -834,7 +834,7 @@ export const insertEdge = function (
+ 
+     svgPath = select(svgPathNode)
+       .select('path')
+-      .attr('id', `${diagramId}-${edge.id}`)
++      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
+       .attr(
+         'class',
+         ' ' +
+@@ -857,7 +857,7 @@ export const insertEdge = function (
+     svgPath = elem
+       .append('path')
+       .attr('d', linePath)
+-      .attr('id', `${diagramId}-${edge.id}`)
++      .attr('id', edge.pathId || `${diagramId}-${edge.id}`)
+       .attr(
+         'class',
+         ' ' +
