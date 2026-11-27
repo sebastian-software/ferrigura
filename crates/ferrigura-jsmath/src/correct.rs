@@ -15,11 +15,12 @@
 //! The constants are in `constants.rs` (`CR_*`), computed with mpmath from `2/pi`, `pi/2` and `ln 2`, and
 //! with Python's `decimal` from `1/ln 10`.
 //!
-//! Two fast paths come first and return a value only when their own error interval rounds to one
-//! double, so they give the same results; the rest take this module's fixed-point evaluator. `sin`, `cos`
-//! and `sin_cos` try a double-double evaluation for arguments up to `2^30` (`trig_fast.rs`, written for
-//! this crate, without fused multiply-adds), and `acos` a CORE-MATH interval test (`acos_fast.rs`). The
-//! other evaluators here are independently written.
+//! Fast paths come first and return a value only when their own error interval rounds to one double,
+//! so they give the same results; ambiguous intervals fall back to this module's fixed-point
+//! evaluator. `sin`, `cos`, `sin_cos` and `tan` try a double-double evaluation for arguments up to
+//! `2^30` (`trig_fast.rs`, written for this crate, without fused multiply-adds), `asin` and `acos`
+//! try a CORE-MATH table interval test (`acos_fast.rs`), and `log` and `log10` try a table-driven
+//! double-double evaluation (`log_fast.rs`, written for this crate, without fused multiply-adds).
 
 use crate::constants::{CR_INV_LN10, CR_LN2, CR_PI_OVER_2, CR_TWO_OVER_PI};
 
@@ -397,15 +398,14 @@ fn any_below(a: &[u64], pos: usize) -> bool {
     bit > 0 && a[limb] & ((1u64 << bit) - 1) != 0
 }
 
-/// The 53 bits of `a` from position `low` up.
+/// The `count` bits of `a` from position `low` up (`count <= 64`).
 fn bits_at(a: &[u64], low: usize, count: usize) -> u64 {
-    let mut out = 0u64;
-    for i in 0..count {
-        if bit_at(a, low + i) {
-            out |= 1u64 << i;
-        }
-    }
-    out
+    let mask = if count >= 64 {
+        u64::MAX
+    } else {
+        (1u64 << count) - 1
+    };
+    get64(a, low) & mask
 }
 
 /// The `count` bits of `p` from position `pos` (count at most 64), as a number.
@@ -456,7 +456,7 @@ fn reduce(ax: f64) -> (u32, Fx) {
     let mantissa = (bits & ((1u64 << 52) - 1)) | (1u64 << 52);
     let exponent = biased - 1075;
     // P = mantissa * (2/pi) * 2^1408, so that ax * 2/pi = P * 2^(exponent - 1408)
-    let mut product = vec![0u64; CR_TWO_OVER_PI.len() + 1];
+    let mut product = [0u64; CR_TWO_OVER_PI.len() + 1];
     let mut carry = 0u128;
     for (out, limb) in product.iter_mut().zip(CR_TWO_OVER_PI.iter()) {
         let t = u128::from(*limb) * u128::from(mantissa) + carry;
@@ -514,6 +514,28 @@ fn cos_series(r: Fx) -> Fx {
     }
 }
 
+/// `sin(ax)` for quadrant `q`, computing only the needed series.
+fn sin_of(ax: f64) -> Fx {
+    let (q, r) = reduce(ax);
+    match q {
+        0 => sin_series(r),
+        1 => cos_series(r),
+        2 => sin_series(r).neg(),
+        _ => cos_series(r).neg(),
+    }
+}
+
+/// `cos(ax)` for quadrant `q`, computing only the needed series.
+fn cos_of(ax: f64) -> Fx {
+    let (q, r) = reduce(ax);
+    match q {
+        0 => cos_series(r),
+        1 => sin_series(r).neg(),
+        2 => cos_series(r).neg(),
+        _ => sin_series(r),
+    }
+}
+
 /// `sin(ax)` and `cos(ax)` split by quadrant: the value is `s` with its sign for quadrant `q`.
 fn sin_cos_of(ax: f64) -> (Fx, Fx) {
     let (q, r) = reduce(ax);
@@ -546,12 +568,11 @@ pub fn sin_cos(x: f64) -> (f64, f64) {
     let ax = x.abs();
     let (s, c) = match crate::trig_fast::sin_cos(ax) {
         (Some(s), Some(c)) => (s, c),
-        (s, c) => {
+        (Some(s), None) => (s, round_value(cos_of(ax))),
+        (None, Some(c)) => (round_value(sin_of(ax)), c),
+        (None, None) => {
             let (fs, fc) = sin_cos_of(ax);
-            (
-                s.unwrap_or_else(|| round_value(fs)),
-                c.unwrap_or_else(|| round_value(fc)),
-            )
+            (round_value(fs), round_value(fc))
         }
     };
     (sign_of(x, s), c)
@@ -567,7 +588,7 @@ pub fn sin(x: f64) -> f64 {
         return x;
     }
     let ax = x.abs();
-    let s = crate::trig_fast::sin(ax).unwrap_or_else(|| round_value(sin_cos_of(ax).0));
+    let s = crate::trig_fast::sin(ax).unwrap_or_else(|| round_value(sin_of(ax)));
     sign_of(x, s)
 }
 
@@ -581,7 +602,14 @@ pub fn cos(x: f64) -> f64 {
         return 1.0;
     }
     let ax = x.abs();
-    crate::trig_fast::cos(ax).unwrap_or_else(|| round_value(sin_cos_of(ax).1))
+    crate::trig_fast::cos(ax).unwrap_or_else(|| round_value(cos_of(ax)))
+}
+
+fn tan_of(ax: f64) -> Fx {
+    let (q, r) = reduce(ax);
+    let s = sin_series(r);
+    let c = cos_series(r);
+    if q & 1 == 0 { s.div(c) } else { c.neg().div(s) }
 }
 
 /// `tan(x)`, correctly rounded.
@@ -593,11 +621,9 @@ pub fn tan(x: f64) -> f64 {
     if x == 0.0 || x.abs() < TINY {
         return x;
     }
-    let (q, r) = reduce(x.abs());
-    let s = sin_series(r);
-    let c = cos_series(r);
-    let t = if q & 1 == 0 { s.div(c) } else { c.neg().div(s) };
-    sign_of(x, round_value(t))
+    let ax = x.abs();
+    let t = crate::trig_fast::tan(ax).unwrap_or_else(|| round_value(tan_of(ax)));
+    sign_of(x, t)
 }
 
 /// `atan(w)` for `w >= 0`, from three halvings of the argument and the Taylor series.
@@ -638,9 +664,10 @@ fn shl3(limbs: [u64; 6]) -> [u64; 6] {
 /// `asin(|x|)` for `0 < |x| <= 1`, as a fixed-point value.
 fn asin_fx(ax: Fx) -> Fx {
     let one = Fx::one();
-    let root = one.sub(ax.mul(ax)).sqrt();
+    let ax2 = ax.mul(ax);
+    let root = one.sub(ax2).sqrt();
     // asin(a) = atan(a / sqrt(1 - a^2)); for a > 1/sqrt(2) use pi/2 - atan(sqrt(1 - a^2) / a)
-    let half_square = ax.mul(ax).mul_int(2);
+    let half_square = ax2.add(ax2);
     if half_square.sub(one).is_neg() {
         atan_fx(ax.div(root))
     } else {
@@ -651,6 +678,13 @@ fn asin_fx(ax: Fx) -> Fx {
 /// `asin(x)`, correctly rounded.
 #[must_use]
 pub fn asin(x: f64) -> f64 {
+    if let Some(result) = crate::acos_fast::fast_asin(x) {
+        return result;
+    }
+    asin_fixed(x)
+}
+
+fn asin_fixed(x: f64) -> f64 {
     if x.is_nan() || x.abs() > 1.0 {
         return f64::NAN;
     }
@@ -697,7 +731,7 @@ fn acos_fixed(x: f64) -> f64 {
 pub fn log(x: f64) -> f64 {
     match log_special(x) {
         Some(value) => value,
-        None => round_value(ln_fx(x)),
+        None => crate::log_fast::log(x).unwrap_or_else(|| round_value(ln_fx(x))),
     }
 }
 
@@ -707,7 +741,9 @@ pub fn log(x: f64) -> f64 {
 pub fn log10(x: f64) -> f64 {
     match log_special(x) {
         Some(value) => value,
-        None => round_value(ln_fx(x).mul(Fx(CR_INV_LN10))),
+        None => {
+            crate::log_fast::log10(x).unwrap_or_else(|| round_value(ln_fx(x).mul(Fx(CR_INV_LN10))))
+        }
     }
 }
 
@@ -1268,5 +1304,475 @@ mod tests {
                 tally.worst_ratio
             );
         }
+    }
+
+    fn tan_fixed(x: f64) -> f64 {
+        if !x.is_finite() {
+            return f64::NAN;
+        }
+        if x == 0.0 || x.abs() < TINY {
+            return x;
+        }
+        sign_of(x, round_value(tan_of(x.abs())))
+    }
+
+    fn log_fixed(x: f64) -> f64 {
+        match log_special(x) {
+            Some(value) => value,
+            None => round_value(ln_fx(x)),
+        }
+    }
+
+    fn log10_fixed(x: f64) -> f64 {
+        match log_special(x) {
+            Some(value) => value,
+            None => round_value(ln_fx(x).mul(Fx(CR_INV_LN10))),
+        }
+    }
+
+    #[test]
+    fn log_fast_constants_match_fixed_point() {
+        use crate::log_fast::{INV_LN10, LN_DD, LN_TAIL, LN2, TABLE};
+        let check_dd = |exact: Fx, (hi, lo): (f64, f64), label: &str| {
+            assert_eq!(hi.to_bits(), exact.to_f64().to_bits(), "hi of {label}");
+            let rest = exact.sub(Fx::from_f64(hi)).to_f64();
+            assert_eq!(lo.to_bits(), rest.to_bits(), "lo of {label}");
+        };
+        check_dd(Fx(CR_LN2), LN2, "ln 2");
+        check_dd(Fx(CR_INV_LN10), INV_LN10, "1 / ln 10");
+        for (i, &dd) in LN_DD.iter().enumerate() {
+            let n = (i + 2) as u64;
+            let mut val = Fx::one().div_int(n);
+            if n.is_multiple_of(2) {
+                val = val.neg();
+            }
+            check_dd(val, dd, &format!("(-1)^(n-1)/{n}"));
+        }
+        for (i, &c) in LN_TAIL.iter().enumerate() {
+            let n = (i + 8) as u64;
+            let mut val = Fx::one().div_int(n);
+            if n.is_multiple_of(2) {
+                val = val.neg();
+            }
+            assert_eq!(c.to_bits(), val.to_f64().to_bits(), "(-1)^(n-1)/{n}");
+        }
+        for (i, &(r, hi, lo)) in TABLE.iter().enumerate() {
+            if i == 0 {
+                assert_eq!(r, 1.0);
+                assert_eq!(hi, 0.0);
+                assert_eq!(lo, 0.0);
+            } else {
+                let exact = ln_fx(r).neg();
+                check_dd(exact, (hi, lo), &format!("-ln(TABLE[{i}])"));
+            }
+        }
+    }
+
+    #[test]
+    fn tan_fast_matches_fixed_point() {
+        let mut special = vec![
+            0.0,
+            -0.0,
+            f64::from_bits(1),
+            f64::from_bits(0x000f_ffff_ffff_ffff),
+            f64::MIN_POSITIVE,
+            TINY,
+            f64::from_bits(TINY.to_bits() - 1),
+            f64::from_bits(TINY.to_bits() + 1),
+            1_073_741_824.0,
+            f64::from_bits(1_073_741_824.0f64.to_bits() + 1),
+            f64::MAX,
+            f64::INFINITY,
+            f64::NAN,
+            -f64::NAN,
+            std::f64::consts::PI,
+            std::f64::consts::FRAC_PI_2,
+            std::f64::consts::FRAC_PI_4,
+            std::f64::consts::TAU,
+            1.0,
+        ];
+        for k in 1..=64 {
+            let base = f64::from(k) * std::f64::consts::FRAC_PI_4;
+            for delta in -4i64..=4 {
+                special.push(f64::from_bits(base.to_bits().wrapping_add_signed(delta)));
+            }
+        }
+        for e in -100..=30 {
+            special.push(2f64.powi(e));
+        }
+        for x in special
+            .clone()
+            .into_iter()
+            .chain(special.into_iter().map(|v| -v))
+        {
+            assert_eq!(
+                tan(x).to_bits(),
+                tan_fixed(x).to_bits(),
+                "tan({x:e}), bits {:#x}",
+                x.to_bits()
+            );
+        }
+
+        let threads = std::thread::available_parallelism().map_or(4, |n| n.get()) as u64;
+        let per_family = 200_000u64;
+        for (index, &(name, generate)) in FAMILIES.iter().enumerate() {
+            let (fast_range, fallbacks, worst_ratio) = std::thread::scope(|scope| {
+                let workers: Vec<_> = (0..threads)
+                    .map(|thread| {
+                        scope.spawn(move || {
+                            let mut rng = Rng(0x7a11_0000 + (index as u64) * 1000 + thread);
+                            let mut fast_range = 0u64;
+                            let mut fallbacks = 0u64;
+                            let mut worst_ratio = 0.0f64;
+                            for _ in 0..per_family / threads {
+                                let x = generate(&mut rng);
+                                let ax = x.abs();
+                                let expected = if let Some([hi, lo, eps]) =
+                                    crate::trig_fast::tan_parts(ax).filter(|_| ax >= TINY)
+                                {
+                                    fast_range += 1;
+                                    fallbacks += u64::from(crate::trig_fast::tan(ax).is_none());
+                                    let exact = tan_of(ax);
+                                    if ax >= 2f64.powi(-60) && hi.abs() < 2f64.powi(60) {
+                                        let value = Fx::from_f64(hi).add(Fx::from_f64(lo));
+                                        let ratio = value.sub(exact).abs().approx_f64() / eps;
+                                        worst_ratio = worst_ratio.max(ratio);
+                                    }
+                                    sign_of(x, round_value(exact))
+                                } else {
+                                    tan_fixed(x)
+                                };
+                                assert_eq!(
+                                    tan(x).to_bits(),
+                                    expected.to_bits(),
+                                    "tan({x:e}), bits {:#x}",
+                                    x.to_bits()
+                                );
+                            }
+                            (fast_range, fallbacks, worst_ratio)
+                        })
+                    })
+                    .collect();
+                workers
+                    .into_iter()
+                    .map(|w| w.join().expect("worker"))
+                    .fold((0u64, 0u64, 0.0f64), |acc, item| {
+                        (acc.0 + item.0, acc.1 + item.1, acc.2.max(item.2))
+                    })
+            });
+            assert!(
+                fallbacks <= fast_range / 1000 + 8,
+                "{name}: tan fell back too often ({fallbacks} / {fast_range})"
+            );
+            assert!(
+                worst_ratio < 0.5,
+                "{name}: tan error / eps up to {worst_ratio}"
+            );
+        }
+    }
+
+    #[test]
+    fn asin_fast_matches_fixed_point() {
+        let mut special = vec![
+            0.0,
+            -0.0,
+            f64::from_bits(1),
+            f64::from_bits(0x000f_ffff_ffff_ffff),
+            f64::MIN_POSITIVE,
+            TINY,
+            f64::from_bits(TINY.to_bits() - 1),
+            f64::from_bits(TINY.to_bits() + 1),
+            f64::from_bits(0x3e40000000000000 - 1),
+            f64::from_bits(0x3e40000000000000),
+            f64::from_bits(0x3e40000000000000 + 1),
+            f64::from_bits(0x3e50000000000000),
+            0.5,
+            f64::from_bits(0.5f64.to_bits() - 1),
+            f64::from_bits(0.5f64.to_bits() + 1),
+            std::f64::consts::FRAC_1_SQRT_2,
+            f64::from_bits(std::f64::consts::FRAC_1_SQRT_2.to_bits() - 1),
+            f64::from_bits(std::f64::consts::FRAC_1_SQRT_2.to_bits() + 1),
+            1.0,
+            f64::from_bits(1.0f64.to_bits() + 1),
+            2.0,
+            f64::INFINITY,
+            f64::NAN,
+            f64::from_bits(0x3fe3e827a2cd6d51),
+            f64::from_bits(0x3f37cb54339263fb),
+            f64::from_bits(0x3fdfda6fee396f80),
+            f64::from_bits(0x3feffffffffffdc0),
+            f64::from_bits(0x3fedffff776c7505),
+        ];
+        // Neighbors of 1.0 and of table centers sqrt(j/128) where t is near 0.
+        for k in 1..=64u64 {
+            special.push(f64::from_bits(1.0f64.to_bits() - k));
+        }
+        for j in 1..=32u64 {
+            let center = (j as f64 / 128.0).sqrt();
+            for delta in -4i64..=4 {
+                special.push(f64::from_bits(center.to_bits().wrapping_add_signed(delta)));
+            }
+        }
+        for x in special
+            .clone()
+            .into_iter()
+            .chain(special.into_iter().map(|v| -v))
+        {
+            assert_eq!(
+                asin(x).to_bits(),
+                asin_fixed(x).to_bits(),
+                "asin({x:e}), bits {:#x}",
+                x.to_bits()
+            );
+        }
+
+        let threads = std::thread::available_parallelism().map_or(4, |n| n.get()) as u64;
+        let per_worker = 40_000u64;
+        let (fast, fallback, worst_ratio) = std::thread::scope(|scope| {
+            let workers: Vec<_> = (0..threads)
+                .map(|thread| {
+                    scope.spawn(move || {
+                        let mut rng = Rng(0xa511_0000 + thread);
+                        let mut fast = 0u64;
+                        let mut fallback = 0u64;
+                        let mut worst_ratio = 0.0f64;
+                        for i in 0..per_worker {
+                            let x = match i % 5 {
+                                0 => {
+                                    ((rng.next() >> 11) as f64) * (2.0 / ((1u64 << 53) as f64))
+                                        - 1.0
+                                }
+                                1 => rng.with_exponent(-27, -1),
+                                2 => rng.around(0.5, 1 << 16),
+                                3 => {
+                                    let d = rng.with_exponent(-52, -1).abs();
+                                    let v = 1.0 - d;
+                                    if rng.next() & 1 == 1 { -v } else { v }
+                                }
+                                _ => {
+                                    let j = rng.below(32) + 1;
+                                    rng.around((j as f64 / 128.0).sqrt(), 1 << 10)
+                                }
+                            };
+                            let ax = x.abs();
+                            let expected = if let Some([hi, lo, eps]) =
+                                crate::acos_fast::fast_asin_parts(ax)
+                            {
+                                let exact = asin_fx(Fx::from_f64(ax));
+                                let value = Fx::from_f64(hi).add(Fx::from_f64(lo));
+                                let ratio = value.sub(exact).abs().approx_f64() / eps;
+                                worst_ratio = worst_ratio.max(ratio);
+                                if crate::acos_fast::fast_asin(x).is_some() {
+                                    fast += 1;
+                                } else {
+                                    fallback += 1;
+                                }
+                                sign_of(x, round_value(exact))
+                            } else {
+                                asin_fixed(x)
+                            };
+                            assert_eq!(
+                                asin(x).to_bits(),
+                                expected.to_bits(),
+                                "asin({x:e}), bits {:#x}",
+                                x.to_bits()
+                            );
+                        }
+                        (fast, fallback, worst_ratio)
+                    })
+                })
+                .collect();
+            workers
+                .into_iter()
+                .map(|w| w.join().expect("worker"))
+                .fold((0u64, 0u64, 0.0f64), |acc, item| {
+                    (acc.0 + item.0, acc.1 + item.1, acc.2.max(item.2))
+                })
+        });
+        assert!(fast > 0 && fallback > 0, "fast={fast}, fallback={fallback}");
+        assert!(worst_ratio < 0.5, "asin error / eps up to {worst_ratio}");
+    }
+
+    #[test]
+    fn log_and_log10_fast_matches_fixed_point() {
+        let mut special = vec![
+            0.0,
+            -0.0,
+            -1.0,
+            f64::NEG_INFINITY,
+            f64::INFINITY,
+            f64::NAN,
+            -f64::NAN,
+            1.0,
+            f64::MIN_POSITIVE,
+            f64::MAX,
+        ];
+        // Subnormals at both ends, neighbors of 1.0 and of the k==0,idx==0 thresholds,
+        // powers of 2, powers of 10, and table bin midpoints.
+        for k in 1..=64u64 {
+            special.push(f64::from_bits(k));
+            special.push(f64::from_bits(0x000f_ffff_ffff_ffff - k + 1));
+            special.push(f64::from_bits(f64::MIN_POSITIVE.to_bits() + k));
+            special.push(f64::from_bits(f64::MAX.to_bits() - k));
+            special.push(f64::from_bits(1.0f64.to_bits() - k));
+            special.push(f64::from_bits(1.0f64.to_bits() + k));
+        }
+        for boundary in [
+            1.0 - 2f64.powi(-9),
+            1.0 + 2f64.powi(-8),
+            std::f64::consts::SQRT_2,
+        ] {
+            for delta in -8i64..=8 {
+                special.push(f64::from_bits(
+                    boundary.to_bits().wrapping_add_signed(delta),
+                ));
+            }
+        }
+        for i in 0..128 {
+            let edge = 1.0 + (f64::from(i) + 0.5) / 128.0;
+            for delta in -2i64..=2 {
+                special.push(f64::from_bits(edge.to_bits().wrapping_add_signed(delta)));
+            }
+        }
+        for e in -1074..=1023 {
+            let p = if e >= -1022 {
+                2f64.powi(e)
+            } else {
+                f64::from_bits(1u64 << (e + 1074))
+            };
+            special.push(p);
+        }
+        for e in 0..=22 {
+            let p = 10f64.powi(e);
+            for delta in -4i64..=4 {
+                special.push(f64::from_bits(p.to_bits().wrapping_add_signed(delta)));
+            }
+        }
+        for x in special {
+            assert_eq!(
+                log(x).to_bits(),
+                log_fixed(x).to_bits(),
+                "log({x:e}), bits {:#x}",
+                x.to_bits()
+            );
+            assert_eq!(
+                log10(x).to_bits(),
+                log10_fixed(x).to_bits(),
+                "log10({x:e}), bits {:#x}",
+                x.to_bits()
+            );
+        }
+
+        let threads = std::thread::available_parallelism().map_or(4, |n| n.get()) as u64;
+        let per_worker = 40_000u64;
+        let (total, log_fb, log10_fb, worst_log_ratio, worst_log10_ratio) =
+            std::thread::scope(|scope| {
+                let workers: Vec<_> = (0..threads)
+                    .map(|thread| {
+                        scope.spawn(move || {
+                            let mut rng = Rng(0x1060_0000 + thread);
+                            let mut total = 0u64;
+                            let mut log_fb = 0u64;
+                            let mut log10_fb = 0u64;
+                            let mut worst_log_ratio = 0.0f64;
+                            let mut worst_log10_ratio = 0.0f64;
+                            for i in 0..per_worker {
+                                let x = match i % 5 {
+                                    // Uniform over all positive finite exponents, including subnormals.
+                                    0 => {
+                                        let exp = rng.below(2047);
+                                        let frac = rng.next() & ((1u64 << 52) - 1);
+                                        let bits = (exp << 52) | frac;
+                                        if bits == 0 {
+                                            f64::from_bits(1)
+                                        } else {
+                                            f64::from_bits(bits)
+                                        }
+                                    }
+                                    // Near 1.0 where k == 0 && idx == 0.
+                                    1 => {
+                                        let delta = rng.with_exponent(-52, -9);
+                                        1.0 + delta
+                                    }
+                                    // Near the k == 0 && idx == 0 boundaries.
+                                    2 => {
+                                        let base = if rng.next() & 1 == 0 {
+                                            1.0 - 2f64.powi(-9)
+                                        } else {
+                                            1.0 + 2f64.powi(-8)
+                                        };
+                                        rng.around(base, 1 << 16).abs()
+                                    }
+                                    // Subnormals.
+                                    3 => {
+                                        let frac = rng.next() & ((1u64 << 52) - 1);
+                                        f64::from_bits(frac.max(1))
+                                    }
+                                    // Around powers of 10.
+                                    _ => {
+                                        let e = rng.below(23) as i32;
+                                        rng.around(10f64.powi(e), 1 << 14).abs()
+                                    }
+                                };
+                                if x <= 0.0 || !x.is_finite() || x == 1.0 {
+                                    continue;
+                                }
+                                total += 1;
+                                log_fb += u64::from(crate::log_fast::log(x).is_none());
+                                log10_fb += u64::from(crate::log_fast::log10(x).is_none());
+                                let exact_ln = ln_fx(x);
+                                let exact_l10 = exact_ln.mul(Fx(CR_INV_LN10));
+                                let [lh, ll, leps] = crate::log_fast::log_parts(x);
+                                let [bh, bl, beps] = crate::log_fast::log10_parts(x);
+                                if lh.abs() >= 2f64.powi(-60) {
+                                    let val_ln = Fx::from_f64(lh).add(Fx::from_f64(ll));
+                                    worst_log_ratio = worst_log_ratio
+                                        .max(val_ln.sub(exact_ln).abs().approx_f64() / leps);
+                                    let val_l10 = Fx::from_f64(bh).add(Fx::from_f64(bl));
+                                    worst_log10_ratio = worst_log10_ratio
+                                        .max(val_l10.sub(exact_l10).abs().approx_f64() / beps);
+                                }
+                                assert_eq!(
+                                    log(x).to_bits(),
+                                    round_value(exact_ln).to_bits(),
+                                    "log({x:e}), bits {:#x}",
+                                    x.to_bits()
+                                );
+                                assert_eq!(
+                                    log10(x).to_bits(),
+                                    round_value(exact_l10).to_bits(),
+                                    "log10({x:e}), bits {:#x}",
+                                    x.to_bits()
+                                );
+                            }
+                            (total, log_fb, log10_fb, worst_log_ratio, worst_log10_ratio)
+                        })
+                    })
+                    .collect();
+                workers.into_iter().map(|w| w.join().expect("worker")).fold(
+                    (0u64, 0u64, 0u64, 0.0f64, 0.0f64),
+                    |acc, item| {
+                        (
+                            acc.0 + item.0,
+                            acc.1 + item.1,
+                            acc.2 + item.2,
+                            acc.3.max(item.3),
+                            acc.4.max(item.4),
+                        )
+                    },
+                )
+            });
+        assert!(
+            log_fb + log10_fb <= total / 1000 + 8,
+            "log fallbacks too high: log={log_fb}, log10={log10_fb} / {total}"
+        );
+        assert!(
+            worst_log_ratio < 0.5,
+            "log error / eps up to {worst_log_ratio}"
+        );
+        assert!(
+            worst_log10_ratio < 0.5,
+            "log10 error / eps up to {worst_log10_ratio}"
+        );
     }
 }

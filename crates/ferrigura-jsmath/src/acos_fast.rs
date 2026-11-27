@@ -403,3 +403,60 @@ pub(crate) fn fast_acos(x: f64) -> Option<f64> {
     let ub = fh + (fl + eps);
     if lb == ub { Some(lb) } else { None }
 }
+
+/// `asin(ax)` for `2^-27 <= ax < 1.0` before rounding, as `[hi, lo, eps]`.
+///
+/// Reuses `COEFF`, which approximates `asin(sqrt(s)) / sqrt(s)` on `s in [0, 0.25]`:
+/// - For `ax <= 0.5`: `asin(ax) = ax * P(ax^2)`.
+/// - For `0.5 < ax < 1.0`: `asin(ax) = pi/2 - sqrt(2 - 2 ax) * P((1 - ax) / 2)`.
+pub(crate) fn fast_asin_parts(ax: f64) -> Option<[f64; 3]> {
+    if !(f64::from_bits(0x3e40000000000000)..1.0).contains(&ax) {
+        return None;
+    }
+    if ax > 0.5 {
+        let f0h = std::f64::consts::FRAC_PI_2;
+        let f0l = f64::from_bits(0x3c91a62633145c07);
+        let u = 2.0 - 2.0 * ax;
+        let jd = (u * 32.0).round_ties_even();
+        let z = -u.sqrt();
+        let zl = z.mul_add(z, -u) * ((-0.5 / u) * z);
+        let t = 0.25 * u - jd * 0.0078125;
+        let c = COEFF[jd as usize];
+        let t2 = t * t;
+        let d = t * ((c[2] + t * c[3]) + t2 * ((c[4] + t * c[5]) + t2 * (c[6] + t * c[7])));
+        let fh = z * c[0];
+        let fl = (z * (c[1] + d) + zl * c[0]) + z.mul_add(c[0], -fh);
+        let (sh, sl) = fast_two_sum(f0h, fh);
+        let (fh, fl) = fast_two_sum(sh, (f0l + fl) + sl);
+        let eps =
+            (z * t).abs() * f64::from_bits(0x3cc0000000000000) + f64::from_bits(0x39c0000000000000);
+        Some([fh, fl, eps])
+    } else {
+        let square = ax * ax;
+        let jd = (square * 128.0).round_ties_even();
+        let t = ax.mul_add(ax, -0.0078125 * jd);
+        let c = COEFF[jd as usize];
+        let t2 = t * t;
+        let d = t * ((c[2] + t * c[3]) + t2 * ((c[4] + t * c[5]) + t2 * (c[6] + t * c[7])));
+        let fh = ax * c[0];
+        let fl = ax * (c[1] + d) + ax.mul_add(c[0], -fh);
+        let (fh, fl) = fast_two_sum(fh, fl);
+        let eps = (ax * t).abs() * f64::from_bits(0x3cc0000000000000)
+            + ax * f64::from_bits(0x39c0000000000000);
+        Some([fh, fl, eps])
+    }
+}
+
+/// Returns `asin(x)` only when the proven error interval rounds to one value.
+pub(crate) fn fast_asin(x: f64) -> Option<f64> {
+    let ax = x.abs();
+    if ax < f64::from_bits(0x3e40000000000000) {
+        // For |x| < 2^-27, |asin(x) - x| < x^3 / 5.9 < 2^-56.5 |x| < 0.25 ulp(x),
+        // so x is already the correctly rounded value (including -0.0 and subnormals).
+        return Some(x);
+    }
+    let [fh, fl, eps] = fast_asin_parts(ax)?;
+    let lb = fh + (fl - eps);
+    let ub = fh + (fl + eps);
+    if lb == ub { Some(lb.copysign(x)) } else { None }
+}

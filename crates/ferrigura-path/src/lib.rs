@@ -40,8 +40,10 @@ pub struct Rect {
 /// path with no segment has the empty box, which is all zeros.
 #[must_use]
 pub fn bounding_box(d: &str) -> Rect {
-    let verbs = builder::build(&segments::parse(d));
-    match bounds::tight_bounds(&verbs) {
+    let mut bounds = bounds::TightBounds::default();
+    let mut builder = builder::Builder::new(|verb| bounds.push(verb));
+    segments::for_each(d, |segment| builder.emit(segment));
+    match bounds.finish() {
         Some([x, y, width, height]) => Rect {
             x,
             y,
@@ -53,3 +55,81 @@ pub fn bounding_box(d: &str) -> Rect {
 }
 
 pub use length::{cubic_length, quadratic_length};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_and_invalid_paths_return_zero_rect() {
+        for d in ["", "   \t\n ", "L 10 20", "Z", "M", "M 10", "X 1 2"] {
+            assert_eq!(bounding_box(d), Rect::default(), "d={d:?}");
+        }
+    }
+
+    #[test]
+    fn streaming_handles_truncated_and_implicit_commands() {
+        // Stops at first parse error while keeping prior segments.
+        let r = bounding_box("M 2 3 L 10 20 L 5");
+        assert_eq!(
+            r,
+            Rect {
+                x: 2.0,
+                y: 3.0,
+                width: 8.0,
+                height: 17.0,
+            }
+        );
+
+        // Implicit line-to after M/m and close returning to subpath start.
+        let r = bounding_box("M 1 2 5 6 m 10 10 -2 -4 Z h 3 v -2");
+        assert_eq!(
+            r,
+            Rect {
+                x: 1.0,
+                y: 2.0,
+                width: 17.0,
+                height: 14.0,
+            }
+        );
+    }
+
+    #[test]
+    fn streaming_covers_quad_cubic_smooth_and_arc_extremas() {
+        // Quadratic and smooth quadratic.
+        let q = bounding_box("M 0 0 Q 50 100 100 0 T 200 0");
+        assert_eq!(q.x, 0.0);
+        assert_eq!(q.y, -50.0);
+        assert_eq!(q.width, 200.0);
+        assert_eq!(q.height, 100.0);
+
+        // Cubic with two extrema per axis and smooth cubic.
+        let c = bounding_box("M 0 0 C 0 100 100 -100 100 0 S 200 100 200 0");
+        assert_eq!(c.x, 0.0);
+        assert_eq!(c.width, 200.0);
+        assert!(c.y < 0.0 && c.y + c.height > 0.0);
+
+        // Degenerate arcs (zero radius, zero length, tiny sweep) and large 3-segment arc.
+        assert_eq!(
+            bounding_box("M 0 0 A 0 10 0 0 1 10 5"),
+            Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 10.0,
+                height: 5.0,
+            }
+        );
+        assert_eq!(
+            bounding_box("M 3 4 A 10 10 0 1 1 3 4"),
+            Rect {
+                x: 3.0,
+                y: 4.0,
+                width: 0.0,
+                height: 0.0,
+            }
+        );
+        // Almost-full-circle arc (> 240 degrees -> 3 conic segments) rotated by 30 degrees.
+        let full = bounding_box("M 100 0 A 100 50 30 1 1 99.9 -0.1");
+        assert!(full.width > 150.0 && full.height > 100.0);
+    }
+}

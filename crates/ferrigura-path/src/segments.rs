@@ -118,12 +118,12 @@ fn read_numbers(kind: Kind, s: &[u8], pos: &mut usize) -> Option<Segment> {
     Some(segment)
 }
 
-/// The segments of the path data `d`, as Blink's byte stream holds them.
-pub(crate) fn parse(d: &str) -> Vec<Segment> {
+/// Streams each parsed segment of the path data `d`, as Blink's byte stream holds them, into `visit`
+/// without allocating an intermediate buffer.
+pub(crate) fn for_each(d: &str, mut visit: impl FnMut(&Segment)) {
     let s = d.as_bytes();
     let mut pos = 0;
     skip_spaces(s, &mut pos);
-    let mut out = Vec::new();
     // The kind of the previous command, which a number repeats (`previous_command_`).
     let mut previous: Option<(Kind, bool)> = None;
     while pos < s.len() {
@@ -156,7 +156,6 @@ pub(crate) fn parse(d: &str) -> Vec<Segment> {
         };
         segment.kind = Some(command.0);
         segment.rel = command.1;
-        out.push(segment);
+        visit(&segment);
     }
-    out
 }
