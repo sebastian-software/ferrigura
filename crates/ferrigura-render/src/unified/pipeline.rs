@@ -622,11 +622,11 @@ fn needs_id_normalization(raw: &str) -> bool {
 
 /// Optional renderer-owned SVG IDs actually emitted for the current render.
 #[derive(Clone, Copy)]
-struct ReservedDefs {
-    gradient: bool,
-    label_gaps: bool,
-    a11y_title: bool,
-    a11y_desc: bool,
+pub(crate) struct ReservedDefs {
+    pub(crate) gradient: bool,
+    pub(crate) label_gaps: bool,
+    pub(crate) a11y_title: bool,
+    pub(crate) a11y_desc: bool,
 }
 
 /// Checks whether `{a}-{b} == {prefix}{suffix}` without allocating.
@@ -742,6 +742,68 @@ fn strip_fragment_marker(raw_link: &str) -> Option<&str> {
     None
 }
 
+/// Pre-resolves and disambiguates a flat list of local DOM IDs (such as block-diagram nodes)
+/// against renderer-owned IDs and each other, keeping unchanged literal IDs stable in pass 1 and
+/// suffixing colliding or placeholder-decoded IDs in pass 2.
+pub(crate) fn disambiguate_dom_ids(
+    raw_ids: &[&str],
+    svg_id: &str,
+    defs: ReservedDefs,
+) -> Vec<String> {
+    let canonical_svg_id = canonical_xml_attr(svg_id);
+    let mut reserved: HashSet<String> = HashSet::with_capacity(raw_ids.len());
+    let mut plans: Vec<(String, String, bool)> = Vec::with_capacity(raw_ids.len());
+    for &raw in raw_ids {
+        let had_placeholder = raw.contains("ﬂ°");
+        let canonical_local = canonical_attr_id(raw);
+        let unchanged = !had_placeholder && canonical_local == raw && canonical_svg_id == svg_id;
+        let canonical_full = format!("{canonical_svg_id}-{canonical_local}");
+        reserved.insert(canonical_full.clone());
+        plans.push((canonical_local, canonical_full, unchanged));
+    }
+
+    let mut seen: HashSet<String> = HashSet::with_capacity(raw_ids.len());
+    let mut claimed = vec![false; raw_ids.len()];
+    for (idx, (_, canonical_full, unchanged)) in plans.iter().enumerate() {
+        if *unchanged
+            && !is_renderer_owned_id(canonical_full, &canonical_svg_id, defs)
+            && seen.insert(canonical_full.clone())
+        {
+            claimed[idx] = true;
+        }
+    }
+
+    let mut next_suffix: HashMap<String, usize> = HashMap::new();
+    let mut resolved = Vec::with_capacity(raw_ids.len());
+    for (idx, (canonical_local, canonical_full, _)) in plans.into_iter().enumerate() {
+        if claimed[idx] {
+            resolved.push(canonical_local);
+            continue;
+        }
+        if !is_renderer_owned_id(&canonical_full, &canonical_svg_id, defs)
+            && seen.insert(canonical_full.clone())
+        {
+            resolved.push(canonical_local);
+            continue;
+        }
+        let mut suffix = next_suffix.get(&canonical_full).copied().unwrap_or(1);
+        loop {
+            let candidate_local = format!("{canonical_local}-{suffix}");
+            let candidate_full = format!("{canonical_svg_id}-{candidate_local}");
+            suffix += 1;
+            if !is_renderer_owned_id(&candidate_full, &canonical_svg_id, defs)
+                && !reserved.contains(&candidate_full)
+                && seen.insert(candidate_full)
+            {
+                next_suffix.insert(canonical_full, suffix);
+                resolved.push(candidate_local);
+                break;
+            }
+        }
+    }
+    resolved
+}
+
 /// Pre-resolved, XML-normalized, collision-free DOM and edge IDs for one unified render pass.
 struct ResolvedDomIds {
     nodes: Vec<String>,
@@ -774,15 +836,18 @@ impl ResolvedDomIds {
                 return Some(Cow::Owned(format_fragment_url(&resolved_target)));
             }
         }
-        if trimmed.starts_with('#') {
-            self.remapped_fragments
-                .get(trimmed)
-                .map(|target| Cow::Borrowed(target.as_str()))
+        if let Some(target) = if trimmed.starts_with('#') {
+            self.remapped_fragments.get(trimmed)
         } else {
-            self.remapped_fragments
-                .get(&format!("#{fragment}"))
-                .map(|target| Cow::Borrowed(target.as_str()))
+            self.remapped_fragments.get(&format!("#{fragment}"))
+        } {
+            return Some(Cow::Borrowed(target.as_str()));
         }
+        let resolved_target = canonical_attr_id(fragment);
+        if resolved_target != fragment && self.element_owned.contains(&resolved_target) {
+            return Some(Cow::Owned(format_fragment_url(&resolved_target)));
+        }
+        None
     }
 
     /// Resolves and disambiguates node/cluster DOM IDs and edge IDs across the entire diagram in a

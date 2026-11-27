@@ -175,6 +175,16 @@ pub(super) fn measure_all(block: &mut Block, context: &Context<'_>) -> Result<()
     Ok(())
 }
 
+/// Collects the raw IDs of every non-space block in the same tree order as [`place_all`].
+fn collect_block_ids<'a>(block: &'a Block, out: &mut Vec<&'a str>) {
+    for child in &block.children {
+        if !child.is_space() {
+            out.push(child.id.as_str());
+        }
+        collect_block_ids(child, out);
+    }
+}
+
 /// The placed pass over the blocks, in tree order, parents before their children: a block that is not a
 /// space cell is drawn at its final size, and its anchor is kept for the edges (`insertBlockPositioned`).
 pub(super) fn place_all(
@@ -182,13 +192,36 @@ pub(super) fn place_all(
     context: &Context<'_>,
     drawing: &mut Drawing,
 ) -> Result<(), RenderError> {
+    let mut raw_ids = Vec::new();
+    collect_block_ids(block, &mut raw_ids);
+    let defs = crate::unified::pipeline::ReservedDefs {
+        gradient: context.unified.theme.use_gradient.truthy(),
+        label_gaps: false,
+        a11y_title: false,
+        a11y_desc: false,
+    };
+    let resolved_ids = crate::unified::pipeline::disambiguate_dom_ids(&raw_ids, context.id, defs);
+    let mut next_id = resolved_ids.iter();
+    place_children(block, context, drawing, &mut next_id)
+}
+
+fn place_children<'a>(
+    block: &Block,
+    context: &Context<'_>,
+    drawing: &mut Drawing,
+    next_id: &mut std::slice::Iter<'a, String>,
+) -> Result<(), RenderError> {
     for child in &block.children {
         let size = child.size.unwrap_or_default();
         drawing.sizes.insert(child.id.clone(), size);
         if !child.is_space() {
-            place(child, size, context, drawing)?;
+            let dom_id = next_id
+                .next()
+                .map(String::as_str)
+                .unwrap_or(child.id.as_str());
+            place(child, size, dom_id, context, drawing)?;
         }
-        place_all(child, context, drawing)?;
+        place_children(child, context, drawing, next_id)?;
     }
     Ok(())
 }
@@ -198,6 +231,7 @@ pub(super) fn place_all(
 fn place(
     block: &Block,
     size: Size,
+    dom_id: &str,
     context: &Context<'_>,
     drawing: &mut Drawing,
 ) -> Result<(), RenderError> {
@@ -214,7 +248,16 @@ fn place(
     }
     let x = node.x.unwrap_or(0.0);
     let y = node.y.unwrap_or(0.0);
-    let svg = shapes::node_svg(&node, &shape, context.id, LinkForm::Flowchart);
+    let loose = context.unified.globals.security_level == "loose";
+    let svg = shapes::node_svg_with_resolved(
+        &node,
+        &shape,
+        context.id,
+        LinkForm::Flowchart,
+        loose,
+        dom_id,
+        None,
+    );
     drawing.body.push_str(&svg);
     crate::unified::pipeline::cover(
         &mut drawing.bounds,

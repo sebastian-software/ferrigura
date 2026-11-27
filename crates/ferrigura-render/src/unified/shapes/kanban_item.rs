@@ -140,7 +140,7 @@ pub fn kanban_item_with_security(item: &KanbanItem<'_>, loose: bool) -> KanbanIt
     inner.push_str(&rectangle(item, rect_x, rect_y, total_width, total_height));
     let resolved_link = item
         .ticket_link
-        .map(crate::common::resolve_url_entity_placeholders);
+        .map(crate::common::resolve_entity_placeholders);
     match resolved_link.as_deref().map(|link| guard_url(link, loose)) {
         Some(link) => {
             // `target` is not in the markup: the sanitizer of the reference's output drops it.

@@ -1,10 +1,10 @@
-Resolve Mermaid entity placeholders in HTTP/HTTPS URL authorities before host/IDNA normalization in formatUrl, and decode percent-encoded placeholders (%EF%AC%82%C2%B0...%C2%B6%C3%9F) directly on live DOM HTTP/HTTPS href/xlink:href attributes before serialization so text nodes, finalized #... fragments, and unrelated %XX escapes are never touched.
+Preserve CSS hex colors after whitespace in style/classDef declarations, resolve Mermaid entity placeholders in HTTP/HTTPS URL authorities before host/IDNA normalization in formatUrl, and decode percent-encoded placeholders (%EF%AC%82%C2%B0...%C2%B6%C3%9F) directly on live DOM sanitized HTTP/HTTPS href/xlink:href attributes before serialization so text nodes, finalized #... fragments, unsanitized imageSquare/kanban URLs, and unrelated %XX escapes are never touched.
 
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index 64d8255..685688e 100644
+index 64d8255..dee48cf 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
-@@ -340,6 +340,62 @@ export const createUserStyles = (
+@@ -340,6 +340,71 @@ export const createUserStyles = (
    return compileCSS(svgId, allStyles);
  };
  
@@ -51,7 +51,16 @@ index 64d8255..685688e 100644
 +          (attr.namespaceURI === null || attr.namespaceURI === XMLNS_XLINK_STD)) ||
 +        attr.name === 'xlink:href'
 +      ) {
-+        if (attr.value.includes('%EF%AC%82%C2%B0') && /^https?:/i.test(attr.value.trim())) {
++        const isUnsanitizedImageSquare =
++          el.localName === 'image' && attr.namespaceURI === null && attr.name === 'href';
++        const isKanbanTicketLink =
++          el.localName === 'a' && el.classList.contains('kanban-ticket-link');
++        if (
++          !isUnsanitizedImageSquare &&
++          !isKanbanTicketLink &&
++          attr.value.includes('%EF%AC%82%C2%B0') &&
++          /^https?:/i.test(attr.value.trim())
++        ) {
 +          const decoded = decodePercentEncodedUrlValue(attr.value, holder, encoder);
 +          if (attr.namespaceURI) {
 +            el.setAttributeNS(attr.namespaceURI, attr.name, decoded);
@@ -67,7 +76,7 @@ index 64d8255..685688e 100644
  /**
   * Clean up svgCode. Do replacements needed
   *
-@@ -636,7 +692,9 @@ const renderDiagram = async function (
+@@ -636,7 +701,9 @@ const renderDiagram = async function (
    const serializeSvg = (): string => {
      // -------------------------------------------------------------------------------
      // Clean up SVG code
@@ -79,7 +88,7 @@ index 64d8255..685688e 100644
      // Fix for when the base tag is used
      let code: string = root.select<HTMLDivElement>(enclosingDivID_selector).node()!.innerHTML;
 diff --git a/packages/mermaid/src/utils.ts b/packages/mermaid/src/utils.ts
-index 48ac4a6..14a50e2 100644
+index 48ac4a6..06511c0 100644
 --- a/packages/mermaid/src/utils.ts
 +++ b/packages/mermaid/src/utils.ts
 @@ -244,6 +244,46 @@ export function interpolateToCurve(
@@ -138,3 +147,23 @@ index 48ac4a6..14a50e2 100644
    }
  
    return url;
+@@ -902,8 +942,18 @@ export const encodeEntities = function (text: string): string {
+     return s.substring(0, s.length - 1);
+   });
+ 
+-  txt = txt.replace(/#\w+;/g, function (s) {
++  txt = txt.replace(/#\w+;/g, function (s, offset: number, full: string) {
+     const innerTxt = s.substring(1, s.length - 1);
++    if (/^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(innerTxt)) {
++      const prefix = full.slice(0, offset);
++      const line = prefix.split(/[\n\r\u2028\u2029]/).pop() ?? '';
++      const stmt = line.split(';').pop() ?? '';
++      const isStyleKw = (part: string) => /^(?:style|classDef)\s/.test(part.trimStart());
++      if ((isStyleKw(line) || isStyleKw(stmt)) && stmt.includes(':') && /[:\s,(]$/.test(stmt)) {
++        const restOnLine = full.slice(offset + s.length).split(/[\n\r\u2028\u2029]/)[0] ?? '';
++        return /^[^\S\n\r\u2028\u2029]*$/.test(restOnLine) ? s.slice(0, -1) : s;
++      }
++    }
+ 
+     const isInt = /^\+?\d+$/.test(innerTxt);
+     if (isInt) {

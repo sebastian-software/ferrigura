@@ -60,7 +60,7 @@ index c02a201..8457734 100644
        .attr('data-usecase-kind', edge.internal ? 'note-connector' : 'relationship');
      if (edge.internal) {
 diff --git a/packages/mermaid/src/mermaidAPI.ts b/packages/mermaid/src/mermaidAPI.ts
-index 685688e..a8e1e42 100644
+index dee48cf..e81dfb5 100644
 --- a/packages/mermaid/src/mermaidAPI.ts
 +++ b/packages/mermaid/src/mermaidAPI.ts
 @@ -43,6 +43,11 @@ import type {
@@ -75,7 +75,7 @@ index 685688e..a8e1e42 100644
  import { toBase64 } from './utils/base64.js';
  import { sanitizeCss } from './utils/sanitizeDirective.js';
  
-@@ -664,6 +669,9 @@ const renderDiagram = async function (
+@@ -673,6 +678,9 @@ const renderDiagram = async function (
  
    // -------------------------------------------------------------------------------
    // Draw the diagram with the renderer
@@ -85,7 +85,7 @@ index 685688e..a8e1e42 100644
    try {
      if (injected.profiling) {
        await profiler.span('draw', () => diag.renderer.draw(text, id, injected.version, diag));
-@@ -677,6 +685,8 @@ const renderDiagram = async function (
+@@ -686,6 +694,8 @@ const renderDiagram = async function (
        errorRenderer.draw(text, id, injected.version);
      }
      throw e;
@@ -94,7 +94,7 @@ index 685688e..a8e1e42 100644
    }
  
    // This is the d3 node for the svg element
-@@ -693,14 +703,17 @@ const renderDiagram = async function (
+@@ -702,14 +712,17 @@ const renderDiagram = async function (
      // -------------------------------------------------------------------------------
      // Clean up SVG code
      const svgRootSelection = root.select(`[id="${id}"]`);
@@ -114,7 +114,7 @@ index 685688e..a8e1e42 100644
      if (isSandboxed) {
        const svgEl = root.select<SVGSVGElement>(enclosingDivID_selector + ' svg').node()!;
 diff --git a/packages/mermaid/src/rendering-util/render.ts b/packages/mermaid/src/rendering-util/render.ts
-index 49145b2..97e6929 100644
+index 49145b2..68d1f48 100644
 --- a/packages/mermaid/src/rendering-util/render.ts
 +++ b/packages/mermaid/src/rendering-util/render.ts
 @@ -4,6 +4,7 @@ import { internalHelpers } from '../internals.js';
@@ -321,7 +321,7 @@ index 49145b2..97e6929 100644
  export const render = async (data4Layout: LayoutData, svg: SVG) => {
    if (!Object.hasOwn(layoutAlgorithms, data4Layout.layoutAlgorithm)) {
      throw new Error(`Unknown layout algorithm: ${data4Layout.layoutAlgorithm}`);
-@@ -105,10 +295,270 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
+@@ -105,10 +295,276 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
    // Prefix all node domIds with the diagram's SVG element ID to ensure uniqueness
    // across multiple diagrams on the same page.
    if (data4Layout.diagramId) {
@@ -533,6 +533,12 @@ index 49145b2..97e6929 100644
 +        }
 +      }
 +      target ??= remapped.get(`#${fragment}`);
++      if (target === undefined) {
++        const resolvedTarget = canonicalAttrId(fragment);
++        if (resolvedTarget !== fragment && elementOwned.has(resolvedTarget)) {
++          target = formatFragmentUrl(resolvedTarget);
++        }
++      }
 +      return target ?? rawLink;
 +    };
 +

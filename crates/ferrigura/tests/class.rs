@@ -1266,3 +1266,76 @@ fn gantt_sequence_url_guards_and_protected_dollar_ids() {
         "expected link to target exact Idﬂ°copy¶ß, not Id©: {exact_href}"
     );
 }
+
+#[test]
+fn style_hex_colors_block_ids_entity_fragments_and_image_filenames() {
+    // Hex colors after whitespace in class styles stay literal while non-hex entities still work.
+    let styled_class = ferrigura::render(
+        "classDiagram\n  class A\n  style A fill: #abc;\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        styled_class.contains("fill: #abc"),
+        "expected literal hex fill color in {styled_class}"
+    );
+    assert!(
+        !styled_class.contains("&amp;abc;"),
+        "hex color was corrupted into an entity in {styled_class}"
+    );
+    roxmltree::Document::parse(&styled_class).expect("well-formed SVG XML");
+
+    // Block diagrams disambiguate colliding placeholder-decoded IDs across all blocks.
+    let block_svg = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "block-beta\n  Foo#65;Bar[\"First\"]\n  FooABar[\"Second\"]\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let block_doc = roxmltree::Document::parse(&block_svg).expect("well-formed SVG XML");
+    let block_ids: Vec<&str> = block_doc
+        .descendants()
+        .filter_map(|n| n.attribute("id"))
+        .filter(|id| id.starts_with("graph-Foo"))
+        .collect();
+    assert_eq!(block_ids, vec!["graph-FooABar-1", "graph-FooABar"]);
+
+    // Non-percent fragment links using an equivalent entity spelling (`#Tab;` vs `#9;`) remap to
+    // the canonical emitted DOM ID (`Foo Bar` -> `#graph-classId-Foo%20Bar`).
+    let equiv_frag = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo#9;Bar`\n  click `Foo#9;Bar` href \"#graph-classId-Foo#Tab;Bar\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let equiv_doc = roxmltree::Document::parse(&equiv_frag).expect("well-formed SVG XML");
+    assert!(
+        equiv_doc
+            .descendants()
+            .any(|n| n.attribute("id") == Some("graph-classId-Foo Bar")),
+        "{equiv_frag}"
+    );
+    let equiv_href = equiv_doc
+        .descendants()
+        .find_map(|n| n.attribute(("http://www.w3.org/1999/xlink", "href")))
+        .expect("href");
+    assert_eq!(equiv_href, "#graph-classId-Foo%20Bar");
+
+    // Literal percent-encoded filenames in `imageSquare` are preserved verbatim (not decoded as
+    // percent-encoded Mermaid placeholders).
+    let literal_img = ferrigura::render(
+        "flowchart LR\n  A@{ img: \"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.png\", label: \"ok\", w: 16, h: 16 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        literal_img.contains("href=\"https://example.org/%EF%AC%82%C2%B0copy%C2%B6%C3%9F.png\""),
+        "{literal_img}"
+    );
+}

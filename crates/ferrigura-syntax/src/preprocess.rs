@@ -471,6 +471,24 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
                 .unwrap_or(after.len());
             if name_len > 0 && after[name_len..].starts_with(';') {
                 let name = &after[..name_len];
+                if is_style_hex_color(&current[..byte_idx], name) {
+                    let rest_on_line = after[name_len + 1..]
+                        .split(JS_LINE_TERMINATORS)
+                        .next()
+                        .unwrap_or("");
+                    let keep_len = if rest_on_line.chars().all(is_js_space) {
+                        1 + name_len
+                    } else {
+                        1 + name_len + 1
+                    };
+                    for &(c_ch, c_col) in &chars[char_idx..char_idx + keep_len] {
+                        let _ = c_ch;
+                        mapped_cols.push(c_col);
+                    }
+                    char_idx += 1 + name_len + 1;
+                    byte_idx += 1 + name_len + 1;
+                    continue;
+                }
                 let prefix_chars = if name.bytes().all(|b| b.is_ascii_digit()) {
                     "ﬂ°°".chars().count()
                 } else {
@@ -547,18 +565,60 @@ fn has_colon_hash(segment: &str) -> bool {
     false
 }
 
-/// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name.
+/// Whether `#<name>;` at the end of `prefix` is a CSS hex color inside a `style` or `classDef`
+/// statement (e.g. `style A fill: #abc;`), which must remain literal rather than becoming an HTML
+/// entity placeholder while leaving non-hex entities (such as `#quot;` or `#34;`) intact.
+fn is_style_hex_color(prefix: &str, name: &str) -> bool {
+    if !matches!(name.len(), 3 | 4 | 6 | 8) || !name.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return false;
+    }
+    let line = prefix.rsplit(JS_LINE_TERMINATORS).next().unwrap_or(prefix);
+    let trimmed_line = line.trim_start_matches(is_js_space);
+    let starts_with_style_kw = |s: &str| {
+        s.strip_prefix("style")
+            .or_else(|| s.strip_prefix("classDef"))
+            .is_some_and(|rest| rest.chars().next().is_some_and(is_js_space))
+    };
+    let stmt = line.rsplit(';').next().unwrap_or(line);
+    let in_style_stmt = starts_with_style_kw(trimmed_line)
+        || starts_with_style_kw(stmt.trim_start_matches(is_js_space));
+    if !in_style_stmt {
+        return false;
+    }
+    stmt.contains(':')
+        && stmt
+            .chars()
+            .next_back()
+            .is_some_and(|c| c == ':' || c == ',' || c == '(' || is_js_space(c))
+}
+
+/// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name, except for CSS hex
+/// colors inside `style` / `classDef` declarations.
 pub(crate) fn encode_hash_entities(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut rest = text;
-    while let Some(hash) = rest.find('#') {
-        out.push_str(&rest[..hash]);
-        let after = &rest[hash + 1..];
+    let mut cursor = 0;
+    while let Some(rel) = text[cursor..].find('#') {
+        let hash = cursor + rel;
+        out.push_str(&text[cursor..hash]);
+        let after = &text[hash + 1..];
         let name_len = after
             .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
             .unwrap_or(after.len());
         if name_len > 0 && after[name_len..].starts_with(';') {
             let name = &after[..name_len];
+            if is_style_hex_color(&text[..hash], name) {
+                out.push('#');
+                out.push_str(name);
+                let rest_on_line = after[name_len + 1..]
+                    .split(JS_LINE_TERMINATORS)
+                    .next()
+                    .unwrap_or("");
+                if !rest_on_line.chars().all(is_js_space) {
+                    out.push(';');
+                }
+                cursor = hash + 1 + name_len + 1;
+                continue;
+            }
             if name.bytes().all(|b| b.is_ascii_digit()) {
                 out.push_str("ﬂ°°");
             } else {
@@ -566,13 +626,13 @@ pub(crate) fn encode_hash_entities(text: &str) -> String {
             }
             out.push_str(name);
             out.push_str("¶ß");
-            rest = &after[name_len + 1..];
+            cursor = hash + 1 + name_len + 1;
         } else {
             out.push('#');
-            rest = after;
+            cursor = hash + 1;
         }
     }
-    out.push_str(rest);
+    out.push_str(&text[cursor..]);
     out
 }
 

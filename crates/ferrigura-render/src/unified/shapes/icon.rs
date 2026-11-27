@@ -523,7 +523,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
     let mut after_label = outline_group(&outer, &stroke_width);
     if let Some(img) = node.img.as_deref().filter(|img| !img.is_empty()) {
         let loose = input.config.globals.security_level == "loose";
-        let resolved = crate::common::resolve_url_entity_placeholders(img);
+        let resolved = crate::common::resolve_entity_placeholders(img);
         let href = guard_image_url(&resolved, loose);
         let image_y = if top {
             outer_height / 2.0 - image_height
