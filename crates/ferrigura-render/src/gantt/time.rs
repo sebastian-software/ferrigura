@@ -197,9 +197,16 @@ pub(crate) enum Interval {
     Filtered(Base, f64),
 }
 
+/// Maximum epoch magnitude of a valid JavaScript `Date` (`±8.64e15` ms), within which every
+/// integer millisecond is exact in `f64`.
+const MAX_JS_TIME: f64 = 8.64e15;
+
 impl Interval {
     /// The interval's `floor`.
     pub(crate) fn floor(self, time: f64) -> f64 {
+        if !time.is_finite() {
+            return f64::NAN;
+        }
         match self {
             Self::Base(base) => base.floor(time),
             Self::MillisecondEvery(k) => (time / k).floor() * k,
@@ -207,15 +214,37 @@ impl Interval {
                 let year = (year_of(time) as f64 / k).floor() * k;
                 days_from_civil(year as i64, 0, 1) as f64 * DAY
             }
+            Self::Filtered(base @ Base::Week(_), step) => {
+                let floored = base.floor(time);
+                let count = base.count(0.0, floored);
+                if !count.is_finite() {
+                    return f64::NAN;
+                }
+                let target = (count / step).floor() * step;
+                let result = base.offset(floored, target - count);
+                if result.is_finite() && result.abs() <= MAX_JS_TIME {
+                    result
+                } else {
+                    f64::NAN
+                }
+            }
             Self::Filtered(base, _) => {
                 let mut date = time;
-                loop {
-                    date = base.floor(date);
-                    if self.test(date) {
-                        return date;
+                for _ in 0..64 {
+                    let floored = base.floor(date);
+                    if !floored.is_finite() {
+                        return f64::NAN;
                     }
-                    date -= 1.0;
+                    if self.test(floored) {
+                        return floored;
+                    }
+                    let next = floored - 1.0;
+                    if !next.is_finite() || next >= floored {
+                        return f64::NAN;
+                    }
+                    date = next;
                 }
+                f64::NAN
             }
         }
     }
@@ -223,28 +252,70 @@ impl Interval {
     /// The interval's `offseti`: moves by `n` units from `time`, for a filter by `n` matching
     /// instants.
     fn offset_raw(self, time: f64, n: f64) -> f64 {
+        if !time.is_finite() || !n.is_finite() {
+            return f64::NAN;
+        }
         match self {
             Self::Base(base) => base.offset(time, n),
             Self::MillisecondEvery(k) => time + n * k,
             Self::YearEvery(k) => Base::Year.offset(time, n * k),
+            Self::Filtered(base @ Base::Week(_), step) => {
+                let steps = n.trunc();
+                if steps == 0.0 {
+                    return time;
+                }
+                let count = base.count(0.0, time);
+                if !count.is_finite() {
+                    return f64::NAN;
+                }
+                let target = if steps > 0.0 {
+                    ((count / step).floor() + steps) * step
+                } else {
+                    ((count / step).ceil() + steps) * step
+                };
+                let result = base.offset(time, target - count);
+                if result.is_finite() && result.abs() <= MAX_JS_TIME {
+                    result
+                } else {
+                    f64::NAN
+                }
+            }
             Self::Filtered(base, _) => {
                 let mut date = time;
                 if n >= 0.0 {
                     for _ in 0..(n as i64) {
-                        loop {
-                            date = base.offset(date, 1.0);
+                        let mut matched = false;
+                        for _ in 0..64 {
+                            let next = base.offset(date, 1.0);
+                            if !next.is_finite() || next <= date {
+                                return f64::NAN;
+                            }
+                            date = next;
                             if self.test(date) {
+                                matched = true;
                                 break;
                             }
+                        }
+                        if !matched {
+                            return f64::NAN;
                         }
                     }
                 } else {
                     for _ in 0..((-n) as i64) {
-                        loop {
-                            date = base.offset(date, -1.0);
+                        let mut matched = false;
+                        for _ in 0..64 {
+                            let next = base.offset(date, -1.0);
+                            if !next.is_finite() || next >= date {
+                                return f64::NAN;
+                            }
+                            date = next;
                             if self.test(date) {
+                                matched = true;
                                 break;
                             }
+                        }
+                        if !matched {
+                            return f64::NAN;
                         }
                     }
                 }
@@ -266,6 +337,9 @@ impl Interval {
 
     /// `ceil`: the first instant at or after `time` that starts an interval.
     fn ceil(self, time: f64) -> f64 {
+        if !time.is_finite() {
+            return f64::NAN;
+        }
         let floored = self.floor(time - 1.0);
         let offset = self.offset_raw(floored, 1.0);
         self.floor(offset)
@@ -274,12 +348,16 @@ impl Interval {
     /// `range(start, stop)`: the instants from the first start at or after `start` that are before
     /// `stop`, one per interval (d3-time's `interval.range` with step 1).
     pub(crate) fn range(self, start: f64, stop: f64) -> Vec<f64> {
+        const MAX_RANGE_TICKS: usize = 100_000;
         let mut out = Vec::new();
-        let mut start = self.ceil(start);
-        if start.is_nan() || stop.is_nan() || start >= stop {
+        if !start.is_finite() || !stop.is_finite() {
             return out;
         }
-        loop {
+        let mut start = self.ceil(start);
+        if !start.is_finite() || start >= stop {
+            return out;
+        }
+        while out.len() < MAX_RANGE_TICKS {
             let previous = start;
             out.push(previous);
             start = self.offset_raw(start, 1.0);
@@ -480,5 +558,24 @@ mod tests {
         assert_eq!(tick_step(0.0, 35.0, 10.0), 5.0);
         assert_eq!(tick_step(0.0, 17.0, 10.0), 2.0);
         assert_eq!(tick_step(10.0, 0.0, 10.0), -1.0);
+    }
+
+    #[test]
+    fn huge_week_step_and_non_finite_times_do_not_hang() {
+        let huge = Interval::every(Base::Week(0), 1e12).expect("an interval");
+        let range = huge.range(JAN_1_2014, JAN_1_2014 + 30.0 * DAY);
+        assert!(range.is_empty());
+
+        let filtered = Interval::every(Base::Week(0), 2.0).expect("an interval");
+        assert!(filtered.floor(f64::NAN).is_nan());
+        assert!(filtered.floor(f64::INFINITY).is_nan());
+        assert!(filtered.floor(f64::NEG_INFINITY).is_nan());
+        assert!(filtered.range(f64::NEG_INFINITY, JAN_1_2014).is_empty());
+
+        // Multi-week intervals align with multiples of step counted from the epoch week.
+        let every_three = Interval::every(Base::Week(0), 3.0).expect("an interval");
+        let ticks = every_three.range(0.0, 7.0 * WEEK);
+        assert_eq!(ticks.len(), 2);
+        assert_eq!(ticks[1] - ticks[0], 3.0 * WEEK);
     }
 }

@@ -13,9 +13,6 @@
 //! the `to*` conversions, and the other `methods/` of khroma.
 
 use std::f64::consts::PI;
-use std::sync::LazyLock;
-
-use ferroni::Regex;
 
 use super::ThemeError;
 
@@ -526,63 +523,152 @@ fn parse_keyword(color: &str) -> Option<Channels> {
     parse_hex(hex)
 }
 
-/// Builds a pattern that matches `word` in any letter case, so that the patterns do not depend on
-/// Oniguruma's case folding, which folds more than JavaScript's `/i` does.
-fn ci(word: &str) -> String {
-    word.chars()
-        .map(|character| {
-            if character.is_ascii_alphabetic() {
-                let lower = character.to_ascii_lowercase();
-                let upper = character.to_ascii_uppercase();
-                format!("[{lower}{upper}]")
-            } else {
-                character.to_string()
-            }
-        })
-        .collect()
+/// Whether `c` is a JavaScript `\s` whitespace character.
+fn is_js_ws(c: char) -> bool {
+    matches!(
+        c,
+        '\t' | '\n' | '\x0B' | '\x0C' | '\r' | ' ' | '\u{00A0}' | '\u{1680}' | '\u{2000}'
+            ..='\u{200A}'
+                | '\u{2028}'
+                | '\u{2029}'
+                | '\u{202F}'
+                | '\u{205F}'
+                | '\u{3000}'
+                | '\u{FEFF}'
+    )
 }
 
-/// The whitespace of JavaScript's `\s`, which Oniguruma's `\s` does not match exactly.
-const WS: &str = r"[\t\n\x0B\x0C\r \x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]";
-
-/// A decimal number with an optional sign, as the reference's color expressions read it.
-const NUMBER: &str = r"-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)";
-
-/// The pattern of `color/rgb.ts`, with the same groups: red, its percent sign, green, its percent
-/// sign, blue, its percent sign, and optionally alpha with its percent sign.
-fn rgb_pattern() -> String {
-    let separator = format!("{WS}*?(?:,|{WS}){WS}*?");
-    let exponent = format!("{NUMBER}(?:[eE][0-9]+)?");
-    let channel = format!("({exponent}(%?))");
-    let alpha = format!("(?:{WS}*?(?:,|/){WS}*?\\+?{channel})?");
-    let open = format!("\\A{}[aA]?\\({WS}*?", ci("rgb"));
-    format!("{open}{channel}{separator}{channel}{separator}{channel}{alpha}{WS}*?\\)\\z")
+/// Skips zero or more JavaScript whitespace characters from the start of `text`.
+fn skip_ws(text: &str) -> &str {
+    text.trim_start_matches(is_js_ws)
 }
 
-/// The pattern of `color/hsl.ts`, with the same groups: hue, saturation, lightness, and optionally
-/// alpha with its percent sign.
-fn hsl_pattern() -> String {
-    let separator = format!("{WS}*?(?:,|{WS}){WS}*?");
-    let hue_unit = format!(
-        "(?:{}|{}|{}|{})",
-        ci("deg"),
-        ci("grad"),
-        ci("rad"),
-        ci("turn")
-    );
-    let hue = format!("(-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:[eE]-?[0-9]+)?{hue_unit}?)");
-    let percent = "(-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:[eE]-?[0-9]+)?%)".to_owned();
-    let alpha_number = "(-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:[eE]-?[0-9]+)?(%)?)".to_owned();
-    let alpha = format!("(?:{WS}*?(?:,|/){WS}*?\\+?{alpha_number})?");
-    let open = format!("\\A{}[aA]?\\({WS}*?", ci("hsl"));
-    format!("{open}{hue}{separator}{percent}{separator}{percent}{alpha}{WS}*?\\)\\z")
+/// Parses a leading ASCII case-insensitive prefix (`rgb`/`rgba` or `hsl`/`hsla`), followed by `(`
+/// and optional whitespace.
+fn take_color_open<'a>(text: &'a str, name: &str) -> Option<&'a str> {
+    let bytes = text.as_bytes();
+    let len = name.len();
+    if bytes.len() <= len || !bytes[..len].eq_ignore_ascii_case(name.as_bytes()) {
+        return None;
+    }
+    let mut index = len;
+    if matches!(bytes.get(index), Some(b'a' | b'A')) {
+        index += 1;
+    }
+    if bytes.get(index) != Some(&b'(') {
+        return None;
+    }
+    Some(skip_ws(&text[index + 1..]))
 }
 
-/// The RGB pattern, compiled once. The pattern is a constant, so the `None` case is unreachable.
-static RGB_RE: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(&rgb_pattern()).ok());
+/// Parses a channel separator: either optional whitespace around `,`, or at least one whitespace
+/// character. Equivalent to `(?:{WS}*,{WS}*|{WS}+)` in linear time without backtracking.
+fn take_separator(text: &str) -> Option<&str> {
+    let after_ws = skip_ws(text);
+    if let Some(rest) = after_ws.strip_prefix(',') {
+        Some(skip_ws(rest))
+    } else if after_ws.len() < text.len() {
+        Some(after_ws)
+    } else {
+        None
+    }
+}
 
-/// The HSL pattern, compiled once. The pattern is a constant, so the `None` case is unreachable.
-static HSL_RE: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(&hsl_pattern()).ok());
+/// Parses a decimal number `-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)` with an optional exponent
+/// `[eE][0-9]+` (or `[eE]-?[0-9]+` when `allow_neg_exp` is true).
+fn take_number(text: &str, allow_neg_exp: bool) -> Option<(&str, &str)> {
+    let bytes = text.as_bytes();
+    let len = bytes.len();
+    let mut i = 0;
+    if bytes.first() == Some(&b'-') {
+        i += 1;
+    }
+    let int_start = i;
+    while i < len && bytes[i].is_ascii_digit() {
+        i += 1;
+    }
+    let has_int = i > int_start;
+    if i < len && bytes[i] == b'.' {
+        let frac_start = i + 1;
+        let mut frac_end = frac_start;
+        while frac_end < len && bytes[frac_end].is_ascii_digit() {
+            frac_end += 1;
+        }
+        if frac_end > frac_start {
+            i = frac_end;
+        } else if !has_int {
+            return None;
+        }
+    } else if !has_int {
+        return None;
+    }
+
+    if i < len && matches!(bytes[i], b'e' | b'E') {
+        let mut exp = i + 1;
+        if allow_neg_exp && exp < len && bytes[exp] == b'-' {
+            exp += 1;
+        }
+        let exp_digits = exp;
+        while exp < len && bytes[exp].is_ascii_digit() {
+            exp += 1;
+        }
+        if exp > exp_digits {
+            i = exp;
+        }
+    }
+    Some((&text[..i], &text[i..]))
+}
+
+/// Parses an RGB channel (number + optional `%`). Returns `(token, is_percent, rest)`.
+fn take_rgb_channel(text: &str) -> Option<(&str, bool, &str)> {
+    let (number, rest) = take_number(text, false)?;
+    if let Some(after) = rest.strip_prefix('%') {
+        Some((&text[..number.len() + 1], true, after))
+    } else {
+        Some((number, false, rest))
+    }
+}
+
+/// Parses an HSL hue (number with optional negative exponent + optional ASCII case-insensitive
+/// `deg`/`grad`/`rad`/`turn`).
+fn take_hsl_hue(text: &str) -> Option<(&str, &str)> {
+    let (number, rest) = take_number(text, true)?;
+    for unit in ["grad", "turn", "deg", "rad"] {
+        if rest.len() >= unit.len()
+            && rest.as_bytes()[..unit.len()].eq_ignore_ascii_case(unit.as_bytes())
+        {
+            let total = number.len() + unit.len();
+            return Some((&text[..total], &text[total..]));
+        }
+    }
+    Some((number, rest))
+}
+
+/// Parses an HSL percentage channel (number with optional negative exponent followed by `%`).
+fn take_hsl_percent(text: &str) -> Option<(&str, &str)> {
+    let (number, rest) = take_number(text, true)?;
+    let after = rest.strip_prefix('%')?;
+    Some((&text[..number.len() + 1], after))
+}
+
+/// Parses the optional alpha part and closing `)` at the end of `rgb()` or `hsl()`.
+fn take_alpha_and_close(text: &str, allow_neg_exp: bool) -> Option<Option<(&str, bool)>> {
+    let rest = skip_ws(text);
+    if let Some(after_close) = rest.strip_prefix(')') {
+        return after_close.is_empty().then_some(None);
+    }
+    let after_sep = rest.strip_prefix(',').or_else(|| rest.strip_prefix('/'))?;
+    let after_ws = skip_ws(after_sep);
+    let after_plus = after_ws.strip_prefix('+').unwrap_or(after_ws);
+    let (number, after_num) = take_number(after_plus, allow_neg_exp)?;
+    let (token, is_percent, rest) = if let Some(after_pct) = after_num.strip_prefix('%') {
+        (&after_plus[..number.len() + 1], true, after_pct)
+    } else {
+        (number, false, after_num)
+    };
+    let after_close = skip_ws(rest).strip_prefix(')')?;
+    after_close.is_empty().then_some(Some((token, is_percent)))
+}
 
 /// `parseFloat` of JavaScript: the longest decimal number at the start of the text, or NaN.
 fn parse_float(text: &str) -> f64 {
@@ -674,27 +760,29 @@ fn hue2deg(hue: &str) -> f64 {
 
 /// `rgb` of `color/rgb.ts`.
 fn parse_rgb(color: &str) -> Option<Channels> {
-    if !matches!(color.as_bytes().first(), Some(b'r' | b'R')) {
-        return None;
-    }
-    let captures = RGB_RE.as_ref()?.captures(color)?;
-    let part = |index: usize| captures.get(index).map_or("", |found| found.as_str());
-    let percent = |index: usize| !part(index).is_empty();
+    let rest = take_color_open(color, "rgb")?;
+    let (r_str, r_pct, rest) = take_rgb_channel(rest)?;
+    let rest = take_separator(rest)?;
+    let (g_str, g_pct, rest) = take_rgb_channel(rest)?;
+    let rest = take_separator(rest)?;
+    let (b_str, b_pct, rest) = take_rgb_channel(rest)?;
+    let alpha = take_alpha_and_close(rest, false)?;
 
-    let channel = |value: usize, sign: usize, to_channel: Channel| {
-        let number = parse_float(part(value));
-        let scaled = if percent(sign) { number * 2.55 } else { number };
+    let channel = |value: &str, is_percent: bool, to_channel: Channel| {
+        let number = parse_float(value);
+        let scaled = if is_percent { number * 2.55 } else { number };
         clamp(to_channel, scaled)
     };
     let data = Data {
-        r: Some(channel(1, 2, Channel::R)),
-        g: Some(channel(3, 4, Channel::G)),
-        b: Some(channel(5, 6, Channel::B)),
-        a: if captures.get(7).is_some() {
-            let number = parse_float(part(7));
-            clamp(Channel::A, if percent(8) { number / 100.0 } else { number })
-        } else {
-            1.0
+        r: Some(channel(r_str, r_pct, Channel::R)),
+        g: Some(channel(g_str, g_pct, Channel::G)),
+        b: Some(channel(b_str, b_pct, Channel::B)),
+        a: match alpha {
+            Some((value, is_percent)) => {
+                let number = parse_float(value);
+                clamp(Channel::A, if is_percent { number / 100.0 } else { number })
+            }
+            None => 1.0,
         },
         ..Data::default()
     };
@@ -703,28 +791,24 @@ fn parse_rgb(color: &str) -> Option<Channels> {
 
 /// `hsl` of `color/hsl.ts`.
 fn parse_hsl(color: &str) -> Option<Channels> {
-    if !matches!(color.as_bytes().first(), Some(b'h' | b'H')) {
-        return None;
-    }
-    let captures = HSL_RE.as_ref()?.captures(color)?;
-    let part = |index: usize| captures.get(index).map_or("", |found| found.as_str());
+    let rest = take_color_open(color, "hsl")?;
+    let (h_str, rest) = take_hsl_hue(rest)?;
+    let rest = take_separator(rest)?;
+    let (s_str, rest) = take_hsl_percent(rest)?;
+    let rest = take_separator(rest)?;
+    let (l_str, rest) = take_hsl_percent(rest)?;
+    let alpha = take_alpha_and_close(rest, true)?;
 
     let data = Data {
-        h: Some(hue2deg(part(1))),
-        s: Some(clamp(Channel::S, parse_float(part(2)))),
-        l: Some(clamp(Channel::L, parse_float(part(3)))),
-        a: if captures.get(4).is_some() {
-            let number = parse_float(part(4));
-            clamp(
-                Channel::A,
-                if captures.get(5).is_some() {
-                    number / 100.0
-                } else {
-                    number
-                },
-            )
-        } else {
-            1.0
+        h: Some(hue2deg(h_str)),
+        s: Some(clamp(Channel::S, parse_float(s_str))),
+        l: Some(clamp(Channel::L, parse_float(l_str))),
+        a: match alpha {
+            Some((value, is_percent)) => {
+                let number = parse_float(value);
+                clamp(Channel::A, if is_percent { number / 100.0 } else { number })
+            }
+            None => 1.0,
         },
         ..Data::default()
     };
@@ -1035,9 +1119,14 @@ mod tests {
     }
 
     #[test]
-    fn the_patterns_compile() {
-        assert!(RGB_RE.is_some());
-        assert!(HSL_RE.is_some());
+    fn adversarial_whitespace_in_rgb_and_hsl_rejects_in_linear_time() {
+        let spaces = " ".repeat(20_000);
+        let bad_rgb = format!("rgb(1{spaces}2{spaces}3x)");
+        assert!(parse(&bad_rgb).is_err());
+        let bad_hsl = format!("hsl(120{spaces}50%{spaces}50%x)");
+        assert!(parse(&bad_hsl).is_err());
+        let good_rgb = format!("rgb(1{spaces}2{spaces}3)");
+        assert!(parse(&good_rgb).is_ok());
     }
 
     #[test]

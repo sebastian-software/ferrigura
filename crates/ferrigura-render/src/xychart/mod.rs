@@ -470,11 +470,15 @@ fn data_labels(
         let candidates: Vec<f64> = valid
             .iter()
             .map(|(rect, label)| {
-                let mut font = rect.height * 0.7;
-                while !fits_horizontally(rect, label, font) && font > 0.0 {
-                    font -= 1.0;
-                }
-                font
+                let denom = utf16_len(label) * CHAR_WIDTH_FACTOR;
+                let upper = if denom > 0.0 {
+                    (rect.width - RIGHT_MARGIN) / denom
+                } else {
+                    0.0
+                };
+                shrink_font(rect.height * 0.7, upper, |font| {
+                    fits_horizontally(rect, label, font)
+                })
             })
             .collect();
         let uniform = js_floor(candidates.iter().copied().fold(f64::INFINITY, f64::min));
@@ -498,11 +502,14 @@ fn data_labels(
         let candidates: Vec<f64> = valid
             .iter()
             .map(|(rect, label)| {
-                let mut font = rect.width / (utf16_len(label) * CHAR_WIDTH_FACTOR);
-                while !fits_in_bar(rect, label, font) && font > 0.0 {
-                    font -= 1.0;
-                }
-                font
+                let denom = utf16_len(label) * CHAR_WIDTH_FACTOR;
+                let initial = if denom > 0.0 { rect.width / denom } else { 0.0 };
+                let upper = if rect.y.is_some_and(f64::is_finite) {
+                    (rect.height - Y_OFFSET).min(initial)
+                } else {
+                    0.0
+                };
+                shrink_font(initial, upper, |font| fits_in_bar(rect, label, font))
             })
             .collect();
         let uniform = js_floor(candidates.iter().copied().fold(f64::INFINITY, f64::min));
@@ -519,6 +526,38 @@ fn data_labels(
             })
             .collect())
     }
+}
+
+/// Decrements `font` in 1 px steps until `fits(font)` holds or `font <= 0.0`, jumping directly
+/// near `upper` when `font` is huge or non-finite so large values cannot loop forever.
+fn shrink_font(mut font: f64, upper: f64, fits: impl Fn(f64) -> bool) -> f64 {
+    if !font.is_finite() {
+        return if font.is_nan() { font } else { 0.0 };
+    }
+    if !fits(font) && font > 1000.0 {
+        let target = if upper.is_finite() {
+            upper.max(0.0)
+        } else {
+            0.0
+        };
+        if font - target > 2.0 {
+            let steps = (font - target).floor() - 1.0;
+            if steps > 0.0 {
+                font -= steps;
+            }
+        }
+    }
+    for _ in 0..1024 {
+        if fits(font) || font <= 0.0 {
+            return font;
+        }
+        let next = font - 1.0;
+        if !next.is_finite() || next == font {
+            return 0.0;
+        }
+        font = next;
+    }
+    if fits(font) { font } else { 0.0 }
 }
 
 /// `fitsHorizontally`: the label fits in the bar, with a margin on its right.
@@ -568,5 +607,26 @@ mod tests {
         let markup = element.render();
         assert!(markup.contains("transform=\"translate(10.5, 20) rotate(270)\""));
         assert!(markup.contains("dominant-baseline=\"text-before-edge\""));
+    }
+
+    #[test]
+    fn shrink_font_handles_huge_and_non_finite_values() {
+        let rect = RectElem {
+            x: 0.0,
+            y: Some(0.0),
+            width: 100.0,
+            height: 40.0,
+            fill: "#000".to_owned(),
+            stroke_fill: "#000".to_owned(),
+            stroke_width: 1.0,
+        };
+        let huge = shrink_font(1e18, 25.0, |f| fits_horizontally(&rect, "12345", f));
+        assert!(huge.is_finite() && huge <= 26.0);
+        assert_eq!(shrink_font(f64::INFINITY, 25.0, |_| false), 0.0);
+        // Empty label must not divide by zero to infinity and hang.
+        let denom = utf16_len("") * CHAR_WIDTH_FACTOR;
+        assert_eq!(denom, 0.0);
+        let empty = shrink_font(0.0, 0.0, |f| fits_in_bar(&rect, "", f));
+        assert_eq!(empty, 0.0);
     }
 }

@@ -820,3 +820,26 @@ fn deeply_nested_config_value_does_not_overflow() {
     drop_iterative(neg_zero_cfg);
     assert_eq!(renderer.render(CONTROL).unwrap(), control);
 }
+
+#[test]
+fn issue_248_dos_and_panic_reproducers_terminate_cleanly() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let control = renderer.render(CONTROL).expect("control renders");
+
+    // 1. Polynomial ReDoS in khroma RGB/HSL parsing via themeVariables.
+    let spaces = " ".repeat(20_000);
+    let redos_config: Value = serde_json::json!({
+        "themeVariables": {
+            "primaryColor": format!("rgb(1{spaces}2{spaces}3x)"),
+            "secondaryColor": format!("hsl(120{spaces}50%{spaces}50%x)")
+        }
+    })
+    .into();
+    let _ = Renderer::new(&redos_config).render("flowchart LR\nA-->B\n");
+
+    // 2. Gantt 60-byte CPU DoS with excludes + huge span, and huge week tickInterval.
+    let _ = renderer.render("gantt\n  excludes 2020-01-01\n  t1 : 2020-01-02, 200000y\n");
+    let _ = renderer.render("gantt\n  tickInterval 1000000000000week\n  t1 : 2020-01-01, 5d\n");
+
+    assert_eq!(renderer.render(CONTROL).expect("control renders"), control);
+}

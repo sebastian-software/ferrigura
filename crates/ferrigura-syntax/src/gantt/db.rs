@@ -490,17 +490,39 @@ impl Db {
         mut end: Time,
         offset: usize,
     ) -> Result<(Time, Option<Time>), DbError> {
+        const MAX_FIX_DAYS: usize = 50_000;
+        const MAX_EXCLUDED_DAYS: usize = 10_000;
+        if !start.is_finite() || !end.is_finite() {
+            return Ok((end, None));
+        }
+        if end > start && (end - start) / 86_400_000.0 > MAX_FIX_DAYS as f64 {
+            return Err(DbError {
+                offset,
+                message: "Task span exceeds the maximum supported range for `excludes`.".to_owned(),
+            });
+        }
         let mut invalid = false;
         let mut render_end = None;
-        let max_end = date::add(end, 10000.0, Unit::Day);
+        let max_end = date::add(end, MAX_EXCLUDED_DAYS as f64, Unit::Day);
+        let mut iterations = 0usize;
+        let mut excluded_days = 0usize;
         while start <= end {
+            iterations += 1;
+            if iterations > MAX_FIX_DAYS {
+                return Err(DbError {
+                    offset,
+                    message: "Task span exceeds the maximum supported range for `excludes`."
+                        .to_owned(),
+                });
+            }
             if !invalid {
                 render_end = Some(end);
             }
             invalid = self.is_invalid_date(start, offset)?;
             if invalid {
+                excluded_days += 1;
                 end = date::add(end, 1.0, Unit::Day);
-                if end > max_end {
+                if excluded_days > MAX_EXCLUDED_DAYS || (max_end.is_finite() && end > max_end) {
                     return Err(DbError {
                         offset,
                         message: "Failed to find a valid date that was not excluded by `excludes` after 10,000 iterations."
@@ -508,7 +530,11 @@ impl Db {
                     });
                 }
             }
-            start = date::add(start, 1.0, Unit::Day);
+            let next = date::add(start, 1.0, Unit::Day);
+            if !next.is_finite() || next <= start {
+                break;
+            }
+            start = next;
         }
         Ok((end, render_end))
     }
@@ -700,4 +726,30 @@ fn take_tags(fields: &mut Vec<String>) -> Result<Tags, String> {
         }
     }
     Ok(tags)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn huge_span_with_excludes_is_rejected_without_long_loop() {
+        let mut db = Db::new(1_577_836_800_000.0, SecurityLevel::Strict);
+        db.set_date_format("YYYY-MM-DD");
+        db.set_excludes("2020-01-01");
+        db.add_task("t1".to_owned(), ": 2020-01-02, 200000y", 0)
+            .expect("task added");
+        assert!(db.get_tasks().is_err());
+    }
+
+    #[test]
+    fn excludes_near_clip_ms_do_not_bypass_iteration_guard() {
+        let mut db = Db::new(0.0, SecurityLevel::Strict);
+        db.set_date_format("YYYY-MM-DD");
+        db.set_excludes("sunday, monday, tuesday, wednesday, thursday, friday, saturday");
+        // Near +CLIP_MS (8.64e15) where adding 10,000 days overflows to NaN.
+        let near_clip = 8.64e15 - 500.0 * 86_400_000.0;
+        let result = db.fix_task_dates(near_clip - 10.0 * 86_400_000.0, near_clip, 0);
+        assert!(result.is_ok() || result.is_err());
+    }
 }
