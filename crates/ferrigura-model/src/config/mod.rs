@@ -21,7 +21,8 @@ mod lenient;
 
 pub use generated::*;
 pub use layers::{
-    SiteConfig, assign_with_depth, deep_merge, effective, sanitize_directive, user_theme_variables,
+    ResolvedThemeVariables, SiteConfig, assign_with_depth, deep_merge, effective,
+    sanitize_directive, user_theme_variables,
 };
 pub use lenient::{ConfigWarning, Outcome};
 
@@ -71,6 +72,11 @@ pub struct TypedConfig {
     pub warnings: Vec<ConfigWarning>,
 }
 
+/// Whether `key` is a top-level configuration option (not a diagram section).
+pub(crate) fn is_top_key(key: &str) -> bool {
+    TOP_KEYS.binary_search(&key).is_ok()
+}
+
 /// The typed view of a configuration value. It never fails for a value of the wrong type, and it
 /// ignores the warnings; [`typed_with_warnings`] returns them.
 ///
@@ -78,7 +84,9 @@ pub struct TypedConfig {
 ///
 /// Returns an error only when the configuration is not an object, which [`effective`] never returns.
 pub fn typed(value: &Value) -> Result<MermaidConfig, serde_json::Error> {
-    typed_with_warnings(value).map(|typed| typed.config)
+    let mut read = value.clone();
+    lenient::read_types_quiet(&mut read, cached_defaults(), &SCHEMA);
+    serde::Deserialize::deserialize(read)
 }
 
 /// The typed view of a configuration value, with the values of the wrong type that were read or
@@ -121,7 +129,7 @@ pub fn typed_top(value: &Value) -> Result<MermaidConfigTop, serde_json::Error> {
         ),
         other => other.clone(),
     };
-    lenient::read_types(&mut read, cached_defaults(), &SCHEMA);
+    lenient::read_types_quiet(&mut read, cached_defaults(), &SCHEMA);
     serde::Deserialize::deserialize(read)
 }
 
@@ -140,12 +148,11 @@ where
     let Some(section) = value.get(key) else {
         return Ok(T::default());
     };
-    let mut read = Value::Object(std::iter::once((key.to_owned(), section.clone())).collect());
-    lenient::read_types(&mut read, cached_defaults(), &SCHEMA);
-    match read.get(key) {
-        Some(section) => serde::Deserialize::deserialize(section.clone()),
-        None => Ok(T::default()),
+    let mut section = section.clone();
+    if !lenient::read_section_quiet(&mut section, key, cached_defaults(), &SCHEMA) {
+        return Ok(T::default());
     }
+    serde::Deserialize::deserialize(section)
 }
 
 #[cfg(test)]
@@ -190,6 +197,11 @@ mod tests {
     #[test]
     fn config_keys_are_sorted_and_unique() {
         assert!(CONFIG_KEYS.windows(2).all(|pair| pair[0] < pair[1]));
+    }
+
+    #[test]
+    fn top_keys_are_sorted_and_unique() {
+        assert!(TOP_KEYS.windows(2).all(|pair| pair[0] < pair[1]));
     }
 
     #[test]

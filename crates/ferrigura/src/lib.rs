@@ -1,12 +1,11 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hasher;
-use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard, OnceLock, PoisonError};
 
-use ferrigura_model::config::{MermaidConfig, SiteConfig, typed_top};
+use ferrigura_model::config::{MermaidConfig, ResolvedThemeVariables, SiteConfig, typed_top};
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_render::RenderError;
@@ -78,52 +77,67 @@ pub struct RenderOptions {
 
 /// A renderer, with the site configuration resolved once.
 ///
-/// [`Renderer::new`] takes the configuration the user would pass to `initialize`. The renderer holds
-/// it merged onto the defaults and typed, and the light and the dark theme with the user's
-/// `themeVariables`, as typed tokens. Its renders merge only the diagram's own front matter and directives on
-/// top, and only when there are any: a text without them is drawn with the resolved configuration as
-/// it is. The typed view of a diagram type is resolved at its first render and kept after that, and
-/// so are the views of the last few front matters and directives it rendered.
+/// [`Renderer::new`] takes the configuration the user would pass to `initialize`. The renderer
+/// resolves the site configuration once and caches its computed theme variables and typed theme
+/// tokens on first use, sharing them across diagram types. Its renders merge only the diagram's own
+/// front matter and directives on top, and only when there are any: a text without them is drawn
+/// with the resolved configuration as it is. The typed view of each diagram type is resolved at its
+/// first render and kept after that, and so are the views and resolved scheme/design tokens of the
+/// last few front matters and directives it rendered.
+///
+/// For multi-diagram documents or batch builds with site-owned settings (such as a shared `theme`,
+/// `themeVariables`, or host fonts registered through [`RendererBuilder`]), construct one
+/// `Renderer` and reuse it across all diagrams instead of rebuilding it per diagram.
 ///
 /// The configuration of a renderer does not change once it is made, and the renderer is `Send` and
 /// `Sync`, so one renderer can serve renders on several threads at once. For the same configuration,
 /// its output is the output of [`render_with`], byte for byte.
 ///
 /// ```
-/// use ferrigura::{RenderOptions, Renderer};
-/// use ferrigura::Value;
+/// use ferrigura::{RenderOptions, Renderer, Value};
 ///
-/// let renderer = Renderer::new(&Value::empty_object());
-/// let svg = renderer.render("pie\n  \"Dogs\" : 386\n  \"Cats\" : 85\n")?;
-/// assert!(svg.starts_with("<svg "));
-/// let svg = renderer.render_with(
-///     "pie\n  \"Dogs\" : 386\n",
+/// // Resolve site-owned settings once and reuse the renderer across diagrams.
+/// let site: Value = serde_json::json!({
+///     "theme": "redux-color",
+///     "themeVariables": { "primaryColor": "#336699" }
+/// }).into();
+/// let renderer = Renderer::new(&site);
+/// let pie = renderer.render("pie\n  \"Dogs\" : 386\n  \"Cats\" : 85\n")?;
+/// assert!(pie.starts_with("<svg "));
+/// let flow = renderer.render_with(
+///     "flowchart LR\n  A --> B\n",
 ///     &RenderOptions { id: Some("pets".to_owned()), ..RenderOptions::default() },
 /// )?;
-/// assert!(svg.contains("id=\"pets\""));
+/// assert!(flow.contains("id=\"pets\""));
 /// # Ok::<(), ferrigura::Error>(())
 /// ```
 #[derive(Debug)]
 pub struct Renderer {
     /// The site configuration, merged onto the defaults.
     site: SiteConfig,
+    /// Validated `(maxTextSize, maxEdges)` limits from the site configuration, or the config error
+    /// message reported when rendering.
+    limits: Result<(usize, usize), String>,
     /// The configuration as it serializes, which the derived id hashes.
     configuration: String,
     /// The user's theme overrides, which the two schemes below are computed with.
     overrides: Value,
-    /// The tokens of `redux-color` with the overrides: the light scheme.
-    light_tokens: ThemeTokens,
-    /// The tokens of `redux-dark-color` with the overrides: the dark scheme.
-    dark_tokens: ThemeTokens,
-    /// The light and the dark tokens of the design mode with the overrides, made at the first render
-    /// in that mode.
-    design_tokens: OnceLock<(ThemeTokens, ThemeTokens)>,
+    /// The tokens of `redux-color` with the site overrides, resolved lazily and shared with views
+    /// whose effective theme variables match.
+    light_tokens: OnceLock<Arc<ThemeTokens>>,
+    /// The tokens of `redux-dark-color` with the site overrides, resolved lazily and shared with
+    /// views whose effective theme variables match.
+    dark_tokens: OnceLock<Arc<ThemeTokens>>,
+    /// The light tokens of the design mode with the site overrides, resolved at first use.
+    design_light_tokens: OnceLock<Arc<ThemeTokens>>,
+    /// The dark tokens of the design mode with the site overrides, resolved at first use.
+    design_dark_tokens: OnceLock<Arc<ThemeTokens>>,
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
     /// The views of the last few directives, least recently used first: diagrams that carry the
-    /// same front matter or `init` directive share their view. A view that cannot be resolved is
-    /// not kept, so its error is resolved again at each render.
+    /// same front matter or `init` directive share their view and resolved scheme/design tokens. A
+    /// view that cannot be resolved is not kept, so its error is resolved again at each render.
     directive_views: Mutex<Vec<DirectiveView>>,
     /// The diagram types this renderer draws, one plugin per kind.
     plugins: Vec<Plugin>,
@@ -234,31 +248,122 @@ impl Renderer {
 
     /// Checks the text against `maxTextSize` and returns `maxEdges`.
     fn limits(&self, text: &str) -> Result<usize, RenderError> {
-        let read = |key: &str, default: usize| -> Result<usize, RenderError> {
-            match self.site.settings().get(key) {
-                None => Ok(default),
-                Some(Value::Number(n))
-                    if n.is_finite()
-                        && *n >= 0.0
-                        && n.fract() == 0.0
-                        && *n <= 9_007_199_254_740_991.0
-                        && *n <= usize::MAX as f64 =>
-                {
-                    Ok(*n as usize)
-                }
-                Some(_) => Err(RenderError::Config(format!(
-                    "{key} must be a non-negative safe integer"
-                ))),
-            }
-        };
-        let max_text = read("maxTextSize", 50_000)?;
-        let max_edges = read("maxEdges", 500)?;
-        if text.encode_utf16().take(max_text.saturating_add(1)).count() > max_text {
+        let (max_text, max_edges) = self.limits.clone().map_err(RenderError::Config)?;
+        // UTF-16 code unit count is always <= UTF-8 byte length, so skip the UTF-16 scan when the
+        // byte length already fits within `max_text`.
+        if text.len() > max_text
+            && text.encode_utf16().take(max_text.saturating_add(1)).count() > max_text
+        {
             return Err(RenderError::Options(format!(
                 "diagram text exceeds maxTextSize of {max_text} UTF-16 code units"
             )));
         }
         Ok(max_edges)
+    }
+
+    /// Cached typed tokens for a shipped theme with the site's `themeVariables` overrides.
+    fn site_tokens(&self, theme: Theme) -> Arc<ThemeTokens> {
+        let slot = match theme {
+            Theme::ReduxColor => &self.light_tokens,
+            Theme::ReduxDarkColor => &self.dark_tokens,
+        };
+        Arc::clone(slot.get_or_init(|| {
+            if self.site.has_theme_overrides() {
+                Arc::new(ThemeTokens::from_value(
+                    self.site.site_theme_variables(theme),
+                ))
+            } else {
+                theme.default_tokens()
+            }
+        }))
+    }
+
+    /// Cached design-mode tokens for `tone` with the site's `themeVariables` overrides.
+    fn design_tone_tokens(&self, tone: Tone) -> Arc<ThemeTokens> {
+        let slot = match tone {
+            Tone::Light => &self.design_light_tokens,
+            Tone::Dark => &self.design_dark_tokens,
+        };
+        Arc::clone(slot.get_or_init(|| design_tokens_for(tone, &self.overrides)))
+    }
+
+    /// Resolves only the scheme or design tokens that `Prepared::theme` will actually read.
+    fn resolve_tokens(
+        &self,
+        scheme: Option<ColorScheme>,
+        design: Option<Tone>,
+        directive: Option<(&Value, &DirectiveTokens)>,
+    ) -> (Arc<ThemeTokens>, Arc<ThemeTokens>) {
+        let need_light = matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto))
+            || (scheme.is_none() && design == Some(Tone::Light));
+        let need_dark = matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto))
+            || (scheme.is_none() && design == Some(Tone::Dark));
+        if !need_light && !need_dark {
+            return (ThemeTokens::empty_shared(), ThemeTokens::empty_shared());
+        }
+        let directive_overrides = directive.and_then(|(dir, tokens)| {
+            if dir.get("themeVariables").is_none() && dir.get("fontFamily").is_none() {
+                return None;
+            }
+            let overrides = tokens.overrides(&self.site, dir);
+            (!identical(overrides, &self.overrides)).then_some((overrides, tokens))
+        });
+        let Some((overrides, tokens)) = directive_overrides else {
+            let light = if need_light {
+                if design.is_some() {
+                    self.design_tone_tokens(Tone::Light)
+                } else {
+                    self.site_tokens(Theme::ReduxColor)
+                }
+            } else {
+                ThemeTokens::empty_shared()
+            };
+            let dark = if need_dark {
+                if design.is_some() {
+                    self.design_tone_tokens(Tone::Dark)
+                } else {
+                    self.site_tokens(Theme::ReduxDarkColor)
+                }
+            } else {
+                ThemeTokens::empty_shared()
+            };
+            return (light, dark);
+        };
+        let light = if need_light {
+            if design.is_some() {
+                Arc::clone(
+                    tokens
+                        .design_light
+                        .get_or_init(|| design_tokens_for(Tone::Light, overrides)),
+                )
+            } else {
+                Arc::clone(
+                    tokens
+                        .light
+                        .get_or_init(|| Theme::ReduxColor.tokens_shared(Some(overrides))),
+                )
+            }
+        } else {
+            ThemeTokens::empty_shared()
+        };
+        let dark = if need_dark {
+            if design.is_some() {
+                Arc::clone(
+                    tokens
+                        .design_dark
+                        .get_or_init(|| design_tokens_for(Tone::Dark, overrides)),
+                )
+            } else {
+                Arc::clone(
+                    tokens
+                        .dark
+                        .get_or_init(|| Theme::ReduxDarkColor.tokens_shared(Some(overrides))),
+                )
+            }
+        } else {
+            ThemeTokens::empty_shared()
+        };
+        (light, dark)
     }
 
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
@@ -286,23 +391,14 @@ impl Renderer {
         let scheme = options.color_scheme;
         if is_empty_object(&directive) {
             let view = self.view(plugin)?;
-            let (light_tokens, dark_tokens) = if options.design {
-                let (light, dark) = self
-                    .design_tokens
-                    .get_or_init(|| design_tokens(&self.overrides));
-                (Cow::Borrowed(light), Cow::Borrowed(dark))
-            } else {
-                (
-                    Cow::Borrowed(&self.light_tokens),
-                    Cow::Borrowed(&self.dark_tokens),
-                )
-            };
+            let design = options.design.then(|| design_tone(scheme, &view));
+            let (light_tokens, dark_tokens) = self.resolve_tokens(scheme, design, None);
             return Ok(Prepared {
                 source,
                 directive,
                 id,
                 max_edges,
-                design: options.design.then(|| design_tone(scheme, &view)),
+                design,
                 view,
                 light_tokens,
                 dark_tokens,
@@ -310,36 +406,16 @@ impl Renderer {
                 fonts: self.fonts.as_ref(),
             });
         }
-        let view = self.directive_view(plugin, &directive)?;
-        let overrides = self.site.user_theme_variables(&directive);
-        let (light_tokens, dark_tokens) = if options.design {
-            let (light, dark) = design_tokens(&overrides);
-            (Cow::Owned(light), Cow::Owned(dark))
-        } else if overrides == self.overrides {
-            (
-                Cow::Borrowed(&self.light_tokens),
-                Cow::Borrowed(&self.dark_tokens),
-            )
-        } else {
-            (
-                Cow::Owned(scheme_tokens(
-                    Theme::ReduxColor,
-                    matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
-                    &overrides,
-                )),
-                Cow::Owned(scheme_tokens(
-                    Theme::ReduxDarkColor,
-                    matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
-                    &overrides,
-                )),
-            )
-        };
+        let (view, directive_tokens) = self.directive_view(plugin, &directive)?;
+        let design = options.design.then(|| design_tone(scheme, &view));
+        let (light_tokens, dark_tokens) =
+            self.resolve_tokens(scheme, design, Some((&directive, &directive_tokens)));
         Ok(Prepared {
             source,
             directive,
             id,
             max_edges,
-            design: options.design.then(|| design_tone(scheme, &view)),
+            design,
             view,
             light_tokens,
             dark_tokens,
@@ -351,7 +427,11 @@ impl Renderer {
     /// The view of a diagram type with a directive: a kept one, or one resolved now and kept. The
     /// view depends on the site configuration, the supplied fonts, the diagram type and the
     /// directive; the first two are the renderer's, so the type and the directive are the key.
-    fn directive_view(&self, plugin: Plugin, directive: &Value) -> Result<Arc<View>, RenderError> {
+    fn directive_view(
+        &self,
+        plugin: Plugin,
+        directive: &Value,
+    ) -> Result<(Arc<View>, Arc<DirectiveTokens>), RenderError> {
         let kind = plugin.kind();
         {
             let mut kept = lock(&self.directive_views);
@@ -360,22 +440,22 @@ impl Renderer {
                 .position(|entry| entry.kind == kind && identical(&entry.directive, directive))
             {
                 let entry = kept.remove(at);
-                let view = Arc::clone(&entry.view);
+                let result = (Arc::clone(&entry.view), Arc::clone(&entry.tokens));
                 kept.push(entry);
-                return Ok(view);
+                return Ok(result);
             }
         }
         // Two threads that miss at once keep two equal views for a while; that costs memory only.
-        let plain = self.view(plugin).ok();
         let view = View::resolve(
             &self.site,
             plugin,
             directive,
             self.fonts.is_some(),
-            plain.as_deref(),
+            |theme| self.site_tokens(theme),
         )
         .map(Arc::new)
         .map_err(RenderError::Config)?;
+        let tokens = Arc::new(DirectiveTokens::default());
         let mut kept = lock(&self.directive_views);
         if kept.len() == DIRECTIVE_VIEWS_CAPACITY {
             kept.remove(0);
@@ -384,8 +464,9 @@ impl Renderer {
             kind,
             directive: directive.clone(),
             view: Arc::clone(&view),
+            tokens: Arc::clone(&tokens),
         });
-        Ok(view)
+        Ok((view, tokens))
     }
 
     /// The view of a diagram type with no directive, resolved at its first render.
@@ -400,7 +481,7 @@ impl Renderer {
                     plugin,
                     &Value::empty_object(),
                     self.fonts.is_some(),
-                    None,
+                    |theme| self.site_tokens(theme),
                 )
                 .map(Arc::new);
                 lock(&self.views).entry(kind).or_insert(resolved).clone()
@@ -595,14 +676,14 @@ impl RendererBuilder {
     pub fn build(self) -> Renderer {
         let font_fingerprint = self.fonts.as_ref().map(FontRegistry::fingerprint);
         let site = SiteConfig::new(Some(&self.config));
+        let limits = parse_limits(site.settings());
         let overrides = site.user_theme_variables(&Value::empty_object());
         Renderer {
-            light_tokens: ThemeTokens::from_value(
-                &Theme::ReduxColor.variables_shared(Some(&overrides)),
-            ),
-            dark_tokens: ThemeTokens::from_value(
-                &Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
-            ),
+            limits,
+            light_tokens: OnceLock::new(),
+            dark_tokens: OnceLock::new(),
+            design_light_tokens: OnceLock::new(),
+            design_dark_tokens: OnceLock::new(),
             configuration: {
                 let mut configuration = serde_json::to_string(&self.config).unwrap_or_default();
                 if let Some(fingerprint) = font_fingerprint {
@@ -610,7 +691,6 @@ impl RendererBuilder {
                 }
                 configuration
             },
-            design_tokens: OnceLock::new(),
             overrides,
             site,
             views: Mutex::new(HashMap::new()),
@@ -674,8 +754,8 @@ struct View {
 
 impl View {
     /// The view of a diagram type, with the directive merged on top of the site configuration.
-    /// `plain` is the view of the same type without a directive, when it is resolved: what the view
-    /// computes from the same inputs as `plain` is taken from it instead of computed again.
+    /// `site_tokens` supplies the renderer's cached tokens for a shipped theme with site overrides,
+    /// so views whose resolved `themeVariables` match the site's share the same `Arc<ThemeTokens>`.
     ///
     /// # Errors
     ///
@@ -685,14 +765,19 @@ impl View {
         plugin: Plugin,
         directive: &Value,
         supplied_fonts: bool,
-        plain: Option<&Self>,
+        site_tokens: impl FnOnce(Theme) -> Arc<ThemeTokens>,
     ) -> Result<Self, String> {
         let kind = plugin.kind();
-        let mut effective = site.effective(Some(kind.config_key()), directive);
+        let diagram_key = kind.config_key();
+        let (mut effective, resolved_theme) =
+            site.effective_for(Some(diagram_key), extra_sections(diagram_key), directive);
         if supplied_fonts {
-            let primary = effective
-                .get("themeVariables")
-                .and_then(|theme| theme.get("fontFamily"))
+            let theme_variables = match &resolved_theme {
+                ResolvedThemeVariables::Site(theme) => site.site_theme_variables(*theme),
+                ResolvedThemeVariables::Custom(variables) => variables,
+            };
+            let primary = theme_variables
+                .get("fontFamily")
                 .or_else(|| effective.get("fontFamily"))
                 .and_then(Value::as_str)
                 .map(str::to_owned);
@@ -720,17 +805,23 @@ impl View {
         plugin
             .read(&effective, &mut config)
             .map_err(|error| error.to_string())?;
-        // The tokens are a function of the theme variables alone, so equal variables give equal
-        // tokens. Most directives leave the theme alone, and making the tokens is a large part of
-        // a resolution.
-        let variables = effective.get("themeVariables");
-        let configured_tokens = match plain {
-            Some(plain) if identical_option(variables, plain.effective.get("themeVariables")) => {
-                Arc::clone(&plain.configured_tokens)
+        // Share the renderer's cached `Arc<ThemeTokens>` whenever the resolved theme variables
+        // match the site's variables for the active theme.
+        let configured_tokens = match resolved_theme {
+            ResolvedThemeVariables::Site(theme) => site_tokens(theme),
+            ResolvedThemeVariables::Custom(variables) => {
+                let theme = Theme::from_name(
+                    effective
+                        .get("theme")
+                        .and_then(Value::as_str)
+                        .unwrap_or(site.site_theme()),
+                );
+                if identical(&variables, site.site_theme_variables(theme)) {
+                    site_tokens(theme)
+                } else {
+                    Arc::new(ThemeTokens::from_value(&variables))
+                }
             }
-            _ => Arc::new(ThemeTokens::from_value(
-                variables.unwrap_or(&Value::empty_object()),
-            )),
         };
         Ok(Self {
             globals: Globals::of_top(&top),
@@ -739,6 +830,39 @@ impl View {
             config,
         })
     }
+}
+
+/// Additional configuration sections a diagram type reads beyond its own `config_key()`.
+fn extra_sections(diagram_key: &str) -> &'static [&'static str] {
+    const UNIFIED: &[&str] = &["flowchart", "elk", "class", "er", "state"];
+    match diagram_key {
+        "flowchart" | "er" | "class" | "state" | "mindmap" | "block" | "requirement"
+        | "agentflow" | "swimlane" | "usecase" => UNIFIED,
+        "kanban" => &["mindmap"],
+        _ => &[],
+    }
+}
+
+/// Validates and extracts `(maxTextSize, maxEdges)` from site settings.
+fn parse_limits(settings: &Value) -> Result<(usize, usize), String> {
+    let read = |key: &str, default: usize| -> Result<usize, String> {
+        match settings.get(key) {
+            None => Ok(default),
+            Some(Value::Number(n))
+                if n.is_finite()
+                    && *n >= 0.0
+                    && n.fract() == 0.0
+                    && *n <= 9_007_199_254_740_991.0
+                    && *n <= usize::MAX as f64 =>
+            {
+                Ok(*n as usize)
+            }
+            Some(_) => Err(format!("{key} must be a non-negative safe integer")),
+        }
+    };
+    let max_text = read("maxTextSize", 50_000)?;
+    let max_edges = read("maxEdges", 500)?;
+    Ok((max_text, max_edges))
 }
 
 /// A supplied primary replaces schema-default role names, while explicit site/diagram roles
@@ -782,11 +906,10 @@ struct Prepared<'a> {
     fonts: Option<&'a Arc<FontRegistry>>,
     id: String,
     view: Arc<View>,
-    light_tokens: Cow<'a, ThemeTokens>,
-    dark_tokens: Cow<'a, ThemeTokens>,
+    light_tokens: Arc<ThemeTokens>,
+    dark_tokens: Arc<ThemeTokens>,
     scheme: Option<ColorScheme>,
-    /// The tone of the design mode, when the render draws in it. The two token sets are then the
-    /// mode's own, both computed.
+    /// The tone of the design mode, when the render draws in it.
     design: Option<Tone>,
 }
 
@@ -832,32 +955,37 @@ fn user_sets_layout(site: Option<&Value>, directive: &Value) -> bool {
     site.is_some_and(set) || set(directive)
 }
 
-/// The tokens of a color scheme, when the render draws it. A scheme that is not drawn is not
-/// computed: the configured theme decides the colors then, and the scheme gives no tokens.
-fn scheme_tokens(theme: Theme, drawn: bool, overrides: &Value) -> ThemeTokens {
-    if drawn {
-        ThemeTokens::from_value(&theme.variables_shared(Some(overrides)))
-    } else {
-        ThemeTokens::from_value(&Value::empty_object())
+/// The tokens of one tone of the design mode: the shipped theme with the mode's variables laid
+/// under the user's overrides, which win key by key. Reuses a process-wide cache when there are
+/// no overrides.
+fn design_tokens_for(tone: Tone, overrides: &Value) -> Arc<ThemeTokens> {
+    static LIGHT: LazyLock<Arc<ThemeTokens>> =
+        LazyLock::new(|| compute_design_tokens(Tone::Light, &Value::empty_object()));
+    static DARK: LazyLock<Arc<ThemeTokens>> =
+        LazyLock::new(|| compute_design_tokens(Tone::Dark, &Value::empty_object()));
+    if !matches!(overrides, Value::Object(map) if !map.is_empty()) {
+        return match tone {
+            Tone::Light => Arc::clone(&LIGHT),
+            Tone::Dark => Arc::clone(&DARK),
+        };
     }
+    compute_design_tokens(tone, overrides)
 }
 
-/// The light and the dark tokens of the design mode: the shipped themes with the mode's variables
-/// laid under the user's overrides, which win key by key.
-fn design_tokens(overrides: &Value) -> (ThemeTokens, ThemeTokens) {
-    let tokens = |theme: Theme, tone: Tone| {
-        let mut variables = design::theme_variables(tone);
-        if let (Value::Object(variables), Value::Object(overrides)) = (&mut variables, overrides) {
-            for (name, value) in overrides {
-                variables.insert(name.clone(), value.clone());
-            }
-        }
-        ThemeTokens::from_value(&theme.variables_shared(Some(&variables)))
+fn compute_design_tokens(tone: Tone, overrides: &Value) -> Arc<ThemeTokens> {
+    let theme = match tone {
+        Tone::Light => Theme::ReduxColor,
+        Tone::Dark => Theme::ReduxDarkColor,
     };
-    (
-        tokens(Theme::ReduxColor, Tone::Light),
-        tokens(Theme::ReduxDarkColor, Tone::Dark),
-    )
+    let mut variables = design::theme_variables(tone);
+    if let (Value::Object(variables), Value::Object(overrides)) = (&mut variables, overrides) {
+        for (name, value) in overrides {
+            variables.insert(name.clone(), value.clone());
+        }
+    }
+    Arc::new(ThemeTokens::from_value(
+        &theme.variables_shared(Some(&variables)),
+    ))
 }
 
 /// The tone of the one token set a render in the design mode draws with: the color scheme's, and the
@@ -958,12 +1086,31 @@ fn with_flowchart<T>(
 /// render; the output does not depend on it.
 const DIRECTIVE_VIEWS_CAPACITY: usize = 8;
 
-/// A view a renderer keeps, with the diagram type and the directive it was resolved for.
+/// A view a renderer keeps, with the diagram type, the directive it was resolved for, and any
+/// lazily resolved scheme/design tokens for that directive.
 #[derive(Debug)]
 struct DirectiveView {
     kind: DiagramType,
     directive: Value,
     view: Arc<View>,
+    tokens: Arc<DirectiveTokens>,
+}
+
+/// Lazily resolved scheme and design tokens for a cached directive, shared across cache hits.
+#[derive(Debug, Default)]
+struct DirectiveTokens {
+    overrides: OnceLock<Value>,
+    light: OnceLock<Arc<ThemeTokens>>,
+    dark: OnceLock<Arc<ThemeTokens>>,
+    design_light: OnceLock<Arc<ThemeTokens>>,
+    design_dark: OnceLock<Arc<ThemeTokens>>,
+}
+
+impl DirectiveTokens {
+    fn overrides(&self, site: &SiteConfig, directive: &Value) -> &Value {
+        self.overrides
+            .get_or_init(|| site.user_theme_variables(directive))
+    }
 }
 
 /// The renderers of [`RendererBuilder::shared`], which [`render`] and [`render_with`] use with every
@@ -1012,15 +1159,6 @@ fn identical(a: &Value, b: &Value) -> bool {
                     .zip(b)
                     .all(|((key_a, a), (key_b, b))| key_a == key_b && identical(a, b))
         }
-        _ => false,
-    }
-}
-
-/// Whether two values that may be absent are both absent or [`identical`].
-fn identical_option(a: Option<&Value>, b: Option<&Value>) -> bool {
-    match (a, b) {
-        (None, None) => true,
-        (Some(a), Some(b)) => identical(a, b),
         _ => false,
     }
 }
@@ -1290,10 +1428,50 @@ mod view_tests {
     }
 
     /// Two resolutions are the same view, or fail with the same message.
-    fn assert_same(shared: &Result<View, String>, full: &Result<View, String>, case: &str) {
+    fn assert_same(
+        shared: &Result<View, String>,
+        full: &Result<View, String>,
+        diagram_key: &str,
+        case: &str,
+    ) {
         match (shared, full) {
             (Ok(shared), Ok(full)) => {
-                assert!(identical(&shared.effective, &full.effective), "{case}");
+                let scoped = shared
+                    .effective
+                    .as_object()
+                    .expect("scoped effective object");
+                assert!(!scoped.contains_key("themeVariables"), "{case}");
+                for (key, value) in scoped {
+                    let expected = full
+                        .effective
+                        .get(key)
+                        .unwrap_or_else(|| panic!("{case}: missing {key} in full effective"));
+                    assert!(identical(value, expected), "{case}: key {key}");
+                }
+                assert_eq!(
+                    shared.effective.get(diagram_key),
+                    full.effective.get(diagram_key),
+                    "{case}: diagram section {diagram_key}"
+                );
+                for &section in extra_sections(diagram_key) {
+                    assert_eq!(
+                        shared.effective.get(section),
+                        full.effective.get(section),
+                        "{case}: extra section {section}"
+                    );
+                }
+                assert_eq!(
+                    shared.effective.get("wrap"),
+                    full.effective.get("wrap"),
+                    "{case}: wrap"
+                );
+                if diagram_key == "sequence" {
+                    assert_eq!(
+                        sequence_wrap(&shared.effective),
+                        sequence_wrap(&full.effective),
+                        "{case}: sequence_wrap"
+                    );
+                }
                 assert_eq!(shared.config, full.config, "{case}");
                 assert_eq!(*shared.configured_tokens, *full.configured_tokens, "{case}");
                 assert_eq!(shared.globals, full.globals, "{case}");
@@ -1345,23 +1523,74 @@ mod view_tests {
         for (site, supplied_fonts) in &sites {
             let site = SiteConfig::new(Some(site));
             for plugin in diagrams::all() {
-                let empty = Value::empty_object();
-                let plain = View::resolve(&site, plugin, &empty, *supplied_fonts, None);
                 for directive in &directives {
                     let directive = json(directive.clone());
                     let case = format!("{:?} with {directive:?}", plugin.kind());
-                    let full = View::resolve(&site, plugin, &directive, *supplied_fonts, None);
-                    let shared = View::resolve(
-                        &site,
-                        plugin,
-                        &directive,
-                        *supplied_fonts,
-                        plain.as_ref().ok(),
-                    );
-                    assert_same(&shared, &full, &case);
+                    let full = resolve_full_uncached(&site, plugin, &directive, *supplied_fonts);
+                    let light = OnceLock::new();
+                    let dark = OnceLock::new();
+                    let shared = View::resolve(&site, plugin, &directive, *supplied_fonts, |t| {
+                        let slot = match t {
+                            Theme::ReduxColor => &light,
+                            Theme::ReduxDarkColor => &dark,
+                        };
+                        Arc::clone(slot.get_or_init(|| {
+                            Arc::new(ThemeTokens::from_value(site.site_theme_variables(t)))
+                        }))
+                    });
+                    assert_same(&shared, &full, plugin.kind().config_key(), &case);
                 }
             }
         }
+    }
+
+    /// Reference uncached resolution using the full `SiteConfig::effective` map, to verify that
+    /// scoped resolution produces identical typed config, globals, theme tokens, and untyped keys.
+    fn resolve_full_uncached(
+        site: &SiteConfig,
+        plugin: Plugin,
+        directive: &Value,
+        supplied_fonts: bool,
+    ) -> Result<View, String> {
+        let kind = plugin.kind();
+        let mut effective = site.effective(Some(kind.config_key()), directive);
+        if supplied_fonts {
+            let primary = effective
+                .get("themeVariables")
+                .and_then(|theme| theme.get("fontFamily"))
+                .or_else(|| effective.get("fontFamily"))
+                .and_then(Value::as_str)
+                .map(str::to_owned);
+            if let Some(primary) = primary {
+                inherit_font_roles(
+                    &mut effective,
+                    &mut Vec::new(),
+                    site.settings(),
+                    directive,
+                    &primary,
+                );
+            }
+        }
+        let mut top = typed_top(&effective).map_err(|error| error.to_string())?;
+        if matches!(kind, DiagramType::Mindmap)
+            && !user_sets_layout(Some(site.settings()), directive)
+        {
+            top.layout = "cose-bilkent".to_owned();
+        }
+        let mut config = MermaidConfig::default();
+        plugin
+            .read(&effective, &mut config)
+            .map_err(|error| error.to_string())?;
+        let variables = effective.get("themeVariables");
+        let configured_tokens = Arc::new(ThemeTokens::from_value(
+            variables.unwrap_or(&Value::empty_object()),
+        ));
+        Ok(View {
+            globals: Globals::of_top(&top),
+            configured_tokens,
+            effective,
+            config,
+        })
     }
 
     #[test]
@@ -1370,13 +1599,9 @@ mod view_tests {
         let plugin = diagrams::pie();
         let plain = renderer.view(plugin).unwrap();
         let resolve = |directive: serde_json::Value| {
-            View::resolve(
-                &renderer.site,
-                plugin,
-                &json(directive),
-                false,
-                Some(&plain),
-            )
+            View::resolve(&renderer.site, plugin, &json(directive), false, |theme| {
+                renderer.site_tokens(theme)
+            })
             .unwrap()
         };
         let untouched = resolve(serde_json::json!({ "pie": { "textPosition": 0.9 } }));
@@ -1384,11 +1609,229 @@ mod view_tests {
             &untouched.configured_tokens,
             &plain.configured_tokens
         ));
+        // Plain views of other light-themed diagram types share the exact same `Arc<ThemeTokens>`.
+        let flow = renderer.view(diagrams::flowchart()).unwrap();
+        assert!(Arc::ptr_eq(
+            &flow.configured_tokens,
+            &plain.configured_tokens
+        ));
+        // A dark-themed directive uses the dark site tokens (distinct from light, shared with renderer).
         let themed = resolve(serde_json::json!({ "theme": "dark" }));
         assert!(!Arc::ptr_eq(
             &themed.configured_tokens,
             &plain.configured_tokens
         ));
+        assert!(Arc::ptr_eq(
+            &themed.configured_tokens,
+            &renderer.site_tokens(Theme::ReduxDarkColor)
+        ));
+    }
+
+    #[test]
+    fn directive_cache_reuses_scheme_and_design_tokens_with_pinned_parity() {
+        const SANS: &[u8] =
+            include_bytes!("../../ferrigura-text/fonts/LexicaUltralegible-Regular.ttf");
+        const MONO: &[u8] =
+            include_bytes!("../../ferrigura-text/fonts/AtkinsonHyperlegibleMono-Regular.ttf");
+
+        let sites: Vec<(Value, bool)> = vec![
+            (Value::empty_object(), false),
+            (
+                json(serde_json::json!({
+                    "theme": "redux-color",
+                    "themeVariables": { "primaryColor": "#336699" },
+                })),
+                false,
+            ),
+            (
+                json(serde_json::json!({
+                    "theme": "redux-dark-color",
+                    "themeVariables": { "primaryColor": "#663399" },
+                })),
+                true,
+            ),
+        ];
+
+        let diagrams = [
+            "flowchart LR\n  A --> B\n",
+            "%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#ff4400'}}}%%\nflowchart LR\n  A --> B\n",
+            "---\nconfig:\n  theme: redux-color\n  themeVariables:\n    primaryColor: '#00aa55'\n    lineColor: '#224466'\n---\nflowchart LR\n  A --> B\n",
+            "%%{init: {'flowchart': {'curve': 'linear'}}}%%\nflowchart LR\n  A --> B\n",
+            "%%{init: {'fontFamily': 'Mono'}}%%\nstateDiagram-v2\n  A --> B\n",
+            "---\nconfig:\n  theme: dark\n---\nclassDiagram\n  class Animal\n",
+        ];
+
+        let option_sets = [
+            RenderOptions {
+                id: Some("pinned".into()),
+                ..RenderOptions::default()
+            },
+            RenderOptions {
+                id: Some("pinned".into()),
+                color_scheme: Some(ColorScheme::Light),
+                ..RenderOptions::default()
+            },
+            RenderOptions {
+                id: Some("pinned".into()),
+                color_scheme: Some(ColorScheme::Dark),
+                ..RenderOptions::default()
+            },
+            RenderOptions {
+                id: Some("pinned".into()),
+                color_scheme: Some(ColorScheme::Auto),
+                ..RenderOptions::default()
+            },
+            RenderOptions {
+                id: Some("pinned".into()),
+                design: true,
+                ..RenderOptions::default()
+            },
+            RenderOptions {
+                id: Some("pinned".into()),
+                design: true,
+                color_scheme: Some(ColorScheme::Auto),
+                ..RenderOptions::default()
+            },
+            RenderOptions {
+                id: Some("pinned".into()),
+                design: true,
+                color_scheme: Some(ColorScheme::Dark),
+                ..RenderOptions::default()
+            },
+        ];
+
+        for (site, with_font) in &sites {
+            let make_renderer = || {
+                let builder = Renderer::builder(site).with_all();
+                if *with_font {
+                    builder
+                        .font("Fixture", SANS.to_vec())
+                        .unwrap()
+                        .font("Mono", MONO.to_vec())
+                        .unwrap()
+                        .build()
+                } else {
+                    builder.build()
+                }
+            };
+            let shared = make_renderer();
+
+            // Repeated, alternating, and distinct directive renders must match fresh renderers
+            // byte-for-byte across every colorScheme and design combination.
+            for pass in 0..3 {
+                for options in &option_sets {
+                    for text in &diagrams {
+                        let actual = shared.render_with(text, options).unwrap();
+                        let fresh = make_renderer().render_with(text, options).unwrap();
+                        assert_eq!(
+                            actual, fresh,
+                            "pass={pass} options={options:?} text={text:?}"
+                        );
+                    }
+                }
+            }
+
+            // Verify cached DirectiveTokens actually reuse Arc<ThemeTokens> on hits.
+            let dir = json(serde_json::json!({
+                "theme": "dark",
+                "themeVariables": { "primaryColor": "#ff4400" },
+            }));
+            let (v1, t1) = shared.directive_view(diagrams::flowchart(), &dir).unwrap();
+            let (l1, d1) = shared.resolve_tokens(Some(ColorScheme::Auto), None, Some((&dir, &t1)));
+            let (dl1, dd1) = shared.resolve_tokens(
+                Some(ColorScheme::Auto),
+                Some(Tone::Light),
+                Some((&dir, &t1)),
+            );
+            let (v2, t2) = shared.directive_view(diagrams::flowchart(), &dir).unwrap();
+            let (l2, d2) = shared.resolve_tokens(Some(ColorScheme::Auto), None, Some((&dir, &t2)));
+            let (dl2, dd2) = shared.resolve_tokens(
+                Some(ColorScheme::Auto),
+                Some(Tone::Light),
+                Some((&dir, &t2)),
+            );
+            assert!(Arc::ptr_eq(&v1, &v2));
+            assert!(Arc::ptr_eq(&t1, &t2));
+            assert!(Arc::ptr_eq(&l1, &l2));
+            assert!(Arc::ptr_eq(&d1, &d2));
+            assert!(Arc::ptr_eq(&dl1, &dl2));
+            assert!(Arc::ptr_eq(&dd1, &dd2));
+        }
+    }
+
+    #[test]
+    fn secure_keys_and_front_matter_directive_precedence_are_preserved() {
+        let site = json(serde_json::json!({
+            "secure": ["fontSize", "theme"],
+            "theme": "redux-color",
+            "fontSize": 16,
+        }));
+        let shared = Renderer::new(&site);
+        let options = RenderOptions {
+            id: Some("sec".into()),
+            ..RenderOptions::default()
+        };
+
+        // Secure keys cannot be overridden by front matter or init directives.
+        let blocked =
+            "%%{init: {'theme': 'dark', 'fontSize': 40, 'secure': []}}%%\npie\n  \"A\" : 1\n";
+        let plain = "pie\n  \"A\" : 1\n";
+        assert_eq!(
+            shared.render_with(blocked, &options).unwrap(),
+            shared.render_with(plain, &options).unwrap()
+        );
+        assert_eq!(
+            shared.render_with(blocked, &options).unwrap(),
+            Renderer::new(&site).render_with(blocked, &options).unwrap()
+        );
+
+        // Front matter + init directive precedence matches fresh renders across repeated hits.
+        let combined = "---\nconfig:\n  theme: dark\n  pie:\n    textPosition: 0.9\n---\n%%{init: {'theme': 'redux-color'}}%%\npie\n  \"A\" : 1\n  \"B\" : 2\n";
+        let default_renderer = Renderer::new(&Value::empty_object());
+        let expected = Renderer::new(&Value::empty_object())
+            .render_with(combined, &options)
+            .unwrap();
+        for _ in 0..3 {
+            assert_eq!(
+                default_renderer.render_with(combined, &options).unwrap(),
+                expected
+            );
+        }
+
+        // Invalid site limit errors are still deferred to render time and preserved on every call.
+        let invalid_limits = Renderer::new(&json(serde_json::json!({ "maxTextSize": "big" })));
+        for _ in 0..2 {
+            assert!(matches!(
+                invalid_limits.render("pie\n  \"A\" : 1\n"),
+                Err(Error::Config(msg)) if msg.contains("maxTextSize")
+            ));
+        }
+    }
+
+    #[test]
+    fn limits_utf8_fast_path_and_multibyte_utf16_boundaries() {
+        // ASCII: UTF-8 byte length == UTF-16 code unit count.
+        let renderer = Renderer::new(&json(serde_json::json!({ "maxTextSize": 10 })));
+        assert!(renderer.limits("0123456789").is_ok());
+        assert!(matches!(
+            renderer.limits("01234567890"),
+            Err(Error::Options(msg)) if msg.contains("maxTextSize")
+        ));
+
+        // 2-byte UTF-8 (é): 6 chars = 12 UTF-8 bytes (> 10), 6 UTF-16 code units (<= 10) -> Ok!
+        assert!(renderer.limits("éééééé").is_ok());
+        // 10 chars = 20 UTF-8 bytes, 10 UTF-16 code units -> Ok; 11 -> Err.
+        assert!(renderer.limits("é".repeat(10).as_str()).is_ok());
+        assert!(renderer.limits("é".repeat(11).as_str()).is_err());
+
+        // 3-byte UTF-8 BMP (中): 10 chars = 30 UTF-8 bytes, 10 UTF-16 code units -> Ok; 11 -> Err.
+        assert!(renderer.limits("中".repeat(10).as_str()).is_ok());
+        assert!(renderer.limits("中".repeat(11).as_str()).is_err());
+
+        // 4-byte UTF-8 astral emoji (😀): each is 2 UTF-16 code units (surrogate pair).
+        // 5 emoji = 20 UTF-8 bytes, 10 UTF-16 code units -> Ok; 6 emoji = 12 UTF-16 -> Err.
+        assert!(renderer.limits("😀".repeat(5).as_str()).is_ok());
+        assert!(renderer.limits("😀".repeat(6).as_str()).is_err());
     }
 
     #[test]

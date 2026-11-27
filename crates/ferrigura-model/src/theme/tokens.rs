@@ -15,6 +15,7 @@
 //! set, and that no renderer reads, is not a token: the map keeps it, and nothing reads it.
 
 use std::collections::BTreeMap;
+use std::sync::{Arc, LazyLock};
 
 use crate::value::{Value, number_text};
 
@@ -135,29 +136,48 @@ impl<const N: usize> Default for Family<N> {
 }
 
 impl<const N: usize> Family<N> {
+    /// An empty family with the given `prefix` and `first` index.
+    fn empty(prefix: &'static str, first: usize) -> Self {
+        Self {
+            prefix,
+            first,
+            slots: std::array::from_fn(|_| Token::default()),
+            others: BTreeMap::new(),
+        }
+    }
+
+    /// Inserts `value` if `key` is `self.prefix` followed by a canonical decimal index.
+    /// Returns whether `key` belonged to this family.
+    fn insert_if_member(&mut self, key: &str, value: &Value) -> bool {
+        let Some(index) = index_of(key, self.prefix) else {
+            return false;
+        };
+        match index.checked_sub(self.first) {
+            Some(slot) if slot < N => self.slots[slot] = Token::new(Some(value)),
+            _ => {
+                self.others.insert(index, Token::new(Some(value)));
+            }
+        }
+        true
+    }
+
     /// The family of a map: the members `prefix` followed by the indices `first` to `first + N - 1`,
     /// and any other index that the map holds under the prefix.
     #[must_use]
     pub fn new(map: &Value, prefix: &'static str, first: usize) -> Self {
-        let slots =
-            std::array::from_fn(|slot| Token::new(map.get(&format!("{prefix}{}", first + slot))));
-        let others = match map.as_object() {
-            Some(entries) => entries
-                .iter()
-                .filter_map(|(key, value)| {
-                    let index = index_of(key, prefix)?;
-                    let in_slots = index.checked_sub(first).is_some_and(|slot| slot < N);
-                    (!in_slots).then(|| (index, Token::new(Some(value))))
-                })
-                .collect(),
-            None => BTreeMap::new(),
-        };
-        Self {
-            prefix,
-            first,
-            slots,
-            others,
+        let mut family = Self::empty(prefix, first);
+        if let Some(entries) = map.as_object() {
+            for (key, value) in entries
+                .range::<str, _>((
+                    std::ops::Bound::Included(prefix),
+                    std::ops::Bound::Unbounded,
+                ))
+                .take_while(|(key, _)| key.starts_with(prefix))
+            {
+                family.insert_if_member(key, value);
+            }
         }
+        family
     }
 
     /// The token of the member with the index: the name `prefix` followed by `index`.
@@ -225,9 +245,30 @@ macro_rules! token_struct {
             /// is present when the map holds an object under its name.
             #[must_use]
             pub fn from_value(map: &Value) -> Self {
-                Self {
-                    $( $field: token_struct!(@new map, $js, $kind $( ( $($arg)* ) )?), )*
+                let mut out = Self {
+                    $( $field: token_struct!(@empty $js, $kind $( ( $($arg)* ) )?), )*
+                };
+                let Some(entries) = map.as_object() else {
+                    return out;
+                };
+                for (key, value) in entries {
+                    match key.as_str() {
+                        $(
+                            $js => {
+                                token_struct!(@assign_exact out.$field, value, $kind $( ( $($arg)* ) )?);
+                            }
+                        )*
+                        other => {
+                            $(
+                                if token_struct!(@assign_family out.$field, other, value, $kind $( ( $($arg)* ) )?) {
+                                    continue;
+                                }
+                            )*
+                            let _ = other;
+                        }
+                    }
                 }
+                out
             }
 
             /// The tokens of the struct with their names: the variables, and the members of each family
@@ -243,12 +284,22 @@ macro_rules! token_struct {
     (@field token) => { Token };
     (@field family ( $n:literal, $first:literal )) => { Family<$n> };
     (@field group ( $group:ident )) => { Option<$group> };
-    (@new $map:ident, $js:literal, token) => { Token::new($map.get($js)) };
-    (@new $map:ident, $js:literal, family ( $n:literal, $first:literal )) => {
-        Family::new($map, $js, $first)
+    (@empty $js:literal, token) => { Token::default() };
+    (@empty $js:literal, family ( $n:literal, $first:literal )) => { Family::empty($js, $first) };
+    (@empty $js:literal, group ( $group:ident )) => { None };
+    (@assign_exact $field:expr, $value:ident, token) => {
+        $field = Token::new(Some($value));
     };
-    (@new $map:ident, $js:literal, group ( $group:ident )) => {
-        $map.get($js).filter(|value| value.is_object()).map($group::from_value)
+    (@assign_exact $field:expr, $value:ident, family ( $n:literal, $first:literal )) => {};
+    (@assign_exact $field:expr, $value:ident, group ( $group:ident )) => {
+        if $value.is_object() {
+            $field = Some($group::from_value($value));
+        }
+    };
+    (@assign_family $field:expr, $key:ident, $value:ident, token) => { false };
+    (@assign_family $field:expr, $key:ident, $value:ident, group ( $group:ident )) => { false };
+    (@assign_family $field:expr, $key:ident, $value:ident, family ( $n:literal, $first:literal )) => {
+        $field.insert_if_member($key, $value)
     };
     (@entry $entries:ident, $field:expr, $js:literal, token) => {
         $entries.push(($js.to_owned(), &$field));
@@ -476,6 +527,16 @@ token_struct! {
 
 
 
+    }
+}
+
+impl ThemeTokens {
+    /// An empty set of tokens (every variable absent), initialized once per process.
+    #[must_use]
+    pub fn empty_shared() -> Arc<Self> {
+        static EMPTY: LazyLock<Arc<ThemeTokens>> =
+            LazyLock::new(|| Arc::new(ThemeTokens::from_value(&Value::empty_object())));
+        Arc::clone(&EMPTY)
     }
 }
 
