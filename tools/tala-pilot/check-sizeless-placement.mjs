@@ -4,10 +4,12 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const [reference, tracedReference, rust] = process.argv.slice(2).map((path) => resolve(path));
+const [reference, tracedReference, rust, bodyReference] = process.argv
+  .slice(2)
+  .map((path) => resolve(path));
 assert(
   reference && tracedReference && rust,
-  'usage: node check-sizeless-placement.mjs <Go> <traced Go> <Rust>'
+  'usage: node check-sizeless-placement.mjs <Go> <traced Go> <Rust> [body-traced Go]'
 );
 
 const input = await readFile(
@@ -37,8 +39,9 @@ assert.ifError(trace.error);
 assert.equal(trace.status, 0, trace.stderr);
 assert.equal(trace.stdout, baseline, 'Tracing changed the final pinned Go layout');
 
-const captures = traceEntries('TALA_PILOT_SIZELESS ');
-const iterations = traceEntries('TALA_PILOT_SIZED_ITERATION ');
+const captures = traceEntries(trace.stderr, 'TALA_PILOT_SIZELESS ');
+const iterations = traceEntries(trace.stderr, 'TALA_PILOT_SIZED_ITERATION ');
+const bodyStages = bodyReference ? collectBodyStages() : [];
 assert.equal(captures.length, seeds.length * 11, 'Expected all stages for each default seed');
 
 for (const {
@@ -54,6 +57,7 @@ for (const {
   sizedPhase,
   directedComponent,
   placedComponent,
+  routingBodies,
 } of seeds) {
   const stages = [
     ['firstPass', '--sizeless-first-pass', firstPass],
@@ -92,6 +96,7 @@ for (const {
     ['--measured-first-sized-pass', firstSizedPass],
     ['--measured-sized-phase', sizedPhase],
     ['--measured-flat-placement', placedComponent],
+    ['--measured-flat-refinement', routingBodies],
   ]) {
     const run = execFileSync(rust, [command], {
       ...options,
@@ -112,16 +117,63 @@ for (const {
     expected,
     `Sized-optimizer coordinates differ for seed ${seed}`
   );
+  if (bodyReference) {
+    checkBodyStages(seed, request, placedComponent, routingBodies);
+  }
 }
 console.log(
-  `Matched ${captures.length} seeded placement stages and ${iterations.length} sized-optimizer snapshots with pinned Go. The measured input matches ${seeds.length * 4} times.`
+  `Matched ${captures.length} seeded placement stages and ${iterations.length} sized-optimizer snapshots with pinned Go. The measured input matches ${seeds.length * 5} times.`
 );
 
-function traceEntries(prefix) {
-  return trace.stderr
+function traceEntries(output, prefix) {
+  return output
     .split('\n')
     .filter((line) => line.startsWith(prefix))
     .map((line) => JSON.parse(line.slice(prefix.length)));
+}
+
+if (bodyReference) {
+  console.log(`Matched ${seeds.length * 5} post-placement body refinements with pinned Go.`);
+}
+
+function collectBodyStages() {
+  const run = spawnSync(bodyReference, ['--default'], {
+    ...options,
+    env: { ...process.env, TALA_PILOT_TRACE_PLACEMENT_BODIES: '1' },
+  });
+  assert.ifError(run.error);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout, baseline, 'Body tracing changed the final pinned Go layout');
+  return traceEntries(run.stderr, 'TALA_PILOT_PLACEMENT_BODIES ');
+}
+
+function checkBodyStages(seed, request, placed, routingBodies) {
+  const history = new Map(
+    bodyStages.filter((entry) => entry.seed === seed).map(({ index, nodes }) => [index, nodes])
+  );
+  const byAuthoredOrder = (nodes) => obstacleOrder.map((index) => nodes[index]);
+  assert.deepEqual(history.get(7), byAuthoredOrder(placed), `NodePlacement, seed ${seed}`);
+  for (const index of [8, 9, 11, 12, 13, 14, 18, 19, 21, 22, 23, 24]) {
+    assert(history.has(index), `Missing Go stage ${index}, seed ${seed}`);
+    assert.deepEqual(
+      history.get(index),
+      history.get(index - 1),
+      `Go body coordinates changed at stage ${index}, seed ${seed}`
+    );
+  }
+  const stages = new Map([
+    [10, 'alignAxes'],
+    [15, 'balanceSymmetry'],
+    [16, 'equidistance'],
+    [17, 'finalAlignAxes'],
+    [20, 'rescale'],
+  ]);
+  const actual = JSON.parse(
+    execFileSync(rust, ['--flat-refinement-snapshots'], { ...options, input: request })
+  ).map(({ stage, nodes }) => ({ stage, nodes: byAuthoredOrder(nodes) }));
+  const expected = [...stages].map(([index, stage]) => ({ stage, nodes: history.get(index) }));
+  assert.deepEqual(actual, expected, `Post-placement coordinates differ for seed ${seed}`);
+  assert.deepEqual(history.get(20), byAuthoredOrder(routingBodies), `Routing bodies, seed ${seed}`);
 }
 
 async function readFixture(path) {

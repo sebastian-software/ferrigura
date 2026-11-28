@@ -4,7 +4,7 @@ use ferrigura_tala::ovg_seed::flat_search::{
     Appearance, FlatSearch, Flavor, OrdinaryEdge, Rectangle, RouteStrategy, Weights,
 };
 use ferrigura_tala::ovg_seed::rectangular_linked_visibility;
-use ferrigura_tala::{NodeGeometry, Point};
+use ferrigura_tala::{Edge, EdgeGeometry, Graph, Layout, Node, NodeGeometry, Point};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -46,6 +46,8 @@ struct PilotLabelBox {
 pub(super) struct RawRoutingOutput {
     flavors: Vec<RawFlavor>,
     selected: SelectedFlavor,
+    before_balance: Vec<SelectedPath>,
+    balanced: Vec<SelectedPath>,
 }
 
 #[derive(Serialize)]
@@ -154,6 +156,16 @@ pub(super) fn trace_raw_routes(capture: RawRouteInput) -> Result<RawRoutingOutpu
     let selected = search
         .select_flavor(&node_ids, &edges, &mut work)?
         .ok_or("ordinary native routing did not resolve a winning flavor")?;
+    let raw_points = search.route_points_in_input_order(&selected)?;
+    let before_balance = raw_points
+        .iter()
+        .enumerate()
+        .map(|(edge, points)| SelectedPath {
+            edge,
+            points: points.iter().copied().map(point).collect(),
+        })
+        .collect();
+    let balanced = balance_raw_routes(&nodes, &edges, raw_points)?;
     let routes = selected
         .routes
         .into_iter()
@@ -174,7 +186,81 @@ pub(super) fn trace_raw_routes(capture: RawRouteInput) -> Result<RawRoutingOutpu
             flavor: flavor_name(selected.flavor),
             routes,
         },
+        before_balance,
+        balanced,
     })
+}
+
+fn balance_raw_routes(
+    nodes: &[NodeGeometry],
+    edges: &[OrdinaryEdge],
+    raw_points: Vec<Vec<Point>>,
+) -> Result<Vec<SelectedPath>, ferrigura_tala::Error> {
+    let graph = Graph {
+        direction: None,
+        nodes: nodes
+            .iter()
+            .map(|node| Node {
+                id: node.id.clone(),
+                parent_id: None,
+                direction: None,
+                is_group: false,
+                shape: String::from("rect"),
+                width: node.width,
+                height: node.height,
+                label: String::new(),
+                label_width: 0.0,
+                label_height: 0.0,
+            })
+            .collect(),
+        edges: edges
+            .iter()
+            .enumerate()
+            .map(|(index, edge)| {
+                let [source, target] = edge.owners.map(|owner| nodes[owner].id.clone());
+                let [source_arrow, target_arrow] = edge
+                    .arrowheads
+                    .each_ref()
+                    .map(|arrow| !arrow.is_empty() && arrow != "none");
+                Edge {
+                    id: index.to_string(),
+                    source,
+                    target,
+                    source_arrow,
+                    target_arrow,
+                    label: String::new(),
+                    label_width: 0.0,
+                    label_height: 0.0,
+                }
+            })
+            .collect(),
+    };
+    let mut layout = Layout {
+        nodes: nodes.to_vec(),
+        edges: raw_points
+            .into_iter()
+            .enumerate()
+            .map(|(index, points)| EdgeGeometry {
+                id: index.to_string(),
+                points,
+                label: None,
+            })
+            .collect(),
+    };
+    ferrigura_tala::balance::balance_routes(&graph, &mut layout)?;
+    Ok(layout
+        .edges
+        .into_iter()
+        .enumerate()
+        .map(|(edge, route)| SelectedPath {
+            edge,
+            points: route
+                .points
+                .into_iter()
+                .map(|point| [point.x, point.y])
+                .collect(),
+        })
+        .collect())
 }
 
 fn flavor_name(flavor: Flavor) -> &'static str {

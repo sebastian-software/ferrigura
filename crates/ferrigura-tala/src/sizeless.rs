@@ -20,6 +20,7 @@ use crate::{Error, Graph};
 mod compaction;
 mod direct;
 mod measured;
+mod refinement;
 mod sized_candidates;
 mod sized_cost;
 mod transition;
@@ -28,8 +29,10 @@ pub use self::{
     direct::{direct_flat_component, place_flat_component},
     measured::{
         first_sized_pass_from_measurements, flat_placement_from_measurements,
-        sized_phase_from_measurements, sized_transition_from_measurements,
+        refined_flat_from_measurements, sized_phase_from_measurements,
+        sized_transition_from_measurements,
     },
+    refinement::{refine_flat_component, refinement_snapshots},
     sized_candidates::{
         first_sized_candidates, first_sized_compaction, first_sized_edge_costs, first_sized_move,
         first_sized_pass, optimize_sized_phase, sized_phase_snapshots,

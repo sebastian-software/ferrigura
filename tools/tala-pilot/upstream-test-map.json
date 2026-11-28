@@ -38,6 +38,12 @@
   "candidate_test.go#TestOptionalSeedCandidatePreservesValidIncumbent": [
     "seed_selection::refinement::tests::optional_seed_candidate_preserves_valid_incumbent"
   ],
+  "internal/placement/centered_neighbors_test.go#TestBalanceSymmetryUsesExactPeerCenterline": [
+    "sizeless::refinement::tests::symmetry_uses_the_exact_peer_centerline"
+  ],
+  "internal/placement/centered_neighbors_test.go#TestEquidistanceDoesNotReportAlreadyCenteredNodeAsMoved": [
+    "sizeless::refinement::tests::equidistance_leaves_already_centered_nodes_in_place"
+  ],
   "internal/placement/extracted_kernels_test.go#TestCompareDirectionCountsIsReflexiveAndPreservesTies": [
     "sizeless::direct::tests::direction_count_comparison_is_reflexive_and_stable"
   ],
@@ -85,6 +91,9 @@
   ],
   "internal/placementcost/flow_continuity_test.go#TestFlowContinuityReciprocalPairHasBothRoles": [
     "sizeless::sized_cost::tests::flow_reciprocal_pair_has_both_roles"
+  ],
+  "internal/placementcost/symmetry_test.go#TestAxisScore": [
+    "sizeless::refinement::tests::axis_score_matches_the_go_alignment_cases"
   ],
   "internal/quality/scoring_test.go#TestEvaluateCanceledBeforeWork": [
     "quality::tests::evaluate_canceled_before_work"

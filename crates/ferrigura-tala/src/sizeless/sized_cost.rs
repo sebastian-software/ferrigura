@@ -113,6 +113,10 @@ impl EdgeCost {
         self.adjacency[node] = edges;
     }
 
+    pub(super) fn restore_full_turn_cost(&mut self) {
+        self.turn_cost *= 2.0;
+    }
+
     pub(super) fn turn_cost(&self) -> f64 {
         self.turn_cost
     }
@@ -334,7 +338,7 @@ impl Bounds {
         self.bottom - self.top
     }
 
-    fn center(self) -> Point {
+    pub(super) fn center(self) -> Point {
         Point {
             x: self.left + self.width() / 2.0,
             y: self.top + self.height() / 2.0,
@@ -383,7 +387,7 @@ impl Bounds {
         }
     }
 
-    fn blocks(self, a: Point, b: Point) -> bool {
+    pub(super) fn blocks(self, a: Point, b: Point) -> bool {
         fn overlaps(floor: f64, ceiling: f64, a: f64, b: f64) -> bool {
             floor <= a && a <= ceiling
                 || floor <= b && b <= ceiling

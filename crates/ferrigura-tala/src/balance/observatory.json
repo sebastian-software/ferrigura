@@ -1,0 +1,549 @@
+{
+  "name": "Observatory services at BalanceEdgeSegments",
+  "graph": {
+    "direction": "LR",
+    "edges": [
+      {
+        "id": "L_control_antenna_0",
+        "label": "observe",
+        "labelHeight": 21.0,
+        "labelWidth": 74.640625,
+        "source": "control",
+        "sourceArrow": false,
+        "target": "antenna",
+        "targetArrow": true
+      },
+      {
+        "id": "L_antenna_sampler_0",
+        "label": "signal",
+        "labelHeight": 21.0,
+        "labelWidth": 62.6875,
+        "source": "antenna",
+        "sourceArrow": false,
+        "target": "sampler",
+        "targetArrow": true
+      },
+      {
+        "id": "L_sampler_store_0",
+        "label": "batch",
+        "labelHeight": 21.0,
+        "labelWidth": 60.46875,
+        "source": "sampler",
+        "sourceArrow": false,
+        "target": "store",
+        "targetArrow": true
+      },
+      {
+        "id": "L_store_quality_0",
+        "label": "latest batch",
+        "labelHeight": 21.0,
+        "labelWidth": 98.328125,
+        "source": "store",
+        "sourceArrow": false,
+        "target": "quality",
+        "targetArrow": true
+      },
+      {
+        "id": "L_quality_control_0",
+        "label": "resample",
+        "labelHeight": 21.0,
+        "labelWidth": 82.859375,
+        "source": "quality",
+        "sourceArrow": false,
+        "target": "control",
+        "targetArrow": true
+      },
+      {
+        "id": "L_store_archive_0",
+        "label": "catalog",
+        "labelHeight": 21.0,
+        "labelWidth": 71.1875,
+        "source": "store",
+        "sourceArrow": false,
+        "target": "archive",
+        "targetArrow": true
+      },
+      {
+        "id": "L_quality_archive_0",
+        "label": "status",
+        "labelHeight": 21.0,
+        "labelWidth": 63.140625,
+        "source": "quality",
+        "sourceArrow": false,
+        "target": "archive",
+        "targetArrow": true
+      },
+      {
+        "id": "L_control_calendar_0",
+        "label": "forecast",
+        "labelHeight": 21.0,
+        "labelWidth": 75.59375,
+        "source": "control",
+        "sourceArrow": false,
+        "target": "calendar",
+        "targetArrow": true
+      },
+      {
+        "id": "L_calendar_antenna_0",
+        "label": "window",
+        "labelHeight": 21.0,
+        "labelWidth": 71.328125,
+        "source": "calendar",
+        "sourceArrow": false,
+        "target": "antenna",
+        "targetArrow": true
+      }
+    ],
+    "nodes": [
+      {
+        "direction": null,
+        "height": 68.0,
+        "id": "control",
+        "isGroup": false,
+        "label": "Control room",
+        "labelHeight": 0.0,
+        "labelWidth": 0.0,
+        "parentId": null,
+        "shape": "squareRect",
+        "width": 152.0
+      },
+      {
+        "direction": null,
+        "height": 68.0,
+        "id": "antenna",
+        "isGroup": false,
+        "label": "Antenna",
+        "labelHeight": 0.0,
+        "labelWidth": 0.0,
+        "parentId": null,
+        "shape": "squareRect",
+        "width": 152.0
+      },
+      {
+        "direction": null,
+        "height": 41.0,
+        "id": "sampler",
+        "isGroup": false,
+        "label": "Signal sampler",
+        "labelHeight": 0.0,
+        "labelWidth": 0.0,
+        "parentId": null,
+        "shape": "squareRect",
+        "width": 152.0
+      },
+      {
+        "direction": null,
+        "height": 68.0,
+        "id": "store",
+        "isGroup": false,
+        "label": "Data store",
+        "labelHeight": 0.0,
+        "labelWidth": 0.0,
+        "parentId": null,
+        "shape": "squareRect",
+        "width": 152.0
+      },
+      {
+        "direction": null,
+        "height": 68.0,
+        "id": "quality",
+        "isGroup": false,
+        "label": "Quality monitor",
+        "labelHeight": 0.0,
+        "labelWidth": 0.0,
+        "parentId": null,
+        "shape": "squareRect",
+        "width": 152.0
+      },
+      {
+        "direction": null,
+        "height": 68.0,
+        "id": "archive",
+        "isGroup": false,
+        "label": "Archive",
+        "labelHeight": 0.0,
+        "labelWidth": 0.0,
+        "parentId": null,
+        "shape": "squareRect",
+        "width": 152.0
+      },
+      {
+        "direction": null,
+        "height": 41.0,
+        "id": "calendar",
+        "isGroup": false,
+        "label": "Night schedule",
+        "labelHeight": 0.0,
+        "labelWidth": 0.0,
+        "parentId": null,
+        "shape": "squareRect",
+        "width": 152.0
+      }
+    ]
+  },
+  "before": {
+    "nodes": [
+      {
+        "id": "control",
+        "x": 1248,
+        "y": 1142,
+        "width": 152,
+        "height": 68
+      },
+      {
+        "id": "antenna",
+        "x": 1496,
+        "y": 1186,
+        "width": 152,
+        "height": 68
+      },
+      {
+        "id": "sampler",
+        "x": 1124,
+        "y": 1248,
+        "width": 152,
+        "height": 41
+      },
+      {
+        "id": "store",
+        "x": 1000,
+        "y": 1434,
+        "width": 152,
+        "height": 68
+      },
+      {
+        "id": "quality",
+        "x": 1248,
+        "y": 1310,
+        "width": 152,
+        "height": 68
+      },
+      {
+        "id": "archive",
+        "x": 1248,
+        "y": 1496,
+        "width": 152,
+        "height": 68
+      },
+      {
+        "id": "calendar",
+        "x": 1372,
+        "y": 1000,
+        "width": 152,
+        "height": 41
+      }
+    ],
+    "edges": [
+      {
+        "id": "L_control_antenna_0",
+        "points": [
+          {
+            "x": 1400,
+            "y": 1159
+          },
+          {
+            "x": 1572,
+            "y": 1159
+          },
+          {
+            "x": 1572,
+            "y": 1186
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_antenna_sampler_0",
+        "points": [
+          {
+            "x": 1496,
+            "y": 1220
+          },
+          {
+            "x": 1200,
+            "y": 1220
+          },
+          {
+            "x": 1200,
+            "y": 1248
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_sampler_store_0",
+        "points": [
+          {
+            "x": 1124,
+            "y": 1269
+          },
+          {
+            "x": 1076,
+            "y": 1269
+          },
+          {
+            "x": 1076,
+            "y": 1434
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_store_quality_0",
+        "points": [
+          {
+            "x": 1114,
+            "y": 1434
+          },
+          {
+            "x": 1114,
+            "y": 1361
+          },
+          {
+            "x": 1248,
+            "y": 1361
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_quality_control_0",
+        "points": [
+          {
+            "x": 1324,
+            "y": 1310
+          },
+          {
+            "x": 1324,
+            "y": 1210
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_store_archive_0",
+        "points": [
+          {
+            "x": 1076,
+            "y": 1502
+          },
+          {
+            "x": 1076,
+            "y": 1530
+          },
+          {
+            "x": 1248,
+            "y": 1530
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_quality_archive_0",
+        "points": [
+          {
+            "x": 1324,
+            "y": 1378
+          },
+          {
+            "x": 1324,
+            "y": 1496
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_control_calendar_0",
+        "points": [
+          {
+            "x": 1324,
+            "y": 1142
+          },
+          {
+            "x": 1324,
+            "y": 1021
+          },
+          {
+            "x": 1372,
+            "y": 1021
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "L_calendar_antenna_0",
+        "points": [
+          {
+            "x": 1524,
+            "y": 1021
+          },
+          {
+            "x": 1572,
+            "y": 1021
+          },
+          {
+            "x": 1572,
+            "y": 1186
+          }
+        ],
+        "label": null
+      }
+    ]
+  },
+  "after": [
+    {
+      "id": "L_control_antenna_0",
+      "points": [
+        {
+          "x": 1400,
+          "y": 1164
+        },
+        {
+          "x": 1586,
+          "y": 1164
+        },
+        {
+          "x": 1586,
+          "y": 1186
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_antenna_sampler_0",
+      "points": [
+        {
+          "x": 1496,
+          "y": 1229
+        },
+        {
+          "x": 1186,
+          "y": 1229
+        },
+        {
+          "x": 1186,
+          "y": 1248
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_sampler_store_0",
+      "points": [
+        {
+          "x": 1124,
+          "y": 1268
+        },
+        {
+          "x": 1062,
+          "y": 1268
+        },
+        {
+          "x": 1062,
+          "y": 1434
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_store_quality_0",
+      "points": [
+        {
+          "x": 1107,
+          "y": 1434
+        },
+        {
+          "x": 1107,
+          "y": 1344
+        },
+        {
+          "x": 1248,
+          "y": 1344
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_quality_control_0",
+      "points": [
+        {
+          "x": 1338,
+          "y": 1310
+        },
+        {
+          "x": 1338,
+          "y": 1210
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_store_archive_0",
+      "points": [
+        {
+          "x": 1076,
+          "y": 1502
+        },
+        {
+          "x": 1076,
+          "y": 1533
+        },
+        {
+          "x": 1248,
+          "y": 1533
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_quality_archive_0",
+      "points": [
+        {
+          "x": 1324,
+          "y": 1378
+        },
+        {
+          "x": 1324,
+          "y": 1496
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_control_calendar_0",
+      "points": [
+        {
+          "x": 1310,
+          "y": 1142
+        },
+        {
+          "x": 1310,
+          "y": 1020
+        },
+        {
+          "x": 1372,
+          "y": 1020
+        }
+      ],
+      "label": null
+    },
+    {
+      "id": "L_calendar_antenna_0",
+      "points": [
+        {
+          "x": 1524,
+          "y": 1020
+        },
+        {
+          "x": 1586,
+          "y": 1020
+        },
+        {
+          "x": 1586,
+          "y": 1186
+        }
+      ],
+      "label": null
+    }
+  ]
+}

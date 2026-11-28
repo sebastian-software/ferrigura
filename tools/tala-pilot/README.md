@@ -217,6 +217,11 @@ node tools/tala-pilot/check-sizeless-placement.mjs \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
 
+To compare the boxes through the first routing pass, build the
+`placement-bodies` overlay the same way and pass its Go reference as the
+fourth argument. It observes axis alignment, symmetry, equidistance,
+and the final unpinned placement offset before routing.
+
 ### Authored routes and edge labels
 
 The native rectangle-loop paths use the same projection as the general
@@ -262,10 +267,11 @@ node tools/tala-pilot/check-ovg-seed.mjs \
 
 ### Raw orthogonal routes
 
-The Observatory check compares the order, strategy, visibility vertices,
-and cost of all three Go routing flavors. It also compares the selected
-flavor and all materialized port and turn coordinates. This check starts
-from the positioned rectangles at the first routing stage.
+The Observatory check starts from Ferrigura's measured input and verifies
+the finished node boxes, routing identities, and source-ordered edges
+against Go. It compares the order, strategy, visibility vertices, and
+cost of all three routing flavors for seed 1, then the selected flavor,
+materialized port and turn coordinates, and the balanced paths.
 
 ```sh
 node tools/tala-pilot/trace-raw-routes.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-raw-routes

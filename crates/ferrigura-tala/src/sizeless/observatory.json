@@ -535,6 +535,57 @@
           "x": 248,
           "y": 496
         }
+      ],
+      "routingBodies": [
+        {
+          "id": "control",
+          "x": 1248,
+          "y": 1142,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "antenna",
+          "x": 1496,
+          "y": 1186,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "quality",
+          "x": 1248,
+          "y": 1310,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "calendar",
+          "x": 1372,
+          "y": 1000,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "sampler",
+          "x": 1124,
+          "y": 1248,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "store",
+          "x": 1000,
+          "y": 1434,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "archive",
+          "x": 1248,
+          "y": 1496,
+          "width": 152,
+          "height": 68
+        }
       ]
     },
     {
@@ -1054,6 +1105,57 @@
           "x": 248,
           "y": 558
         }
+      ],
+      "routingBodies": [
+        {
+          "id": "control",
+          "x": 845,
+          "y": 938,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "antenna",
+          "x": 969,
+          "y": 1069,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "quality",
+          "x": 907,
+          "y": 1255,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "calendar",
+          "x": 1093,
+          "y": 945,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "sampler",
+          "x": 1217,
+          "y": 1131,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "store",
+          "x": 1217,
+          "y": 1255,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "archive",
+          "x": 1217,
+          "y": 1447,
+          "width": 152,
+          "height": 68
+        }
       ]
     },
     {
@@ -1572,6 +1674,57 @@
           "width": 152,
           "x": 434,
           "y": 186
+        }
+      ],
+      "routingBodies": [
+        {
+          "id": "control",
+          "x": 1248,
+          "y": 1434,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "antenna",
+          "x": 1124,
+          "y": 1620,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "quality",
+          "x": 1310,
+          "y": 1000,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "calendar",
+          "x": 1000,
+          "y": 1496,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "sampler",
+          "x": 1186,
+          "y": 1372,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "store",
+          "x": 1186,
+          "y": 1186,
+          "width": 152,
+          "height": 68
+        },
+        {
+          "id": "archive",
+          "x": 1434,
+          "y": 1186,
+          "width": 152,
+          "height": 68
         }
       ]
     }

@@ -232,6 +232,29 @@ impl FlatSearch<'_> {
             && distance > MIN_ARROWHEAD_CLEARANCE
     }
 
+    /// Materializes the selected port and turn points in input edge order.
+    ///
+    /// # Errors
+    /// Returns invalid graph for missing or duplicate routes, invalid edge
+    /// indices, and incomplete visibility paths.
+    pub fn route_points_in_input_order(
+        &self,
+        routes: &FlavorRoutes,
+    ) -> Result<Vec<Vec<Point>>, Error> {
+        let mut points = vec![None; routes.routes.len()];
+        for choice in &routes.routes {
+            let slot = points.get_mut(choice.edge).ok_or(Error::InvalidGraph)?;
+            if slot.is_some() {
+                return Err(Error::InvalidGraph);
+            }
+            *slot = Some(self.route_points(&choice.route)?);
+        }
+        points
+            .into_iter()
+            .map(|points| points.ok_or(Error::InvalidGraph))
+            .collect()
+    }
+
     /// Copies only the port and turn points from the raw visibility path.
     ///
     /// # Errors

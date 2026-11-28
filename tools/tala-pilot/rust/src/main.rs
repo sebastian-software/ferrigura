@@ -216,7 +216,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             "--measured-first-sized-pass"
             | "--measured-sized-transition"
             | "--measured-sized-phase"
-            | "--measured-flat-placement",
+            | "--measured-flat-placement"
+            | "--measured-flat-refinement",
         ) => {
             let PlacementCapture { graph, seed, .. } = serde_json::from_reader(input)?;
             let stage = match command.as_deref() {
@@ -229,9 +230,24 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Some("--measured-sized-phase") => {
                     ferrigura_tala::sizeless::sized_phase_from_measurements
                 }
-                _ => ferrigura_tala::sizeless::flat_placement_from_measurements,
+                Some("--measured-flat-placement") => {
+                    ferrigura_tala::sizeless::flat_placement_from_measurements
+                }
+                _ => ferrigura_tala::sizeless::refined_flat_from_measurements,
             };
             serde_json::to_writer(output, &stage(&graph, seed)?)?;
+        }
+        Some("--flat-refinement-snapshots") => {
+            let PlacementCapture {
+                graph,
+                seed,
+                obstacle_order,
+            } = serde_json::from_reader(input)?;
+            let bodies =
+                ferrigura_tala::sizeless::place_flat_component(&graph, seed, &obstacle_order)?;
+            let result =
+                ferrigura_tala::sizeless::refinement_snapshots(&graph, &bodies, &obstacle_order)?;
+            serde_json::to_writer(output, &result)?;
         }
         Some("--ovg-seed") => {
             let nodes: Vec<_> = serde_json::from_reader(input)?;
@@ -297,7 +313,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "--first-sized-candidates, --first-sized-edge-costs, --first-sized-move, --first-sized-pass, ",
                 "--measured-first-sized-pass, --measured-sized-phase, ",
                 "--first-sized-compaction, --sized-phase, --sized-phase-snapshots, ",
-                "--direct-flat-component, --place-flat-component, --measured-flat-placement, --ovg-seed, ",
+                "--direct-flat-component, --place-flat-component, --measured-flat-placement, ",
+                "--flat-refinement-snapshots, --measured-flat-refinement, --ovg-seed, ",
                 "--ovg-edge-points, --ovg-boundary-points, --ovg-tunnels, --ovg-links, ",
                 "--candidate-score, --route-output, --raw-routes, --edge-label-placement, --simplify, --balance, or no argument"
             )

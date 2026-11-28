@@ -46,11 +46,53 @@ const selected = records('TALA_PILOT_SELECTED_ROUTES ');
 assert.equal(selected.length, 1, 'Expected one Go selected-route capture');
 assert.equal(selected[0].routes.length, 9, 'Unexpected Go selected route count');
 
-const native = JSON.parse(
-  execFileSync(rust, ['--raw-routes'], { ...options, input: JSON.stringify(routingInput) })
-);
+// The standalone Go bridge's single-seed mode uses seed 1. Build the
+// corresponding routing input entirely from measured Ferrigura geometry.
+const graph = JSON.parse(input);
+const translated = runRust('--translate', graph);
+const placed = runRust('--measured-flat-refinement', { graph, seed: 1 });
+const members = new Map(translated.nodes.map((node) => [graph.nodes[node.inputIndex].id, node]));
+const occupied = new Map(placed.map(({ id }, index) => [id, index]));
+const routeOwner = (index) => occupied.get(graph.nodes[translated.nodes[index].inputIndex].id);
+const derivedInput = {
+  nodes: placed.map(({ id, ...body }) => ({ ...body, id: members.get(id).absoluteId })),
+  nodeIds: placed.map(({ id }) => String(members.get(id).id)),
+  // Measured ordinary rectangles keep their initial captions inside their
+  // bodies, so they have no separate obstacle rectangle for routing.
+  labels: placed.map(() => null),
+  edges: translated.edges.map((edge) => ({
+    owners: [routeOwner(edge.from), routeOwner(edge.to)],
+    arrowheads: [edge.sourceArrow, edge.targetArrow].map((arrow) => (arrow ? 'triangle' : 'none')),
+    appearance: {
+      opacity: null,
+      stroke: null,
+      strokeWidth: null,
+      strokeDash: null,
+      animated: null,
+    },
+    invisible: false,
+  })),
+};
+assert.deepEqual(derivedInput, routingInput, 'Native placement and route input differ from Go');
+const native = runRust('--raw-routes', derivedInput);
 assert.deepEqual(native.flavors, expectedFlavors, 'Native flavor routing differs from Go');
 assert.deepEqual(native.selected, selected[0], 'Native selected route endpoints differ from Go');
-console.log(
-  'Matched all 27 raw routes and costs, the chosen Go flavor, and its 9 materialized paths.'
+const balance = records('TALA_PILOT_ROUTE_BALANCE ');
+assert.equal(balance.length, 2, 'Expected a pin capture before and after edge balance');
+assert.deepEqual(
+  balance.map((capture) => capture.stage),
+  ['before', 'after']
 );
+assert.deepEqual(native.before_balance, balance[0].routes, 'Go changed routes before balance');
+assert.deepEqual(native.balanced, balance[1].routes, 'Native balanced routes differ from Go');
+const moved = balance[1].routes.filter(
+  (route, index) => JSON.stringify(route) !== JSON.stringify(balance[0].routes[index])
+);
+assert.equal(moved.length, 8, 'Unexpected number of balanced Go routes');
+console.log(
+  'Matched native measured placement, all 27 raw routes and costs, the chosen Go flavor, and all 9 materialized and balanced paths.'
+);
+
+function runRust(command, input) {
+  return JSON.parse(execFileSync(rust, [command], { ...options, input: JSON.stringify(input) }));
+}

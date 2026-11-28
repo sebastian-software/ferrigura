@@ -90,6 +90,7 @@ struct ExpectedPlacement {
     sized_phase: Vec<NodeGeometry>,
     directed_component: Vec<NodeGeometry>,
     placed_component: Vec<NodeGeometry>,
+    routing_bodies: Vec<NodeGeometry>,
 }
 
 #[test]
@@ -172,10 +173,15 @@ fn seeded_observatory_placement_matches_the_go_stages() {
             bodies, expected.directed_component,
             "directed component, seed {seed}"
         );
+        let placed = place_flat_component(&graph, seed, order).unwrap();
         assert_eq!(
-            place_flat_component(&graph, seed, order),
-            Ok(expected.placed_component),
+            placed, expected.placed_component,
             "placed component, seed {seed}"
+        );
+        assert_eq!(
+            refine_flat_component(&graph, &placed, order),
+            Ok(expected.routing_bodies),
+            "refined routing bodies, seed {seed}"
         );
     }
 }

@@ -20,11 +20,14 @@ assert.equal(
 const routing = join(root, 'd2layouts/d2talalayout/internal/routing');
 const routerSource = join(routing, 'ovg_edge_router.go');
 const coordinatorSource = join(routing, 'coordinator.go');
+const pipelineSource = join(root, 'd2layouts/d2talalayout/internal/engine/pipeline.go');
 const routerTarget = join(destination, 'pilot-raw-router.go');
 const coordinatorTarget = join(destination, 'pilot-raw-coordinator.go');
+const pipelineTarget = join(destination, 'pilot-raw-pipeline.go');
 
 let router = await readFile(routerSource, 'utf8');
 let coordinator = await readFile(coordinatorSource, 'utf8');
+let pipeline = await readFile(pipelineSource, 'utf8');
 const helper = await readFile(new URL('./trace-raw-routes.go.txt', import.meta.url), 'utf8');
 router = replaceOnce(router, 'import (\n', 'import (\n\t"encoding/json"\n\t"os"\n\t"strconv"\n');
 router = replaceOnce(
@@ -62,16 +65,35 @@ coordinator = replaceOnce(
   '\ttracePilotSelectedRoutes(g, work.flavor, updates)\n\tapplyRouteUpdates(updates)\n\treturn nil'
 );
 
+pipeline = replaceOnce(pipeline, 'import (\n', 'import (\n\t"os"\n');
+pipeline = replaceOnce(
+  pipeline,
+  '\treturn routing.BalanceEdgeSegments(ctx, p.graph)\n',
+  '\ttracePilotBalance("before", p.graph)\n' +
+    '\terr := routing.BalanceEdgeSegments(ctx, p.graph)\n' +
+    '\tif err == nil {tracePilotBalance("after", p.graph)}\n' +
+    '\treturn err\n'
+);
+const balanceTrace = await readFile(
+  new URL('./trace-route-balance.go.txt', import.meta.url),
+  'utf8'
+);
+
 await mkdir(destination, { recursive: true });
 await Promise.all([
   writeFile(routerTarget, `${router}\n${helper}`),
   writeFile(coordinatorTarget, coordinator),
+  writeFile(pipelineTarget, `${pipeline}\n${balanceTrace}`),
 ]);
-execFileSync('gofmt', ['-w', routerTarget, coordinatorTarget]);
+execFileSync('gofmt', ['-w', routerTarget, coordinatorTarget, pipelineTarget]);
 await writeFile(
   join(destination, 'overlay.json'),
   JSON.stringify({
-    Replace: { [routerSource]: routerTarget, [coordinatorSource]: coordinatorTarget },
+    Replace: {
+      [routerSource]: routerTarget,
+      [coordinatorSource]: coordinatorTarget,
+      [pipelineSource]: pipelineTarget,
+    },
   })
 );
 

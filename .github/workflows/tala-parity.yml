@@ -54,9 +54,12 @@ jobs:
           node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-sizeless" sizeless-placement
           GOFLAGS="-overlay=$RUNNER_TEMP/tala-sizeless/overlay.json" \
             tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-sizeless-reference"
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-bodies" placement-bodies
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-bodies/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-bodies-reference"
           node tools/tala-pilot/check-sizeless-placement.mjs \
             "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-sizeless-reference" \
-            tools/tala-pilot/rust/target/debug/ferrigura-tala
+            tools/tala-pilot/rust/target/debug/ferrigura-tala "$RUNNER_TEMP/tala-bodies-reference"
       - name: Compare authored edge routes and label centers with Go
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

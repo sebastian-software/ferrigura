@@ -51,6 +51,19 @@ pub fn flat_placement_from_measurements(
     super::place_flat_component(&component.graph, seed, &component.obstacle_order)
 }
 
+/// Runs measured flat placement through the box refinements before routing.
+///
+/// # Errors
+/// Rejects invalid topology, measurements, or exhausted placement work.
+pub fn refined_flat_from_measurements(
+    input: &Graph,
+    seed: i64,
+) -> Result<Vec<NodeGeometry>, Error> {
+    let component = measured_component(input)?;
+    let bodies = super::place_flat_component(&component.graph, seed, &component.obstacle_order)?;
+    super::refine_flat_component(&component.graph, &bodies, &component.obstacle_order)
+}
+
 struct MeasuredComponent {
     graph: Graph,
     obstacle_order: Vec<usize>,
