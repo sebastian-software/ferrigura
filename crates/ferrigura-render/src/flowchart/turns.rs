@@ -252,13 +252,16 @@ pub(crate) fn side_exits(data: &mut LayoutData) {
             decision,
             flow.to_flow(candidate.route[0]).0 > decision_across,
         );
-        // A tip where a self-loop of the decision stands is taken.
+        // A tip where a self-loop of the decision stands is taken: the loop reaches past it. A
+        // loop on the side that faces the flow stays between the tips.
+        let half = node_span(flow, &data.nodes[decision])
+            .map_or(0.0, |span| (span.across.1 - span.across.0) / 2.0);
         let looped = data.edges.iter().any(|other| {
             other.start == edge.start
                 && other.end == edge.start
-                && other.points.first().is_some_and(|&point| {
+                && other.points.iter().any(|&point| {
                     let across = flow.to_flow(point).0;
-                    (across - decision_across).abs() > EPSILON
+                    (across - decision_across).abs() > half + EPSILON
                         && (across > decision_across) == key.1
                 })
         });
@@ -287,6 +290,45 @@ pub(crate) fn side_exits(data: &mut LayoutData) {
             }
         }
     }
+}
+
+/// Which side tips of a decision a branch would leave from, were no self-loop of the decision there:
+/// the tip at the lesser coordinate across the flow (the left from top to bottom, the top from left
+/// to right) and the one at the greater. A branch that has left from a tip already counts.
+pub(crate) fn wanted_tips(data: &LayoutData, decision: &str) -> (bool, bool) {
+    let Some(flow) = Flow::of(&data.direction) else {
+        return (false, false);
+    };
+    let Some(node) = data.nodes.iter().find(|node| node.id == decision) else {
+        return (false, false);
+    };
+    let (Some(x), Some(y)) = (node.x, node.y) else {
+        return (false, false);
+    };
+    let (decision_across, _) = flow.to_flow(Point::new(x, y));
+    // The decision's own loops and their labels leave the chart, as if they stood elsewhere.
+    let mut free = data.clone();
+    free.edges
+        .retain(|edge| !(edge.start == decision && edge.end == decision));
+    let by_id: HashMap<&str, &Node> = free
+        .nodes
+        .iter()
+        .map(|node| (node.id.as_str(), node))
+        .collect();
+    let mut wanted = (false, false);
+    for (index, edge) in free.edges.iter().enumerate() {
+        if edge.start != decision {
+            continue;
+        }
+        if let Some(candidate) = candidate(flow, &free, &by_id, index, edge) {
+            if flow.to_flow(candidate.route[0]).0 > decision_across {
+                wanted.1 = true;
+            } else {
+                wanted.0 = true;
+            }
+        }
+    }
+    wanted
 }
 
 /// The new route of an edge, when it is a branch that can leave from a side tip of its decision:
@@ -721,5 +763,35 @@ mod tests {
             routes[1],
             vec![(325.0, 100.0), (200.0, 100.0), (200.0, 230.0)]
         );
+    }
+
+    #[test]
+    fn a_self_loop_takes_the_tip_it_stands_at_but_not_one_beside_the_flow() {
+        // A loop at the left tip, out of the decision's side and back.
+        let mut at_tip = down();
+        at_tip.edge(
+            "D",
+            "D",
+            &[(125.0, 90.0), (93.0, 90.0), (93.0, 110.0), (125.0, 110.0)],
+        );
+        assert_eq!(at_tip.route(), Z.to_vec());
+        // The branch would take the tip were the loop not there.
+        assert_eq!(wanted_tips(&at_tip.data, "D"), (true, false));
+        // A loop below the decision, on the side that faces the flow, leaves both tips free.
+        for (direction, flow) in FLOWS {
+            let mut below = chart(direction, flow);
+            below.edge(
+                "D",
+                "D",
+                &[
+                    (190.0, 130.0),
+                    (190.0, 162.0),
+                    (210.0, 162.0),
+                    (210.0, 130.0),
+                ],
+            );
+            assert_eq!(below.route(), L.to_vec(), "{direction}");
+            assert_eq!(wanted_tips(&below.data, "D"), (true, false), "{direction}");
+        }
     }
 }

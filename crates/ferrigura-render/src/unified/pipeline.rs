@@ -425,7 +425,8 @@ pub(crate) fn lay_out_for_render(
 ///
 /// In the design mode, the self-loops stand beside their nodes ([`loops`]): a node whose loops
 /// cannot is laid out again with its loops on the sides of the other direction, then with its
-/// loops where ELK puts them. The nodes of `reserved` have their
+/// loops where ELK puts them. A decision whose loop stands at a side tip that a branch would leave
+/// from is laid out again with its loops off the tips its branches need. The nodes of `reserved` have their
 /// boxes grown for something of the caller's beside them already.
 ///
 /// # Errors
@@ -445,7 +446,9 @@ pub(crate) fn lay_out_adjusted(
         std::collections::HashSet::new(),
         std::collections::HashSet::new(),
     );
-    while let Some(beside) = loops::take_out(&mut measured.data, &kept, &turned, reserved) {
+    let mut avoided = loops::Avoided::default();
+    while let Some(beside) = loops::take_out(&mut measured.data, &kept, &turned, &avoided, reserved)
+    {
         let mut failed = None;
         let laid = lay_out_once(measured, config, |graph, data, state| {
             if let Err(host) = beside.put_back(graph, data, state) {
@@ -457,7 +460,15 @@ pub(crate) fn lay_out_adjusted(
         if laid {
             failed = beside.blocked(&measured.data);
             if failed.is_none() {
-                return Ok(true);
+                // A decision's loop at a side tip that a branch would leave from moves off it.
+                if !beside
+                    .wanted(&measured.data)
+                    .is_some_and(|(host, sides)| avoided.add(host, sides))
+                {
+                    return Ok(true);
+                }
+                measured.data.clone_from(&original);
+                continue;
             }
         } else if failed.is_none() {
             // The caller's step declined the layout.
@@ -469,6 +480,10 @@ pub(crate) fn lay_out_adjusted(
         let Some(host) = failed else {
             break;
         };
+        // A decision whose loops do not fit off its side tips keeps them where they stood first.
+        if avoided.settle(&host) {
+            continue;
+        }
         if !turned.insert(host.clone()) && !kept.insert(host) {
             break;
         }

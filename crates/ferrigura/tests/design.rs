@@ -630,6 +630,49 @@ fn a_branch_beside_a_decision_leaves_from_its_side_tip() {
 }
 
 #[test]
+fn a_decisions_self_loop_takes_a_side_no_branch_needs() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Branches to both sides: both leave from the tips and turn once, and the loop stands below
+    // the decision, on the side that faces the flow.
+    let text = "flowchart TD\n  S --> D{Valid?}\n  D -->|again| D\n  D -->|yes| A\n  D -->|no| B\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let (x, y) = node_middle(&svg, "D");
+    let (width, height) = decision_size(&svg, "D");
+    for (edge, side) in [("L_D_A_0", -1.0), ("L_D_B_0", 1.0)] {
+        let points = route(&svg, edge);
+        assert_eq!(points.len(), 3, "{edge}: {points:?}");
+        assert!(
+            (points[0].0 - (x + side * width / 2.0)).abs() < 1e-3,
+            "{edge}"
+        );
+        assert!((points[0].1 - y).abs() < 1e-3, "{edge}");
+    }
+    let looped = route(&svg, "L_D_D_0");
+    assert!(
+        looped.iter().all(|p| (p.0 - x).abs() <= 10.0 + 1e-6),
+        "{looped:?}"
+    );
+    assert!(
+        looped.iter().all(|p| p.1 > y) && looped.iter().any(|p| p.1 > y + height / 2.0 + 16.0),
+        "{looped:?}"
+    );
+    // A branch to one side: the loop takes the other tip, and the branch leaves from its own.
+    let chain =
+        "flowchart TD\n  S --> D{Valid?}\n  D -->|again| D\n  D -->|yes| A --> E\n  D -->|no| B\n";
+    let svg = renderer.render_with(chain, &design(None)).unwrap();
+    let (x, y) = node_middle(&svg, "D");
+    let width = decision_size(&svg, "D").0;
+    let branch = route(&svg, "L_D_B_0");
+    assert_eq!(branch.len(), 3, "{branch:?}");
+    assert!((branch[0].0 - (x + width / 2.0)).abs() < 1e-3 && (branch[0].1 - y).abs() < 1e-3);
+    // The loop leaves the left tip, 32 out.
+    let looped = route(&svg, "L_D_D_0");
+    let left = looped.iter().map(|p| p.0).fold(f64::MAX, f64::min);
+    assert!(looped.iter().all(|p| p.0 < x), "{looped:?}");
+    assert!((left - (x - width / 2.0 - 32.0)).abs() < 1e-3, "{looped:?}");
+}
+
+#[test]
 fn a_branch_that_passes_a_layer_keeps_its_route() {
     let renderer = Renderer::new(&Value::empty_object());
     // `Express` stands a layer below `Queue`: its branch passes the layer of `Queue`.

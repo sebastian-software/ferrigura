@@ -25,7 +25,9 @@
 //! the first loop stands on the right and a second one on the left, each with its label on its far
 //! side. In a layout from left to right (or back), the first loop stands on the top and a second
 //! one at the bottom, each with its label at its right. A side that a state's note takes is not
-//! free ([`Reserved`]). A node with more loops than free sides, an invisible loop, or a side too
+//! free ([`Reserved`]). A decision's loop stays off a side tip that a branch would leave from
+//! ([`Loops::wanted`], [`Avoided`]): it takes the other tip, or the side that faces the next layer
+//! where the branches need both. A node with more loops than free sides, an invisible loop, or a side too
 //! short for the ends of a loop, and a group, keep their loops where ELK puts them.
 
 use std::collections::{HashMap, HashSet};
@@ -40,6 +42,7 @@ use crate::unified::geom::{BBox, Point};
 use crate::unified::room::{
     absolute_boxes, clear_beside, contains, crosses, find_mut, grown, overlaps,
 };
+use crate::unified::shapes;
 
 /// The least distance between a loop, its label or a cardinality and anything else.
 const CLEARANCE: f64 = 4.0;
@@ -69,7 +72,7 @@ pub(crate) struct Reserved {
 
 /// The side of its node a loop stands on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Side {
+pub(crate) enum Side {
     Right,
     Left,
     Top,
@@ -89,6 +92,35 @@ impl Side {
     /// Whether the side comes before the node along its layer: the left, or the top.
     fn is_before(self) -> bool {
         matches!(self, Self::Left | Self::Top)
+    }
+
+    /// The side of a node that faces the next layer in a layout of the direction: the side its
+    /// edges leave from.
+    fn facing_flow(direction: &str) -> Self {
+        match direction {
+            "BT" => Self::Top,
+            "LR" => Self::Right,
+            "RL" => Self::Left,
+            _ => Self::Bottom,
+        }
+    }
+
+    /// Whether a loop on the side stands at a side tip of a decision in a layout whose next layer
+    /// the side `flow` faces: on a side across the flow.
+    fn is_tip(self, flow: Self) -> bool {
+        matches!(
+            (self, flow),
+            (Self::Left | Self::Right, Self::Top | Self::Bottom)
+                | (Self::Top | Self::Bottom, Self::Left | Self::Right)
+        )
+    }
+
+    /// The length of the side on a box of the size.
+    fn length(self, width: f64, height: f64) -> f64 {
+        match self {
+            Self::Right | Self::Left => height,
+            Self::Top | Self::Bottom => width,
+        }
     }
 
     /// The unit vector out of the node.
@@ -237,12 +269,55 @@ impl Loop {
 #[derive(Debug, Clone)]
 struct Host {
     id: String,
-    /// The node's own size, which its box in the layout exceeds.
+    /// The node's own size.
     width: f64,
     height: f64,
     /// Whether its layer runs along x: a layout from top to bottom or back.
     across: bool,
+    /// The side that faces the next layer in the node's direction.
+    flow: Side,
     loops: Vec<Loop>,
+}
+
+/// The sides that the loops of decisions stay off, because a branch would leave from the side tip
+/// there ([`Loops::wanted`]); see [`take_out`].
+#[derive(Debug, Clone, Default)]
+pub(crate) struct Avoided {
+    sides: HashMap<String, Vec<Side>>,
+    /// The decisions whose loops went back to their first sides, since the sides left did not
+    /// hold them.
+    settled: HashSet<String>,
+}
+
+impl Avoided {
+    fn of(&self, id: &str) -> &[Side] {
+        self.sides.get(id).map_or(&[], Vec::as_slice)
+    }
+
+    /// Adds sides for a decision's loops to stay off; whether any is new.
+    pub(crate) fn add(&mut self, id: String, sides: Vec<Side>) -> bool {
+        if self.settled.contains(&id) {
+            return false;
+        }
+        let entry = self.sides.entry(id).or_default();
+        let before = entry.len();
+        for side in sides {
+            if !entry.contains(&side) {
+                entry.push(side);
+            }
+        }
+        entry.len() > before
+    }
+
+    /// Gives a decision whose loops did not fit on the sides left its first sides back; whether
+    /// it had sides to stay off.
+    pub(crate) fn settle(&mut self, id: &str) -> bool {
+        if self.sides.remove(id).is_some_and(|sides| !sides.is_empty()) {
+            self.settled.insert(id.to_owned());
+            return true;
+        }
+        false
+    }
 }
 
 /// The loops taken out of the layout data, and what puts them back.
@@ -318,11 +393,14 @@ fn outside(room: BBox, node: BBox, side: Side) -> BBox {
 /// beside their nodes. `None` where no loop can: then the data is unchanged. The nodes of `turned` take
 /// the sides of the other direction: the edges of a node in a group with a direction of its own
 /// may meet it in the direction of the group's parent. The nodes of `kept_hosts`
-/// keep their loops where ELK puts them; the nodes of `reserved` keep their sides taken.
+/// keep their loops where ELK puts them; the nodes of `reserved` keep their sides taken. A
+/// decision stays off the sides `avoided` names, and takes the side that faces the next layer when
+/// it stays off one.
 pub(crate) fn take_out(
     data: &mut LayoutData,
     kept_hosts: &HashSet<String>,
     turned: &HashSet<String>,
+    avoided: &Avoided,
     reserved: &[Reserved],
 ) -> Option<Loops> {
     if !data.edges.iter().any(|edge| edge.start == edge.end) {
@@ -369,28 +447,36 @@ pub(crate) fn take_out(
                     width,
                     height,
                     across: matches!(direction, "LR" | "RL") == turned.contains(&node.id),
+                    flow: Side::facing_flow(direction),
                     loops: Vec::new(),
                 });
                 hosts.last_mut()?
             }
         };
-        let sides: Vec<Side> = Side::of(host.across)
+        // A decision whose side tips its branches need takes the side that faces the next layer.
+        let avoid = avoided.of(&node.id);
+        let mut order = Side::of(host.across).to_vec();
+        if !avoid.is_empty() && !turned.contains(&node.id) {
+            order.push(host.flow);
+        }
+        let sides: Vec<Side> = order
             .into_iter()
             .filter(|side| {
-                !taken.is_some_and(|entry| {
-                    if side.is_before() {
-                        entry.before
-                    } else {
-                        entry.after
-                    }
-                })
+                !avoid.contains(side)
+                    && !taken.is_some_and(|entry| {
+                        if side.is_before() {
+                            entry.before
+                        } else {
+                            entry.after
+                        }
+                    })
             })
             .collect();
         let Some(&side) = sides.get(host.loops.len()) else {
             unusable.insert(node.id.as_str());
             continue;
         };
-        let length = if host.across { host.height } else { host.width };
+        let length = side.length(host.width, host.height);
         host.loops.push(Loop {
             edge: edge.id.clone(),
             side,
@@ -401,8 +487,11 @@ pub(crate) fn take_out(
         });
     }
     hosts.retain(|host| {
-        let side = if host.across { host.height } else { host.width };
-        !unusable.contains(host.id.as_str()) && side >= 2.0 * MIN_PITCH
+        !unusable.contains(host.id.as_str())
+            && host
+                .loops
+                .iter()
+                .all(|entry| entry.side.length(host.width, host.height) >= 2.0 * MIN_PITCH)
     });
     if hosts.is_empty() {
         return None;
@@ -518,6 +607,32 @@ impl Loops {
             }
         }
         Ok(())
+    }
+
+    /// A decision with a loop at a side tip that one of its branches would leave from
+    /// (`flowchart::turns`), in the applied layout, with the side tips its branches need: its
+    /// loops are to stay off them. `None` where no loop stands in a branch's way.
+    pub(crate) fn wanted(&self, data: &LayoutData) -> Option<(String, Vec<Side>)> {
+        for host in &self.hosts {
+            let Some(node) = data.nodes.iter().find(|node| node.id == host.id) else {
+                continue;
+            };
+            if !(shapes::is_decision(node) || shapes::is_choice(node)) {
+                continue;
+            }
+            let (before, after) = crate::flowchart::turns::wanted_tips(data, &host.id);
+            let wanted = |side: Side| {
+                side.is_tip(host.flow) && if side.is_before() { before } else { after }
+            };
+            if host.loops.iter().any(|entry| wanted(entry.side)) {
+                let tips = Side::of(!matches!(host.flow, Side::Left | Side::Right));
+                return Some((
+                    host.id.clone(),
+                    tips.into_iter().filter(|side| wanted(*side)).collect(),
+                ));
+            }
+        }
+        None
     }
 
     /// The first node with a loop that does not stand clear of everything it does not belong to,
@@ -725,8 +840,14 @@ mod tests {
             direction: "TB".to_owned(),
             ..LayoutData::default()
         };
-        let loops = take_out(&mut data, &HashSet::new(), &HashSet::new(), &[])
-            .expect("a loop beside its node");
+        let loops = take_out(
+            &mut data,
+            &HashSet::new(),
+            &HashSet::new(),
+            &Avoided::default(),
+            &[],
+        )
+        .expect("a loop beside its node");
         assert_eq!(data.edges.len(), 1);
         assert_eq!(data.edges[0].id, "e");
         assert_eq!(data.nodes[0].width, Some(120.0));
@@ -743,8 +864,14 @@ mod tests {
             direction: "LR".to_owned(),
             ..LayoutData::default()
         };
-        let loops = take_out(&mut data, &HashSet::new(), &HashSet::new(), &[])
-            .expect("two loops beside their node");
+        let loops = take_out(
+            &mut data,
+            &HashSet::new(),
+            &HashSet::new(),
+            &Avoided::default(),
+            &[],
+        )
+        .expect("two loops beside their node");
         let sides: Vec<Side> = loops.hosts[0].loops.iter().map(|l| l.side).collect();
         assert_eq!(sides, vec![Side::Top, Side::Bottom]);
 
@@ -758,7 +885,16 @@ mod tests {
             direction: "LR".to_owned(),
             ..LayoutData::default()
         };
-        assert!(take_out(&mut three, &HashSet::new(), &HashSet::new(), &[]).is_none());
+        assert!(
+            take_out(
+                &mut three,
+                &HashSet::new(),
+                &HashSet::new(),
+                &Avoided::default(),
+                &[]
+            )
+            .is_none()
+        );
         assert_eq!(three.edges.len(), 3);
     }
 
@@ -778,8 +914,14 @@ mod tests {
             before: false,
             after: true,
         }];
-        let loops =
-            take_out(&mut data, &HashSet::new(), &HashSet::new(), &reserved).expect("a loop");
+        let loops = take_out(
+            &mut data,
+            &HashSet::new(),
+            &HashSet::new(),
+            &Avoided::default(),
+            &reserved,
+        )
+        .expect("a loop");
         assert_eq!(loops.hosts[0].loops[0].side, Side::Left);
         assert_eq!(loops.hosts[0].width, 120.0);
         // Both rooms stand beside the state.
@@ -798,7 +940,14 @@ mod tests {
             ..LayoutData::default()
         };
         let turned = HashSet::from(["a".to_owned()]);
-        let loops = take_out(&mut data, &HashSet::new(), &turned, &[]).expect("a loop");
+        let loops = take_out(
+            &mut data,
+            &HashSet::new(),
+            &turned,
+            &Avoided::default(),
+            &[],
+        )
+        .expect("a loop");
         assert_eq!(loops.hosts[0].loops[0].side, Side::Top);
     }
 
@@ -825,7 +974,7 @@ mod tests {
             ..LayoutData::default()
         };
         let kept = HashSet::from(["a".to_owned()]);
-        assert!(take_out(&mut data, &kept, &HashSet::new(), &[]).is_none());
+        assert!(take_out(&mut data, &kept, &HashSet::new(), &Avoided::default(), &[]).is_none());
         assert_eq!(data.edges.len(), 2);
     }
 }
