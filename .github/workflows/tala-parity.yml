@@ -86,6 +86,18 @@ jobs:
             --reference "$RUNNER_TEMP/tala-reference" \
             --traced "$RUNNER_TEMP/tala-score-reference" \
             --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare final normalization and its SVG with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-normalization"
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-normalization/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-normalization-reference"
+          node tools/tala-pilot/check-normalization.mjs \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala \
+            --reference "$RUNNER_TEMP/tala-normalization-reference" \
+            --ferrigura target/debug/examples/tala_pilot \
+            --measured tools/tala-pilot/captures \
+            --captures "$RUNNER_TEMP/tala-normalization.json"
       - name: Require a passing Rust counterpart for every upstream correctness test
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

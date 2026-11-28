@@ -7,7 +7,7 @@
 // d2talalayout/{patch,result_validate}.go, d2target/d2target.go,
 // lib/label/label.go and lib/geo/{math,point,route,vector}.go.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{EdgeGeometry, Error, Point};
 
@@ -15,7 +15,7 @@ const MAX_RESULT_COORDINATE: f64 = 1_000_000_000.0;
 const LABEL_PADDING: f64 = 5.0;
 const RENDER_STROKE_WIDTH: f64 = 2.0;
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Anchor {
     InsideMiddleLeft,
@@ -67,7 +67,7 @@ impl Anchor {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct RoutedLabel {
     pub anchor: Anchor,
     pub percentage: f64,

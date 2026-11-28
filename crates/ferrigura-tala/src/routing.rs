@@ -10,13 +10,13 @@
 // (buildEdgePatch). Label and route arithmetic come from D2's lib/label/label.go
 // (GetPointOnRoute, chopPrecision) and lib/geo/route.go (GetPointAtDistance).
 
+use crate::normalize::normalize_routed;
 use crate::route_output::{Anchor, RoutedEdge, RoutedLabel};
 use crate::{Edge, EdgeGeometry, Error, NodeGeometry, Point};
 
 const SHARED_PORT_LOOP_GAP: f64 = 30.0;
 pub(super) const SIDE_EDGE_SPACING: f64 = 40.0;
 const PLACEMENT_PADDING: f64 = 1000.0;
-const LAYOUT_STROKE_WIDTH: f64 = 3.0;
 
 /// Lays out one unpinned rectangle and its only edge, a self-loop.
 ///
@@ -38,23 +38,9 @@ pub(crate) fn isolated_rectangle_loop(
         width: edge.label_width.ceil(),
         height: edge.label_height.ceil(),
     });
-    let mut origin = route_origin(
-        Point {
-            x: node.x,
-            y: node.y,
-        },
-        &points,
-    );
-    if let Some(label) = label {
-        let top_left = label
-            .top_left(&points, LAYOUT_STROKE_WIDTH)
-            .ok_or(Error::InvalidGraph)?;
-        origin.x = origin.x.min(top_left.x.floor());
-        origin.y = origin.y.min(top_left.y.floor());
-    }
-    node.x -= origin.x;
-    node.y -= origin.y;
-    finish_route(edge, points, origin, label)
+    let mut route = routed_loop(edge, points, label);
+    normalize_routed(std::slice::from_mut(node), std::slice::from_mut(&mut route))?;
+    route.into_geometry()
 }
 
 /// Lays out the unpinned rectangle when all its edges are unlabeled self-loops.
@@ -84,26 +70,16 @@ pub(crate) fn isolated_unlabeled_loops(
 
     let corners = [Corner::TopLeft, Corner::TopRight, Corner::BottomLeft];
     let mut gaps = [SHARED_PORT_LOOP_GAP; 3];
-    let mut origin = Point {
-        x: node.x,
-        y: node.y,
-    };
     let mut routes = Vec::with_capacity(edges.len());
     for edge in edges {
         let slot = order[arrow_class(edge)];
         let points = corner_route(node, corners[slot], gaps[slot]);
-        origin = route_origin(origin, &points);
         gaps[slot] += SHARED_PORT_LOOP_GAP;
-        routes.push(points);
+        routes.push(routed_loop(edge, points, None));
     }
 
-    node.x -= origin.x;
-    node.y -= origin.y;
-    edges
-        .iter()
-        .zip(routes)
-        .map(|(edge, points)| finish_route(edge, points, origin, None))
-        .collect()
+    normalize_routed(std::slice::from_mut(node), &mut routes)?;
+    routes.into_iter().map(RoutedEdge::into_geometry).collect()
 }
 
 fn arrow_class(edge: &Edge) -> usize {
@@ -215,31 +191,13 @@ fn corner_route(node: &NodeGeometry, corner: Corner, gap: f64) -> [Point; 5] {
     [from, from_bend, intersection, to_bend, to]
 }
 
-fn route_origin(mut origin: Point, points: &[Point]) -> Point {
-    for point in points {
-        origin.x = origin.x.min(point.x.floor());
-        origin.y = origin.y.min(point.y.floor());
-    }
-    origin
-}
-
-fn finish_route(
-    edge: &Edge,
-    mut points: [Point; 5],
-    origin: Point,
-    label: Option<RoutedLabel>,
-) -> Result<EdgeGeometry, Error> {
-    for point in &mut points {
-        point.x -= origin.x;
-        point.y -= origin.y;
-    }
+fn routed_loop(edge: &Edge, points: [Point; 5], label: Option<RoutedLabel>) -> RoutedEdge {
     RoutedEdge {
         id: edge.id.clone(),
         points: points.to_vec(),
         label,
         reversed_for_layout: edge.source_arrow && !edge.target_arrow,
     }
-    .into_geometry()
 }
 
 #[cfg(test)]

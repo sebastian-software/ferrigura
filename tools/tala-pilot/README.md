@@ -64,10 +64,11 @@ node tools/tala-pilot/check-normalization.mjs \
   --captures /tmp/ferrigura-tala-preview/normalization.json
 ```
 
-The overlay leaves the D2 checkout untouched. It runs the Rust executable
-in place of Go's normalization and then resumes the pinned Go layout. The
-test compares final JSON and the resulting SVG byte for byte. The executable
-and Go are development tools.
+The overlay leaves the D2 checkout untouched. It passes the original route
+points and label placements to the Rust normalizer, which computes the origin
+using the solver's label stroke width. The overlay resumes the pinned Go layout
+with the resulting coordinates. The test compares the final JSON and SVG
+byte for byte. The executable and Go are development tools.
 
 ## Replay native layout fixtures
 

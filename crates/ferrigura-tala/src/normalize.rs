@@ -7,11 +7,11 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
+pub use crate::Point;
+use crate::route_output::{RoutedEdge, RoutedLabel};
+use crate::{Error, NodeGeometry};
+
+const LAYOUT_STROKE_WIDTH: f64 = 3.0;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Node {
@@ -24,6 +24,8 @@ pub struct Edge {
     pub id: i64,
     pub points: Vec<Point>,
     pub label_top_left: Option<Point>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub route_label: Option<RoutedLabel>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -44,32 +46,99 @@ impl Geometry {
             return Err("fixed positions are outside the TALA pilot");
         }
 
-        let mut min_x = f64::INFINITY;
-        let mut min_y = f64::INFINITY;
-        for node in &self.nodes {
-            min_x = min_x.min(node.top_left.x);
-            min_y = min_y.min(node.top_left.y);
-        }
-        for edge in &self.edges {
-            for point in edge.points.iter().chain(edge.label_top_left.iter()) {
-                min_x = min_x.min(point.x.floor());
-                min_y = min_y.min(point.y.floor());
-            }
-        }
-        if !min_x.is_finite() || !min_y.is_finite() {
+        let labels = self
+            .edges
+            .iter()
+            .map(|edge| match edge.route_label {
+                Some(label) => normalization_label(label, &edge.points)
+                    .map(Some)
+                    .map_err(|_| "labeled route has no nonzero leg"),
+                None => Ok(edge.label_top_left),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let node_positions = self.nodes.iter().map(|node| node.top_left);
+        let route_positions = self
+            .edges
+            .iter()
+            .flat_map(|edge| edge.points.iter().copied())
+            .chain(labels.into_iter().flatten());
+        let Some(origin) = origin(node_positions, route_positions) else {
             return Ok(());
-        }
+        };
 
         for node in &mut self.nodes {
-            node.top_left.x -= min_x;
-            node.top_left.y -= min_y;
+            node.top_left.x -= origin.x;
+            node.top_left.y -= origin.y;
         }
         for edge in &mut self.edges {
-            for point in &mut edge.points {
-                point.x -= min_x;
-                point.y -= min_y;
-            }
+            shift(&mut edge.points, origin);
         }
         Ok(())
+    }
+}
+
+/// Normalizes finished, unpinned routes and nodes before authored projection.
+/// Go includes route-label boxes measured with the solver stroke width in the
+/// origin. The renderer computes its actual label center after translation.
+///
+/// # Errors
+/// Returns an error if a labeled route has no nonzero leg.
+pub fn normalize_routed(nodes: &mut [NodeGeometry], edges: &mut [RoutedEdge]) -> Result<(), Error> {
+    let labels = edges
+        .iter()
+        .filter_map(|edge| edge.label.map(|label| (label, &edge.points)))
+        .map(|(label, points)| normalization_label(label, points))
+        .collect::<Result<Vec<_>, _>>()?;
+    let node_positions = nodes.iter().map(|node| Point {
+        x: node.x,
+        y: node.y,
+    });
+    let route_positions = edges
+        .iter()
+        .flat_map(|edge| edge.points.iter().copied())
+        .chain(labels);
+    if let Some(origin) = origin(node_positions, route_positions) {
+        for node in nodes {
+            node.x -= origin.x;
+            node.y -= origin.y;
+        }
+        for edge in edges {
+            shift(&mut edge.points, origin);
+        }
+    }
+    Ok(())
+}
+
+fn normalization_label(label: RoutedLabel, points: &[Point]) -> Result<Point, Error> {
+    label
+        .top_left(points, LAYOUT_STROKE_WIDTH)
+        .ok_or(Error::InvalidGraph)
+}
+
+fn origin(
+    nodes: impl Iterator<Item = Point>,
+    routes: impl Iterator<Item = Point>,
+) -> Option<Point> {
+    let routes = routes.map(|point| Point {
+        x: point.x.floor(),
+        y: point.y.floor(),
+    });
+    let minimum = nodes.chain(routes).fold(
+        Point {
+            x: f64::INFINITY,
+            y: f64::INFINITY,
+        },
+        |minimum, point| Point {
+            x: minimum.x.min(point.x),
+            y: minimum.y.min(point.y),
+        },
+    );
+    (minimum.x.is_finite() && minimum.y.is_finite()).then_some(minimum)
+}
+
+fn shift(points: &mut [Point], origin: Point) {
+    for point in points {
+        point.x -= origin.x;
+        point.y -= origin.y;
     }
 }

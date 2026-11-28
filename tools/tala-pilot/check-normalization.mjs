@@ -94,8 +94,8 @@ function runRust(input) {
 }
 
 function comparedGeometry({ fixed, nodes, edges }) {
-  // Go recomputes label anchors from normalized routes. The Rust port consumes the
-  // original label anchors when choosing the origin and produces node and route positions.
+  // Both implementations derive the origin from the original label boxes. The
+  // label anchors in the observed metadata are excluded from this comparison.
   return { fixed, nodes, edges: edges.map(({ id, points }) => ({ id, points })) };
 }
 
