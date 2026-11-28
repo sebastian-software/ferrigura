@@ -3,7 +3,7 @@ name = "ferrigura-render"
 description = "Layout and SVG output of ferrigura diagrams"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
-version = "0.10.0"
+version = "0.11.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -17,14 +17,14 @@ experimental-tala = ["dep:ferrigura-tala"]
 
 [dependencies]
 base64 = "0.23.1"
-ferrigura-cose = { path = "../ferrigura-cose", version = "0.10.0" }
-ferrigura-elk = { path = "../ferrigura-elk", version = "0.10.0" }
-ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.10.0" }
-ferrigura-model = { path = "../ferrigura-model", version = "0.10.0" }
-ferrigura-path = { path = "../ferrigura-path", version = "0.10.0" }
-ferrigura-syntax = { path = "../ferrigura-syntax", version = "0.10.0" }
-ferrigura-tala = { path = "../ferrigura-tala", version = "0.10.0", optional = true }
-ferrigura-text = { path = "../ferrigura-text", version = "0.10.0" }
+ferrigura-cose = { path = "../ferrigura-cose", version = "0.11.0" }
+ferrigura-elk = { path = "../ferrigura-elk", version = "0.11.0" }
+ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.11.0" }
+ferrigura-model = { path = "../ferrigura-model", version = "0.11.0" }
+ferrigura-path = { path = "../ferrigura-path", version = "0.11.0" }
+ferrigura-syntax = { path = "../ferrigura-syntax", version = "0.11.0" }
+ferrigura-tala = { path = "../ferrigura-tala", version = "0.11.0", optional = true }
+ferrigura-text = { path = "../ferrigura-text", version = "0.11.0" }
 ferroni.workspace = true
 memchr = "2.8.3"
 serde.workspace = true
