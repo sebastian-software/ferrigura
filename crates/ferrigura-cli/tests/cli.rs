@@ -69,6 +69,54 @@ fn compat_selects_reference_routing_and_the_removed_option_is_rejected() {
 }
 
 #[test]
+fn explicit_layout_engine_selection_keeps_the_existing_elk_output() {
+    let flow = "flowchart LR\n A[Input] --> B[Output]\n";
+    let default = run(&["--id", "layout"], flow);
+    let elk = run(&["--id", "layout", "--layout-engine", "elk"], flow);
+    assert!(default.status.success(), "{}", stderr(&default));
+    assert!(elk.status.success(), "{}", stderr(&elk));
+    assert_eq!(stdout(&default), stdout(&elk));
+
+    let unknown = run(&["--layout-engine", "other"], flow);
+    assert_eq!(unknown.status.code(), Some(2));
+    assert!(stdout(&unknown).is_empty());
+    assert!(stderr(&unknown).contains("expected elk or tala"));
+
+    let unsupported = run(&["--layout-engine", "tala"], PIE);
+    assert_eq!(unsupported.status.code(), Some(1));
+    assert!(stdout(&unsupported).is_empty());
+    assert!(stderr(&unsupported).contains("TALA"));
+}
+
+#[cfg(not(feature = "experimental-tala"))]
+#[test]
+fn tala_selection_requires_a_tala_enabled_build() {
+    let output = run(&["--layout-engine", "tala"], "flowchart LR\n A[Input]\n");
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stdout(&output).is_empty());
+    assert!(stderr(&output).contains("experimental-tala"));
+}
+
+#[cfg(feature = "experimental-tala")]
+#[test]
+fn tala_selection_renders_a_supported_flowchart_and_rejects_compat() {
+    let flow = "flowchart LR\n A[Input]\n";
+    let svg = run(&["--layout-engine", "tala"], flow);
+    assert!(svg.status.success(), "{}", stderr(&svg));
+    assert!(stdout(&svg).contains("Input"));
+    let compatible = run(&["--layout-engine", "tala", "--compat"], flow);
+    assert_eq!(compatible.status.code(), Some(1));
+    assert!(stdout(&compatible).is_empty());
+    assert!(stderr(&compatible).contains("compat"));
+    let connected = "flowchart LR\n A[Input] --> B[Output]\n";
+    assert!(run(&["--layout-engine", "elk"], connected).status.success());
+    let unsupported = run(&["--layout-engine", "tala"], connected);
+    assert_eq!(unsupported.status.code(), Some(1));
+    assert!(stdout(&unsupported).is_empty());
+    assert!(stderr(&unsupported).contains("TALA"));
+}
+
+#[test]
 fn argument_errors_are_captured_when_stdin_closes_early() {
     // Larger than a pipe buffer: the rejected command cannot consume this before exiting.
     let input = "x".repeat(8 * 1024 * 1024);

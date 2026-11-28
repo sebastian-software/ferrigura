@@ -16,7 +16,9 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 #[cfg(any(test, not(feature = "all")))]
 use ferrigura::diagrams::{self, Plugin};
-use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, RendererBuilder};
+use ferrigura::{
+    Animation, ColorScheme, FontStyle, FontWeight, LayoutEngine, RenderOptions, RendererBuilder,
+};
 use ferrigura_model::value::Value;
 use napi::bindgen_prelude::Uint8Array;
 use napi::{Error, Result, Status};
@@ -63,6 +65,8 @@ pub struct RenderOptionsInput {
     /// Mermaid's geometry and look when true. False (default) draws every diagram type in
     /// ferrigura's own look and measures. Font and readability fixes always apply.
     pub compat: Option<bool>,
+    /// Explicit layout engine: `elk` or experimental `tala` on a TALA-enabled build.
+    pub layout_engine: Option<String>,
     /// The id of the SVG element, which scopes its styles. By default it is derived from the text and
     /// the configuration, so the same input gives the same id.
     pub id: Option<String>,
@@ -106,7 +110,7 @@ pub fn render(
     let options = render_options(options)?;
     let (faces, fallbacks) = parse_fonts(fonts.as_ref())?;
     let renderer = cached_renderer(&config, &faces, &fallbacks)?;
-    renderer.render_with(&text, &options).map_err(to_error)
+    options.render(&renderer, &text)
 }
 
 /// A renderer that resolves its configuration once, for many renders.
@@ -150,7 +154,7 @@ impl Renderer {
     #[napi]
     pub fn render(&self, text: String, options: Option<RenderOptionsInput>) -> Result<String> {
         let options = render_options(options)?;
-        self.inner.render_with(&text, &options).map_err(to_error)
+        options.render(&self.inner, &text)
     }
 }
 
@@ -448,10 +452,35 @@ fn identical(a: &Value, b: &Value) -> bool {
     }
 }
 
+#[derive(Default)]
+struct RenderSettings {
+    options: RenderOptions,
+    engine: Option<LayoutEngine>,
+}
+
+impl RenderSettings {
+    fn render(&self, renderer: &ferrigura::Renderer, text: &str) -> Result<String> {
+        match self.engine {
+            Some(engine) => renderer.render_with_engine(text, &self.options, engine),
+            None => renderer.render_with(text, &self.options),
+        }
+        .map_err(to_error)
+    }
+}
+
 /// The render options of the addon's input.
-fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
-    Ok(match input {
-        Some(input) => RenderOptions {
+fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderSettings> {
+    let Some(input) = input else {
+        return Ok(RenderSettings::default());
+    };
+    let engine = input
+        .layout_engine
+        .as_deref()
+        .map(layout_engine)
+        .transpose()?;
+    Ok(RenderSettings {
+        engine,
+        options: RenderOptions {
             animation: input
                 .animation
                 .map(|input| {
@@ -488,8 +517,18 @@ fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
                 })
                 .transpose()?,
         },
-        None => RenderOptions::default(),
     })
+}
+
+fn layout_engine(name: &str) -> Result<LayoutEngine> {
+    match name {
+        "elk" => Ok(LayoutEngine::Elk),
+        "tala" => Ok(LayoutEngine::Tala),
+        other => Err(Error::new(
+            Status::InvalidArg,
+            format!("unknown layout engine {other:?}, expected elk or tala"),
+        )),
+    }
 }
 
 fn color_scheme(name: &str) -> Result<ColorScheme> {

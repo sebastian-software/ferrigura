@@ -18,6 +18,7 @@ crate-type = ["cdylib"]
 # linker leaves out the rest (docs/decisions/0020-diagram-types-as-plugins.md).
 [features]
 default = ["all"]
+experimental-tala = ["flowchart", "ferrigura/experimental-tala"]
 all = [
     "pie",
     "flowchart",

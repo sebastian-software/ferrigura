@@ -91,6 +91,8 @@ export interface RenderOptionsInput {
    * ferrigura's own look and measures. Font and readability fixes always apply.
    */
   compat?: boolean
+  /** Explicit layout engine: `elk` or experimental `tala` on a TALA-enabled build. */
+  layoutEngine?: string
   /**
    * The id of the SVG element, which scopes its styles. By default it is derived from the text and
    * the configuration, so the same input gives the same id.

@@ -25,6 +25,14 @@ const { render, Renderer } = addon.exports;
 
 Run the tests from the repository root with `node --test crates/ferrigura-node/test/render.test.mjs`.
 
+To try experimental TALA, build the addon with
+`cargo build -p ferrigura-node --features experimental-tala`. Load it as
+above and pass the engine in the render options:
+
+```js
+const svg = render('flowchart LR\n A[Input]\n', undefined, { layoutEngine: 'tala' });
+```
+
 ## Choosing the diagram types
 
 The published addon draws every diagram type. The crate has one cargo feature per type, named as its constructor in `ferrigura::diagrams` (`flowchart`, `sequence`, `class`, `state`, `er`, `gantt`, …), and `all`, the default. A program that ships its own addon builds it with the types it draws; the parsers, renderers and layout engines of the other types are then not linked into it:
@@ -44,6 +52,7 @@ Returns the SVG document of a diagram as a string.
 - `options` is an object with these optional fields:
   - `id`: the id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.
   - `compat`: `false` (default) draws every diagram type in ferrigura's own look: hairline outlines, color by a node's role, rounded corners and soft shadows, with roomier nodes, spacing and group padding. `true` draws Mermaid's geometry and look. Font and readability fixes apply in both.
+  - `layoutEngine`: `'elk'` selects ELK Layered for diagram types that use it. Experimental `'tala'` requires a custom addon built with the `experimental-tala` Cargo feature. Unsupported diagrams and `compat: true` return a render error with TALA selected.
   - `colorScheme`: `'light'`, `'dark'` or `'auto'`. `'auto'` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. By default the configured theme decides the colors.
 
 ```js

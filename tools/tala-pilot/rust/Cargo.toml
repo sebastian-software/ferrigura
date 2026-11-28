@@ -1,13 +1,17 @@
 [package]
-name = "ferrigura-tala"
+name = "tala-pilot-tool"
 version = "0.0.0"
 edition = "2024"
 rust-version = "1.95"
-license = "MPL-2.0"
+license = "MIT"
 publish = false
+
+[[bin]]
+name = "ferrigura-tala"
+path = "src/main.rs"
 
 [workspace]
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
+ferrigura-tala = { path = "../../../crates/ferrigura-tala" }
 serde_json = { version = "1", features = ["float_roundtrip"] }

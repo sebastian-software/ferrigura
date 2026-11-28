@@ -13,7 +13,11 @@ pub mod pilot;
 pub(crate) mod placement;
 pub mod policy;
 pub mod style;
+#[cfg(feature = "experimental-tala")]
+mod tala;
 pub(crate) mod turns;
+#[cfg(feature = "experimental-tala")]
+pub use tala::render_with_tala;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::value::NumberText;

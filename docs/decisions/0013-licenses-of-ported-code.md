@@ -9,6 +9,7 @@ ferrigura is MIT-licensed, as Mermaid is: it ports Mermaid, and Mermaid's copyri
 | Crate                                | License                                                 | Ported or bundled from        |
 | ------------------------------------ | ------------------------------------------------------- | ----------------------------- |
 | `ferrigura-elk`                      | EPL-2.0                                                 | ELK's Java sources            |
+| `ferrigura-tala`                     | MPL-2.0                                                 | D2 TALA Go sources            |
 | `ferrigura-jsmath`                   | MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause | llvm-libc and V8 (fdlibm)     |
 | `ferrigura-path`                     | MIT AND BSD-3-Clause                                    | Chromium and Skia             |
 | `ferrigura-text`                     | MIT AND OFL-1.1 AND CC-BY-4.0                           | the bundled fonts and Twemoji |

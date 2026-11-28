@@ -14,7 +14,9 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 
-use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, Renderer};
+use ferrigura::{
+    Animation, ColorScheme, FontStyle, FontWeight, LayoutEngine, RenderOptions, Renderer,
+};
 use ferrigura_model::value::Value;
 
 mod font_catalog;
@@ -60,6 +62,8 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
+      --layout-engine <ENGINE>
+                          `elk` or experimental `tala` (requires a TALA-enabled build)
       --compat            Draw Mermaid's geometry and look instead of ferrigura's own
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
@@ -95,6 +99,7 @@ struct Job {
     now: Option<i64>,
     scheme: Option<ColorScheme>,
     compat: bool,
+    layout_engine: Option<LayoutEngine>,
     animation: Option<Animation>,
     output: Option<PathBuf>,
     output_dir: Option<PathBuf>,
@@ -197,6 +202,9 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             }
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
+            "--layout-engine" => {
+                job.layout_engine = Some(layout_engine(&value(&mut args, &argument)?)?);
+            }
             "--compat" => job.compat = true,
             "--animate" => {
                 job.animation.get_or_insert_default();
@@ -356,6 +364,16 @@ fn scheme(name: &str) -> Result<ColorScheme, String> {
     }
 }
 
+fn layout_engine(name: &str) -> Result<LayoutEngine, String> {
+    match name {
+        "elk" => Ok(LayoutEngine::Elk),
+        "tala" => Ok(LayoutEngine::Tala),
+        other => Err(format!(
+            "unknown layout engine {other:?}, expected elk or tala"
+        )),
+    }
+}
+
 fn run(job: &Job) -> Result<(), String> {
     let config = match &job.config {
         Some(path) => read_config(path)?,
@@ -455,9 +473,11 @@ fn render_input(
         Input::Stdin => read_stdin(limit)?,
         Input::File(path) => read_text_file(path, limit)?,
     };
-    let svg = renderer
-        .render_with(&text, options)
-        .map_err(|error| error.to_string())?;
+    let svg = match job.layout_engine {
+        Some(engine) => renderer.render_with_engine(&text, options, engine),
+        None => renderer.render_with(&text, options),
+    }
+    .map_err(|error| error.to_string())?;
     #[cfg(unix)]
     {
         write_svg(job, input, &svg, written_inodes)

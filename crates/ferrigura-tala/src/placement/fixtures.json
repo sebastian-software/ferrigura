@@ -1,0 +1,677 @@
+[
+  {
+    "name": "empty",
+    "graph": {
+      "direction": "TB",
+      "nodes": [],
+      "edges": []
+    },
+    "nodes": []
+  },
+  {
+    "name": "single",
+    "graph": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "sole",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 111.125,
+          "height": 56.4,
+          "label": "Node sole",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        }
+      ],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": "sole",
+        "x": 0,
+        "y": 0,
+        "width": 111.125,
+        "height": 56.4
+      }
+    ]
+  },
+  {
+    "name": "pair-prefers-column",
+    "graph": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "smaller",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100.1,
+          "height": 40.5,
+          "label": "Node smaller",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "larger",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 150.25,
+          "height": 65.75,
+          "label": "Node larger",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        }
+      ],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": "smaller",
+        "x": 0,
+        "y": 0,
+        "width": 100.1,
+        "height": 40.5
+      },
+      {
+        "id": "larger",
+        "x": 0,
+        "y": 60.5,
+        "width": 150.25,
+        "height": 65.75
+      }
+    ]
+  },
+  {
+    "name": "pair-prefers-row",
+    "graph": {
+      "direction": "BT",
+      "nodes": [
+        {
+          "id": "first",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 18.73,
+          "height": 780.01,
+          "label": "Node first",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "second",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 20.81,
+          "height": 120.44,
+          "label": "Node second",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        }
+      ],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": "first",
+        "x": 0,
+        "y": 0,
+        "width": 18.73,
+        "height": 780.01
+      },
+      {
+        "id": "second",
+        "x": 39,
+        "y": 0,
+        "width": 20.81,
+        "height": 120.44
+      }
+    ]
+  },
+  {
+    "name": "irregular-fractional",
+    "graph": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "a",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 20.13,
+          "height": 112.9,
+          "label": "Node a",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "b",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 120.9,
+          "height": 30.5,
+          "label": "Node b",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "c",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 21.75,
+          "height": 120.15,
+          "label": "Node c",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "d",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 180.9,
+          "height": 133.3,
+          "label": "Node d",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "e",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 73.1,
+          "height": 21.1,
+          "label": "Node e",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        }
+      ],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": "a",
+        "x": 0,
+        "y": 0,
+        "width": 20.13,
+        "height": 112.9
+      },
+      {
+        "id": "b",
+        "x": 40.13000000000466,
+        "y": 0,
+        "width": 120.9,
+        "height": 30.5
+      },
+      {
+        "id": "c",
+        "x": 40.13000000000466,
+        "y": 50.5,
+        "width": 21.75,
+        "height": 120.15
+      },
+      {
+        "id": "d",
+        "x": 81.88000000000466,
+        "y": 50.5,
+        "width": 180.9,
+        "height": 133.3
+      },
+      {
+        "id": "e",
+        "x": 81.88000000000466,
+        "y": 203.8000000000029,
+        "width": 73.1,
+        "height": 21.1
+      }
+    ]
+  },
+  {
+    "name": "equal-areas",
+    "graph": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "b",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 60,
+          "label": "Node b",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "a",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 60,
+          "height": 100,
+          "label": "Node a",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "f",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 150,
+          "height": 40,
+          "label": "Node f",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "d",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 60,
+          "height": 100,
+          "label": "Node d",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "e",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 60,
+          "label": "Node e",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "c",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 60,
+          "label": "Node c",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        }
+      ],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": "b",
+        "x": 0,
+        "y": 0,
+        "width": 100,
+        "height": 60
+      },
+      {
+        "id": "a",
+        "x": 120,
+        "y": 0,
+        "width": 60,
+        "height": 100
+      },
+      {
+        "id": "f",
+        "x": 120,
+        "y": 120,
+        "width": 150,
+        "height": 40
+      },
+      {
+        "id": "d",
+        "x": 200,
+        "y": 0,
+        "width": 60,
+        "height": 100
+      },
+      {
+        "id": "e",
+        "x": 0,
+        "y": 80,
+        "width": 100,
+        "height": 60
+      },
+      {
+        "id": "c",
+        "x": 0,
+        "y": 160,
+        "width": 100,
+        "height": 60
+      }
+    ]
+  },
+  {
+    "name": "labels-fit",
+    "graph": {
+      "direction": "TD",
+      "nodes": [
+        {
+          "id": "ά",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 34,
+          "height": 20,
+          "label": "Node ά",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "Z",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 12.5,
+          "height": 20,
+          "label": "Node Z",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "z",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 20.75,
+          "height": 88.75,
+          "label": "Node z",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        }
+      ],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": "ά",
+        "x": 0,
+        "y": 0,
+        "width": 34,
+        "height": 20
+      },
+      {
+        "id": "Z",
+        "x": 0,
+        "y": 40,
+        "width": 12.5,
+        "height": 20
+      },
+      {
+        "id": "z",
+        "x": 54,
+        "y": 0,
+        "width": 20.75,
+        "height": 88.75
+      }
+    ]
+  },
+  {
+    "name": "component-limit",
+    "graph": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "n0",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n0",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n1",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n1",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n2",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n2",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n3",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n3",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n4",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n4",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n5",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n5",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n6",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n6",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n7",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n7",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n8",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n8",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n9",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n9",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n10",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n10",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        },
+        {
+          "id": "n11",
+          "parentId": null,
+          "direction": null,
+          "isGroup": false,
+          "shape": "squareRect",
+          "width": 100,
+          "height": 50,
+          "label": "Node n11",
+          "labelWidth": 10.2,
+          "labelHeight": 9.2
+        }
+      ],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": "n0",
+        "x": 0,
+        "y": 0,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n1",
+        "x": 0,
+        "y": 70,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n2",
+        "x": 0,
+        "y": 140,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n3",
+        "x": 0,
+        "y": 210,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n4",
+        "x": 120,
+        "y": 0,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n5",
+        "x": 120,
+        "y": 70,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n6",
+        "x": 120,
+        "y": 140,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n7",
+        "x": 120,
+        "y": 210,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n8",
+        "x": 0,
+        "y": 280,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n9",
+        "x": 120,
+        "y": 280,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n10",
+        "x": 0,
+        "y": 350,
+        "width": 100,
+        "height": 50
+      },
+      {
+        "id": "n11",
+        "x": 120,
+        "y": 350,
+        "width": 100,
+        "height": 50
+      }
+    ]
+  }
+]

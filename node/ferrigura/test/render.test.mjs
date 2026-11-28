@@ -31,6 +31,19 @@ test('errors propagate and leave a reused renderer usable', () => {
   assert.match(renderer.render(diagram, { id: 'after' }), /<svg/);
 });
 
+test('explicit layout selection preserves ELK output and reports TALA errors', () => {
+  const renderer = new Renderer();
+  const flow = 'flowchart LR\n A[Input] --> B[Output]\n';
+  const plain = renderer.render(flow);
+  assert.equal(renderer.render(flow, { layoutEngine: 'elk' }), plain);
+  assert.equal(render(flow, undefined, { layoutEngine: 'elk' }), plain);
+  assert.throws(() => renderer.render(flow, { layoutEngine: 'other' }), /expected elk or tala/);
+  assert.throws(() => render(flow, undefined, { layoutEngine: 'other' }), /expected elk or tala/);
+  assert.throws(() => renderer.render(diagram, { layoutEngine: 'tala' }), /TALA/);
+  assert.throws(() => render(diagram, undefined, { layoutEngine: 'tala' }), /TALA/);
+  assert.equal(renderer.render(flow), plain);
+});
+
 void test('the default draws roles for every graph and compat draws Mermaid geometry', () => {
   const renderer = new Renderer();
   const flow = 'flowchart TD\n A([Start]) --> B{Review}\n B --> C[(Store)]\n';
