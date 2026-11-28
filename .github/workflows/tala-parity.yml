@@ -19,7 +19,7 @@ jobs:
           ref: b463ea5d47272f4da6e1e08012dbb15a6a4dbcde
           path: .tala-reference
           persist-credentials: false
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version-file: .tala-reference/go.mod
           cache-dependency-path: .tala-reference/go.sum
