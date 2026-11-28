@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -235,13 +236,17 @@ func makeGraph(input graphInput) (*d2graph.Graph, map[string]*d2graph.Object, []
 	return graph, nodes, edges, nil
 }
 
+func layout(ctx context.Context, graph *d2graph.Graph) error {
+	options := d2talalayout.Options{Seeds: []int64{pilotSeed}, MaxConcurrency: 1}
+	return d2talalayout.Layout(ctx, graph, &options)
+}
+
 func capture(ctx context.Context, input graphInput) (graphOutput, error) {
 	graph, nodes, edges, err := makeGraph(input)
 	if err != nil {
 		return graphOutput{}, err
 	}
-	options := d2talalayout.Options{Seeds: []int64{pilotSeed}, MaxConcurrency: 1}
-	if err := d2talalayout.Layout(ctx, graph, &options); err != nil {
+	if err := layout(ctx, graph); err != nil {
 		return graphOutput{}, err
 	}
 
@@ -295,29 +300,72 @@ func capture(ctx context.Context, input graphInput) (graphOutput, error) {
 	return output, nil
 }
 
-func run(ctx context.Context, reader io.Reader, writer io.Writer) error {
+func readGraph(reader io.Reader) (graphInput, error) {
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
 	var input graphInput
 	if err := decoder.Decode(&input); err != nil {
-		return fmt.Errorf("read measured flowchart: %w", err)
+		return graphInput{}, fmt.Errorf("read measured flowchart: %w", err)
 	}
 	if err := decoder.Decode(new(any)); err != io.EOF {
-		return errors.New("expected one measured flowchart")
+		return graphInput{}, errors.New("expected one measured flowchart")
 	}
-	output, err := capture(ctx, input)
+	return input, nil
+}
+
+func benchmark(ctx context.Context, input graphInput, warmup, samples int) ([]int64, error) {
+	times := make([]int64, 0, samples)
+	for i := -warmup; i < samples; i++ {
+		graph, _, _, err := makeGraph(input)
+		if err != nil {
+			return nil, err
+		}
+		start := time.Now()
+		if err := layout(ctx, graph); err != nil {
+			return nil, err
+		}
+		elapsed := time.Since(start).Nanoseconds()
+		if i >= 0 {
+			times = append(times, elapsed)
+		}
+	}
+	return times, nil
+}
+
+func run(ctx context.Context, reader io.Reader, writer io.Writer, args []string) error {
+	input, err := readGraph(reader)
 	if err != nil {
 		return err
 	}
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(output)
+	switch len(args) {
+	case 0:
+		output, err := capture(ctx, input)
+		if err != nil {
+			return err
+		}
+		return encoder.Encode(output)
+	case 2:
+		warmup, warmupErr := strconv.Atoi(args[0])
+		samples, samplesErr := strconv.Atoi(args[1])
+		if warmupErr != nil || warmup < 0 || samplesErr != nil || samples < 1 {
+			return errors.New("benchmark requires nonnegative warmup and positive sample counts")
+		}
+		times, err := benchmark(ctx, input, warmup, samples)
+		if err != nil {
+			return err
+		}
+		return encoder.Encode(times)
+	default:
+		return errors.New("usage: tala-reference [warmup samples]")
+	}
 }
 
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := run(ctx, os.Stdin, os.Stdout); err != nil {
+	if err := run(ctx, os.Stdin, os.Stdout, os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "tala reference:", err)
 		os.Exit(1)
 	}

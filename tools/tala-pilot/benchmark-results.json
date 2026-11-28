@@ -1,0 +1,175 @@
+{
+  "capturedAt": "2026-11-28T09:35:53.928Z",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "system": "27.2.0",
+  "cpu": "Apple M1 Ultra",
+  "logicalCpus": 20,
+  "memoryBytes": 68719476736,
+  "warmup": 10,
+  "samples": 50,
+  "ferrigura": {
+    "baseline": "22e651ae2ce42992139d607ac1a575cd357600b4",
+    "version": "0.10.0",
+    "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "profile": "release",
+    "feature": "experimental-tala"
+  },
+  "goReference": {
+    "d2Version": "0.10.0",
+    "revision": "b463ea5d47272f4da6e1e08012dbb15a6a4dbcde",
+    "toolchain": "go1.27.4",
+    "seed": 1,
+    "workers": 1
+  },
+  "results": [
+    {
+      "fixture": "library-architecture.mmd",
+      "elkLayout": {
+        "medianNs": 498437.5,
+        "p95Ns": 557417,
+        "residentBytes": 8306688
+      },
+      "elkRender": {
+        "medianNs": 698854,
+        "p95Ns": 724917,
+        "residentBytes": 9404416
+      },
+      "talaLayout": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "talaRender": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "goLayout": {
+        "medianNs": 9321437.5,
+        "p95Ns": 9778333,
+        "residentBytes": 27787264
+      }
+    },
+    {
+      "fixture": "native-loop.mmd",
+      "elkLayout": {
+        "medianNs": 24167,
+        "p95Ns": 28083,
+        "residentBytes": 7618560
+      },
+      "elkRender": {
+        "medianNs": 79417,
+        "p95Ns": 97500,
+        "residentBytes": 8732672
+      },
+      "talaLayout": {
+        "medianNs": 792,
+        "p95Ns": 875,
+        "residentBytes": 6078464
+      },
+      "talaRender": {
+        "medianNs": 50562.5,
+        "p95Ns": 53417,
+        "residentBytes": 7634944
+      },
+      "goLayout": {
+        "medianNs": 236833.5,
+        "p95Ns": 761833,
+        "residentBytes": 23920640
+      }
+    },
+    {
+      "fixture": "observatory-services.mmd",
+      "elkLayout": {
+        "medianNs": 332333,
+        "p95Ns": 364833,
+        "residentBytes": 8306688
+      },
+      "elkRender": {
+        "medianNs": 663083.5,
+        "p95Ns": 841416,
+        "residentBytes": 9502720
+      },
+      "talaLayout": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "talaRender": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "goLayout": {
+        "medianNs": 18188542,
+        "p95Ns": 18744375,
+        "residentBytes": 27869184
+      }
+    },
+    {
+      "fixture": "publishing-flow.mmd",
+      "elkLayout": {
+        "medianNs": 133458,
+        "p95Ns": 165791,
+        "residentBytes": 8110080
+      },
+      "elkRender": {
+        "medianNs": 386812,
+        "p95Ns": 431000,
+        "residentBytes": 9388032
+      },
+      "talaLayout": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "talaRender": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "goLayout": {
+        "medianNs": 11723645.5,
+        "p95Ns": 12433875,
+        "residentBytes": 27885568
+      }
+    },
+    {
+      "fixture": "service-mesh.mmd",
+      "elkLayout": {
+        "medianNs": 2040333,
+        "p95Ns": 2284375,
+        "residentBytes": 9224192
+      },
+      "elkRender": {
+        "medianNs": 3181229,
+        "p95Ns": 3349416,
+        "residentBytes": 10387456
+      },
+      "talaLayout": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "talaRender": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "goLayout": {
+        "medianNs": 73746312.5,
+        "p95Ns": 74925875,
+        "residentBytes": 32505856
+      }
+    },
+    {
+      "fixture": "workshop-edges.mmd",
+      "elkLayout": {
+        "medianNs": 85875,
+        "p95Ns": 106042,
+        "residentBytes": 7913472
+      },
+      "elkRender": {
+        "medianNs": 253208,
+        "p95Ns": 264708,
+        "residentBytes": 9142272
+      },
+      "talaLayout": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "talaRender": {
+        "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
+      },
+      "goLayout": {
+        "medianNs": 4408604,
+        "p95Ns": 4919375,
+        "residentBytes": 26624000
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ use ferrigura_model::flowchart::FlowchartDiagram;
 use crate::RenderError;
 use crate::animation::Animation;
 use crate::context::Context;
+use crate::unified::pipeline::Measured;
 use crate::unified::{Config, Section};
 
 /// Draws a flowchart with the experimental TALA engine and the normal painter.
@@ -17,6 +18,11 @@ pub fn render_with_tala(
 ) -> Result<String, RenderError> {
     let config = Config::of(input);
     let mut measured = super::measure(input)?;
+    lay_out(&mut measured, &config)?;
+    super::paint_measured(input, &measured, &config, animation)
+}
+
+pub(super) fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<(), RenderError> {
     let graph = ferrigura_tala::Graph {
         direction: Some(measured.data.direction.clone()),
         nodes: measured
@@ -57,6 +63,5 @@ pub fn render_with_tala(
     };
     let layout =
         ferrigura_tala::layout(&graph).map_err(|error| RenderError::Layout(error.to_string()))?;
-    super::pilot::apply_native(&mut measured, layout, &config)?;
-    super::paint_measured(input, &measured, &config, animation)
+    super::pilot::apply_native(measured, layout, config)
 }

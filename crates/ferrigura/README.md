@@ -273,7 +273,7 @@ Other projects render Mermaid's syntax too. Which one fits depends on where the 
 
 ## Licenses
 
-The crates are MIT-licensed, as Mermaid is: ferrigura ports Mermaid 12.2.0, and the license text is the `LICENSE` file of the repository. `ferrigura-elk`, which ports ELK, is licensed under EPL-2.0. Some crates port code or bundle fonts under the licenses of their sources, which their `NOTICE.md` files list: `ferrigura-cose`, `ferrigura-elk`, `ferrigura-jsmath`, `ferrigura-path`, `ferrigura-render` (marked) and `ferrigura-text`.
+Ferrigura’s core is MIT-licensed, as Mermaid is. Ferrigura ports Mermaid 12.2.0 and retains its license in the repository’s `LICENSE` file. The ELK Layered port is licensed under EPL-2.0, and the experimental TALA port is licensed under MPL-2.0. See the [layout engine guide](../../docs/layout-engines.md) for the covered source and selection examples. Other ported code and bundled fonts are listed in each crate’s `NOTICE.md`: `ferrigura-cose`, `ferrigura-jsmath`, `ferrigura-path`, `ferrigura-render` (marked) and `ferrigura-text`.
 
 The bundled fonts are under the SIL Open Font License 1.1: Lexica Ultralegible, Atkinson Hyperlegible Mono, Noto Sans Math (the arrows) and Noto Sans Symbols 2. The emoji font is a cut of Twemoji Mozilla 0.7.0, whose code is under Apache-2.0. Its art is under the Creative Commons Attribution 4.0 license. The emoji art comes from Twemoji (<https://twitter.github.io/twemoji>), used and redistributed under that license. The font holds only the 1,185 emoji with emoji presentation that the source covers, and its hinting is dropped. The file `crates/ferrigura-text/NOTICE.md` has the details.
 

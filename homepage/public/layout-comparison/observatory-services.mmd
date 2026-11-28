@@ -1,0 +1,10 @@
+flowchart LR
+  control["Control room"] -->|observe| antenna["Antenna"]
+  antenna -->|signal| sampler["Signal sampler"]
+  sampler -->|batch| store["Data store"]
+  store -->|latest batch| quality["Quality monitor"]
+  quality -->|resample| control
+  store -->|catalog| archive["Archive"]
+  quality -->|status| archive
+  control -->|forecast| calendar["Night schedule"]
+  calendar -->|window| antenna

@@ -5,6 +5,7 @@ on:
     paths:
       - 'homepage/**'
       - 'docs/**'
+      - 'tools/tala-pilot/**'
       - '**/*.md'
       - 'README.md.src'
       - 'Cargo.toml'
@@ -17,6 +18,7 @@ on:
     paths:
       - 'homepage/**'
       - 'docs/**'
+      - 'tools/tala-pilot/**'
       - '**/*.md'
       - 'README.md.src'
       - 'Cargo.toml'

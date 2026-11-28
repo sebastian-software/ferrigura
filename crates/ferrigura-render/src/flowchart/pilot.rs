@@ -1,6 +1,7 @@
 //! Measured flowchart interchange for the development-only TALA pilot.
 
 use std::collections::HashMap;
+use std::time::Instant;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
 use serde::Deserialize;
@@ -95,6 +96,28 @@ pub fn paint_captured(input: &Flowchart<'_, '_>, capture: Value) -> Result<Strin
     let config = Config::of(input);
     apply(&mut measured, capture, &config)?;
     super::paint_measured(input, &measured, &config, None)
+}
+
+/// Measures a layout call after text measurement, without serializing or painting the result.
+/// The timer includes the engine adapter and application of the layout to the measured graph.
+///
+/// # Errors
+/// Returns the flowchart's normal measurement and layout errors.
+pub fn layout_time_ns(input: &Flowchart<'_, '_>, tala: bool) -> Result<u128, RenderError> {
+    let mut measured = super::measure(input)?;
+    let config = Config::of(input);
+    let start = Instant::now();
+    if tala {
+        #[cfg(feature = "experimental-tala")]
+        super::tala::lay_out(&mut measured, &config)?;
+        #[cfg(not(feature = "experimental-tala"))]
+        return Err(RenderError::Layout(
+            "TALA requires experimental-tala".to_owned(),
+        ));
+    } else {
+        pipeline::lay_out_for_render(&mut measured, &config)?;
+    }
+    Ok(start.elapsed().as_nanos())
 }
 
 #[derive(Deserialize)]

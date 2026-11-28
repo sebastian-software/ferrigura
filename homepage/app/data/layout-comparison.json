@@ -1,0 +1,203 @@
+{
+  "reference": "b463ea5d47272f4da6e1e08012dbb15a6a4dbcde",
+  "examples": [
+    {
+      "id": "library-architecture",
+      "title": "Library service architecture",
+      "source": "flowchart LR\n  subgraph product[\"Library service\"]\n    subgraph intake[\"Reader requests\"]\n      portal[\"Reader portal\"]\n      reserve[\"Reservation API\"]\n      portal --> reserve\n    end\n    subgraph stock[\"Branch inventory\"]\n      queue[\"Transfer queue\"]\n      shelf[\"Shelf inventory\"]\n      queue --> shelf\n    end\n    reserve -->|hold request| queue\n    shelf -->|availability| portal\n  end\n  subgraph delivery[\"Delivery\"]\n    schedule[\"Delivery scheduler\"]\n    alert[\"Reader notification\"]\n    schedule --> alert\n  end\n  shelf -->|branch transfer| schedule\n  schedule -->|confirmed slot| reserve\n",
+      "native": false,
+      "nodes": 6,
+      "groups": 4,
+      "edges": 7,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 0,
+        "bends": 10,
+        "length": 2712,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 1828,
+        "height": 306
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 0,
+        "bends": 5,
+        "length": 3398,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 1380,
+        "height": 888
+      }
+    },
+    {
+      "id": "publishing-flow",
+      "title": "Publishing workflow",
+      "source": "flowchart LR\n  draft[\"Draft\"] --> read[\"Editorial review\"]\n  read --> fact[\"Fact check\"]\n  fact --> typeset[\"Typesetting\"]\n  typeset --> proofs[\"Proof approval\"]\n  proofs --> build[\"Build edition\"]\n  build --> publish[\"Publish\"]\n  fact --> permissions[\"Check image rights\"]\n  permissions --> proofs\n  build --> archive[\"Archive originals\"]\n",
+      "native": false,
+      "nodes": 9,
+      "groups": 0,
+      "edges": 9,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 0,
+        "bends": 12,
+        "length": 711,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 1404,
+        "height": 146
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 0,
+        "bends": 14,
+        "length": 1120,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 1664,
+        "height": 164
+      }
+    },
+    {
+      "id": "observatory-services",
+      "title": "Observatory services",
+      "source": "flowchart LR\n  control[\"Control room\"] -->|observe| antenna[\"Antenna\"]\n  antenna -->|signal| sampler[\"Signal sampler\"]\n  sampler -->|batch| store[\"Data store\"]\n  store -->|latest batch| quality[\"Quality monitor\"]\n  quality -->|resample| control\n  store -->|catalog| archive[\"Archive\"]\n  quality -->|status| archive\n  control -->|forecast| calendar[\"Night schedule\"]\n  calendar -->|window| antenna\n",
+      "native": false,
+      "nodes": 7,
+      "groups": 0,
+      "edges": 9,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 0,
+        "bends": 12,
+        "length": 4011,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 2168,
+        "height": 188
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 1,
+        "bends": 7,
+        "length": 1829,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 674,
+        "height": 580
+      }
+    },
+    {
+      "id": "workshop-edges",
+      "title": "Workshop controls",
+      "source": "flowchart LR\n  sensor[\"Temperature sensor\"] -->|reading| panel[\"Control panel\"]\n  sensor -->|low battery| panel\n  panel -->|retry| panel\n  checklist[\"Opening checklist\"] --> lights[\"Shop lights\"]\n  clock[\"Wall clock\"]\n",
+      "native": false,
+      "nodes": 5,
+      "groups": 0,
+      "edges": 4,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 0,
+        "bends": 6,
+        "length": 714,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 592,
+        "height": 307
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 0,
+        "bends": 3,
+        "length": 584,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 2,
+        "width": 470,
+        "height": 315
+      }
+    },
+    {
+      "id": "native-loop",
+      "title": "Retry queue",
+      "source": "flowchart TB\n  Queue[Retry queue] -->|retry job| Queue\n",
+      "native": true,
+      "nodes": 1,
+      "groups": 0,
+      "edges": 1,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 0,
+        "bends": 2,
+        "length": 84,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 269,
+        "height": 57
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 0,
+        "bends": 3,
+        "length": 168,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 217,
+        "height": 114
+      }
+    },
+    {
+      "id": "service-mesh",
+      "title": "Service mesh",
+      "source": "flowchart LR\n  subgraph Intake\n    A1[Intake gateway]\n    A2[Intake queue]\n    A3[Intake worker]\n    A4[Intake archive]\n    A5[Intake monitor]\n    A1 --> A2\n    A2 --> A3\n    A3 --> A4\n    A4 --> A5\n    A5 --> A1\n  end\n  subgraph Catalog\n    B1[Catalog gateway]\n    B2[Catalog queue]\n    B3[Catalog worker]\n    B4[Catalog archive]\n    B5[Catalog monitor]\n    B1 --> B2\n    B2 --> B3\n    B3 --> B4\n    B4 --> B5\n    B5 --> B1\n  end\n  subgraph Dispatch\n    C1[Dispatch gateway]\n    C2[Dispatch queue]\n    C3[Dispatch worker]\n    C4[Dispatch archive]\n    C5[Dispatch monitor]\n    C1 --> C2\n    C2 --> C3\n    C3 --> C4\n    C4 --> C5\n    C5 --> C1\n  end\n  subgraph Fulfillment\n    D1[Fulfillment gateway]\n    D2[Fulfillment queue]\n    D3[Fulfillment worker]\n    D4[Fulfillment archive]\n    D5[Fulfillment monitor]\n    D1 --> D2\n    D2 --> D3\n    D3 --> D4\n    D4 --> D5\n    D5 --> D1\n  end\n  A2 -->|lookup| B1\n  A3 -->|schedule| C1\n  B3 -->|enrich| C2\n  B4 -->|store copy| D2\n  C3 -->|dispatch| D1\n  C4 -->|update cache| B4\n  D2 -->|status| B5\n  D4 -->|audit| A5\n  A5 -->|probe| C5\n  D3 -->|heartbeat| C5\n  B1 -->|outbound| D5\n  C1 -->|receipt| A4\n",
+      "native": false,
+      "nodes": 20,
+      "groups": 4,
+      "edges": 32,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 2,
+        "bends": 76,
+        "length": 27600,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 5002,
+        "height": 557
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 7,
+        "bends": 20,
+        "length": 15941,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 1846,
+        "height": 1733
+      }
+    }
+  ]
+}

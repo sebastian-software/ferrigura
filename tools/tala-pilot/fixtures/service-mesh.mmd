@@ -1,0 +1,61 @@
+flowchart LR
+  subgraph Intake
+    A1[Intake gateway]
+    A2[Intake queue]
+    A3[Intake worker]
+    A4[Intake archive]
+    A5[Intake monitor]
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A4 --> A5
+    A5 --> A1
+  end
+  subgraph Catalog
+    B1[Catalog gateway]
+    B2[Catalog queue]
+    B3[Catalog worker]
+    B4[Catalog archive]
+    B5[Catalog monitor]
+    B1 --> B2
+    B2 --> B3
+    B3 --> B4
+    B4 --> B5
+    B5 --> B1
+  end
+  subgraph Dispatch
+    C1[Dispatch gateway]
+    C2[Dispatch queue]
+    C3[Dispatch worker]
+    C4[Dispatch archive]
+    C5[Dispatch monitor]
+    C1 --> C2
+    C2 --> C3
+    C3 --> C4
+    C4 --> C5
+    C5 --> C1
+  end
+  subgraph Fulfillment
+    D1[Fulfillment gateway]
+    D2[Fulfillment queue]
+    D3[Fulfillment worker]
+    D4[Fulfillment archive]
+    D5[Fulfillment monitor]
+    D1 --> D2
+    D2 --> D3
+    D3 --> D4
+    D4 --> D5
+    D5 --> D1
+  end
+  A2 -->|lookup| B1
+  A3 -->|schedule| C1
+  B3 -->|enrich| C2
+  B4 -->|store copy| D2
+  C3 -->|dispatch| D1
+  C4 -->|update cache| B4
+  D2 -->|status| B5
+  D4 -->|audit| A5
+  A5 -->|probe| C5
+  D3 -->|heartbeat| C5
+  B1 -->|outbound| D5
+  C1 -->|receipt| A4

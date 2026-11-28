@@ -1,0 +1,71 @@
+---
+title: ELK and TALA
+description: Compare the same Mermaid flowcharts laid out with ELK Layered and TALA, with the original inputs, SVGs and geometry measurements.
+---
+
+import { LayoutExample } from '../../components/layout-comparison';
+
+ELK Layered is the layout engine in Ferrigura’s standard builds. The pinned Go implementation of TALA shows other ways to arrange groups and route their links. The experimental Rust port can draw the retry queue in this comparison.
+
+Ferrigura measures and paints each pair with its default look, bundled fonts, and SVG text labels. On the grouped, connected and denser examples, the TALA coordinates come from the [pinned Go implementation of D2 0.10.0](https://github.com/d2lang/d2/tree/b463ea5d47272f4da6e1e08012dbb15a6a4dbcde/d2layouts/d2talalayout) with seed 1. The retry queue uses Ferrigura’s experimental Rust implementation. Its SVG is byte-identical to the Go replay. The [layout engine guide](/guide/layout-engines/) describes the selection available in a build.
+
+## Nested services
+
+TALA follows the groups with fewer right-angle turns and a narrower drawing. ELK keeps more of the diagram at the same height and uses less total route length. Pick according to where the drawing will be read.
+
+<LayoutExample id="library-architecture" />
+
+## Directional workflow
+
+The publishing workflow mostly moves in one direction. ELK uses fewer bends and shorter routes, and the drawing needs less width.
+
+<LayoutExample id="publishing-flow" />
+
+## Cyclic services
+
+TALA shortens the routes and uses fewer turns in this service network. It also adds a crossing. In a diagram where a reader needs to trace one connection through several similar ones, that crossing matters.
+
+<LayoutExample id="observatory-services" />
+
+## Parallel edges
+
+TALA grows two endpoints so their parallel routes have room. ELK holds the original node sizes. A resized box can help separate routes and can also change the balance of the surrounding diagram.
+
+<LayoutExample id="workshop-edges" />
+
+## Retry queue
+
+This single rectangular node and labeled loop exercise the experimental Rust implementation. Ferrigura generates both SVGs directly on this input.
+
+<LayoutExample id="native-loop" />
+
+## Denser service mesh
+
+This fixture crosses four group boundaries and includes a cycle inside each group. It tests the tradeoffs on a larger input than the other examples. The two layouts arrange the groups differently, so inspect the SVGs as well as the totals.
+
+<LayoutExample id="service-mesh" />
+
+## Reading the measurements
+
+Route lengths are in SVG user units and measure the polylines before styling. The counts omit duplicate waypoints and shared or collinear segments. Edge-label overlaps count intersecting edge-label boxes and edge-label boxes that intersect a leaf node. The view box represents the painted SVG, including its padding. The area multiplies the rounded view-box dimensions. The drawings scale independently to fit their sheets. Open the SVG files to inspect them at their original size.
+
+These figures describe the geometry of this corpus. Each example identifies the implementation that produced its TALA geometry. See the engine guide for the shapes that the Rust implementation can render.
+
+## Release timing on this corpus
+
+One run on November 28, 2026 used an Apple M1 Ultra with 64 GiB of RAM and Darwin 27.2.0 arm64. Ferrigura 0.10.0 was built in Cargo’s release profile with Rust 1.99.0 and the experimental TALA feature. The pinned D2 0.10.0 reference used Go 1.27.4, seed 1 and one worker. Each result is the median of 50 in-process calls after 10 warmups. Times are in milliseconds.
+
+| Case                 | ELK layout | Rust TALA layout | Go TALA layout | ELK render | Rust TALA render |
+| -------------------- | ---------: | ---------------: | -------------: | ---------: | ---------------: |
+| Nested services      |      0.498 |                — |          9.321 |      0.699 |                — |
+| Directional workflow |      0.133 |                — |         11.724 |      0.387 |                — |
+| Cyclic services      |      0.332 |                — |         18.189 |      0.663 |                — |
+| Parallel edges       |      0.086 |                — |          4.409 |      0.253 |                — |
+| Retry queue          |      0.024 |            0.001 |          0.237 |      0.079 |            0.051 |
+| Denser service mesh  |      2.040 |                — |         73.746 |      3.181 |                — |
+
+The Rust layout timer starts after text measurement. It includes adapter work and applying the resulting geometry. The render timer starts at the public Rust API and ends when the SVG string is ready. The Go timer covers the upstream layout call on an already-built D2 graph. The Go run supplies layout reference data only. A dash records an explicit unsupported-graph error from the experimental Rust implementation.
+
+Peak process memory for the six ELK renders was 8.3–9.9 MiB. The retry queue took 7.3 MiB with Rust TALA. The Go layout runner peaked at 22.8–31.0 MiB. These figures include runtime startup and warmup in each process. The [full results](https://github.com/sebastian-software/ferrigura/blob/main/tools/tala-pilot/benchmark-results.json) include p95 times, memory per run and all unsupported-input errors. The layout guide describes the scope of the experimental engine.
+
+Regenerate the figures with `pnpm layouts:write` from `homepage/`. The [comparison harness](https://github.com/sebastian-software/ferrigura/tree/main/tools/tala-pilot) includes the sources, pinned reference bridge and replay captures.

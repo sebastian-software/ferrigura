@@ -14,6 +14,7 @@ import { displayName, WORKSHOP } from 'ferramenta-family/registry';
 import { Alternatives, Checked, Family, Runtimes } from '../components/feature-sections';
 import { Focus } from '../components/focus-section';
 import { grouped, tool } from '../components/homepage-data';
+import { HomepageLayouts } from '../components/layout-comparison';
 import { Design, Explainer, Modes, Schemes, Text } from '../components/story-sections';
 import coverage from '../data/coverage.json';
 import { nodeVersion, releaseLine, rustVersion } from '../version';
@@ -75,7 +76,7 @@ function Opening() {
             value: <em>{grouped(coverage.parsed)}</em>,
             label: 'inputs read the way Mermaid reads them',
           },
-          { value: `Rust ${rustVersion}+`, label: `Node.js ${nodeVersion}+, MIT license` },
+          { value: `Rust ${rustVersion}+`, label: `Node.js ${nodeVersion}+` },
         ]}
       />
     </div>
@@ -89,6 +90,7 @@ const chapters = [
   { key: 'design', Chapter: Design },
   { key: 'text', Chapter: Text },
   { key: 'modes', Chapter: Modes },
+  { key: 'layout-engines', Chapter: HomepageLayouts },
   { key: 'schemes', Chapter: Schemes },
   { key: 'checked', Chapter: Checked },
   { key: 'alternatives', Chapter: Alternatives },
@@ -102,8 +104,10 @@ function Origin() {
       <div className="mono-axis">
         <MonoColophon>
           {tool.proof} Mermaid was created by Knut Sveidqvist and is maintained by the Mermaid
-          contributors; its license and copyright notice stay with the port. Ferrigura is one of the
-          Ferramenta engines, made by {WORKSHOP.name} in {WORKSHOP.place}.
+          contributors. Ferrigura retains their license and copyright notice. Its core is
+          MIT-licensed. The ELK port is under EPL-2.0, and the experimental TALA port is under
+          MPL-2.0. Ferrigura is one of the Ferramenta engines, made by {WORKSHOP.name} in{' '}
+          {WORKSHOP.place}.
         </MonoColophon>
       </div>
     </section>
