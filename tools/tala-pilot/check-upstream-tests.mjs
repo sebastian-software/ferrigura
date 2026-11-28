@@ -38,19 +38,34 @@ assert.equal(mappings.size, 0, `Unknown Go tests in map: ${[...mappings.keys()].
 
 const pending = tests.filter(({ status }) => status === 'pending').length;
 const verify = values.verify || values['require-complete'];
-let verified = false;
+let mappedTestsVerified = false;
 let verificationError;
 if (verify) {
   try {
     verifyMappedTests(tests);
-    verified = true;
+    mappedTestsVerified = true;
   } catch (error) {
     verificationError = error;
   }
 }
 
 if (values.json) {
-  console.log(JSON.stringify({ revision: pin, scope, verified, pending, tests }, null, 2));
+  const complete = pending === 0 && mappedTestsVerified;
+  console.log(
+    JSON.stringify(
+      {
+        revision: pin,
+        scope,
+        mappedTestsVerified,
+        complete,
+        pending,
+        verificationError: verificationError?.message,
+        tests,
+      },
+      null,
+      2
+    )
+  );
 } else {
   const packages = new Map();
   for (const { package: directory, status } of tests) {
