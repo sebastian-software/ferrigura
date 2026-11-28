@@ -1,0 +1,238 @@
+{
+  "name": "TestBalanceEdgeSegmentsStillUncrossesDifferentRanges",
+  "graph": {
+    "nodes": [
+      {
+        "id": "1",
+        "width": 80,
+        "height": 40,
+        "isGroup": false,
+        "shape": "squareRect",
+        "label": "",
+        "labelWidth": 0,
+        "labelHeight": 0
+      },
+      {
+        "id": "2",
+        "width": 60,
+        "height": 40,
+        "isGroup": false,
+        "shape": "squareRect",
+        "label": "",
+        "labelWidth": 0,
+        "labelHeight": 0
+      },
+      {
+        "id": "3",
+        "width": 80,
+        "height": 40,
+        "isGroup": false,
+        "shape": "squareRect",
+        "label": "",
+        "labelWidth": 0,
+        "labelHeight": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "1",
+        "source": "1",
+        "target": "2",
+        "sourceArrow": false,
+        "targetArrow": false,
+        "label": "",
+        "labelWidth": 0,
+        "labelHeight": 0
+      },
+      {
+        "id": "2",
+        "source": "1",
+        "target": "2",
+        "sourceArrow": false,
+        "targetArrow": false,
+        "label": "",
+        "labelWidth": 0,
+        "labelHeight": 0
+      },
+      {
+        "id": "3",
+        "source": "3",
+        "target": "2",
+        "sourceArrow": false,
+        "targetArrow": false,
+        "label": "",
+        "labelWidth": 0,
+        "labelHeight": 0
+      }
+    ]
+  },
+  "before": {
+    "nodes": [
+      {
+        "id": "1",
+        "x": 80,
+        "y": 80,
+        "width": 80,
+        "height": 40
+      },
+      {
+        "id": "2",
+        "x": 0,
+        "y": 200,
+        "width": 60,
+        "height": 40
+      },
+      {
+        "id": "3",
+        "x": 180,
+        "y": 300,
+        "width": 80,
+        "height": 40
+      }
+    ],
+    "edges": [
+      {
+        "id": "1",
+        "label": null,
+        "points": [
+          {
+            "x": 100,
+            "y": 80
+          },
+          {
+            "x": 100,
+            "y": 40
+          },
+          {
+            "x": 30,
+            "y": 40
+          },
+          {
+            "x": 30,
+            "y": 200
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "label": null,
+        "points": [
+          {
+            "x": 140,
+            "y": 80
+          },
+          {
+            "x": 140,
+            "y": 40
+          },
+          {
+            "x": 30,
+            "y": 40
+          },
+          {
+            "x": 30,
+            "y": 200
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "label": null,
+        "points": [
+          {
+            "x": 260,
+            "y": 320
+          },
+          {
+            "x": 300,
+            "y": 320
+          },
+          {
+            "x": 300,
+            "y": 60
+          },
+          {
+            "x": 30,
+            "y": 60
+          },
+          {
+            "x": 30,
+            "y": 200
+          }
+        ]
+      }
+    ]
+  },
+  "after": [
+    {
+      "id": "1",
+      "label": null,
+      "points": [
+        {
+          "x": 106,
+          "y": 80
+        },
+        {
+          "x": 106,
+          "y": 50
+        },
+        {
+          "x": 30,
+          "y": 50
+        },
+        {
+          "x": 30,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "label": null,
+      "points": [
+        {
+          "x": 132,
+          "y": 80
+        },
+        {
+          "x": 132,
+          "y": 50
+        },
+        {
+          "x": 30,
+          "y": 50
+        },
+        {
+          "x": 30,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "label": null,
+      "points": [
+        {
+          "x": 260,
+          "y": 320
+        },
+        {
+          "x": 330,
+          "y": 320
+        },
+        {
+          "x": 330,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 200
+        }
+      ]
+    }
+  ]
+}
