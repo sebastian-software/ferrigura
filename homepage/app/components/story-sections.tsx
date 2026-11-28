@@ -3,7 +3,7 @@ import { MonoPassage, MonoSection } from 'ferramenta-family/monografie';
 
 import samples from '../data/diagram-samples.json';
 import { DesignSchemeSheets, DesignSheets } from './design-specimens';
-import { DiagramGallery, FileContents, ModeSheets, SchemeSheets } from './homepage-specimens';
+import { DiagramGallery, FileContents, SchemeSheets } from './homepage-specimens';
 
 /* The homepage's first chapters: what Ferrigura is, its own look, its text
    and fonts, Mermaid's geometry with compat and the color schemes. The published anchor #example stays
@@ -44,9 +44,9 @@ export function Explainer() {
         </p>
       </MonoPassage>
       <p>
-        Ferrigura is Mermaid&rsquo;s drawing, carried over to Rust. It reads the same diagram text,
-        lays it out with the same engines and writes a standalone SVG file, with no browser in the
-        process. Pick a type and compare the text with the drawing it became.
+        Ferrigura carries Mermaid over to Rust. It reads the same diagram text, lays it out with the
+        same engines and writes a standalone SVG file in a look of its own, with no browser in the
+        process. Pick one of the ten types and compare the text with the drawing it became.
       </p>
       <DiagramGallery />
       <p>
@@ -211,10 +211,15 @@ export function Modes() {
         checks hold to within 0.05 pixels of Mermaid&rsquo;s, and the one to pick when a diagram
         must look exactly as it does in Mermaid.
       </p>
-      <ModeSheets />
       <p>
         The option belongs to each render, not to the diagram text, so one renderer can draw both,
-        and the same text still renders in Mermaid.{' '}
+        and the same text still renders in Mermaid. Two pages put them next to each other: the
+        default look beside Mermaid&rsquo;s geometry, and <code>compat</code> laid over
+        Mermaid&rsquo;s own drawing.{' '}
+        <Link to="/comparisons/default-look/">The default beside compat</Link>
+        {' · '}
+        <Link to="/comparisons/side-by-side/">Side by side with Mermaid</Link>
+        {' · '}
         <Link to="/architecture/decisions/0019-mermaid-geometry-with-compat/">
           What compat keeps
         </Link>

@@ -17,7 +17,7 @@ const svgDirectory = new URL('../app/data/diagrams/', import.meta.url);
 const recorded = check ? JSON.parse(await readFile(target, 'utf8')) : undefined;
 const platform = `${process.platform}-${process.arch}`;
 
-/** The gallery: one everyday diagram of six types, each with a plain description. */
+/** The gallery: one everyday diagram of each of the ten types, each with a plain description. */
 const gallery = [
   {
     id: 'flowchart',
@@ -123,19 +123,74 @@ const gallery = [
     Publish: milestone, after review, 0d
 `,
   },
+  {
+    id: 'mindmap',
+    label: 'Mindmap',
+    description:
+      'A release around its center: what changes in the code, what the documentation needs, and how it is announced.',
+    source: `mindmap
+  root((Release))
+    Code
+      New diagram type
+      Faster layout
+    Documentation
+      Guide
+      Changelog
+    Announcement
+      Blog post
+      Release notes
+`,
+  },
+  {
+    id: 'pie',
+    label: 'Pie',
+    description:
+      'Where the diagrams of a documentation site come from: most are flowcharts, then sequence, class and state diagrams.',
+    source: `pie title Diagrams in the guide
+  "Flowchart" : 42
+  "Sequence" : 18
+  "Class" : 9
+  "State" : 6
+`,
+  },
+  {
+    id: 'quadrant',
+    label: 'Quadrant',
+    description:
+      'Four pages of a guide placed by how often they are read and how out of date they are; the setup page is read most and needs an update.',
+    source: `quadrantChart
+  title Which pages to update first
+  x-axis Rarely read --> Often read
+  y-axis Up to date --> Out of date
+  quadrant-1 Update now
+  quadrant-2 Plan an update
+  quadrant-3 Leave as is
+  quadrant-4 Keep an eye on
+  Setup: [0.8, 0.75]
+  Themes: [0.35, 0.6]
+  API reference: [0.7, 0.25]
+  Changelog: [0.2, 0.15]
+`,
+  },
+  {
+    id: 'xychart',
+    label: 'XY chart',
+    description:
+      'Diagrams rendered per month in a documentation build, from January to June, as bars with a line over them; the number grows every month.',
+    source: `xychart-beta
+  title "Diagrams rendered per month"
+  x-axis [Jan, Feb, Mar, Apr, May, Jun]
+  y-axis "Diagrams" 0 --> 500
+  bar [120, 180, 210, 290, 360, 430]
+  line [120, 180, 210, 290, 360, 430]
+`,
+  },
 ];
 
-/** The flowchart the default rendering and `compat` are compared on: a review cycle with labels. */
-const modeSource = `flowchart TD
-  write[Write the guide] --> review{Review}
-  review -->|Approved| publish[Publish]
-  review -->|Changes requested| write
-  publish --> announce[Announce the release]
-`;
-const modeDescription =
-  'A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.';
-
-/** Ferrigura's own look: three flowcharts, a state and a class diagram, each drawn in `compat` and by default. */
+/**
+ * Ferrigura's own look: three flowcharts, a state and a class diagram. The homepage shows the
+ * default drawing; the comparison page shows each beside its drawing in `compat`.
+ */
 const designSamples = [
   {
     id: 'pipeline',
@@ -265,17 +320,6 @@ try {
   };
 
   const samples = gallery.map((sample) => ({ ...sample, file: render(sample.id, sample.source) }));
-  const modes = {
-    source: modeSource,
-    description: modeDescription,
-    default: render('mode-default', modeSource),
-    mermaid: render('mode-mermaid', modeSource, { compat: true }),
-  };
-  assert.notEqual(
-    svgs.get(modes.default),
-    svgs.get(modes.mermaid),
-    'The default rendering and compat must differ on the compared source'
-  );
   const design = {
     samples: designSamples.map((sample) => ({
       ...sample,
@@ -332,7 +376,6 @@ try {
     renderedWith: { ferrigura: 'repository source' },
     platform: check ? recorded.platform : platform,
     samples,
-    modes,
     design,
     schemes,
     file,

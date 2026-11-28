@@ -58,6 +58,12 @@ const authored = [
     section: 'comparisons',
     after: 'comparisons/mermaid',
   },
+  {
+    path: 'comparisons/default-look',
+    title: 'The default beside compat',
+    section: 'comparisons',
+    after: 'comparisons/mermaid',
+  },
 ];
 /** Every documentation page in the order of the navigation. */
 export const pages = documents.flatMap((document) => [

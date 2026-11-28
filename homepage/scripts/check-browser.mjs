@@ -102,6 +102,8 @@ async function verifyExample(page, origin) {
     ['sequence', 'Sequence'],
     ['er', 'Entity relationship'],
     ['state', 'State'],
+    ['mindmap', 'Mindmap'],
+    ['xychart', 'XY chart'],
     ['flowchart', 'Flowchart'],
   ]) {
     await choice.getByRole('button', { name: label, exact: true }).click();

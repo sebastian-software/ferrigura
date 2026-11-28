@@ -111,8 +111,7 @@ function verifyHomepage(html) {
     `Real output of Ferrigura (${renderingSource})`,
     // The drawings that stand on the page before any choice is made.
     'id="homepage-flowchart"',
-    'id="homepage-mode-default"',
-    'id="homepage-mode-mermaid"',
+    'id="homepage-design-pipeline"',
     'id="homepage-scheme-light"',
     'id="homepage-scheme-dark"',
     // The figures, recomputed from the coverage table.
@@ -136,6 +135,8 @@ function verifyHomepage(html) {
   ];
   const missing = required.filter((fragment) => !html.includes(fragment));
   assert.deepEqual(missing, [], 'The homepage is missing these fragments');
+  // Mermaid's geometry stands on the comparison pages, not on the homepage.
+  assert.doesNotMatch(html, /id="homepage-[\w-]*compat"/, 'The homepage shows a compat drawing');
   assert.doesNotMatch(html, /<foreignObject\b/, 'Homepage drawings must keep their labels as text');
 }
 
