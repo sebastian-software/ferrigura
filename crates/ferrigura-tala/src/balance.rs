@@ -9,9 +9,12 @@
 
 use crate::{EdgeGeometry, Error, Graph, Layout, NodeGeometry, Point};
 
+mod crossings;
+
 const SEGMENT_SPACING_BUFFER: f64 = 40.0;
 const UNBOUNDED_SEGMENT_MOVE: f64 = 100.0;
 const MAX_STAGED_POINTS: usize = 128;
+const MAX_REVERSAL_WORK: usize = 50_000_000;
 
 #[derive(Clone, Copy)]
 enum Axis {
@@ -137,10 +140,17 @@ impl Range {
 /// Balances rectangular corridors after initial orthogonal routing.
 ///
 /// # Errors
-/// Returns an error for unsupported stage inputs, excessive work, or a
-/// proposal that would require TALA's crossing-count fallback. Geometry is
-/// published only after both movement axes finish successfully.
+/// Returns an error for unsupported stage inputs or excessive work. Geometry
+/// is published only after both movement axes finish successfully.
 pub fn balance_routes(graph: &Graph, layout: &mut Layout) -> Result<(), Error> {
+    balance_routes_with_work_limit(graph, layout, MAX_REVERSAL_WORK)
+}
+
+fn balance_routes_with_work_limit(
+    graph: &Graph,
+    layout: &mut Layout,
+    mut reversal_work: usize,
+) -> Result<(), Error> {
     validate_stage_input(graph, layout)?;
     let mut edges = layout.edges.clone();
     let fixed: Vec<_> = edges
@@ -152,7 +162,7 @@ pub fn balance_routes(graph: &Graph, layout: &mut Layout) -> Result<(), Error> {
         })
         .collect();
     for axis in [Axis::X, Axis::Y] {
-        balance_axis(&layout.nodes, &mut edges, &fixed, axis)?;
+        balance_axis(&layout.nodes, &mut edges, &fixed, axis, &mut reversal_work)?;
     }
     for (edge, fixed) in edges.iter_mut().zip(fixed) {
         if !fixed {
@@ -233,6 +243,7 @@ fn balance_axis(
     edges: &mut [EdgeGeometry],
     fixed_edges: &[bool],
     axis: Axis,
+    reversal_work: &mut usize,
 ) -> Result<(), Error> {
     let node_sides: Vec<_> = nodes
         .iter()
@@ -331,7 +342,15 @@ fn balance_axis(
                     .then_with(|| a.start.partial_cmp(&b.start).unwrap())
             });
             let proposed = distribute(edges, axis, &movable, &batch, minimum);
-            if preserves_order(edges, axis, &movable, &special, &batch, &proposed)? {
+            if accepts_proposal(
+                edges,
+                axis,
+                &movable,
+                &special,
+                &batch,
+                &proposed,
+                reversal_work,
+            )? {
                 for (&index, position) in batch.iter().zip(proposed) {
                     movable[index].move_to(edges, axis, position);
                 }
@@ -381,13 +400,14 @@ fn distribute(
     positions
 }
 
-fn preserves_order(
+fn accepts_proposal(
     edges: &[EdgeGeometry],
     axis: Axis,
     movable: &[Rail],
     special: &[Rail],
     batch: &[usize],
     positions: &[f64],
+    reversal_work: &mut usize,
 ) -> Result<bool, Error> {
     let others = movable
         .iter()
@@ -413,10 +433,14 @@ fn preserves_order(
             reversal |= (old.position < other.1.position) != (new < other.1.position);
         }
     }
-    if reversal {
-        return Err(Error::UnsupportedGraph);
+    if !reversal {
+        return Ok(true);
     }
-    Ok(true)
+    let moves = batch
+        .iter()
+        .zip(positions)
+        .map(|(&index, &position)| (movable[index], position));
+    crossings::reversal_removes_crossings(edges, axis, moves, reversal_work)
 }
 
 #[cfg(test)]
@@ -444,15 +468,39 @@ mod tests {
         }
     }
 
+    fn reversal_case() -> Case {
+        serde_json::from_str(include_str!("balance/reversal.json")).unwrap()
+    }
+
     #[test]
-    fn leaves_all_routes_unchanged_on_reversal() {
-        let mut case: Case = serde_json::from_str(include_str!("balance/reversal.json")).unwrap();
-        let original = case.before.edges.clone();
-        assert_ne!(original, case.after, "{}", case.name);
+    fn balances_the_pinned_go_reversal_case() {
+        let mut case = reversal_case();
+        balance_routes(&case.graph, &mut case.before).unwrap();
+        assert_eq!(case.before.edges, case.after, "{}", case.name);
+    }
+
+    #[test]
+    fn balance_edge_segments_still_uncrosses_different_ranges() {
+        let mut case: Case =
+            serde_json::from_str(include_str!("balance/different-ranges.json")).unwrap();
+        balance_routes(&case.graph, &mut case.before).unwrap();
+        assert_eq!(case.before.edges, case.after, "{}", case.name);
+    }
+
+    #[test]
+    fn reversal_work_limit_leaves_all_layout_coordinates_unchanged() {
+        let mut case = reversal_case();
+        let original_nodes = case.before.nodes.clone();
+        let original_edges = case.before.edges.clone();
         assert_eq!(
-            balance_routes(&case.graph, &mut case.before),
-            Err(Error::UnsupportedGraph),
+            balance_routes_with_work_limit(&case.graph, &mut case.before, 0),
+            Err(Error::WorkLimit),
         );
-        assert_eq!(case.before.edges, original, "{}", case.name);
+        assert_eq!(case.before.nodes, original_nodes);
+        assert_eq!(case.before.edges, original_edges);
     }
 }
+
+#[cfg(test)]
+#[path = "balance/upstream_tests.rs"]
+mod upstream_tests;

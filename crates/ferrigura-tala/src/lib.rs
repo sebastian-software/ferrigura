@@ -17,6 +17,8 @@ mod hierarchy;
 pub mod initialize;
 #[doc(hidden)]
 pub mod normalize;
+#[doc(hidden)]
+pub mod ovg_seed;
 mod placement;
 mod routing;
 #[doc(hidden)]

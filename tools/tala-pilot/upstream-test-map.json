@@ -1,0 +1,41 @@
+{
+  "internal/routing/balance_order_test.go#TestBalanceEdgeSegmentsStillUncrossesDifferentRanges": [
+    "balance::tests::balance_edge_segments_still_uncrosses_different_ranges"
+  ],
+  "internal/routing/balance_order_test.go#TestBalanceReversalDoesNotTradeCrossingsOrAddSharedRuns": [
+    "balance::crossings::tests::balance_reversal_does_not_trade_crossings_or_add_shared_runs"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsBackToBack": [
+    "balance::upstream_tests::back_to_back"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsMultipleNodes": [
+    "balance::upstream_tests::multiple_nodes"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsMultipleRanges": [
+    "balance::upstream_tests::multiple_ranges"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsSharedRoutes": [
+    "balance::upstream_tests::shared_routes"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsSharedRoutesDifferentRanges": [
+    "balance::upstream_tests::shared_routes_different_ranges"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsSimpleDouble": [
+    "balance::upstream_tests::simple_double"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsSimpleDoubleOppositeDirections": [
+    "balance::upstream_tests::simple_double_opposite_directions"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsSimpleSingle": [
+    "balance::upstream_tests::simple_single"
+  ],
+  "internal/routing/edge_postprocess_test.go#TestBalanceEdgeSegmentsSingleBendy": [
+    "balance::upstream_tests::single_bendy"
+  ],
+  "internal/routing/edge_simplify_safety_test.go#TestSimplifyChecksBothReplacementLegs": [
+    "simplify::tests::both_replacement_legs_and_the_target_approach_follow_the_reference"
+  ],
+  "internal/routing/edge_simplify_safety_test.go#TestSimplifyChecksObstacleContainingNewBend": [
+    "simplify::tests::rejects_an_obstacle_that_contains_the_new_bend"
+  ]
+}

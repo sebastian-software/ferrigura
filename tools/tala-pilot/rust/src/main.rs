@@ -29,6 +29,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ferrigura_tala::stress_initialize::initialize_by_graph_distance(&graph)?;
             serde_json::to_writer(output, &positions)?;
         }
+        Some("--ovg-seed") => {
+            let nodes: Vec<_> = serde_json::from_reader(input)?;
+            let seed = ferrigura_tala::ovg_seed::rectangular_visibility_seed(&nodes)?;
+            serde_json::to_writer(output, &seed)?;
+        }
         Some("--simplify") => {
             let RoutedCapture { graph, mut layout } = serde_json::from_reader(input)?;
             ferrigura_tala::simplify::simplify_routes(&graph, &mut layout)?;
@@ -47,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         _ => {
             return Err(concat!(
                 "expected --layout, --initialize, --initialize-by-distance, ",
-                "--simplify, --balance, or no argument"
+                "--ovg-seed, --simplify, --balance, or no argument"
             )
             .into());
         }

@@ -86,6 +86,49 @@ The verifier runs each stored measured graph through both engines. It
 compares node boxes, ordered route points, and label positions. The Rust
 renderer receives only the native engine's geometry in an opt-in render.
 
+## Check the complete native layout against Go
+
+The end-to-end check runs all authored flowcharts in `fixtures/` through
+D2's default TALA layout, which tries three seeds. It compares native Rust
+node boxes, route points and edge-label centers exactly, then compares
+the SVG from the public Ferrigura renderer with the same Go geometry
+painted by Ferrigura. An unsupported Rust layout fails the check.
+
+Build the Go bridge as above, then run from the repository root:
+
+```sh
+cargo build --locked --features experimental-tala --example tala_pilot
+cargo build --locked --manifest-path tools/tala-pilot/rust/Cargo.toml
+node tools/tala-pilot/check-end-to-end.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --ferrigura target/debug/examples/tala_pilot \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+The command prints a JSON result for every fixture and exits nonzero when
+any case differs or fails. For diagnosis, pass `--case` followed by one
+fixture filename. The fixed-seed replay still verifies the saved captures
+used by the stage fixtures and website.
+
+## Check the upstream correctness suite
+
+The source inventory reads the pinned D2 revision and lists each named
+correctness test, fuzz seed test, and example in the TALA engine packages.
+The test map names Rust counterparts for the upstream assertions they
+exercise. The verifier runs both sides and checks that the named tests
+executed and passed. Benchmarks are reported separately.
+
+```sh
+node tools/tala-pilot/check-upstream-tests.mjs \
+  --d2 /tmp/ferrigura-tala-d2 --verify --json
+```
+
+Use `--require-complete` to fail when any correctness declaration is
+unmapped. The **TALA parity** GitHub Actions workflow runs the unchanged
+Go suite, checks the map with `--require-complete`, and runs the full
+end-to-end comparison. The workflow is manually dispatched and publishes
+both reports. Its status is independent of the routine repository checks.
+
 ## Replay placement and routing stages
 
 The Rust crate tests replay pinned Go checkpoints for the plain sizeless
@@ -100,6 +143,24 @@ returns JSON `null` when its input takes the ordinary initialization path.
 Pass `--balance` or `--simplify` a JSON object with `graph` and `layout`
 entries containing the measured graph and an already routed layout. With no
 argument the pilot replays terminal coordinate normalization.
+
+### Initial orthogonal visibility graph
+
+The replay includes ordered initial visibility vertices, the twelve port slots
+per rectangle, and the owner, side and center flags of shared port vertices.
+`--ovg-seed` reads an array of already positioned ordinary rectangles.
+In the live differential for Observatory services, Go still places the nodes
+and completes the final layout. The traced runner's final output must match
+the independent Go runner byte for byte.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-ovg ovg-seed
+GOFLAGS=-overlay=/tmp/ferrigura-tala-ovg/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-ovg
+node tools/tala-pilot/check-ovg-seed.mjs \
+  /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-traced-ovg \
+  tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
 
 ## Findings
 
