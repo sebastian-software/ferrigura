@@ -13,6 +13,19 @@
 //! The Java `LinkedHashSet` of tree edges is an intrusive doubly-linked list indexed by edge
 //! internal id (`TreeEdges`), which preserves exact insertion order with O(1) insert and remove.
 //!
+//! Java's loops cost the graph's size in every step: `feasibleTree` searches the whole tree again
+//! in each round, and each exchange scans every edge for the leaving and the entering edge and
+//! recomputes the postorder and every cut value, so a large graph takes time quadratic in its size.
+//! When every weight is an integer, so that a cut value is an exact sum in any order, the port
+//! takes the same steps without the repeated work (`exact`): the rounds of `feasibleTree` only
+//! search on from the edges a move made tight (`grow_tight_tree`), and an
+//! exchange updates the cut values on the cycle that the entering edge closes, as Gansner et al.
+//! describe, keeps the tree as each node's parent edge and subtree size, searches the entering
+//! edge among the edges of the smaller component, and moves that component
+//! (`pivot`). The choices are Java's: the same tree edges in the same order, the
+//! first negative tree edge in insertion order leaves, the first edge of least slack in edge order
+//! enters, and the layers come out to the bit. Other weights take Java's way.
+//!
 //! Java semantics kept: `int` arithmetic wraps, `double` operations keep their operand order,
 //! and the `else if` in `minimalSpan` is reproduced as written. Where Java throws for misuse,
 //! this port panics: the `IllegalArgumentException` and `IllegalStateException` cases, and the
@@ -20,7 +33,7 @@
 //! [`NGraph::make_connected`] first). `NGraph.writeDebugGraph` is not ported, since it writes an
 //! ELK graph file for debugging.
 
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, VecDeque};
 
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 
@@ -367,6 +380,9 @@ struct TreeEdges {
     next: Vec<usize>,
     head: usize,
     tail: usize,
+    /// When each edge was last inserted: the list's order is the order of these numbers.
+    seq: Vec<u64>,
+    count: u64,
 }
 
 impl TreeEdges {
@@ -377,6 +393,8 @@ impl TreeEdges {
             next: Vec::new(),
             head: NONE,
             tail: NONE,
+            seq: Vec::new(),
+            count: 0,
         }
     }
 
@@ -387,6 +405,8 @@ impl TreeEdges {
             next: vec![NONE; num_edges],
             head: NONE,
             tail: NONE,
+            seq: vec![0; num_edges],
+            count: 0,
         }
     }
 
@@ -395,6 +415,8 @@ impl TreeEdges {
             return;
         }
         self.present[id] = true;
+        self.seq[id] = self.count;
+        self.count += 1;
         self.prev[id] = self.tail;
         self.next[id] = NONE;
         if self.tail != NONE {
@@ -460,6 +482,33 @@ pub struct NetworkSimplex<'a> {
     cutvalue: Vec<f64>,
     /// Java `subtreeNodesStack`: the removed leaves, each with the edge that joined it to the graph.
     subtree_nodes_stack: Vec<(usize, usize)>,
+    /// Whether every weight of this run is an integer, so that exchanges update the tree in place.
+    exact: bool,
+    /// The tree edge to the parent of each node in the postorder's tree, by the node's internal
+    /// id; `NONE` for the root.
+    parent_edge: Vec<usize>,
+    /// The epoch of the component that [`Self::split`] marked last, by node internal id.
+    mark: Vec<u32>,
+    epoch: u32,
+    /// The nodes of that component.
+    small: Vec<usize>,
+    /// The stack of the search of [`Self::split`].
+    stack: Vec<(usize, usize)>,
+    /// The number of nodes in the subtree of each node, by internal id.
+    size: Vec<i32>,
+    /// The marks of the walks of [`Self::pivot`] up the tree: `walk_epoch` for the walk from the
+    /// source of the entering edge, one more for the walk from its target.
+    walked: Vec<u32>,
+    walk_epoch: u32,
+    /// The tree edges with a negative cut value, as `(insertion number, internal id)`, when
+    /// `exact`.
+    negative: BTreeSet<(u64, usize)>,
+    /// How far Java's layers are past the layers of this run, where [`Self::pivot`] moved the
+    /// head component instead of the tail.
+    drift: i32,
+    /// Whether the tests ask for Java's way whatever the weights.
+    #[cfg(test)]
+    java_only: bool,
 }
 
 impl<'a> NetworkSimplex<'a> {
@@ -479,6 +528,19 @@ impl<'a> NetworkSimplex<'a> {
             lowest_po_id: Vec::new(),
             cutvalue: Vec::new(),
             subtree_nodes_stack: Vec::new(),
+            exact: false,
+            parent_edge: Vec::new(),
+            mark: Vec::new(),
+            epoch: 0,
+            small: Vec::new(),
+            stack: Vec::new(),
+            size: Vec::new(),
+            walked: Vec::new(),
+            walk_epoch: 0,
+            negative: BTreeSet::new(),
+            drift: 0,
+            #[cfg(test)]
+            java_only: false,
         }
     }
 
@@ -497,6 +559,13 @@ impl<'a> NetworkSimplex<'a> {
     /// Java `withIterationLimit(limit)`: the maximum number of exchanges.
     pub fn with_iteration_limit(mut self, limit: i32) -> Self {
         self.iteration_limit = limit;
+        self
+    }
+
+    /// Java's way of exchanging, whatever the weights, for the tests that compare the two.
+    #[cfg(test)]
+    fn java_only(mut self) -> Self {
+        self.java_only = true;
         self
     }
 
@@ -538,12 +607,24 @@ impl<'a> NetworkSimplex<'a> {
             if iter >= self.iteration_limit {
                 break;
             }
-            let enter = self
-                .enter_edge(leave)
-                .expect("network simplex: no entering edge for a negative cut value");
-            self.exchange(leave, enter);
+            if self.exact {
+                self.pivot(leave);
+            } else {
+                let enter = self
+                    .enter_edge(leave)
+                    .expect("network simplex: no entering edge for a negative cut value");
+                self.exchange(leave, enter);
+            }
             e = self.leave_edge();
             iter = iter.wrapping_add(1);
+        }
+
+        // Java's layers, to the bit, before the leaves take theirs from them.
+        if self.drift != 0 {
+            for &node in &self.graph.node_order {
+                let layer = &mut self.graph.nodes[node].layer;
+                *layer = layer.wrapping_add(self.drift);
+            }
         }
 
         // re-attach leafs
@@ -652,6 +733,31 @@ impl<'a> NetworkSimplex<'a> {
         let num_edges = the_edges.len();
         self.cutvalue = vec![0.0; num_edges];
         self.edge_visited = vec![false; num_edges];
+        // A sum of integers whose magnitudes add up to less than 2^53 is exact in any order, and
+        // minimal lengths that add up to less than 2^28 keep every length and slack of a layering
+        // whose tree is tight far from `i32`'s limits.
+        let mut magnitude = 0.0;
+        let mut lengths: i64 = 0;
+        self.exact = the_edges.iter().all(|&edge| {
+            let edge = &self.graph.edges[edge];
+            magnitude += edge.weight.abs();
+            lengths += i64::from(edge.delta).abs();
+            edge.weight.is_finite() && edge.weight.fract() == 0.0
+        }) && magnitude < 9_007_199_254_740_992.0
+            && lengths < 1 << 28;
+        #[cfg(test)]
+        {
+            self.exact &= !self.java_only;
+        }
+        self.parent_edge = vec![NONE; num_nodes];
+        self.mark = vec![0; num_nodes];
+        self.epoch = 0;
+        self.small = Vec::new();
+        self.size = vec![0; num_nodes];
+        self.walked = vec![0; num_nodes];
+        self.walk_epoch = 0;
+        self.negative = BTreeSet::new();
+        self.drift = 0;
         self.edges = the_edges;
         self.tree_edges = TreeEdges::with_len(num_edges);
         self.post_order = 1;
@@ -668,6 +774,13 @@ impl<'a> NetworkSimplex<'a> {
         self.po_id = Vec::new();
         self.sources = Vec::new();
         self.subtree_nodes_stack = Vec::new();
+        self.parent_edge = Vec::new();
+        self.mark = Vec::new();
+        self.small = Vec::new();
+        self.stack = Vec::new();
+        self.size = Vec::new();
+        self.walked = Vec::new();
+        self.negative = BTreeSet::new();
     }
 
     /// Java `feasibleTree()`: an initial feasible spanning tree whose edges are all tight, with
@@ -680,6 +793,9 @@ impl<'a> NetworkSimplex<'a> {
         if !self.edges.is_empty() {
             self.edge_visited.fill(false);
             let root = self.graph.node_order[0];
+            if self.exact {
+                self.grow_tight_tree(root);
+            }
             while self.tight_tree_dfs(root) < self.graph.node_order.len() {
                 // some nodes are still not part of the tree
                 let e = self
@@ -704,6 +820,16 @@ impl<'a> NetworkSimplex<'a> {
             self.edge_visited.fill(false);
             self.postorder_traversal(root);
             self.cutvalues();
+            if self.exact {
+                let mut current = self.tree_edges.head;
+                while current != NONE {
+                    if self.cutvalue[current] < FUZZY_ST_ZERO {
+                        self.negative
+                            .insert((self.tree_edges.seq[current], current));
+                    }
+                    current = self.tree_edges.next[current];
+                }
+            }
         }
     }
 
@@ -734,6 +860,223 @@ impl<'a> NetworkSimplex<'a> {
                 }
             }
         }
+    }
+
+    /// The rounds of Java's `feasibleTree` loop without searching the whole graph in each: the
+    /// tree that the loop grows, with its edges in Java's order, and the layers Java gives it.
+    ///
+    /// Each round of Java's loop searches the tree from the root again, adding the tight edges
+    /// to nodes outside it as it meets them, and then moves the tree along the edge of least
+    /// slack that leaves it. The search meets the tree's nodes and edges in the order of the
+    /// round before, with what it adds inserted where it adds it, so the edges that leave the
+    /// tree are kept in the order the search meets them (`order`), and only the ones that the
+    /// move made tight start a search, from the node they reach. The edges that leave the tree
+    /// are also kept by slack, those out of the tree apart from those into it: a move changes
+    /// the slack of each kind by the same amount, which `moved` counts.
+    ///
+    /// Java's loop then finds the whole tree and ends; [`Self::tight_tree_dfs`] marks the
+    /// tree's edges as visited for it.
+    fn grow_tight_tree(&mut self, root: usize) {
+        use std::cmp::Reverse;
+        use std::collections::{BTreeMap, BinaryHeap};
+
+        /// The distance of the first places in `order`.
+        const SPACING: u64 = 1 << 32;
+
+        struct Frontier {
+            /// The edges that leave the tree by the place where the search meets them.
+            order: BTreeMap<u64, usize>,
+            /// The place of each edge in `order`, by internal id.
+            place: Vec<u64>,
+            /// The edges out of the tree and into it, by slack plus or minus `moved`, then by
+            /// internal id.
+            out: BinaryHeap<Reverse<(i64, usize)>>,
+            into: BinaryHeap<Reverse<(i64, usize)>>,
+            moved: i64,
+        }
+
+        let mut frontier = Frontier {
+            order: BTreeMap::new(),
+            place: vec![0; self.edges.len()],
+            out: BinaryHeap::new(),
+            into: BinaryHeap::new(),
+            moved: 0,
+        };
+        let mut tree_nodes = Vec::new();
+
+        // The search of Java's `tightTreeDFS` from `start`, which has just joined the tree, with
+        // the edges it meets that leave the tree in the order it meets them.
+        let search = |this: &mut Self,
+                      frontier: &mut Frontier,
+                      tree_nodes: &mut Vec<usize>,
+                      start: usize|
+         -> Vec<usize> {
+            let mut met = Vec::new();
+            this.graph.nodes[start].tree_node = true;
+            tree_nodes.push(start);
+            let mut stack = vec![(start, 0usize)];
+            while let Some((node, next_k)) = stack.last_mut() {
+                let node = *node;
+                if *next_k < this.graph.connected_len(node) {
+                    let edge = this.graph.connected_at(node, *next_k);
+                    *next_k += 1;
+                    let id = this.graph.edges[edge].internal_id;
+                    if this.edge_visited[id] {
+                        continue;
+                    }
+                    this.edge_visited[id] = true;
+                    let opposite = this.graph.edges[edge].other(node);
+                    if this.graph.edges[edge].tree_edge {
+                        this.graph.nodes[opposite].tree_node = true;
+                        tree_nodes.push(opposite);
+                        stack.push((opposite, 0));
+                    } else if !this.graph.nodes[opposite].tree_node {
+                        let slack = this.slack(edge);
+                        if slack == 0 {
+                            this.graph.edges[edge].tree_edge = true;
+                            this.tree_edges.insert(id);
+                            this.graph.nodes[opposite].tree_node = true;
+                            tree_nodes.push(opposite);
+                            stack.push((opposite, 0));
+                        } else {
+                            met.push(id);
+                            let slack = i64::from(slack);
+                            if this.graph.edges[edge].source == node {
+                                frontier.out.push(Reverse((slack + frontier.moved, id)));
+                            } else {
+                                frontier.into.push(Reverse((slack - frontier.moved, id)));
+                            }
+                        }
+                    }
+                } else {
+                    stack.pop();
+                }
+            }
+            met
+        };
+        let leaves = |this: &Self, id: usize| {
+            let edge = &this.graph.edges[this.edges[id]];
+            this.graph.nodes[edge.source].tree_node ^ this.graph.nodes[edge.target].tree_node
+        };
+
+        let met = search(self, &mut frontier, &mut tree_nodes, root);
+        for (index, &id) in met.iter().enumerate() {
+            let place = (index as u64 + 1) * SPACING;
+            frontier.order.insert(place, id);
+            frontier.place[id] = place;
+        }
+
+        while tree_nodes.len() < self.graph.node_order.len() {
+            // Java `minimalSlack()`: the least slack, and of those the first edge.
+            for heap in [&mut frontier.out, &mut frontier.into] {
+                while heap
+                    .peek()
+                    .is_some_and(|Reverse((_, id))| !leaves(self, *id))
+                {
+                    heap.pop();
+                }
+            }
+            let out = frontier
+                .out
+                .peek()
+                .map(|Reverse((key, id))| (key - frontier.moved, *id));
+            let into = frontier
+                .into
+                .peek()
+                .map(|Reverse((key, id))| (key + frontier.moved, *id));
+            let (least, leaving_out) = match (out, into) {
+                (Some(out), Some(into)) if into < out => (into, false),
+                (Some(out), _) => (out, true),
+                (None, Some(into)) => (into, false),
+                (None, None) => {
+                    panic!("network simplex: no edge leaves the tree; the graph is not connected")
+                }
+            };
+            let e = self.edges[least.1];
+            let target = self.graph.edges[e].target;
+            let mut slack = self.slack(e);
+            if self.graph.nodes[target].tree_node {
+                slack = slack.wrapping_neg();
+            }
+            for &node in &tree_nodes {
+                let layer = &mut self.graph.nodes[node].layer;
+                *layer = layer.wrapping_add(slack);
+            }
+            frontier.moved += i64::from(slack);
+
+            // The edges of that kind with the least slack are tight now.
+            let heap = if leaving_out {
+                &mut frontier.out
+            } else {
+                &mut frontier.into
+            };
+            let key = heap.peek().map(|Reverse((key, _))| *key);
+            let mut tight = Vec::new();
+            while let Some(&Reverse((top, id))) = heap.peek() {
+                if Some(top) != key {
+                    break;
+                }
+                heap.pop();
+                if leaves(self, id) {
+                    tight.push(id);
+                }
+            }
+            tight.sort_by_key(|&id| frontier.place[id]);
+
+            for id in tight {
+                if !leaves(self, id) {
+                    continue;
+                }
+                let edge = self.edges[id];
+                let (source, target) =
+                    (self.graph.edges[edge].source, self.graph.edges[edge].target);
+                let far = if self.graph.nodes[source].tree_node {
+                    target
+                } else {
+                    source
+                };
+                self.graph.edges[edge].tree_edge = true;
+                self.tree_edges.insert(id);
+                let met = search(self, &mut frontier, &mut tree_nodes, far);
+                // What the search met goes where it met it: after the edge, before the next.
+                let at = frontier.place[id];
+                let mut next = frontier
+                    .order
+                    .range(at + 1..)
+                    .next()
+                    .map_or(u64::MAX, |(&place, _)| place);
+                if next - at <= met.len() as u64 {
+                    let kept: Vec<usize> = frontier
+                        .order
+                        .values()
+                        .copied()
+                        .filter(|&other| other == id || leaves(self, other))
+                        .collect();
+                    frontier.order.clear();
+                    for (index, other) in kept.into_iter().enumerate() {
+                        let place = (index as u64 + 1) * SPACING;
+                        frontier.order.insert(place, other);
+                        frontier.place[other] = place;
+                    }
+                    let at = frontier.place[id];
+                    next = frontier
+                        .order
+                        .range(at + 1..)
+                        .next()
+                        .map_or(u64::MAX, |(&place, _)| place);
+                }
+                let at = frontier.place[id];
+                let step = (next - at) / (met.len() as u64 + 1);
+                for (index, other) in met.into_iter().enumerate() {
+                    let place = at + step * (index as u64 + 1);
+                    frontier.order.insert(place, other);
+                    frontier.place[other] = place;
+                }
+                frontier.order.remove(&at);
+            }
+        }
+        // Java's last round searches the whole tree, which marks every tree edge as visited.
+        self.edge_visited.fill(false);
     }
 
     /// Java `minimalSpan(node)`: the length of the shortest incoming edge (first) and outgoing
@@ -822,6 +1165,8 @@ impl<'a> NetworkSimplex<'a> {
     /// Java `postorderTraversal(node)`: numbers the tree in postorder and returns the lowest
     /// number reachable below `node`.
     fn postorder_traversal(&mut self, start: usize) -> i32 {
+        let start_id = self.graph.nodes[start].internal_id;
+        self.parent_edge[start_id] = NONE;
         let mut stack = vec![(start, 0usize, i32::MAX)];
         let mut result = i32::MAX;
         while let Some((node, next_k, lowest)) = stack.last_mut() {
@@ -833,6 +1178,7 @@ impl<'a> NetworkSimplex<'a> {
                 if self.graph.edges[edge].tree_edge && !self.edge_visited[id] {
                     self.edge_visited[id] = true;
                     let other = self.graph.edges[edge].other(node);
+                    self.parent_edge[self.graph.nodes[other].internal_id] = edge;
                     stack.push((other, 0, i32::MAX));
                 }
             } else {
@@ -841,6 +1187,8 @@ impl<'a> NetworkSimplex<'a> {
                 let node_id = self.graph.nodes[node].internal_id;
                 self.po_id[node_id] = self.post_order;
                 self.lowest_po_id[node_id] = lowest.min(self.post_order);
+                self.size[node_id] = self.post_order - self.lowest_po_id[node_id] + 1;
+
                 self.post_order = self.post_order.wrapping_add(1);
                 let child_lowest = self.lowest_po_id[node_id];
                 if let Some(parent) = stack.last_mut() {
@@ -960,6 +1308,9 @@ impl<'a> NetworkSimplex<'a> {
     /// Java `leaveEdge()`: a tree edge with a negative cut value, or `None` if the layering is
     /// optimal. The first such edge in insertion order is returned.
     fn leave_edge(&self) -> Option<usize> {
+        if self.exact {
+            return self.negative.first().map(|&(_, id)| self.edges[id]);
+        }
         let mut current = self.tree_edges.head;
         while current != NONE {
             let edge = self.edges[current];
@@ -1033,6 +1384,250 @@ impl<'a> NetworkSimplex<'a> {
         let root = self.graph.node_order[0];
         self.postorder_traversal(root);
         self.cutvalues();
+    }
+
+    /// The smaller of the two components of the tree without `leave`, by the size of the
+    /// child's subtree: marks its nodes in [`Self::mark`] and lists them in [`Self::small`], and
+    /// returns whether it is the tail component of `leave`.
+    fn split(&mut self, leave: usize) -> bool {
+        let source = self.graph.edges[leave].source;
+        let target = self.graph.edges[leave].target;
+        // The child of `leave` in the tree, whose subtree is one component.
+        let child_is_source = self.parent_edge[self.graph.nodes[source].internal_id] == leave;
+        let (child, parent) = if child_is_source {
+            (source, target)
+        } else {
+            (target, source)
+        };
+        let below = self.size[self.graph.nodes[child].internal_id];
+        let child_is_small = below <= self.graph.node_order.len() as i32 - below;
+        self.epoch = self.epoch.wrapping_add(1);
+        if self.epoch == 0 {
+            self.mark.fill(0);
+            self.epoch = 1;
+        }
+        let mut small = std::mem::take(&mut self.small);
+        small.clear();
+        let mut stack = std::mem::take(&mut self.stack);
+        stack.clear();
+        stack.push((if child_is_small { child } else { parent }, leave));
+        while let Some((node, arrival)) = stack.pop() {
+            small.push(node);
+            self.mark[self.graph.nodes[node].internal_id] = self.epoch;
+            for edge in self.graph.connected_edges(node) {
+                if edge != arrival && edge != leave && self.graph.edges[edge].tree_edge {
+                    stack.push((self.graph.edges[edge].other(node), edge));
+                }
+            }
+        }
+        debug_assert_eq!(
+            small.len() as i32,
+            if child_is_small {
+                below
+            } else {
+                self.graph.node_order.len() as i32 - below
+            },
+            "the sizes of the subtrees are kept"
+        );
+        self.small = small;
+        self.stack = stack;
+        // The child's component is the tail when the child is the source.
+        child_is_small == child_is_source
+    }
+
+    /// Whether `node` is in the component that [`Self::split`] marked.
+    fn in_small(&self, node: usize) -> bool {
+        self.mark[self.graph.nodes[node].internal_id] == self.epoch
+    }
+
+    /// One exchange of an exact run, Java's `enterEdge` and `exchange` with the same choices
+    /// (Gansner et al., section 2.4). The entering edge runs from the head to the tail component
+    /// of `leave`, so it meets the smaller component, and only that one's edges are searched; of
+    /// the edges of least slack, the first in edge order is the one with the lowest internal id.
+    /// The tree edges on the cycle that the entering edge closes change their cut value by the
+    /// cut value of `leave`, the entering edge takes its negation, and the smaller component
+    /// moves. The tree is kept as the parent edge of each node, so nothing is numbered anew.
+    fn pivot(&mut self, leave: usize) {
+        let small_is_tail = self.split(leave);
+        let in_tail = |this: &Self, node: usize| this.in_small(node) == small_is_tail;
+
+        // Java `enterEdge(leave)`.
+        let mut best: Option<(i32, usize, usize)> = None;
+        for &node in &self.small {
+            for edge in self.graph.connected_edges(node) {
+                let this = &self.graph.edges[edge];
+                if this.tree_edge || in_tail(self, this.source) || !in_tail(self, this.target) {
+                    continue;
+                }
+                let key = (self.slack(edge), this.internal_id, edge);
+                if best.is_none_or(|best| (key.0, key.1) < (best.0, best.1)) {
+                    best = Some(key);
+                }
+            }
+        }
+        let (_, _, enter) =
+            best.expect("network simplex: no entering edge for a negative cut value");
+
+        let leave_id = self.graph.edges[leave].internal_id;
+        let enter_id = self.graph.edges[enter].internal_id;
+        let leave_value = self.cutvalue[leave_id];
+        let (enter_source, enter_target) = (
+            self.graph.edges[enter].source,
+            self.graph.edges[enter].target,
+        );
+        let mut delta = self.slack(enter);
+        if in_tail(self, enter_target) {
+            delta = delta.wrapping_neg();
+        }
+
+        // The path of the old tree between the ends of `enter`, from both ends up to the lowest
+        // node above both: the walks go up in turn, each marking its nodes, until one meets a
+        // node of the other.
+        self.walk_epoch = self.walk_epoch.wrapping_add(2);
+        if self.walk_epoch < 2 {
+            self.walked.fill(0);
+            self.walk_epoch = 2;
+        }
+        let marks = [self.walk_epoch, self.walk_epoch + 1];
+        let mut paths = [vec![enter_source], vec![enter_target]];
+        self.walked[self.graph.nodes[enter_source].internal_id] = marks[0];
+        self.walked[self.graph.nodes[enter_target].internal_id] = marks[1];
+        let mut turn = 0;
+        let (reached, lowest) = loop {
+            let last = *paths[turn].last().expect("a walk starts at a node");
+            let edge = self.parent_edge[self.graph.nodes[last].internal_id];
+            // A walk at the root waits for the other one to reach its path.
+            if edge != NONE {
+                let up = self.graph.edges[edge].other(last);
+                let id = self.graph.nodes[up].internal_id;
+                if self.walked[id] == marks[1 - turn] {
+                    break (turn, up);
+                }
+                self.walked[id] = marks[turn];
+                paths[turn].push(up);
+            }
+            turn = 1 - turn;
+        };
+        // The walk `reached` stopped below the lowest common node; the other one passed it.
+        let other = &mut paths[1 - reached];
+        let at = other
+            .iter()
+            .position(|&node| node == lowest)
+            .expect("the other walk passed the lowest common node");
+        other.truncate(at);
+        // An edge of the path counts `enter` as running with it where `enter` leaves the part of
+        // the tree below the edge at the edge's source.
+        for (side, leaves_below) in [(0, true), (1, false)] {
+            for &node in &paths[side] {
+                let edge = self.parent_edge[self.graph.nodes[node].internal_id];
+                if edge != leave {
+                    let with = (self.graph.edges[edge].source == node) == leaves_below;
+                    self.add_to_cutvalue(edge, if with { leave_value } else { -leave_value });
+                }
+            }
+        }
+
+        // The end of `enter` below `leave` hangs its component from `enter` now: the parent
+        // edges on the way up to the child of `leave` turn around.
+        let below = if self.parent_edge
+            [self.graph.nodes[self.graph.edges[leave].source].internal_id]
+            == leave
+        {
+            self.graph.edges[leave].source
+        } else {
+            self.graph.edges[leave].target
+        };
+        let small_is_below = self.in_small(below);
+        let hanging = if self.in_small(enter_source) == small_is_below {
+            enter_source
+        } else {
+            enter_target
+        };
+        // The sizes: the subtree of `below` leaves the nodes above it and joins the nodes above
+        // the other end of `enter`, up to the lowest common node, and turns around on its way.
+        let id_of = |this: &Self, node: usize| this.graph.nodes[node].internal_id;
+        let moved = self.size[id_of(self, below)];
+        let side = usize::from(hanging != enter_source);
+        let turn = paths[side]
+            .iter()
+            .position(|&node| node == below)
+            .expect("the walk from the end below `leave` passes its child");
+        for &node in &paths[side][turn + 1..] {
+            let id = id_of(self, node);
+            self.size[id] -= moved;
+        }
+        for &node in &paths[1 - side] {
+            let id = id_of(self, node);
+            self.size[id] += moved;
+        }
+        let old: Vec<i32> = paths[side][..=turn]
+            .iter()
+            .map(|&node| self.size[id_of(self, node)])
+            .collect();
+        let mut above = 0;
+        for index in (1..=turn).rev() {
+            let new = old[index] - old[index - 1] + above;
+            let id = id_of(self, paths[side][index]);
+            self.size[id] = new;
+            above = new;
+        }
+        let id = id_of(self, hanging);
+        self.size[id] = moved;
+
+        let (mut node, mut parent) = (hanging, enter);
+        loop {
+            let id = self.graph.nodes[node].internal_id;
+            let old = std::mem::replace(&mut self.parent_edge[id], parent);
+            if node == below {
+                break;
+            }
+            node = self.graph.edges[old].other(node);
+            parent = old;
+        }
+
+        // update tree
+        self.negative
+            .remove(&(self.tree_edges.seq[leave_id], leave_id));
+        self.graph.edges[leave].tree_edge = false;
+        self.tree_edges.remove(leave_id);
+        self.graph.edges[enter].tree_edge = true;
+        self.tree_edges.insert(enter_id);
+        self.cutvalue[enter_id] = -leave_value;
+        if self.cutvalue[enter_id] < FUZZY_ST_ZERO {
+            self.negative
+                .insert((self.tree_edges.seq[enter_id], enter_id));
+        }
+
+        // Java moves the tail component by `delta`; moving the head component by `-delta`
+        // instead gives the same lengths, and the normalization the same layers.
+        let shift = if small_is_tail {
+            delta
+        } else {
+            self.drift = self.drift.wrapping_add(delta);
+            delta.wrapping_neg()
+        };
+        for index in 0..self.small.len() {
+            let layer = &mut self.graph.nodes[self.small[index]].layer;
+            *layer = layer.wrapping_add(shift);
+        }
+    }
+
+    /// Adds `change` to the cut value of a tree edge, and keeps [`Self::negative`] in step.
+    fn add_to_cutvalue(&mut self, edge: usize, change: f64) {
+        let id = self.graph.edges[edge].internal_id;
+        let old = self.cutvalue[id];
+        let new = old + change;
+        self.cutvalue[id] = new;
+        let key = (self.tree_edges.seq[id], id);
+        match (old < FUZZY_ST_ZERO, new < FUZZY_ST_ZERO) {
+            (true, false) => {
+                self.negative.remove(&key);
+            }
+            (false, true) => {
+                self.negative.insert(key);
+            }
+            _ => {}
+        }
     }
 
     /// Java `normalize()`: shifts the layers so that the lowest is 0. Returns how many nodes are
@@ -1430,6 +2025,60 @@ mod tests {
         assert_eq!(order(&set), Vec::<usize>::new());
         set.insert(3);
         assert_eq!(order(&set), vec![3]);
+    }
+
+    #[test]
+    fn exchanges_in_place_give_the_layers_of_java_exchanges() {
+        // Random connected DAGs with integer weights and minimal lengths, small and large enough
+        // to have their leaves removed, with and without balancing.
+        let mut state: u64 = 0x2545_f491_4f6c_dd1d;
+        let mut next = |bound: u64| {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state % bound
+        };
+        for round in 0..300 {
+            let count = 2 + next(if round % 3 == 0 { 400 } else { 60 }) as usize;
+            let mut graph = NGraph::new();
+            let nodes: Vec<usize> = (0..count).map(|_| graph.add_node(NNode::new())).collect();
+            let edges = count + next(2 * count as u64) as usize;
+            for _ in 0..edges {
+                let a = next(count as u64) as usize;
+                let b = next(count as u64) as usize;
+                if a == b {
+                    continue;
+                }
+                let (source, target) = (a.min(b), a.max(b));
+                add_edge(
+                    &mut graph,
+                    nodes[source],
+                    nodes[target],
+                    next(4) as i32,
+                    next(6) as f64 * if next(4) == 0 { 64.0 } else { 1.0 },
+                );
+            }
+            graph.make_connected();
+            let balance = round % 2 == 0;
+            let limit = if round % 5 == 0 {
+                7 * count as i32
+            } else {
+                i32::MAX
+            };
+            let mut java = graph.clone();
+            NetworkSimplex::for_graph(&mut graph)
+                .with_balancing(balance)
+                .with_iteration_limit(limit)
+                .execute();
+            NetworkSimplex::for_graph(&mut java)
+                .with_balancing(balance)
+                .with_iteration_limit(limit)
+                .java_only()
+                .execute();
+            let all: Vec<usize> = (0..graph.nodes.len()).collect();
+            assert_eq!(layers(&graph, &all), layers(&java, &all), "round {round}");
+            assert_eq!(graph.node_order, java.node_order, "round {round}");
+        }
     }
 
     #[test]
