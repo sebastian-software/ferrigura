@@ -57,11 +57,11 @@ pub struct EdgeGeom {
     pub arrow_type_end: String,
     /// The `style` the path currently has.
     pub style: String,
-    /// The radius of the edge's rounded corners: the reference's, or the design mode's.
+    /// The radius of the edge's rounded corners: the reference's, or the default rendering's.
     pub corner_radius: f64,
     /// Whether the corners next to the ends count those parts before the marker offsets
     /// ([`generate_rounded_path_from_ends`](super::path::generate_rounded_path_from_ends)), as the
-    /// design mode draws its edges.
+    /// default rendering draws its edges.
     pub from_ends: bool,
 }
 

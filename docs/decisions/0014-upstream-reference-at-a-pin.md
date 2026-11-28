@@ -6,7 +6,7 @@
 
 The reference is upstream Mermaid at a pinned commit, with a few patches. `tools/reference/pin` names the commit and the newest Mermaid release it contains; `tools/reference/patches/` holds the patches, applied in the order of their names; `tools/reference/setup.sh` fetches the commit, applies the patches and builds it in `target/reference/<commit>`.
 
-The intentional flowchart default is recorded in [0019](./0019-adaptive-flowchart-mode.md). Test instrumentation exposes layout inputs and outputs without changing ordinary reference renders. For adaptive routing, the harness configures the measured ELK input through such a hook; a separate compatibility run keeps the hook inactive and compares the original input and geometry. The stylesheet comparison checks Mermaid mode against the reference rule by rule; public render tests cover background opacity in both modes.
+The reference is compared with ferrigura's `compat` rendering ([0019](./0019-mermaid-geometry-with-compat.md)); the default rendering departs from it on purpose ([0023](./0023-the-default-rendering.md)). Test instrumentation exposes layout inputs and outputs without changing ordinary reference renders. The stylesheet comparison checks `compat` against the reference rule by rule; public render tests cover background opacity in both renderings.
 
 The rendering facade rejects raw input above the host `maxTextSize`, including comments and front matter, instead of using Mermaid’s replacement or comment-stripping fallback. It also rejects invalid host limits and keeps both limits under host control even if `secure` is customized. These defensive differences apply before diagram parsing.
 

@@ -42,9 +42,9 @@ pub struct MindmapSection<'a> {
     pub mindmap: &'a MindmapDiagramConfig,
     /// The sections that the unified renderer reads.
     pub unified: Section<'a>,
-    /// The tone of the design mode's look, when the render draws in it: its colors, outlines and
-    /// edge widths (`docs/decisions/0023-design-mode.md`). It is the look only; the layout reads
-    /// `unified`.
+    /// The tone of the default rendering's look, when the render draws in it: its colors, outlines
+    /// and edge widths (`docs/decisions/0023-the-default-rendering.md`). It is the look only; the
+    /// layout reads `unified`.
     pub look: Option<crate::design::Tone>,
 }
 
@@ -96,9 +96,9 @@ pub fn render_with_animation(
     let mut measured = pipeline::measure(data, &unified)?;
 
     // The layout: the name the configuration gives, or cose-bilkent for the names that are not
-    // registered (`mindmapRenderer.ts` 47-49).
-    // The design mode lays the tree out around its root in place of cose-bilkent; a tidy tree or an
-    // ELK layout named in the configuration is the user's choice and stays.
+    // registered (`mindmapRenderer.ts` 47-49). The default rendering lays the tree out around its
+    // root in place of cose-bilkent; a tidy tree or an ELK layout named in the configuration is the
+    // user's choice and stays.
     match layout::of(&input.globals.layout) {
         layout::Layout::CoseBilkent
             if input.section.unified.design.is_some() && design::lay_out(&mut measured.data) => {}

@@ -1,10 +1,10 @@
-//! The self-loops of the design mode: one loop on a free side of its node, around the middle of
-//! the side, with its label beside it (`docs/decisions/0023-design-mode.md`). The step is
-//! ferrigura's own, run around ELK's layout; the ELK port does not know it.
+//! The self-loops of the default rendering: one loop on a free side of its node, around the middle
+//! of the side, with its label beside it (`docs/decisions/0023-the-default-rendering.md`). The step
+//! is ferrigura's own, run around ELK's layout; the ELK port does not know it.
 //!
 //! ELK routes a self-loop as a small hook near a corner of its node and places its label on the far
-//! side of the hook, where it floats away from the line. In the design mode the loops do not take
-//! part in the layout:
+//! side of the hook, where it floats away from the line. In the default rendering the loops do not
+//! take part in the layout:
 //!
 //! 1. **Out.** Before the layout, the loops leave the layout data. Their node keeps their room
 //!    instead, on the loop's side only: the box of a loop with its label and its cardinalities
@@ -61,7 +61,7 @@ const MIN_PITCH: f64 = 8.0;
 /// of the widest marker and the gap of `terminal::place_beside_ends`.
 const TERMINAL_ROOM: f64 = 12.0;
 
-/// A node beside which another step of the design mode keeps room for something of its own: a
+/// A node beside which another step of the default rendering keeps room for something of its own: a
 /// state with its notes. Its loops take the sides that are left.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Reserved {
@@ -495,7 +495,7 @@ pub(crate) struct Loops {
     edges: Vec<(usize, Edge)>,
 }
 
-/// The box of an edge's label as the design mode draws it, its chip, when it has a label.
+/// The box of an edge's label as the default rendering draws it, its chip, when it has a label.
 fn chip_of(edge: &Edge) -> Option<(f64, f64)> {
     if edge.label.is_empty() {
         return None;

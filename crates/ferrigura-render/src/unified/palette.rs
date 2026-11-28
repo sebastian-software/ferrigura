@@ -36,8 +36,9 @@ pub(crate) fn palette(globals: &Globals, theme: &ThemeTokens) -> Option<Palette>
     })
 }
 
-/// The palette a unified diagram draws with: the theme's, and none in the design mode, where color
-/// follows a node's role and a group stays neutral (`docs/decisions/0023-design-mode.md`).
+/// The palette a unified diagram draws with: the theme's, and none in the default rendering, where
+/// color follows a node's role and a group stays neutral
+/// (`docs/decisions/0023-the-default-rendering.md`).
 pub(crate) fn palette_of(config: &super::Config<'_>) -> Option<Palette> {
     if config.section.design.is_some() {
         return None;

@@ -49,7 +49,7 @@ pub struct ElkState {
     /// run, and the reference's own warnings about unknown algorithm names.
     pub warnings: Vec<String>,
     /// The padding a group's frame keeps around its members when the post-processing pulls the
-    /// frame in: the design mode's, or `None` for the reference's.
+    /// frame in: the default rendering's, or `None` for the reference's.
     pub group_padding: Option<f64>,
 }
 
@@ -122,11 +122,6 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         edges,
         ..JsonNode::default()
     };
-    if data.diagram_type == super::markers::FLOWCHART
-        && section.flowchart_routing == crate::flowchart::policy::FlowchartRouting::Adaptive
-    {
-        crate::flowchart::policy::center_ports(&mut graph);
-    }
     if section.design.is_some() {
         // A placement strategy the configuration names is the user's choice.
         let place = section.elk.node_placement_strategy.is_none();
@@ -153,7 +148,8 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
     ElkInput { graph, state }
 }
 
-/// The padding a note's group has before the design mode relaxes the graph, by the group's id.
+/// The padding a note's group has before the default rendering relaxes the graph, by the group's
+/// id.
 fn paddings_of(node: &JsonNode, shapes: &HashMap<&str, &str>, kept: &mut Vec<(String, Json)>) {
     for child in &node.children {
         if shapes.get(child.id.as_str()) == Some(&"noteGroup")
@@ -168,8 +164,8 @@ fn paddings_of(node: &JsonNode, shapes: &HashMap<&str, &str>, kept: &mut Vec<(St
     }
 }
 
-/// Gives the groups that draw no title the design mode's padding without a title row: a
-/// concurrency region the mode's side padding on every side, and a note's group the padding it
+/// Gives the groups that draw no title the default rendering's padding without a title row: a
+/// concurrency region the default's side padding on every side, and a note's group the padding it
 /// had before (`kept`).
 fn pad_untitled_groups(node: &mut JsonNode, shapes: &HashMap<&str, &str>, kept: &[(String, Json)]) {
     if let Some(ratio) = regions_ratio(node, shapes) {
@@ -969,9 +965,9 @@ fn add_vertices(
 /// The text of a label that only keeps room beside its node ([`beside_label`]).
 pub(crate) const BESIDE_TEXT: &str = " ";
 
-/// A label that keeps room beside its node for the design mode (`Node::beside`): a box at a fixed
-/// place from the node's top left corner, which ELK neither moves nor places inside the node, and
-/// which the node's margins hold. Its text is not drawn; ELK leaves out a label without one.
+/// A label that keeps room beside its node for the default rendering (`Node::beside`): a box at a
+/// fixed place from the node's top left corner, which ELK neither moves nor places inside the node,
+/// and which the node's margins hold. Its text is not drawn; ELK leaves out a label without one.
 fn beside_label((x, y, width, height): (f64, f64, f64, f64)) -> JsonLabel {
     let mut options = LayoutOptions::new();
     set(&mut options, "nodeLabels.placement", text("[]"));

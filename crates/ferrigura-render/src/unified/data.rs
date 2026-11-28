@@ -157,9 +157,9 @@ pub struct Node {
     /// The measured size of a subgraph's title.
     #[serde(skip)]
     pub label_bbox: Option<(f64, f64)>,
-    /// The room the design mode keeps beside the node for what it sets there after the layout (a
-    /// state's note, a self-loop): boxes `(x, y, width, height)` from the node's top left corner.
-    /// ELK takes them as labels without a placement, which the node's margins hold.
+    /// The room the default rendering keeps beside the node for what it sets there after the layout
+    /// (a state's note, a self-loop): boxes `(x, y, width, height)` from the node's top left
+    /// corner. ELK takes them as labels without a placement, which the node's margins hold.
     #[serde(skip)]
     pub beside: Vec<(f64, f64, f64, f64)>,
 }

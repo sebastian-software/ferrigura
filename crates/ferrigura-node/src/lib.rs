@@ -60,12 +60,9 @@ pub struct FontOptionsInput {
 pub struct RenderOptionsInput {
     /// Optional draw animation. An empty object enables the default speed and source order.
     pub animation: Option<AnimationInput>,
-    /// Mermaid-compatible geometry when true. False (default) enables optimized flowchart routing
-    /// and compact sequence participant boxes. Font, color and readability fixes always apply.
+    /// Mermaid's geometry and look when true. False (default) draws every diagram type in
+    /// ferrigura's own look and measures. Font and readability fixes always apply.
     pub compat: Option<bool>,
-    /// The design mode when true: ferrigura's own look for flowcharts, state, class and ER diagrams, mindmaps, and pie, XY, quadrant and gantt charts, with
-    /// roomier nodes and spacing for the first four. Other diagram types and the combination with `compat` are rejected.
-    pub design: Option<bool>,
     /// The id of the SVG element, which scopes its styles. By default it is derived from the text and
     /// the configuration, so the same input gives the same id.
     pub id: Option<String>,
@@ -471,7 +468,6 @@ fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
                 })
                 .transpose()?,
             compat: input.compat.unwrap_or(false),
-            design: input.design.unwrap_or(false),
             id: input.id,
             color_scheme: input
                 .color_scheme

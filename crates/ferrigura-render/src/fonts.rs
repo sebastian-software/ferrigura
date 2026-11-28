@@ -111,7 +111,7 @@ impl FontContext {
         self.resolve_cached(false, &self.family, FontFamily::Sans, weight, style)
     }
 
-    /// Resolves an explicit code family, or the bundled mono face in compatibility mode.
+    /// Resolves an explicit code family, or the bundled mono face without supplied fonts.
     ///
     /// # Errors
     /// Reports an unregistered code family. Register `monospace` when using that default name.

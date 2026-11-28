@@ -135,7 +135,7 @@ pub(crate) fn node_dir<'a>(
     Some(data.direction.as_str()).filter(|dir| !dir.is_empty())
 }
 
-/// For each node, the length its busiest side needs in the design mode
+/// For each node, the length its busiest side needs in the default rendering
 /// ([`crate::design::side_length`]) and whether that side runs along the node's height: it does in
 /// a layout from left to right, where edges meet the left and the right side, and it runs along
 /// the width in a layout from top to bottom. The edges into a node meet one side and the edges out
@@ -245,7 +245,7 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
     } else {
         Vec::new()
     };
-    // The design mode centers the label of a node in every diagram type it draws.
+    // The default rendering centers the label of a node in every diagram type it draws.
     let anchor = if config.section.design.is_some() {
         Anchor::Middle
     } else {
@@ -259,7 +259,7 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
     } else {
         Vec::new()
     };
-    // The nodes with a self-loop that the design mode draws beside them.
+    // The nodes with a self-loop that the default rendering draws beside them.
     let mut shapes = HashMap::new();
     for index in 0..data.nodes.len() {
         let node = &data.nodes[index];
@@ -278,9 +278,9 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
             data.nodes[index].label_bbox = Some(size);
             continue;
         }
-        // A `labelRect` is a label that the stylesheet does not center: its lines start
-        // at the origin, and `labelRect.ts` moves the label by half its width (`shapes/rect.rs`).
-        // A note of a state or a class diagram is a block of text, which the design mode keeps at
+        // A `labelRect` is a label that the stylesheet does not center: its lines start at the
+        // origin, and `labelRect.ts` moves the label by half its width (`shapes/rect.rs`). A note
+        // of a state or a class diagram is a block of text, which the default rendering keeps at
         // the left.
         let label_anchor = if node.shape == "labelRect"
             || (node.shape == "note" && config.section.roles != crate::design::Roles::Flowchart)
@@ -296,8 +296,8 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
             config,
             dir: directions.get(index).and_then(Option::as_deref),
         })?;
-        // The design mode gives a node room for the edges of its busiest side: it draws the shape
-        // again with that length as its size along the side, and keeps the larger drawing.
+        // The default rendering gives a node room for the edges of its busiest side: it draws the
+        // shape again with that length as its size along the side, and keeps the larger drawing.
         let grows =
             !(config.section.roles == crate::design::Roles::State && shapes::is_choice(node));
         let lengths: Vec<(f64, bool)> = busiest.get(index).copied().into_iter().collect();
@@ -348,8 +348,8 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
             config.section.design.is_some(),
         )? {
             let (mut width, height) = edges::label_size(&label);
-            // The design mode draws the label in a chip; the layout is given the chip's width and
-            // the room around it.
+            // The default rendering draws the label in a chip; the layout is given the chip's width
+            // and the room around it.
             if config.section.design.is_some() {
                 width += 2.0 * (crate::design::CHIP_PADDING + crate::design::CHIP_MARGIN);
             }
@@ -426,8 +426,8 @@ pub(crate) fn lay_out_for_render(
 /// and may change all three. When it returns `false`, nothing is applied and the result is
 /// `false`; the caller then lays the diagram out another way.
 ///
-/// In the design mode, the self-loops stand beside their nodes ([`loops`]): a node whose loops
-/// cannot is laid out again with its loops on the sides of the other direction, then with its
+/// In the default rendering, the self-loops stand beside their nodes ([`loops`]): a node whose
+/// loops cannot is laid out again with its loops on the sides of the other direction, then with its
 /// loops where ELK puts them. A decision whose loop stands at a side tip that a branch would leave
 /// from is laid out again with its loops off the tips its branches need. The nodes of `reserved` have their
 /// boxes grown for something of the caller's beside them already.
@@ -448,7 +448,7 @@ pub(crate) fn lay_out_adjusted(
     lay_out_with_loops(measured, config, reserved, &sizes, adjust)
 }
 
-/// [`lay_out_adjusted`] in the design mode, with the sizes of the groups with a loop given.
+/// [`lay_out_adjusted`] in the default rendering, with the sizes of the groups with a loop given.
 fn lay_out_with_loops(
     measured: &mut Measured,
     config: &Config<'_>,
@@ -592,9 +592,9 @@ fn lay_out_once(
     Ok(true)
 }
 
-/// Whether the layout runs with the design mode's own node placement, on the layers and the order
-/// ELK decided (`crate::flowchart::placement`): in the design mode, unless the configuration
-/// names a placement strategy, which is the user's choice.
+/// Whether the layout runs with the default rendering's own node placement, on the layers and the
+/// order ELK decided (`crate::flowchart::placement`): in the default rendering, unless the
+/// configuration names a placement strategy, which is the user's choice.
 fn own_placement(config: &Config<'_>) -> bool {
     config.section.design.is_some() && config.section.elk.node_placement_strategy.is_none()
 }
@@ -618,8 +618,8 @@ fn apply_layout(
         &crossing,
         config.section.elk.straighten_edges,
     );
-    // The design mode takes the branch of a decision or a choice to a node beside it out of the
-    // side tip.
+    // The default rendering takes the branch of a decision or a choice to a node beside it out of
+    // the side tip.
     if config.section.design.is_some() {
         crate::flowchart::turns::side_exits(&mut measured.data);
         // A class relation's cardinalities stand beside its ends.
@@ -1339,7 +1339,7 @@ pub(crate) fn paint_with_animation<'a>(
         coloured_markers.push_str(&path.markers);
     }
     let mut edge_labels = String::new();
-    // The boxes of the edge labels in the design mode, where each interrupts its edge.
+    // The boxes of the edge labels in the default rendering, where each interrupts its edge.
     let mut label_gaps: Vec<BBox> = Vec::new();
     let frames: Vec<BBox> = if config.section.design.is_some() {
         painted_clusters
@@ -1354,7 +1354,7 @@ pub(crate) fn paint_with_animation<'a>(
             .as_ref()
             .map_or(edge.id.as_str(), |ids| ids.edge_ids[index].as_str());
         if let Some(label) = measured.edge_labels.get(&edge.id) {
-            // The design mode keeps a label's chip off the frame of a group.
+            // The default rendering keeps a label's chip off the frame of a group.
             let (x, y) = if config.section.design.is_some() {
                 let place = edges::label_clear_of_frames(edge, label, &frames);
                 (Some(place.x), Some(place.y))
@@ -1404,8 +1404,8 @@ pub(crate) fn paint_with_animation<'a>(
         .map(crate::animation::Animator::finish)
         .unwrap_or_default();
 
-    // The design mode leaves a gap in an edge where its label sits: the edges are masked there, so
-    // the label needs no background and reads on any ground.
+    // The default rendering leaves a gap in an edge where its label sits: the edges are masked
+    // there, so the label needs no background and reads on any ground.
     if let (false, Some(drawn)) = (label_gaps.is_empty(), bounds) {
         edge_paths = edges::with_label_gaps(&edge_paths, id, drawn, &label_gaps);
     }

@@ -87,7 +87,7 @@ On an aarch64 machine (CI uses a Linux arm64 runner), the output of the whole co
 cargo test --release --test snapshots
 ```
 
-Each file has one hash, and flowcharts and sequences have a column for the Mermaid-compatible renders; the types the design mode draws (flowcharts, state, class and ER diagrams, mindmaps, and pie, XY, quadrant and gantt charts) have one more, the last, for the design mode. `tools/snapshots/diff.sh` asks the renderer which files it draws in the design mode, since the line of such a type and a sequence's both have two hashes. When this job fails, its log shows the diff of the manifest that the runner produces, and the `snapshot-manifest` artifact holds the two manifests. Someone on another architecture takes the new manifest from there.
+Each file has two hashes: the default rendering's and `compat`'s. `tools/snapshots/diff.sh` renders both for every changed file. When this job fails, its log shows the diff of the manifest that the runner produces, and the `snapshot-manifest` artifact holds the two manifests. Someone on another architecture takes the new manifest from there.
 
 The native matrix also captures the replay test's representative SVGs and publishes a report comparing each target with Linux arm64. The report records ordered elements, labels, embedded font styles and data hashes, and numeric geometry differences without applying a cross-target tolerance. A pull request includes macOS when it has the `ci:macos` label; a main or manually dispatched run includes all seven targets. The individual `native-replay-*` artifacts contain the captured SVGs.
 
@@ -97,8 +97,8 @@ A release build links with fat LTO in one codegen unit and takes minutes where a
 
 - **A parser change:** `pnpm -C tools/port port:diff <type>` compares the canonical models of ferrigura and the reference on every input of the type.
 - **Accessibility metadata:** `pnpm -C tools/port exec tsx geometry/accessibility.ts` compares roles, accessible texts and their ID references with the reference on one case per registered type, with and without metadata. It uses a fresh reference page per render because Mermaid shares some diagram state. The test in `crates/ferrigura/tests/accessibility.rs` also checks two distinct SVG IDs and repeated renderer use.
-- **A renderer change:** `pnpm -C tools/port port:geometry <type>` renders the fixtures and probes with both in Chromium and compares the geometry; `--filter <text>` narrows the fixtures and `--images <dir>` writes side-by-side PNGs.
-- **Flowchart routing:** `pnpm -C tools/port port:geometry-flowchart` checks Mermaid-compatible output. Run it again with `--routing adaptive` to compare the adaptive default against the reference with the same attachment policy ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Both runs are CI gates.
+- **A renderer change:** `pnpm -C tools/port port:geometry <type>` renders the fixtures and probes with the reference and with ferrigura's `compat` in Chromium and compares the geometry; `--filter <text>` narrows the fixtures and `--images <dir>` writes side-by-side PNGs.
+- **Flowcharts:** `pnpm -C tools/port port:geometry-flowchart` checks `compat` against the reference, and its ELK input too ([0019](./decisions/0019-mermaid-geometry-with-compat.md)). The default rendering has no comparison with the reference: its own tests (`crates/ferrigura/tests/design.rs`) and the snapshots hold it ([0023](./decisions/0023-the-default-rendering.md)).
 - **A change to shared code** (text, the unified renderer, configuration) must not move the output of other types: run the snapshots, and `tools/snapshots/diff.sh` shows which renders moved.
 - **A change that moves the output on purpose** rewrites the snapshots in the same commit:
 

@@ -1,9 +1,9 @@
 //! The flowchart style sheet against the reference's compiled CSS.
 //!
-//! `tests/data/flowchart-styles.json` holds the CSS that `mermaidAPI.ts`'s `createUserStyles` compiles
-//! for the flowchart, with the harness configuration, for each case (written by
-//! `tools/port/flowchart-styles.ts`, `pnpm -C tools/port port:styles-flowchart`). For each case this test renders the
-//! sheet with ferrigura in Mermaid mode and compares the two rule by rule:
+//! `tests/data/flowchart-styles.json` holds the CSS that `mermaidAPI.ts`'s `createUserStyles`
+//! compiles for the flowchart, with the harness configuration, for each case (written by
+//! `tools/port/flowchart-styles.ts`, `pnpm -C tools/port port:styles-flowchart`). For each case
+//! this test renders the sheet with ferrigura in `compat` and compares the two rule by rule:
 //!
 //! - every declaration of the reference is in the sheet, with the same selector, the same importance
 //!   and the same value once the custom properties of the sheet are substituted, in the same order;
@@ -21,7 +21,6 @@ use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::context::{Globals, ThemeView};
-use ferrigura_render::flowchart::policy::FlowchartRouting;
 use ferrigura_render::flowchart::style::style_sheet;
 
 const REFERENCE: &str = include_str!("data/flowchart-styles.json");
@@ -531,7 +530,6 @@ fn the_style_sheet_matches_the_reference_rule_by_rule() {
             },
             &Globals::of(&config(theme, look)),
             &classes,
-            FlowchartRouting::Mermaid,
         ));
         let actual_items = parse(&sheet);
         let expected_items = parse(case["css"].as_str().expect("css"));

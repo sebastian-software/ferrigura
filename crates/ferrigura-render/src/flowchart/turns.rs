@@ -1,13 +1,14 @@
-//! The side exits of a decision in the design mode (`docs/decisions/0023-design-mode.md`): a
-//! branch to a node beside the decision leaves from the decision's side tip and turns once, where
-//! the layout's route leaves from the tip facing the flow and turns twice.
-//! A state diagram's choice is a decision here.
+//! The side exits of a decision in the default rendering
+//! (`docs/decisions/0023-the-default-rendering.md`): a branch to a node beside the decision leaves
+//! from the decision's side tip and turns once, where the layout's route leaves from the tip facing
+//! the flow and turns twice. A state diagram's choice is a decision here.
 //!
 //! ELK routes every edge out of a node from the node's side towards the next layer. A branch to a
 //! node that stands beside the decision's axis then runs down, across and down again: a Z with two
 //! bends. A person drawing the chart takes the branch out of the side tip, across, and down into
 //! the target: an L with one bend. This step rewrites such a route after the layout has been
-//! applied. It is ferrigura's own and runs only in the design mode; the layout itself stays ELK's.
+//! applied. It is ferrigura's own and runs only in the default rendering; the layout itself stays
+//! ELK's.
 //!
 //! The step works in the coordinates of the flow: `along` grows with the flow, `across` is the
 //! axis of the layers. In a chart from top to bottom these are `y` and `x`; the other directions
@@ -19,7 +20,7 @@ use crate::unified::data::{Edge, LayoutData, Node};
 use crate::unified::geom::Point;
 use crate::unified::shapes;
 
-/// The room a route needs for one turn: the corner of the design mode cuts
+/// The room a route needs for one turn: the corner of the default rendering cuts
 /// `EDGE_RADIUS / sin 45°` of each part at a right angle, and takes at most half of a part
 /// (`unified::path::rounded_corner`), so a part of twice the cut turns on the full radius.
 const TURN_ROOM: f64 = crate::design::TURN_ROOM;
@@ -29,7 +30,7 @@ const TURN_ROOM: f64 = crate::design::TURN_ROOM;
 /// 24 there, and a turn on 20 still has a radius of 7, which reads as a curve.
 const SIDE_RUN: f64 = 20.0;
 
-/// The length of the arrowhead of the design mode, which the last part of a route keeps free
+/// The length of the arrowhead of the default rendering, which the last part of a route keeps free
 /// beside its turn.
 const ARROW_ROOM: f64 = 10.0;
 
@@ -224,8 +225,8 @@ struct Candidate {
 }
 
 /// Rewrites the route of each branch of a decision that stands beside the decision's axis, in the
-/// next layer, so that it leaves from the side tip and turns once. See the module documentation
-/// and `docs/decisions/0023-design-mode.md` for the rule and the cases that keep their route.
+/// next layer, so that it leaves from the side tip and turns once. See the module documentation and
+/// `docs/decisions/0023-the-default-rendering.md` for the rule and the cases that keep their route.
 pub(crate) fn side_exits(data: &mut LayoutData) {
     let Some(flow) = Flow::of(&data.direction) else {
         return;

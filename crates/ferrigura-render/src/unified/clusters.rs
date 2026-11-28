@@ -56,7 +56,7 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
 }
 
 /// [`paint`] with the laid-out edges of the diagram, which the title of a `rect` frame moves aside
-/// from in the design mode (`docs/decisions/0023-design-mode.md`).
+/// from in the default rendering (`docs/decisions/0023-the-default-rendering.md`).
 ///
 /// # Errors
 ///
@@ -118,7 +118,7 @@ fn rect(node: &Node, config: &Config<'_>, edges: &[Edge]) -> Result<Cluster, Ren
         .as_ref()
         .and_then(|palette| style::palette_slot(node.color_index, palette));
     let (fill, mut stroke) = presentation_colors(node, config.theme, palette.as_ref(), slot);
-    // The design mode frames a group with the group's own border and rounds its corners.
+    // The default rendering frames a group with the group's own border and rounds its corners.
     let mut radius = String::new();
     if config.section.design.is_some() {
         stroke = config.theme.cluster_border.text();
@@ -183,9 +183,9 @@ fn colour_slot(node: &Node, config: &Config<'_>) -> (Option<usize>, String) {
 /// The composite state (`roundedWithTitle`, `clusters.js` 175-306, classic and neo looks): an outer
 /// rect in its own group, the title's label, and an inner rect for the body, under the title. The
 /// title is `createLabel`, the plain text with the `row` class, and it is placed at the subgraph's
-/// left edge plus the title's offset. The design mode puts the title in a row of its own, as it
-/// does a subgraph's: at the left, 12 below the top, and moved right past the edges that cross its
-/// row (`docs/decisions/0023-design-mode.md`).
+/// left edge plus the title's offset. The default rendering puts the title in a row of its own, as
+/// it does a subgraph's: at the left, 12 below the top, and moved right past the edges that cross
+/// its row (`docs/decisions/0023-the-default-rendering.md`).
 fn rounded_with_title(
     node: &Node,
     config: &Config<'_>,
@@ -349,15 +349,15 @@ fn frame(node: &Node, title: BBox, title_top_margin: f64) -> Result<Frame, Rende
     })
 }
 
-/// The distance of a title from the left edge of its frame in the design mode.
+/// The distance of a title from the left edge of its frame in the default rendering.
 const DESIGN_TITLE_INSET: f64 = 16.0;
 
-/// The room a title keeps from an edge that crosses its row in the design mode.
+/// The room a title keeps from an edge that crosses its row in the default rendering.
 const DESIGN_TITLE_CLEARANCE: f64 = 8.0;
 
-/// The left edge of a frame's title in the design mode: at the left of the frame, and moved right
-/// past every edge that crosses the title's row, so that no edge runs through the text. When the
-/// row has no free place that is wide enough, the title stays at the left.
+/// The left edge of a frame's title in the default rendering: at the left of the frame, and moved
+/// right past every edge that crosses the title's row, so that no edge runs through the text. When
+/// the row has no free place that is wide enough, the title stays at the left.
 fn design_title_x(frame: &Frame, title: BBox, edges: &[Edge]) -> f64 {
     let left = frame.bbox.x;
     let right = left + frame.bbox.width;

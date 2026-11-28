@@ -119,7 +119,7 @@ pub fn marker_start(line_type: LineType) -> Option<&'static str> {
     })
 }
 
-/// The box of a message's label, as `drawText` places it, for the design mode's gap in the
+/// The box of a message's label, as `drawText` places it, for the default rendering's gap in the
 /// lifelines: anchored in the span from `left`, `width` wide, by the alignment and the padding, and
 /// its first line centered 15 below the message's top and one em down.
 #[allow(clippy::too_many_arguments)]

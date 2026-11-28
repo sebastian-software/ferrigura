@@ -1,12 +1,12 @@
-//! The design mode: ferrigura's own look for a diagram, beside the reference's
-//! (`docs/decisions/0023-design-mode.md`).
+//! ferrigura's own look for a diagram, which the default rendering draws; `compat` draws the
+//! reference's (`docs/decisions/0023-the-default-rendering.md`).
 //!
-//! The mode has its own look and its own measures. Its colors are theme variables that the facade
-//! lays under the user's own, so that every element keeps reading its colors from the theme tokens;
-//! the roles, the stroke widths, the radii and the shadow are written by the style sheet and the
-//! shapes of a diagram type that supports the mode. Its measures (the room a node gives the edges
-//! of its busiest side, the place of the edges on a side, the spacing, the padding of a group)
-//! change what the layout engine is given, never the engine.
+//! The default has its own look and its own measures. Its colors are theme variables that the
+//! facade lays under the user's own, so that every element keeps reading its colors from the theme
+//! tokens; the roles, the stroke widths, the radii and the shadow are written by the style sheet
+//! and the shapes of a diagram type that it draws. Its measures (the room a node gives the edges of
+//! its busiest side, the place of the edges on a side, the spacing, the padding of a group) change
+//! what the layout engine is given, never the engine.
 
 use ferrigura_model::value::Value;
 
@@ -29,9 +29,9 @@ pub const EDGE_STROKE_WIDTH: &str = "1.5px";
 /// The stroke width of a thick edge: twice the normal one, and still slimmer than the arrowhead.
 pub const THICK_EDGE_STROKE_WIDTH: &str = "3px";
 
-/// How many times the wrapping width a single word may measure and still stay whole in a label.
-/// A word is never broken inside in the mode; a word wider than this bound (a pasted URL) is
-/// broken as the default breaks it, so that one label cannot blow a diagram up.
+/// How many times the wrapping width a single word may measure and still stay whole in a label. A
+/// word is never broken inside in the default rendering; a word wider than this bound (a pasted
+/// URL) is broken as `compat` breaks it, so that one label cannot blow a diagram up.
 pub const WHOLE_WORD_LIMIT: f64 = 4.0;
 
 /// The corner radius of a rectangular node.
@@ -123,7 +123,7 @@ pub const CHIP_MARGIN: f64 = 6.0;
 /// The corner radius of an edge label's box.
 pub const CHIP_RADIUS: f64 = 6.0;
 
-/// The theme variables of the mode for a tone, as an object of `themeVariables`. The user's own
+/// The theme variables of the default for a tone, as an object of `themeVariables`. The user's own
 /// variables are merged on top, key by key.
 #[must_use]
 pub fn theme_variables(tone: Tone) -> Value {
@@ -283,7 +283,7 @@ pub const fn critical(tone: Tone) -> (&'static str, &'static str) {
     }
 }
 
-/// The stroke width of a gantt task's outline in the mode, the node outline's.
+/// The stroke width of a gantt task's outline in the default, the node outline's.
 pub const TASK_STROKE_WIDTH: &str = NODE_STROKE_WIDTH;
 
 /// The stroke width of an active gantt task's outline: heavier than a task's, so that it stands out
@@ -484,7 +484,7 @@ pub const STATE_ROLES: [Role; 3] = [Role::Terminal, Role::Decision, Role::Juncti
 /// The roles of a class diagram, in the order of their rules.
 pub const CLASS_ROLES: [Role; 2] = [Role::Interface, Role::Enumeration];
 
-/// The custom properties of the mode that no theme variable carries, for a tone: the role colors
+/// The custom properties of the default that no theme variable carries, for a tone: the role colors
 /// and the flood of the shadow, as declarations.
 #[must_use]
 pub fn declarations(tone: Tone) -> &'static str {

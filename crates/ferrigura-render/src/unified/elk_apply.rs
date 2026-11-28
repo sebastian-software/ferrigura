@@ -314,8 +314,8 @@ impl<'a> Layout<'a> {
                         bounds.include_point(p.x + offset.x, p.y + offset.y);
                     }
                 }
-                // The design mode keeps the box of an inner edge's label inside the frame: the box
-                // holds the label's own room, so the frame does not cross it.
+                // The default rendering keeps the box of an inner edge's label inside the frame:
+                // the box holds the label's own room, so the frame does not cross it.
                 if include_labels {
                     for label in &edge.labels {
                         let (Some(x), Some(y), Some(width), Some(height)) =

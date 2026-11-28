@@ -202,8 +202,8 @@ impl Renderer<'_> {
                 };
                 if neo {
                     actor.actor_text_height = Some(dims.height);
-                    // A participant has no glyph above its name: in the design mode the row is
-                    // only as high as its box where no participant has a glyph.
+                    // A participant has no glyph above its name: in the default rendering the row
+                    // is only as high as its box where no participant has a glyph.
                     let stack = if design && actor.actor_type == "participant" {
                         super::design::participant_height(dims.height)
                     } else {
@@ -288,9 +288,9 @@ impl Renderer<'_> {
         Ok(get_max(&[Some(max_height), Some(height_conf)]))
     }
 
-    /// The design mode's pitch: neighboring lifelines stand at least [`super::design::MIN_PITCH`]
-    /// apart, or as far as the widest participant's box and the actor margin, so that the columns
-    /// share one pitch unless a label between two of them needs more.
+    /// The default rendering's pitch: neighboring lifelines stand at least
+    /// [`super::design::MIN_PITCH`] apart, or as far as the widest participant's box and the actor
+    /// margin, so that the columns share one pitch unless a label between two of them needs more.
     fn even_pitch(&mut self) {
         let actor_margin = self.conf.actor_margin;
         let widest = self
@@ -763,7 +763,8 @@ impl Renderer<'_> {
                 sequence_box.y = 0.0;
                 prev_margin += sequence_box.margin;
             }
-            // The design mode's columns are as wide as their boxes, from a least width of its own.
+            // The default rendering's columns are as wide as their boxes, from a least width of its
+            // own.
             let least_width = if self.design.is_some() {
                 super::design::PARTICIPANT_MIN_WIDTH
             } else {

@@ -1,6 +1,6 @@
-//! The design mode of the sequence diagram (`docs/decisions/0023-design-mode.md`,
-//! `docs/diagrams/sequence.md#design-mode`): the measures it gives the renderer's own layout pass,
-//! and the parts it colors by their role. The colors are the mode's theme variables
+//! The default rendering of the sequence diagram (`docs/decisions/0023-the-default-rendering.md`,
+//! `docs/diagrams/sequence.md#default-look`): the measures it gives the renderer's own layout pass,
+//! and the parts it colors by their role. The colors are the default's theme variables
 //! (`crate::design::theme_variables`), the rules are in the style sheet (`style.rs`).
 
 use super::conf::Conf;
@@ -76,16 +76,16 @@ pub fn frame_role(keyword: &str) -> Option<&'static str> {
     }
 }
 
-/// The weight of the configuration's defaults, which the mode replaces for the names.
+/// The weight of the configuration's defaults, which the default replaces for the names.
 const DEFAULT_WEIGHT: f64 = 400.0;
 
-/// The `actorMargin` of the configuration's defaults, which the mode replaces.
+/// The `actorMargin` of the configuration's defaults, which the default replaces.
 const DEFAULT_ACTOR_MARGIN: f64 = 50.0;
 
-/// Applies the mode's measures to the configuration of a render. The mode draws the neo geometry
-/// whatever the look, with the row of participants as high as its tallest participant needs. A
-/// weight of the participants' names (`actorFontWeight`) or an `actorMargin` the configuration
-/// gives stays: a value other than the default is the user's.
+/// Applies the default's measures to the configuration of a render. The default draws the neo
+/// geometry whatever the look, with the row of participants as high as its tallest participant
+/// needs. A weight of the participants' names (`actorFontWeight`) or an `actorMargin` the
+/// configuration gives stays: a value other than the default is the user's.
 pub fn measures(conf: &mut Conf) {
     if conf.actor_font.weight == DEFAULT_WEIGHT {
         conf.actor_font.weight = NAME_WEIGHT;

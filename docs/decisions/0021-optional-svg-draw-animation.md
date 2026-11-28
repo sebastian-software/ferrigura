@@ -77,6 +77,6 @@ and edge styles.
 ## Related
 
 [0006](./0006-rust-only-no-browser.md), [0014](./0014-upstream-reference-at-a-pin.md),
-[0018](./0018-deterministic-output.md), [0019](./0019-adaptive-flowchart-mode.md),
+[0018](./0018-deterministic-output.md), [0019](./0019-mermaid-geometry-with-compat.md),
 [draw animation](../animation.md),
 [animation preview](../../tools/animation/README.md).

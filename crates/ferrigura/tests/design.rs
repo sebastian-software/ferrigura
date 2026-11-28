@@ -1,25 +1,27 @@
-//! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look and measures for a
-//! flowchart, a state diagram, a class diagram and an ER diagram, laid out by the engine of the default
-//! rendering, and its look for the pie, the XY chart, the quadrant chart, the gantt chart and the mindmap.
+//! The default rendering (`docs/decisions/0023-the-default-rendering.md`): ferrigura's own look and
+//! measures for a flowchart, a state diagram, a class diagram and an ER diagram, laid out by the
+//! engines `compat` runs too, its look and layout for a sequence diagram and a mindmap, and its
+//! look for the pie, the XY chart, the quadrant chart and the gantt chart. `compat` draws the
+//! reference's geometry and look.
 
-use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
+use ferrigura::{ColorScheme, RenderOptions, Renderer, Value};
 
 /// A flowchart with every role, a neutral node, a labeled edge and a subgraph.
 const FLOW: &str = "flowchart TD\n  A([Request]) --> B{Authenticated?}\n  B -- yes --> C[Load profile]\n  B -- no --> D[Login page]\n  C --> E[(User DB)]\n  subgraph Billing\n    F[Create invoice] --> G[[Charge card]]\n  end\n  C --> F\n  G --> H((Done))\n  D -.-> A\n";
 
-/// The options of a render in the design mode with a fixed id.
-fn design(scheme: Option<ColorScheme>) -> RenderOptions {
+/// The options of a default render with a fixed id.
+fn default(scheme: Option<ColorScheme>) -> RenderOptions {
     RenderOptions {
-        design: true,
         id: Some("d".to_owned()),
         color_scheme: scheme,
         ..RenderOptions::default()
     }
 }
 
-/// The options of a default render with the same id.
-fn default(scheme: Option<ColorScheme>) -> RenderOptions {
+/// The options of a render in `compat` with the same id.
+fn compat(scheme: Option<ColorScheme>) -> RenderOptions {
     RenderOptions {
+        compat: true,
         id: Some("d".to_owned()),
         color_scheme: scheme,
         ..RenderOptions::default()
@@ -86,8 +88,8 @@ fn a_node_gives_the_edges_of_its_busiest_side_room() {
     let renderer = Renderer::new(&Value::empty_object());
     // Four edges meet `E` on one side, three leave `A`, one meets `F`.
     let across = "flowchart LR\n  A[Alpha] --> E[Echo]\n  B[Beta] --> E\n  C[Gamma] --> E\n  D[Delta] --> E\n  A --> F[Foxtrot]\n  A --> G[Golf]\n";
-    let plain = renderer.render_with(across, &default(None)).unwrap();
-    let designed = renderer.render_with(across, &design(None)).unwrap();
+    let plain = renderer.render_with(across, &compat(None)).unwrap();
+    let designed = renderer.render_with(across, &default(None)).unwrap();
     let (width, height) = node_size(&plain, "E");
     // 20 for each edge after the first, and 24 at both ends of the side.
     assert_eq!(node_size(&designed, "E"), (width, 108.0));
@@ -97,12 +99,12 @@ fn a_node_gives_the_edges_of_its_busiest_side_room() {
 
     // From top to bottom the side runs along the width, which a node usually has already.
     let down = across.replace("flowchart LR", "flowchart TD");
-    let plain = renderer.render_with(&down, &default(None)).unwrap();
-    let designed = renderer.render_with(&down, &design(None)).unwrap();
+    let plain = renderer.render_with(&down, &compat(None)).unwrap();
+    let designed = renderer.render_with(&down, &default(None)).unwrap();
     assert_eq!(node_size(&designed, "E"), node_size(&plain, "E"));
     let many = "flowchart TD\n  A --> Z[Sink]\n  B --> Z\n  C --> Z\n  D --> Z\n  E --> Z\n  F --> Z\n  G --> Z\n  H --> Z\n  I --> Z\n";
-    let plain = renderer.render_with(many, &default(None)).unwrap();
-    let designed = renderer.render_with(many, &design(None)).unwrap();
+    let plain = renderer.render_with(many, &compat(None)).unwrap();
+    let designed = renderer.render_with(many, &default(None)).unwrap();
     let (width, height) = node_size(&plain, "Z");
     assert!(width < 208.0);
     assert_eq!(node_size(&designed, "Z"), (208.0, height));
@@ -113,7 +115,7 @@ fn the_edges_of_a_side_meet_the_node_around_its_middle() {
     let renderer = Renderer::new(&Value::empty_object());
     // Three edges leave `A`, and four meet `E`.
     let across = "flowchart LR\n  A[Alpha] --> E[Echo]\n  B[Beta] --> E\n  C[Gamma] --> E\n  D[Delta] --> E\n  A --> F[Foxtrot]\n  A --> G[Golf]\n";
-    let designed = renderer.render_with(across, &design(None)).unwrap();
+    let designed = renderer.render_with(across, &default(None)).unwrap();
     // Where the edges with the given ids start or end, along the layer, in order.
     let places = |svg: &str, ids: &[&str], end: bool, along_y: bool| -> Vec<f64> {
         let mut places: Vec<f64> = ids
@@ -153,13 +155,13 @@ fn the_edges_of_a_side_meet_the_node_around_its_middle() {
     // From top to bottom the side runs along the width, and a node is wider than its edges need:
     // they still sit 20 apart, around the middle.
     let down = across.replace("flowchart LR", "flowchart TD");
-    let designed = renderer.render_with(&down, &design(None)).unwrap();
+    let designed = renderer.render_with(&down, &default(None)).unwrap();
     let out = places(&designed, &["L_A_E_0", "L_A_F_0", "L_A_G_0"], false, false);
     assert_bundle(&out);
     let (width, _) = node_size(&designed, "A");
     assert!(width > 88.0);
     // The default rendering spreads them over the side.
-    let plain = renderer.render_with(&down, &default(None)).unwrap();
+    let plain = renderer.render_with(&down, &compat(None)).unwrap();
     let spread = places(&plain, &["L_A_E_0", "L_A_F_0", "L_A_G_0"], false, false);
     assert!(spread[1] - spread[0] > 20.0 + 1e-6, "{spread:?}");
 }
@@ -207,19 +209,19 @@ fn the_mode_places_nodes_so_that_edges_run_straight() {
             .iter()
             .all(|point| (point.1 - points[0].1).abs() < 1e-6)
     };
-    let plain = renderer.render_with(text, &default(None)).unwrap();
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let plain = renderer.render_with(text, &compat(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     let edges = ["L_A_C_0", "L_B_D_0", "L_C_E_0"];
     assert!(edges.iter().any(|edge| !straight(&plain, edge)));
     for edge in edges {
         assert!(straight(&designed, edge), "{edge} bends");
     }
-    // A placement strategy the configuration names is the user's: the mode keeps it.
+    // A placement strategy the configuration names is the user's: the default keeps it.
     let config = Value::from(serde_json::json!({
         "elk": { "nodePlacementStrategy": "BRANDES_KOEPF" }
     }));
     let kept = Renderer::new(&config)
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     assert!(edges.iter().any(|edge| !straight(&kept, edge)));
 }
@@ -251,7 +253,7 @@ fn the_main_flow_stands_on_one_axis_and_a_fan_around_it() {
     let renderer = Renderer::new(&Value::empty_object());
     // A decision with two branches that meet again.
     let text = "flowchart TD\n  S([Start]) --> V{Valid?}\n  V -- yes --> P[Process]\n  V -- no --> R[Reject]\n  P --> M[Merge results]\n  R --> M\n  M --> N[Notify]\n  N --> E([End])\n";
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     for edge in ["L_S_V_0", "L_M_N_0", "L_N_E_0"] {
         assert!(runs_straight_down(&designed, edge), "{edge} bends");
     }
@@ -268,7 +270,7 @@ fn the_main_flow_stands_on_one_axis_and_a_fan_around_it() {
         "elk": { "nodePlacementStrategy": "NETWORK_SIMPLEX" }
     }));
     let placed = Renderer::new(&config)
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let off = (node_middle(&placed, "V").0
         - (node_middle(&placed, "P").0 + node_middle(&placed, "R").0) / 2.0)
@@ -281,7 +283,7 @@ fn a_chain_stays_straight_beside_an_edge_that_skips_it() {
     let renderer = Renderer::new(&Value::empty_object());
     // `A --> D` skips two nodes, and `B --> A` runs against the flow.
     let text = "flowchart TD\n  A[Checkout] --> B[Payment]\n  B --> C[Fulfil]\n  C --> D[Ship]\n  A --> D\n  B -- declined --> A\n  D --> E([Done])\n";
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     for edge in ["L_A_B_0", "L_B_C_0", "L_C_D_0", "L_D_E_0"] {
         assert!(runs_straight_down(&designed, edge), "{edge} bends");
     }
@@ -297,7 +299,7 @@ fn an_even_bundle_moves_so_that_its_straight_edge_leaves_from_the_middle() {
     let renderer = Renderer::new(&Value::empty_object());
     // `B` has two edges out: one to `E` below it, and one that runs past `E` to `D`.
     let text = "flowchart TD\n  A --> B\n  A --> C\n  B --> E\n  B --> D\n  C --> D\n  C --> F\n  E --> D\n  F --> D\n";
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     let x = |id: &str| node_middle(&designed, id).0;
     for (edge, from, to) in [("L_B_E_0", "B", "E"), ("L_C_F_0", "C", "F")] {
         assert!(runs_straight_down(&designed, edge), "{edge} bends");
@@ -317,7 +319,7 @@ fn a_node_stands_in_the_middle_of_an_even_fan_of_equals() {
     let renderer = Renderer::new(&Value::empty_object());
     // `B` has a child of its own and `A` none: the two are still equals under `P`.
     let text = "flowchart TD\n  P --> A\n  P --> B\n  B --> C\n  Q --> R\n  R --> S\n  R --> T\n  S --> U\n";
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     let x = |id: &str| node_middle(&designed, id).0;
     assert!((x("P") - (x("A") + x("B")) / 2.0).abs() <= 1.0);
     // A chain with a branch beside it is no fan: the chain runs straight on.
@@ -327,7 +329,7 @@ fn a_node_stands_in_the_middle_of_an_even_fan_of_equals() {
     assert!(!runs_straight_down(&designed, "L_R_T_0"));
     // A class diagram: each parent stands in the middle of its two children.
     let text = "classDiagram\n  class Shape { <<interface>> +area() double }\n  class Polygon { <<abstract>> #List~Point~ vertices }\n  class Triangle { +area() double }\n  class Rectangle { -double width +area() double }\n  class Circle { -double radius }\n  Shape <|.. Circle\n  Shape <|.. Polygon\n  Polygon <|-- Triangle\n  Polygon <|-- Rectangle\n  Rectangle <|-- Square\n";
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     let x = |name: &str| class_middle(&designed, name).0;
     assert!((x("Polygon") - (x("Triangle") + x("Rectangle")) / 2.0).abs() <= 1.0);
     assert!((x("Shape") - (x("Circle") + x("Polygon")) / 2.0).abs() <= 1.0);
@@ -337,8 +339,8 @@ fn a_node_stands_in_the_middle_of_an_even_fan_of_equals() {
 #[test]
 fn the_mode_sets_a_diagram_with_more_room() {
     let renderer = Renderer::new(&Value::empty_object());
-    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
-    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let plain = renderer.render_with(FLOW, &compat(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &default(None)).unwrap();
     // A node without a busy side keeps its size.
     assert_eq!(node_size(&plain, "C"), node_size(&designed, "C"));
     // The group pads its members by 32, and by 44 at the top.
@@ -403,7 +405,7 @@ fn every_corner_with_room_for_it_turns_on_the_full_radius() {
         "flowchart TD\n  subgraph Work\n    A[Order] --> B[Pack] & C[Ship]\n  end\n",
         "stateDiagram-v2\n  Idle --> Running\n  Idle --> Paused\n  Idle --> Stopped\n",
     ] {
-        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let designed = renderer.render_with(text, &default(None)).unwrap();
         let cuts = corner_cuts(&designed);
         assert!(!cuts.is_empty(), "{text}");
         for cut in cuts {
@@ -415,8 +417,8 @@ fn every_corner_with_room_for_it_turns_on_the_full_radius() {
 #[test]
 fn the_arrowheads_are_the_modes_own() {
     let renderer = Renderer::new(&Value::empty_object());
-    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
-    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let plain = renderer.render_with(FLOW, &compat(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &default(None)).unwrap();
     let head = "id=\"d_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=";
     assert!(plain.contains(&format!("{head}\"0 0 11.5 14\"")));
     assert!(designed.contains(&format!("{head}\"0 0 10 9\" refX=\"10\" refY=\"4.5\"")));
@@ -428,9 +430,9 @@ fn the_arrowheads_are_the_modes_own() {
         svg[at..at + svg[at..].find("</marker>").expect("its end")].to_owned()
     };
     assert_eq!(definition(&plain), definition(&designed));
-    // A colored edge takes a colored copy of the mode's arrowhead.
+    // A colored edge takes a colored copy of the default's arrowhead.
     let coloured = format!("{FLOW}  linkStyle 0 stroke:#d33\n");
-    let designed = renderer.render_with(&coloured, &design(None)).unwrap();
+    let designed = renderer.render_with(&coloured, &default(None)).unwrap();
     let at = designed
         .find("id=\"d_flowchart-v2-pointEnd-margin__d33\"")
         .expect("the colored marker");
@@ -444,8 +446,8 @@ fn the_arrowheads_are_the_modes_own() {
 #[test]
 fn an_edge_label_interrupts_its_edge() {
     let renderer = Renderer::new(&Value::empty_object());
-    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
-    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let plain = renderer.render_with(FLOW, &compat(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &default(None)).unwrap();
     let background = |svg: &str| {
         let labels = &svg[svg.find("<g class=\"edgeLabels\">").expect("the labels")..];
         let labels = &labels[..labels.find("<g class=\"nodes\">").expect("the nodes")];
@@ -482,7 +484,7 @@ fn an_edge_label_interrupts_its_edge() {
     assert!(!plain.contains("<mask"));
     // A diagram without edge labels has no mask.
     let bare = renderer
-        .render_with("flowchart TD\n  A --> B\n", &design(None))
+        .render_with("flowchart TD\n  A --> B\n", &default(None))
         .unwrap();
     assert!(!bare.contains("<mask"));
 }
@@ -490,13 +492,13 @@ fn an_edge_label_interrupts_its_edge() {
 #[test]
 fn the_gap_of_a_label_interrupts_no_edge_beside_it() {
     let renderer = Renderer::new(&Value::empty_object());
-    // Edges between the same two nodes run 20 apart in the mode. A label of one line fits between
+    // Edges between the same two nodes run 20 apart by default. A label of one line fits between
     // them, and the layout moves an edge aside for a higher one.
     let one_line = "flowchart LR\n  A[Draft] --> B{Review}\n  B -->|approved| C[Published]\n  B -->|changes| A\n";
     let three_lines = "flowchart LR\n  A[Draft] --> B{Review}\n  B -->|approved| C[Published]\n  B -->|changes<br/>requested<br/>again| A\n  A -->|second<br/>look| B\n";
     let down = "flowchart TD\n  A[Author] -- submits draft --> R[Reviewer]\n  R -- requests changes --> A\n  R -- approves --> P[Publish]\n";
     for text in [one_line, three_lines, down] {
-        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let designed = renderer.render_with(text, &default(None)).unwrap();
         let mask = &designed[designed
             .find("<mask id=\"d-label-gaps\"")
             .expect("the mask")..];
@@ -547,7 +549,7 @@ fn the_gap_of_a_label_interrupts_no_edge_beside_it() {
 #[test]
 fn a_group_title_sits_at_the_left_and_clear_of_the_edges() {
     let renderer = Renderer::new(&Value::empty_object());
-    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &default(None)).unwrap();
     // The title of `Billing` is 16 from the frame's left and 12 below its top.
     assert_eq!(title_x(&designed), frame_x(&designed) + 16.0);
     let frame_y: f64 = {
@@ -564,27 +566,37 @@ fn a_group_title_sits_at_the_left_and_clear_of_the_edges() {
 
     // An edge that enters where the title would sit moves the title past it.
     let crossed = "flowchart TD\n  A[Start] --> B[One]\n  A --> C[Two]\n  subgraph G [A long group title]\n    B\n    C\n  end\n";
-    let designed = renderer.render_with(crossed, &design(None)).unwrap();
+    let designed = renderer.render_with(crossed, &default(None)).unwrap();
     assert!(title_x(&designed) > frame_x(&designed) + 16.0);
     // A short title has room before that edge and stays at the left.
     let short = crossed.replace("A long group title", "Group");
-    let designed = renderer.render_with(&short, &design(None)).unwrap();
+    let designed = renderer.render_with(&short, &default(None)).unwrap();
     assert_eq!(title_x(&designed), frame_x(&designed) + 16.0);
 }
 
 #[test]
-fn an_absent_option_leaves_the_output_unchanged() {
+fn compat_draws_no_role_and_does_not_leak_into_the_next_render() {
     let renderer = Renderer::new(&Value::empty_object());
-    let plain = renderer.render(FLOW).unwrap();
-    let off = RenderOptions {
-        design: false,
-        ..RenderOptions::default()
-    };
-    assert_eq!(renderer.render_with(FLOW, &off).unwrap(), plain);
-    assert!(!plain.contains("data-role"));
-    // A render in the mode does not leak into the next one.
-    renderer.render_with(FLOW, &design(None)).unwrap();
-    assert_eq!(renderer.render(FLOW).unwrap(), plain);
+    let drawn = renderer.render(FLOW).unwrap();
+    assert_eq!(
+        renderer
+            .render_with(FLOW, &RenderOptions::default())
+            .unwrap(),
+        drawn
+    );
+    assert!(drawn.contains("data-role"));
+    let compatible = renderer
+        .render_with(
+            FLOW,
+            &RenderOptions {
+                compat: true,
+                ..RenderOptions::default()
+            },
+        )
+        .unwrap();
+    assert!(!compatible.contains("data-role"));
+    // A render in `compat` does not leak into the next one.
+    assert_eq!(renderer.render(FLOW).unwrap(), drawn);
 }
 
 /// The width and the height of the outline of the decision with the given id: its `polygon`.
@@ -625,8 +637,8 @@ fn label_middle(svg: &str, id: &str) -> (f64, f64) {
 fn a_decision_is_a_flat_diamond() {
     let renderer = Renderer::new(&Value::empty_object());
     let text = "flowchart TD\n  A{Valid?} --> B[Process]\n  B --> C{\"Is the customer allowed<br/>to order on credit?\"}\n";
-    let plain = renderer.render_with(text, &default(None)).unwrap();
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let plain = renderer.render_with(text, &compat(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     let (_, box_height) = node_size(&designed, "B");
     for id in ["A", "C"] {
         let (width, height) = decision_size(&designed, id);
@@ -659,7 +671,7 @@ fn a_branch_beside_a_decision_leaves_from_its_side_tip() {
     let renderer = Renderer::new(&Value::empty_object());
     for direction in ["TD", "BT", "LR", "RL"] {
         let text = THREE.replace("TD", direction);
-        let svg = renderer.render_with(&text, &design(None)).unwrap();
+        let svg = renderer.render_with(&text, &default(None)).unwrap();
         let across_y = matches!(direction, "LR" | "RL");
         // Across the flow, and along it.
         let split = |p: (f64, f64)| if across_y { (p.1, p.0) } else { p };
@@ -695,7 +707,7 @@ fn a_decisions_self_loop_takes_a_side_no_branch_needs() {
     // Branches to both sides: both leave from the tips and turn once, and the loop stands below
     // the decision, on the side that faces the flow.
     let text = "flowchart TD\n  S --> D{Valid?}\n  D -->|again| D\n  D -->|yes| A\n  D -->|no| B\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let (x, y) = node_middle(&svg, "D");
     let (width, height) = decision_size(&svg, "D");
     for (edge, side) in [("L_D_A_0", -1.0), ("L_D_B_0", 1.0)] {
@@ -719,7 +731,7 @@ fn a_decisions_self_loop_takes_a_side_no_branch_needs() {
     // A branch to one side: the loop takes the other tip, and the branch leaves from its own.
     let chain =
         "flowchart TD\n  S --> D{Valid?}\n  D -->|again| D\n  D -->|yes| A --> E\n  D -->|no| B\n";
-    let svg = renderer.render_with(chain, &design(None)).unwrap();
+    let svg = renderer.render_with(chain, &default(None)).unwrap();
     let (x, y) = node_middle(&svg, "D");
     let width = decision_size(&svg, "D").0;
     let branch = route(&svg, "L_D_B_0");
@@ -737,7 +749,7 @@ fn a_branch_that_passes_a_layer_keeps_its_route() {
     let renderer = Renderer::new(&Value::empty_object());
     // `Express` stands a layer below `Queue`: its branch passes the layer of `Queue`.
     let text = "flowchart TD\n  A{Route?} -->|fast| B[Express]\n  A -->|slow| C[Queue]\n  C --> D[Batch]\n  D --> E[Deliver]\n  A --> E\n  B --> E\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let points = route(&svg, "L_A_B_0");
     assert!(points.len() > 3, "{points:?}");
     let (x, y) = node_middle(&svg, "A");
@@ -747,7 +759,7 @@ fn a_branch_that_passes_a_layer_keeps_its_route() {
 #[test]
 fn a_shape_with_a_meaning_carries_its_role() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(FLOW, &design(None)).unwrap();
+    let svg = renderer.render_with(FLOW, &default(None)).unwrap();
     assert_eq!(
         attribute_values(&svg, "data-role"),
         ["terminal", "decision", "data", "terminal"]
@@ -766,7 +778,7 @@ fn a_shape_with_a_meaning_carries_its_role() {
 #[test]
 fn outlines_are_hairlines_and_corners_are_round() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(FLOW, &design(None)).unwrap();
+    let svg = renderer.render_with(FLOW, &default(None)).unwrap();
     let sheet = style_sheet(&svg);
     assert!(sheet.contains("#d .edge-thickness-normal{stroke-width:1.5px;}"));
     assert!(sheet.contains("stroke:var(--nodeBorder);stroke-width:1.25px;"));
@@ -780,8 +792,8 @@ fn outlines_are_hairlines_and_corners_are_round() {
 #[test]
 fn a_group_is_neutral_and_takes_no_palette_slot() {
     let renderer = Renderer::new(&Value::empty_object());
-    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
-    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let plain = renderer.render_with(FLOW, &compat(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &default(None)).unwrap();
     assert!(plain.contains("data-color-id=\"color-0\""));
     assert!(!designed.contains("data-color-id"));
     assert!(!style_sheet(&designed).contains("--borderColor0"));
@@ -797,13 +809,13 @@ fn a_group_is_neutral_and_takes_no_palette_slot() {
 fn the_color_scheme_chooses_the_tone() {
     let renderer = Renderer::new(&Value::empty_object());
     let light = renderer
-        .render_with(FLOW, &design(Some(ColorScheme::Light)))
+        .render_with(FLOW, &default(Some(ColorScheme::Light)))
         .unwrap();
     let dark = renderer
-        .render_with(FLOW, &design(Some(ColorScheme::Dark)))
+        .render_with(FLOW, &default(Some(ColorScheme::Dark)))
         .unwrap();
     let auto = renderer
-        .render_with(FLOW, &design(Some(ColorScheme::Auto)))
+        .render_with(FLOW, &default(Some(ColorScheme::Auto)))
         .unwrap();
     assert!(style_sheet(&light).contains("--mainBkg:#FFFFFF;"));
     assert!(style_sheet(&light).contains("--terminalBkg:#2F54D6;"));
@@ -813,7 +825,7 @@ fn the_color_scheme_chooses_the_tone() {
     assert!(style_sheet(&auto).contains("--terminalBkg:light-dark(#2F54D6,#4263EB);"));
     // Without a color scheme the render is light.
     assert_eq!(
-        style_sheet(&renderer.render_with(FLOW, &design(None)).unwrap()),
+        style_sheet(&renderer.render_with(FLOW, &default(None)).unwrap()),
         style_sheet(&light)
     );
 }
@@ -822,13 +834,13 @@ fn the_color_scheme_chooses_the_tone() {
 fn a_configured_dark_theme_chooses_the_dark_tone() {
     let config = Value::from(serde_json::json!({ "theme": "redux-dark-color" }));
     let renderer = Renderer::new(&config);
-    let svg = renderer.render_with(FLOW, &design(None)).unwrap();
+    let svg = renderer.render_with(FLOW, &default(None)).unwrap();
     assert!(style_sheet(&svg).contains("--mainBkg:#1D212A;"));
     assert!(style_sheet(&svg).contains("--terminalBkg:#4263EB;"));
     // A directive that sets the theme does the same.
     let text = format!("%%{{init: {{\"theme\": \"redux-dark-color\"}}}}%%\n{FLOW}");
     let directed = Renderer::new(&Value::empty_object())
-        .render_with(&text, &design(None))
+        .render_with(&text, &default(None))
         .unwrap();
     assert!(style_sheet(&directed).contains("--mainBkg:#1D212A;"));
 }
@@ -839,7 +851,7 @@ fn the_users_theme_variables_and_classes_keep_the_last_word() {
         "themeVariables": { "mainBkg": "#fafafa", "lineColor": "#ff0000" }
     }));
     let renderer = Renderer::new(&config);
-    let svg = renderer.render_with(FLOW, &design(None)).unwrap();
+    let svg = renderer.render_with(FLOW, &default(None)).unwrap();
     let sheet = style_sheet(&svg);
     assert!(sheet.contains("--mainBkg:#fafafa;"));
     assert!(sheet.contains("--lineColor:#ff0000;"));
@@ -847,7 +859,7 @@ fn the_users_theme_variables_and_classes_keep_the_last_word() {
 
     let classed = format!("{FLOW}  classDef hot fill:#f96,stroke:#333\n  class A hot\n");
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(&classed, &design(None))
+        .render_with(&classed, &default(None))
         .unwrap();
     let sheet = style_sheet(&svg);
     let role = sheet
@@ -863,36 +875,11 @@ fn the_draw_animation_works_in_the_design_mode() {
     let renderer = Renderer::new(&Value::empty_object());
     let options = RenderOptions {
         animation: Some(ferrigura::Animation::default()),
-        ..design(None)
+        ..default(None)
     };
     let svg = renderer.render_with(FLOW, &options).unwrap();
     assert!(svg.contains("data-role=\"terminal\""));
     assert!(svg.contains("@keyframes"));
-}
-
-#[test]
-fn the_mode_excludes_compat() {
-    let renderer = Renderer::new(&Value::empty_object());
-    let both = RenderOptions {
-        compat: true,
-        ..design(None)
-    };
-    match renderer.render_with(FLOW, &both) {
-        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
-        other => panic!("expected an option error, got {other:?}"),
-    }
-    match renderer.render_with(STATES, &both) {
-        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
-        other => panic!("expected an option error, got {other:?}"),
-    }
-    match renderer.render_with(CLASSES, &both) {
-        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
-        other => panic!("expected an option error, got {other:?}"),
-    }
-    match renderer.render_with(ENTITIES, &both) {
-        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
-        other => panic!("expected an option error, got {other:?}"),
-    }
 }
 
 /// A state diagram with every role, a labeled transition, two transitions into the end, a
@@ -902,8 +889,8 @@ const STATES: &str = "stateDiagram-v2\n  state check <<choice>>\n  state split <
 #[test]
 fn a_state_diagram_draws_in_the_design_mode() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(STATES, &design(None)).unwrap();
-    let default = renderer.render_with(STATES, &default(None)).unwrap();
+    let svg = renderer.render_with(STATES, &default(None)).unwrap();
+    let default = renderer.render_with(STATES, &compat(None)).unwrap();
     assert_ne!(svg, default);
     assert!(svg.contains("class=\"statediagram\""));
     // The roles: the start states, the end states, the choice, the fork and the join.
@@ -912,7 +899,7 @@ fn a_state_diagram_draws_in_the_design_mode() {
     assert_eq!(nodes.matches("data-role=\"decision\"").count(), 1);
     assert_eq!(nodes.matches("data-role=\"junction\"").count(), 2);
     assert!(!default.contains("data-role="));
-    // The mode's own arrowhead under the barb's ids, no palette, and the soft shadow.
+    // The default's own arrowhead under the barb's ids, no palette, and the soft shadow.
     assert!(svg.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
     assert!(!svg.contains("data-color-id"));
     assert!(svg.contains("stdDeviation=\"1.5\""));
@@ -935,13 +922,13 @@ fn a_state_diagram_draws_in_the_design_mode() {
 #[test]
 fn each_transition_into_an_end_state_meets_one_of_its_own() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(STATES, &design(None)).unwrap();
+    let svg = renderer.render_with(STATES, &default(None)).unwrap();
     assert_eq!(
         nodes(&svg).matches("-state-root_end-").count(),
         2,
         "one end state for each of the two transitions"
     );
-    let default = renderer.render_with(STATES, &default(None)).unwrap();
+    let default = renderer.render_with(STATES, &compat(None)).unwrap();
     assert_eq!(nodes(&default).matches("-state-root_end-").count(), 1);
 }
 
@@ -949,7 +936,7 @@ fn each_transition_into_an_end_state_meets_one_of_its_own() {
 fn a_composite_state_has_its_title_at_the_left_in_a_row_of_its_own() {
     let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n  }\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let group = &svg[svg.find("statediagram-cluster").expect("the composite")..];
     let outer = &group[group.find("<rect class=\"outer\"").expect("its frame")..];
@@ -972,25 +959,25 @@ fn a_state_label_is_centered_in_the_design_mode() {
         let tspan = &idle[idle.find("<tspan").expect("its text")..];
         attribute_values(tspan, "x")[0].parse().unwrap()
     };
-    // The default starts the line at the label's origin; the mode centers it on the node.
+    // `compat` starts the line at the label's origin; the default centers it on the node.
     assert_eq!(
-        first_x(&renderer.render_with(text, &default(None)).unwrap()),
+        first_x(&renderer.render_with(text, &compat(None)).unwrap()),
         0.0
     );
-    assert!(first_x(&renderer.render_with(text, &design(None)).unwrap()) < 0.0);
+    assert!(first_x(&renderer.render_with(text, &default(None)).unwrap()) < 0.0);
 }
 
 #[test]
 fn the_state_diagrams_dark_set_and_user_styles_apply() {
     let renderer = Renderer::new(&Value::empty_object());
     let svg = renderer
-        .render_with(STATES, &design(Some(ColorScheme::Dark)))
+        .render_with(STATES, &default(Some(ColorScheme::Dark)))
         .unwrap();
     let sheet = style_sheet(&svg);
     assert!(sheet.contains("--terminalBkg:#4263EB;"));
     assert!(sheet.contains("--compositeBackground:#171A22;"));
     let both = renderer
-        .render_with(STATES, &design(Some(ColorScheme::Auto)))
+        .render_with(STATES, &default(Some(ColorScheme::Auto)))
         .unwrap();
     assert!(style_sheet(&both).contains("light-dark("));
 
@@ -998,14 +985,14 @@ fn the_state_diagrams_dark_set_and_user_styles_apply() {
         "themeVariables": { "transitionColor": "#ff0000", "noteBkgColor": "#ffffcc" }
     }));
     let svg = Renderer::new(&config)
-        .render_with(STATES, &design(None))
+        .render_with(STATES, &default(None))
         .unwrap();
     let sheet = style_sheet(&svg);
     assert!(sheet.contains("--transitionColor:#ff0000;"));
     assert!(sheet.contains("--noteBkgColor:#ffffcc;"));
 
     let classed = format!("{STATES}  classDef hot fill:#f96\n  class Draft hot\n");
-    let svg = renderer.render_with(&classed, &design(None)).unwrap();
+    let svg = renderer.render_with(&classed, &default(None)).unwrap();
     let sheet = style_sheet(&svg);
     let role = sheet.find("[data-role=").expect("a role's rule");
     let class = sheet.find("#d .hot &gt; *{").expect("the class's rule");
@@ -1014,11 +1001,11 @@ fn the_state_diagrams_dark_set_and_user_styles_apply() {
 
 #[test]
 fn an_edge_meets_a_group_in_the_middle_of_its_side() {
-    // ELK keeps the ports of a group at the start of its side; the mode's placement moves them to
-    // the middle, so that the edges into and out of the group run straight down its axis.
+    // ELK keeps the ports of a group at the start of its side; the default's placement moves them
+    // to the middle, so that the edges into and out of the group run straight down its axis.
     let text = "flowchart TB\n  S((start)) --> G\n  subgraph G [Group]\n    A --> B\n  end\n  G --> E[End]\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let frame = &svg[svg.find("<g class=\"cluster ").expect("the group")..];
     let rect = &frame[frame.find("<rect").expect("its frame")..];
@@ -1039,21 +1026,21 @@ fn a_chain_through_a_group_stays_on_one_axis() {
     // the frame instead of turning beside the edge out of the group.
     let renderer = Renderer::new(&Value::empty_object());
     let text = "flowchart TD\n  A --> B\n  subgraph S\n    B --> C\n  end\n  C --> D\n  S --> E\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     for edge in ["L_A_B_0", "L_B_C_0", "L_C_D_0"] {
         assert!(runs_straight_down(&svg, edge), "{edge} bends");
     }
     assert!(!runs_straight_down(&svg, "L_S_E_0"));
     // The same in a state diagram, through a composite state.
     let text = "stateDiagram-v2\n  A --> S1\n  state Comp {\n    S1 --> S2\n  }\n  S2 --> B\n  Comp --> C\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     for edge in ["edge0", "edge1", "edge2"] {
         assert!(runs_straight_down(&svg, edge), "{edge} bends");
     }
     // Edges out of a group's nodes next to an edge out of the group itself: the ports they cross
     // stay where the group's layout put them, and each edge runs straight on.
     let text = "flowchart TD\n  P1 --> G\n  subgraph G\n    P2\n    P3\n  end\n  P2 --> P4\n  P3 --> P6\n  G --> P5\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     for edge in ["L_P2_P4_0", "L_P3_P6_0"] {
         assert!(runs_straight_down(&svg, edge), "{edge} bends");
     }
@@ -1089,7 +1076,7 @@ fn state_middle(svg: &str, id: &str) -> (f64, f64) {
 fn a_fan_out_of_a_composite_state_leaves_it_as_a_bundle_around_its_middle() {
     let renderer = Renderer::new(&Value::empty_object());
     let text = "stateDiagram-v2\n  [*] --> NotShooting : Pacifist\n  state NotShooting {\n    [*] --> Idle : Yet another long long label\n    Idle --> Configuring : EvConfig\n    Configuring --> Idle : EvConfig EvConfig EvConfig EvConfig\n  }\n  NotShooting --> A\n  NotShooting --> B\n  NotShooting --> C\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     // The transitions to `A`, `B` and `C`: the middle one runs straight down from the middle of
     // the composite, the outer two leave 20 beside it and turn alike.
     let [a, b, c] = ["edge4", "edge5", "edge6"].map(|id| route(&svg, id));
@@ -1106,7 +1093,7 @@ fn a_fan_out_of_a_composite_state_leaves_it_as_a_bundle_around_its_middle() {
     assert!(turn(&a).abs() > 20.0);
     // The same out of a flowchart's subgraph.
     let text = "flowchart TD\n  subgraph S\n    X --> Y\n  end\n  S --> A\n  S --> B\n  S --> C\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let [a, b, c] = ["L_S_A_0", "L_S_B_0", "L_S_C_0"].map(|id| route(&svg, id));
     assert!(runs_straight_down(&svg, "L_S_B_0"));
     assert!((b[0].0 - (a[0].0 + c[0].0) / 2.0).abs() <= 1.0);
@@ -1116,7 +1103,7 @@ fn a_fan_out_of_a_composite_state_leaves_it_as_a_bundle_around_its_middle() {
 #[test]
 fn concurrency_regions_stand_side_by_side_around_their_states() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(REGIONS, &design(None)).unwrap();
+    let svg = renderer.render_with(REGIONS, &default(None)).unwrap();
     let frames = region_frames(&svg);
     assert_eq!(frames.len(), 2);
     // Side by side across the flow, as the default puts them, not one above the other.
@@ -1143,11 +1130,11 @@ fn concurrency_regions_stand_side_by_side_around_their_states() {
         tops.len()
     };
     assert_eq!(
-        rows(&renderer.render_with(three, &design(None)).unwrap()),
+        rows(&renderer.render_with(three, &default(None)).unwrap()),
         1
     );
     assert_eq!(
-        rows(&renderer.render_with(three, &default(None)).unwrap()),
+        rows(&renderer.render_with(three, &compat(None)).unwrap()),
         2
     );
 }
@@ -1156,7 +1143,7 @@ fn concurrency_regions_stand_side_by_side_around_their_states() {
 fn regions_whose_states_run_from_left_to_right_stand_one_above_the_other() {
     let text = "stateDiagram-v2\n  state Active {\n    direction LR\n    [*] --> A\n    A --> B\n    --\n    direction LR\n    [*] --> C\n    C --> D\n  }\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let mut frames = region_frames(&svg);
     frames.sort_by(|a, b| a.1.total_cmp(&b.1));
@@ -1169,7 +1156,7 @@ fn regions_whose_states_run_from_left_to_right_stand_one_above_the_other() {
 fn a_branch_beside_a_choice_leaves_from_its_side_tip() {
     let text = "stateDiagram-v2\n  state check <<choice>>\n  [*] --> Received\n  Received --> check\n  check --> Accepted : valid\n  check --> Rejected : invalid\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let (x, y) = state_middle(&svg, "check");
     for (edge, target, side) in [("edge2", "Accepted", -1.0), ("edge3", "Rejected", 1.0)] {
@@ -1190,7 +1177,7 @@ fn two_labeled_transitions_between_two_states_stand_on_both_sides_of_them() {
     let renderer = Renderer::new(&Value::empty_object());
     // Short labels leave room for both transitions to run straight.
     let text = "stateDiagram-v2\n  a --> b : Start\n  a --> b : Stop\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let middle = state_middle(&svg, "a").0;
     assert_eq!(middle, state_middle(&svg, "b").0);
     let mut lines = Vec::new();
@@ -1209,7 +1196,7 @@ fn two_labeled_transitions_between_two_states_stand_on_both_sides_of_them() {
     assert!(lines[1] > 10.0, "{lines:?}");
     // Long labels: the transitions turn out around the states alike, neither runs straight past
     // the other's label.
-    let svg = renderer.render_with(REGIONS, &design(None)).unwrap();
+    let svg = renderer.render_with(REGIONS, &default(None)).unwrap();
     let middle = state_middle(&svg, "NumLockOff").0;
     let reach = |edge: &str| {
         route(&svg, edge)
@@ -1227,7 +1214,7 @@ fn a_state_with_descriptions_keeps_its_room_in_the_design_mode() {
     // edge.
     let text = "stateDiagram-v2\n  state \"Waiting for input\" as W\n  W : entry / reset timer\n  W : exit / stop timer\n  [*] --> W\n";
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let state = &svg[svg.find("-state-W-").expect("the state")..];
     let outline = &state[state
         .find("class=\"outer title-state\"")
@@ -1303,7 +1290,7 @@ fn note_box(svg: &str, id: &str) -> (f64, f64, f64, f64) {
 #[test]
 fn a_note_stands_beside_its_state_and_the_chain_on_one_axis() {
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(NOTES, &design(None))
+        .render_with(NOTES, &default(None))
         .unwrap();
     let chain = ["Pending", "Paid", "Shipped"].map(|id| state_box(&svg, id));
     let axis = chain[0].0 + chain[0].2 / 2.0;
@@ -1351,7 +1338,7 @@ fn a_note_stands_beside_its_state_and_the_chain_on_one_axis() {
     assert_eq!(connector[1].0, right.0);
     // The default keeps the reference's place: the note stands below its state.
     let plain = Renderer::new(&Value::empty_object())
-        .render_with(NOTES, &default(None))
+        .render_with(NOTES, &compat(None))
         .unwrap();
     let below = note_box(&plain, "Pending");
     let state = state_box(&plain, "Pending");
@@ -1362,7 +1349,7 @@ fn a_note_stands_beside_its_state_and_the_chain_on_one_axis() {
 fn a_note_stands_below_or_above_its_state_from_left_to_right() {
     let text = NOTES.replace("stateDiagram-v2\n", "stateDiagram-v2\n  direction LR\n");
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(&text, &design(None))
+        .render_with(&text, &default(None))
         .unwrap();
     let (pending, shipped) = (state_box(&svg, "Pending"), state_box(&svg, "Shipped"));
     let axis = pending.1 + pending.3 / 2.0;
@@ -1379,7 +1366,7 @@ fn a_note_stands_below_or_above_its_state_from_left_to_right() {
 fn a_composite_state_holds_the_notes_of_its_states() {
     let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n    note right of Load : Reads the input\n  }\n  Work --> [*]\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let group = &svg[svg.find("statediagram-cluster").expect("the composite")..];
     let outer = &group[group.find("<rect class=\"outer\"").expect("its frame")..];
@@ -1408,7 +1395,7 @@ fn a_note_keeps_room_on_its_own_side_only() {
         frames.sort_by(|a, b| a.0.total_cmp(&b.0));
         frames[1].0 - (frames[0].0 + frames[0].2)
     };
-    let without = gap(&renderer.render_with(plain, &design(None)).unwrap());
+    let without = gap(&renderer.render_with(plain, &default(None)).unwrap());
     // A note right of `Load` keeps no room on the left of `Load`: the regions stand as close as
     // without it, whichever side of its region's neighbor it is on.
     for side in ["right", "left"] {
@@ -1416,7 +1403,7 @@ fn a_note_keeps_room_on_its_own_side_only() {
             "    Load --> Save\n",
             &format!("    Load --> Save\n    note {side} of Load : Reads the input file\n"),
         );
-        let svg = renderer.render_with(&noted, &design(None)).unwrap();
+        let svg = renderer.render_with(&noted, &default(None)).unwrap();
         assert_eq!(gap(&svg), without, "{side}");
         let (note, load) = (note_box(&svg, "Load"), state_box(&svg, "Load"));
         if side == "right" {
@@ -1431,7 +1418,7 @@ fn a_note_keeps_room_on_its_own_side_only() {
         "    Load --> Save\n    Load --> Load : retry\n",
     );
     assert_eq!(
-        gap(&renderer.render_with(&looped, &design(None)).unwrap()),
+        gap(&renderer.render_with(&looped, &default(None)).unwrap()),
         without
     );
 }
@@ -1448,7 +1435,7 @@ fn composite_frame(svg: &str) -> (f64, f64, f64, f64) {
 fn a_note_stands_beside_its_composite_state() {
     let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n  }\n  note right of Work : Runs every night\n  Work --> Done\n  Done --> [*]\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let frame = composite_frame(&svg);
     let note = note_box(&svg, "Work");
@@ -1478,7 +1465,7 @@ fn a_note_stands_beside_its_composite_state() {
 fn two_notes_on_one_side_of_a_state_stand_in_a_column() {
     let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Paid\n  note right of Pending : Waits for the payment\n  note right of Pending : Expires after a week\n  Paid --> [*]\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let pending = state_box(&svg, "Pending");
     let column = note_box(&svg, "Pending");
@@ -1510,7 +1497,7 @@ fn a_self_loop_on_a_group_stands_beside_its_frame() {
     let renderer = Renderer::new(&Value::empty_object());
     // A subgraph: on the right of its frame, around its middle.
     let text = "flowchart TD\n  A --> G\n  subgraph G [Worker]\n    X --> Y\n  end\n  G -->|retry| G\n  G --> Z\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let group = &svg[svg
         .find("<g class=\"cluster \" id=\"d-G\"")
         .expect("the subgraph")..];
@@ -1524,7 +1511,7 @@ fn a_self_loop_on_a_group_stands_beside_its_frame() {
     );
     // A composite state: the same.
     let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n  }\n  Work --> Work : again\n  Work --> [*]\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let frame = composite_frame(&svg);
     let middle = (frame.0 + frame.2 / 2.0, frame.1 + frame.3 / 2.0);
     let (loop_box, _) = assert_loop_beside(&svg, "edge3", middle, LoopSide::Right, 20.0);
@@ -1539,7 +1526,7 @@ fn more_self_loops_than_free_sides_share_them() {
     let renderer = Renderer::new(&Value::empty_object());
     // Three loops: two one after the other on the right, the third on the left.
     let text = "flowchart TD\n  A[Start] --> W[Worker]\n  W -->|retry| W\n  W -->|refresh| W\n  W -->|poll| W\n  W --> D[Done]\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let (x, y) = node_middle(&svg, "W");
     let (width, height) = node_size(&svg, "W");
     let [retry, refresh, poll] = ["L_W_W_0", "L_W_W_2", "L_W_W_3"].map(|id| route(&svg, id));
@@ -1562,7 +1549,7 @@ fn more_self_loops_than_free_sides_share_them() {
 
     // A state with a note on the right takes both loops on the left.
     let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Pending : retry\n  Pending --> Pending : remind\n  Pending --> Paid\n  note right of Pending : Waits for the payment\n  Paid --> [*]\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let pending = state_box(&svg, "Pending");
     for id in ["edge1", "edge2"] {
         let route = route(&svg, id);
@@ -1572,7 +1559,7 @@ fn more_self_loops_than_free_sides_share_them() {
 
     // With notes on both sides, the loop stands on the top, at its right end.
     let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Pending : retry\n  Pending --> Paid\n  note left of Pending : Created by the shop\n  note right of Pending : Waits for the payment\n  Paid --> [*]\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let pending = state_box(&svg, "Pending");
     let route = route(&svg, "edge1");
     assert!(route.iter().all(|p| p.1 <= pending.1 + 1e-6), "{route:?}");
@@ -1611,8 +1598,8 @@ fn class_box(svg: &str, name: &str) -> String {
 #[test]
 fn a_class_diagram_draws_in_the_design_mode() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
-    let default = renderer.render_with(CLASSES, &default(None)).unwrap();
+    let svg = renderer.render_with(CLASSES, &default(None)).unwrap();
+    let default = renderer.render_with(CLASSES, &compat(None)).unwrap();
     assert!(svg.contains("class=\"classDiagram\""));
     // The roles: an interface and an abstract class are one role, an enumeration another; other
     // classes are neutral and take no palette slot.
@@ -1622,7 +1609,7 @@ fn a_class_diagram_draws_in_the_design_mode() {
     assert!(!svg.contains("data-color-id"));
     assert!(!default.contains("data-role="));
     assert!(default.contains("data-color-id"));
-    // The mode's markers under the reference's ids, and the soft shadow.
+    // The default's markers under the reference's ids, and the soft shadow.
     assert!(svg.contains("class=\"design-hollow\""));
     assert!(svg.contains("class=\"design-filled\""));
     assert!(svg.contains("class=\"design-open\""));
@@ -1643,7 +1630,7 @@ fn a_class_diagram_draws_in_the_design_mode() {
 #[test]
 fn a_class_box_draws_only_the_compartments_it_has() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let svg = renderer.render_with(CLASSES, &default(None)).unwrap();
     let dividers = |name: &str| {
         class_box(&svg, name)
             .matches("<line class=\"divider\"")
@@ -1660,7 +1647,7 @@ fn a_class_box_draws_only_the_compartments_it_has() {
     // The corners are round.
     assert!(square.contains("rx=\"8\""));
     // The default draws two empty compartments.
-    let plain = renderer.render_with(CLASSES, &default(None)).unwrap();
+    let plain = renderer.render_with(CLASSES, &compat(None)).unwrap();
     assert_eq!(
         class_box(&plain, "Square")
             .matches("class=\"divider")
@@ -1672,7 +1659,7 @@ fn a_class_box_draws_only_the_compartments_it_has() {
 #[test]
 fn a_member_shows_its_visibility_static_and_abstract_marks() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let svg = renderer.render_with(CLASSES, &default(None)).unwrap();
     let polygon = class_box(&svg, "Polygon");
     // The annotation is a line of its own above the name, and the generic type shows.
     assert!(polygon.contains("class=\"annotation-group text\""));
@@ -1691,19 +1678,19 @@ fn a_member_shows_its_visibility_static_and_abstract_marks() {
 fn the_general_end_of_a_relation_stands_above() {
     let renderer = Renderer::new(&Value::empty_object());
     let text = "classDiagram\n  Dog --|> Animal\n  Wheel --* Car\n  Car --o Fleet\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     assert!(class_middle(&svg, "Animal").1 < class_middle(&svg, "Dog").1);
     assert!(class_middle(&svg, "Car").1 < class_middle(&svg, "Wheel").1);
     assert!(class_middle(&svg, "Fleet").1 < class_middle(&svg, "Car").1);
     // The default lays them out as written.
-    let plain = renderer.render_with(text, &default(None)).unwrap();
+    let plain = renderer.render_with(text, &compat(None)).unwrap();
     assert!(class_middle(&plain, "Animal").1 > class_middle(&plain, "Dog").1);
 }
 
 #[test]
 fn the_children_of_a_class_share_one_triangle() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let svg = renderer.render_with(CLASSES, &default(None)).unwrap();
     let square = route(&svg, "id_Polygon_Square_2");
     let triangle = route(&svg, "id_Polygon_Triangle_3");
     // Both start at one point of the parent's side, the triangle's tip, near its middle: the
@@ -1711,7 +1698,7 @@ fn the_children_of_a_class_share_one_triangle() {
     assert_eq!(square[0], triangle[0]);
     let (x, _) = class_middle(&svg, "Polygon");
     assert!((square[0].0 - x).abs() <= 20.5, "{square:?} {x}");
-    let plain = renderer.render_with(CLASSES, &default(None)).unwrap();
+    let plain = renderer.render_with(CLASSES, &compat(None)).unwrap();
     assert_ne!(
         route(&plain, "id_Polygon_Square_2")[0],
         route(&plain, "id_Polygon_Triangle_3")[0]
@@ -1721,7 +1708,7 @@ fn the_children_of_a_class_share_one_triangle() {
 #[test]
 fn a_cardinality_stands_beside_its_end() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let svg = renderer.render_with(CLASSES, &default(None)).unwrap();
     let points = route(&svg, "id_Polygon_Point_4");
     let marker = "<g class=\"edgeTerminals\" transform=\"translate(";
     let centres: Vec<(f64, f64)> = svg
@@ -1754,11 +1741,11 @@ fn a_cardinality_stands_beside_its_end() {
 fn the_class_diagrams_dark_set_and_user_styles_apply() {
     let renderer = Renderer::new(&Value::empty_object());
     let svg = renderer
-        .render_with(CLASSES, &design(Some(ColorScheme::Dark)))
+        .render_with(CLASSES, &default(Some(ColorScheme::Dark)))
         .unwrap();
     assert!(style_sheet(&svg).contains("--interfaceBkg:#1B2131;"));
     let styled = format!("{CLASSES}  style Square fill:#FFE4E1,stroke:#C0392B\n");
-    let svg = renderer.render_with(&styled, &design(None)).unwrap();
+    let svg = renderer.render_with(&styled, &default(None)).unwrap();
     let square = class_box(&svg, "Square");
     assert!(
         square.contains("class=\"outline\"")
@@ -1845,7 +1832,7 @@ const LOOP: &str = "flowchart TD\n  A[Retry] -->|again| A\n  A --> B[Done]\n";
 #[test]
 fn a_self_loop_stands_on_the_free_side_of_its_node() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(LOOP, &design(None)).unwrap();
+    let svg = renderer.render_with(LOOP, &default(None)).unwrap();
     let (x, y) = node_middle(&svg, "A");
     let (width, _) = node_size(&svg, "A");
     let (loop_box, _) = assert_loop_beside(&svg, "L_A_A_0", (x, y), LoopSide::Right, 20.0);
@@ -1863,10 +1850,10 @@ fn a_self_loop_stands_on_the_free_side_of_its_node() {
     ));
     // From left to right, the loop stands on the top with its label at its right.
     let across = LOOP.replace("flowchart TD", "flowchart LR");
-    let svg = renderer.render_with(&across, &design(None)).unwrap();
+    let svg = renderer.render_with(&across, &default(None)).unwrap();
     assert_loop_beside(&svg, "L_A_A_0", node_middle(&svg, "A"), LoopSide::Top, 20.0);
     // The default keeps ELK's loop.
-    let plain = renderer.render_with(LOOP, &default(None)).unwrap();
+    let plain = renderer.render_with(LOOP, &compat(None)).unwrap();
     let points = route(&plain, "L_A_A_0");
     assert!(points[0].0 < node_middle(&plain, "A").0, "{points:?}");
 }
@@ -1875,7 +1862,7 @@ fn a_self_loop_stands_on_the_free_side_of_its_node() {
 fn two_self_loops_stand_on_both_free_sides() {
     let text = "flowchart TD\n  A[Start] --> W[Worker]\n  W -->|retry| W\n  W -->|refresh| W\n  W --> D[Done]\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let middle = node_middle(&svg, "W");
     assert_loop_beside(&svg, "L_W_W_0", middle, LoopSide::Right, 20.0);
@@ -1887,7 +1874,7 @@ fn two_self_loops_stand_on_both_free_sides() {
 fn a_state_loops_beside_itself_and_beside_its_note() {
     let renderer = Renderer::new(&Value::empty_object());
     let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Pending : retry\n  Pending --> Paid : pay\n  Paid --> [*]\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let pending = state_box(&svg, "Pending");
     let middle = (pending.0 + pending.2 / 2.0, pending.1 + pending.3 / 2.0);
     // The state keeps its height, as high as its neighbor, and the ends of the loop are half its
@@ -1900,7 +1887,7 @@ fn a_state_loops_beside_itself_and_beside_its_note() {
         "Paid --> [*]\n",
         "Paid --> [*]\n  note right of Pending : waits for the payment\n",
     );
-    let svg = renderer.render_with(&noted, &design(None)).unwrap();
+    let svg = renderer.render_with(&noted, &default(None)).unwrap();
     let pending = state_box(&svg, "Pending");
     let middle = (pending.0 + pending.2 / 2.0, pending.1 + pending.3 / 2.0);
     let (loop_box, _) = assert_loop_beside(&svg, "edge1", middle, LoopSide::Left, pending.3 / 2.0);
@@ -1913,7 +1900,7 @@ fn a_state_loops_beside_itself_and_beside_its_note() {
 fn a_class_loops_beside_itself_with_its_cardinalities_at_its_ends() {
     let text = "classDiagram\n  class Employee {\n    +String name\n    +Employee manager\n  }\n  Department \"1\" o-- \"*\" Employee : staffs\n  Employee \"*\" --> \"0..1\" Employee : reports to\n";
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &design(None))
+        .render_with(text, &default(None))
         .unwrap();
     let middle = class_middle(&svg, "Employee");
     let id = "id_Employee_Employee_2";
@@ -1977,9 +1964,9 @@ fn a_word_stays_whole_in_the_label_of_a_state_and_a_node() {
         format!("flowchart TD\n  A[{word}] --> B[Done]\n"),
         format!("flowchart LR\n  A[{word}] --> B[Done]\n"),
     ] {
-        let plain = renderer.render_with(&text, &default(None)).unwrap();
+        let plain = renderer.render_with(&text, &compat(None)).unwrap();
         assert!(!words(&plain).contains(&word), "the default breaks it");
-        let designed = renderer.render_with(&text, &design(None)).unwrap();
+        let designed = renderer.render_with(&text, &default(None)).unwrap();
         assert!(words(&designed).contains(&word), "{designed}");
         // The node grows as wide as the word needs, where the default's holds half of it. The word
         // is the only one of its line, so the node's text is as wide as the line and its padding.
@@ -1994,14 +1981,14 @@ fn a_word_stays_whole_in_the_label_of_a_state_and_a_node() {
 fn a_label_still_wraps_between_words_and_an_absurd_word_breaks() {
     let renderer = Renderer::new(&Value::empty_object());
     let text = "flowchart TD\n  A[Send ConfirmationNotification now]\n";
-    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let designed = renderer.render_with(text, &default(None)).unwrap();
     assert_eq!(
         words(&designed),
         ["Send", "ConfirmationNotification", "now"]
     );
     let url = "https://example.com/a/very/long/pasted/url/that/goes/on/and/on/forever/and/ever/and/ever/and/ever/and/ever";
     let text = format!("flowchart TD\n  A[{url}]\n");
-    let designed = renderer.render_with(&text, &design(None)).unwrap();
+    let designed = renderer.render_with(&text, &default(None)).unwrap();
     assert!(!words(&designed).contains(&url), "{designed}");
 }
 
@@ -2010,9 +1997,9 @@ fn a_word_stays_whole_in_an_edge_label_and_the_default_still_breaks_it() {
     let renderer = Renderer::new(&Value::empty_object());
     let word = "UnbelievablyLongEdgeLabelWordHere";
     let text = format!("flowchart TD\n  A -->|{word}| B\n");
-    let designed = renderer.render_with(&text, &design(None)).unwrap();
+    let designed = renderer.render_with(&text, &default(None)).unwrap();
     assert!(words(&designed).contains(&word), "{designed}");
-    let plain = renderer.render_with(&text, &default(None)).unwrap();
+    let plain = renderer.render_with(&text, &compat(None)).unwrap();
     assert!(!words(&plain).contains(&word));
 }
 
@@ -2022,7 +2009,7 @@ fn two_labeled_relations_between_two_classes_are_one_unit_beside_another_edge() 
     // `User` has a third edge on the side of the two relations, and one of them runs against
     // the flow.
     let text = "classDiagram\n  class User { +String name }\n  class Team { +String title }\n  User \"*\" --> \"*\" Team : member of\n  Team \"1\" --> \"1\" User : led by\n  User --> Profile\n  Team --> Project\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let x = |name: &str| class_middle(&svg, name).0;
     // The two relations take the axis from the edge to `Profile`: they leave `User` around its
     // middle, the one with the flow runs straight down to `Team`, and `Profile` stands beside.
@@ -2067,13 +2054,13 @@ fn column_x(entity: &str, class: &str) -> f64 {
 #[test]
 fn an_er_diagram_draws_in_the_design_mode() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(ENTITIES, &design(None)).unwrap();
-    let plain = renderer.render_with(ENTITIES, &default(None)).unwrap();
+    let svg = renderer.render_with(ENTITIES, &default(None)).unwrap();
+    let plain = renderer.render_with(ENTITIES, &compat(None)).unwrap();
     assert!(svg.contains("class=\"erDiagram\""));
     // Every entity is neutral: no role and no palette slot.
     assert!(!svg.contains("data-role="));
     assert!(!svg.contains("data-color-id"));
-    // The mode's markers under the reference's ids, and the soft shadow.
+    // The default's markers under the reference's ids, and the soft shadow.
     for id in [
         "d_er-onlyOneStart",
         "d_er-zeroOrOneEnd",
@@ -2111,7 +2098,7 @@ fn an_er_diagram_draws_in_the_design_mode() {
 #[test]
 fn an_attribute_row_has_its_name_type_keys_and_comment_in_columns() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(ENTITIES, &design(None)).unwrap();
+    let svg = renderer.render_with(ENTITIES, &default(None)).unwrap();
     let customer = entity(&svg, "CUSTOMER");
     let name = column_x(&customer, "attribute-name");
     let kind = column_x(&customer, "attribute-type");
@@ -2137,7 +2124,7 @@ fn an_attribute_row_has_its_name_type_keys_and_comment_in_columns() {
 #[test]
 fn a_relation_is_dashed_unless_identifying_and_its_markers_stand_on_straight_ends() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(ENTITIES, &design(None)).unwrap();
+    let svg = renderer.render_with(ENTITIES, &default(None)).unwrap();
     assert!(
         style_sheet(&svg).contains("#d .edge-pattern-dashed{stroke-dasharray:5 4 !important;}")
     );
@@ -2164,13 +2151,13 @@ fn a_relation_is_dashed_unless_identifying_and_its_markers_stand_on_straight_end
 fn the_er_diagrams_dark_set_and_user_styles_apply() {
     let renderer = Renderer::new(&Value::empty_object());
     let dark = renderer
-        .render_with(ENTITIES, &design(Some(ColorScheme::Dark)))
+        .render_with(ENTITIES, &default(Some(ColorScheme::Dark)))
         .unwrap();
     let sheet = style_sheet(&dark);
     assert!(sheet.contains("--mainBkg:#1D212A;"));
     assert!(sheet.contains("--background:#12141A;"));
     let auto = renderer
-        .render_with(ENTITIES, &design(Some(ColorScheme::Auto)))
+        .render_with(ENTITIES, &default(Some(ColorScheme::Auto)))
         .unwrap();
     assert!(style_sheet(&auto).contains("--background:light-dark(#FFFFFF,#12141A);"));
     // The user's variables win, and an entity's own style is written on its outline.
@@ -2179,7 +2166,7 @@ fn the_er_diagrams_dark_set_and_user_styles_apply() {
     }));
     let styled = format!("{ENTITIES}  style ORDER fill:#f96,stroke:#333\n");
     let svg = Renderer::new(&config)
-        .render_with(&styled, &design(None))
+        .render_with(&styled, &default(None))
         .unwrap();
     assert!(style_sheet(&svg).contains("--lineColor:#ff0000;"));
     assert!(entity(&svg, "ORDER").contains("class=\"outline\""));
@@ -2202,13 +2189,13 @@ const GANTT: &str = "gantt\n  dateFormat YYYY-MM-DD\n  title Plan\n  section Bui
 const MINDMAP: &str =
     "mindmap\n  root((Plan))\n    Research\n      Papers\n    Build\n      Parser\n";
 
-/// The renders of a text in the design mode and in the default, with one renderer.
+/// The renders of a text in the default rendering and in `compat`, with one renderer.
 fn both_renders(text: &str, config: &Value, scheme: Option<ColorScheme>) -> (String, String) {
     let renderer = Renderer::new(config);
-    let designed = renderer.render_with(text, &design(scheme)).expect("design");
-    let plain = renderer
+    let designed = renderer
         .render_with(text, &default(scheme))
         .expect("default");
+    let plain = renderer.render_with(text, &compat(scheme)).expect("compat");
     (designed, plain)
 }
 
@@ -2305,21 +2292,21 @@ fn an_xy_charts_plots_take_the_series_palette() {
 
 #[test]
 fn a_users_palette_and_xy_colors_win_in_an_xy_chart() {
-    // The text's palette wins, as in the default.
+    // The text's palette wins, as in `compat`.
     let text = format!(
         "---\nconfig:\n  themeVariables:\n    xyChart:\n      plotColorPalette: \"#111111, #222222\"\n---\n{XY}"
     );
     let (svg, _) = both_renders(&text, &Value::empty_object(), None);
     assert!(svg.contains("fill=\"#111111\""), "the text's palette");
     assert!(!svg.contains(SERIES_LIGHT[0]), "no series color");
-    // A site's title color keeps the mode's palette: the group is merged key by key.
+    // A site's title color keeps the default's palette: the group is merged key by key.
     let config =
         Value::from(serde_json::json!({"themeVariables": {"xyChart": {"titleColor": "#123456"}}}));
     let (svg, _) = both_renders(XY, &config, None);
     assert!(svg.contains("fill=\"#123456\""), "the site's title color");
     assert!(
         svg.contains(&format!("fill=\"{}\"", SERIES_LIGHT[0])),
-        "the mode's palette"
+        "the default's palette"
     );
 }
 
@@ -2439,7 +2426,7 @@ fn mindmap_size(svg: &str, number: usize) -> (f64, f64) {
 #[test]
 fn a_mindmap_runs_clockwise_around_its_root() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(MINDMAP_TREE, &design(None)).unwrap();
+    let svg = renderer.render_with(MINDMAP_TREE, &default(None)).unwrap();
     // Nodes in pre-order: 0 root, 1 North, 2-4 its leaves, 5 East, 6 South, 7 West.
     let root = mindmap_center(&svg, 0);
     let [north, east, south, west] = [1, 5, 6, 7].map(|n| mindmap_center(&svg, n));
@@ -2460,14 +2447,14 @@ fn a_mindmap_runs_clockwise_around_its_root() {
     // The same text gives the same drawing.
     assert_eq!(
         svg,
-        renderer.render_with(MINDMAP_TREE, &design(None)).unwrap()
+        renderer.render_with(MINDMAP_TREE, &default(None)).unwrap()
     );
 }
 
 #[test]
 fn a_mindmap_node_stands_between_its_children_with_even_room() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(MINDMAP_TREE, &design(None)).unwrap();
+    let svg = renderer.render_with(MINDMAP_TREE, &default(None)).unwrap();
     let north = mindmap_center(&svg, 1);
     let leaves = [2, 3, 4].map(|n| (mindmap_center(&svg, n), mindmap_size(&svg, n)));
     // In the order of the text, from top to bottom, beyond their parent.
@@ -2488,7 +2475,7 @@ fn a_mindmap_node_stands_between_its_children_with_even_room() {
 #[test]
 fn a_mindmap_line_meets_its_nodes_level() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(MINDMAP_TREE, &design(None)).unwrap();
+    let svg = renderer.render_with(MINDMAP_TREE, &default(None)).unwrap();
     let north = mindmap_center(&svg, 1);
     let (north_width, _) = mindmap_size(&svg, 1);
     let one = mindmap_center(&svg, 2);
@@ -2512,7 +2499,7 @@ fn a_mindmap_line_meets_its_nodes_level() {
 fn a_mindmap_node_is_smaller_the_further_it_stands_from_the_root() {
     let renderer = Renderer::new(&Value::empty_object());
     let svg = renderer
-        .render_with("mindmap\n  Word\n    Word\n      Word\n", &design(None))
+        .render_with("mindmap\n  Word\n    Word\n      Word\n", &default(None))
         .unwrap();
     let [root, branch, leaf] = [0, 1, 2].map(|n| mindmap_size(&svg, n));
     assert!(
@@ -2525,7 +2512,7 @@ fn a_mindmap_node_is_smaller_the_further_it_stands_from_the_root() {
     );
     // The default draws every depth alike.
     let plain = renderer
-        .render_with("mindmap\n  Word\n    Word\n      Word\n", &default(None))
+        .render_with("mindmap\n  Word\n    Word\n      Word\n", &compat(None))
         .unwrap();
     assert_eq!(mindmap_size(&plain, 1), mindmap_size(&plain, 2));
 }
@@ -2534,14 +2521,14 @@ fn a_mindmap_node_is_smaller_the_further_it_stands_from_the_root() {
 fn a_mindmap_keeps_a_layout_its_configuration_names() {
     let renderer = Renderer::new(&Value::empty_object());
     let text = "---\nconfig:\n  layout: tidy-tree\n---\nmindmap\n  root\n    a\n    b\n    c\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     // The tidy tree alternates the branches between the sides, the first one on the left. The
     // mode's own layout would put the first two on the right.
     let root = mindmap_center(&svg, 0);
     assert!(mindmap_center(&svg, 1).0 < root.0);
     assert!(mindmap_center(&svg, 2).0 > root.0);
     let elk = "---\nconfig:\n  layout: elk\n---\nmindmap\n  root\n    a\n    b\n";
-    assert!(renderer.render_with(elk, &design(None)).is_ok());
+    assert!(renderer.render_with(elk, &default(None)).is_ok());
 }
 
 #[test]
@@ -2550,30 +2537,30 @@ fn siblings_stand_in_one_layer_whether_or_not_their_edges_carry_labels() {
     // ELK gives a label a layer of its own: the part whose relation carries a label stood a layer
     // below the other.
     let cars = "classDiagram\n  Car \"1\" *-- \"4\" Wheel\n  Car \"1\" *-- \"1\" Engine : has\n";
-    let designed = renderer.render_with(cars, &design(None)).unwrap();
+    let designed = renderer.render_with(cars, &default(None)).unwrap();
     let (wheel, engine) = (
         class_middle(&designed, "Wheel"),
         class_middle(&designed, "Engine"),
     );
     assert!((wheel.1 - engine.1).abs() < 1e-6, "{wheel:?} {engine:?}");
     assert!(class_middle(&designed, "Car").1 < wheel.1);
-    let plain = renderer.render_with(cars, &default(None)).unwrap();
+    let plain = renderer.render_with(cars, &compat(None)).unwrap();
     assert!(class_middle(&plain, "Wheel").1 < class_middle(&plain, "Engine").1);
 
     // The children of a node, and the parents of a node alike.
     let children = "flowchart TD\n  A[Order] --> B[Pack]\n  A -->|paid| C[Ship]\n";
     let parents = "flowchart TD\n  A[Order] --> C[Ship]\n  B[Refund] -->|approved| C\n";
     for (text, one, other) in [(children, "B", "C"), (parents, "A", "B")] {
-        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let designed = renderer.render_with(text, &default(None)).unwrap();
         let (one, other) = (node_middle(&designed, one), node_middle(&designed, other));
         assert!((one.1 - other.1).abs() < 1e-6, "{text}: {one:?} {other:?}");
     }
 
     // A child that leads to the other is no sibling: it stays in the layer after its parent.
     let chain = "flowchart TD\n  A[Order] -->|paid| B[Ship]\n  A --> C[Pack]\n  C --> B\n";
-    let designed = renderer.render_with(chain, &design(None)).unwrap();
+    let designed = renderer.render_with(chain, &default(None)).unwrap();
     let unlabeled = renderer
-        .render_with(&chain.replace("|paid| ", ""), &design(None))
+        .render_with(&chain.replace("|paid| ", ""), &default(None))
         .unwrap();
     let gap = |svg: &str| node_middle(svg, "C").1 - node_middle(svg, "A").1;
     assert!((gap(&designed) - gap(&unlabeled)).abs() < 1e-6);
@@ -2587,14 +2574,14 @@ const SEQUENCE: &str = "sequenceDiagram\n  actor User\n  participant Web\n  part
 #[test]
 fn a_sequence_diagram_draws_in_the_design_mode() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(SEQUENCE, &design(None)).unwrap();
+    let svg = renderer.render_with(SEQUENCE, &default(None)).unwrap();
     for role in ["actor", "data", "decision"] {
         assert!(svg.contains(&format!("data-role=\"{role}\"")), "{role}");
     }
     // The frame of `loop` stays neutral.
     let drawing = &svg[svg.find("</style>").unwrap()..];
     assert_eq!(drawing.matches("data-role=\"decision\"").count(), 1);
-    // The mode's own arrowhead, round participant boxes and one rounded outline per frame.
+    // The default's own arrowhead, round participant boxes and one rounded outline per frame.
     assert!(svg.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
     assert!(svg.contains("class=\"actor actor-top\""));
     assert!(svg.contains(" rx=\"8\""));
@@ -2607,7 +2594,7 @@ fn a_sequence_diagram_draws_in_the_design_mode() {
     assert!(sheet.contains("--decisionBorder:#B7791F;"));
     assert!(sheet.contains("stroke-width:1.25px"));
 
-    let plain = renderer.render_with(SEQUENCE, &default(None)).unwrap();
+    let plain = renderer.render_with(SEQUENCE, &compat(None)).unwrap();
     assert!(!plain.contains("data-role"));
     assert!(!plain.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
 }
@@ -2616,13 +2603,13 @@ fn a_sequence_diagram_draws_in_the_design_mode() {
 fn the_sequence_diagrams_dark_set_and_user_variables_apply() {
     let renderer = Renderer::new(&Value::empty_object());
     let svg = renderer
-        .render_with(SEQUENCE, &design(Some(ColorScheme::Dark)))
+        .render_with(SEQUENCE, &default(Some(ColorScheme::Dark)))
         .unwrap();
     let sheet = style_sheet(&svg);
     assert!(sheet.contains("--actorBkg:#1D212A;"));
     assert!(sheet.contains("--terminalBorder:#4263EB;"));
     let both = renderer
-        .render_with(SEQUENCE, &design(Some(ColorScheme::Auto)))
+        .render_with(SEQUENCE, &default(Some(ColorScheme::Auto)))
         .unwrap();
     assert!(style_sheet(&both).contains("light-dark("));
 
@@ -2630,20 +2617,11 @@ fn the_sequence_diagrams_dark_set_and_user_variables_apply() {
         "themeVariables": { "actorBkg": "#ffeedd", "signalColor": "#ff0000" }
     }));
     let svg = Renderer::new(&config)
-        .render_with(SEQUENCE, &design(None))
+        .render_with(SEQUENCE, &default(None))
         .unwrap();
     let sheet = style_sheet(&svg);
     assert!(sheet.contains("--actorBkg:#ffeedd;"));
     assert!(sheet.contains("--signalColor:#ff0000;"));
-
-    let both = RenderOptions {
-        compat: true,
-        ..design(None)
-    };
-    match renderer.render_with(SEQUENCE, &both) {
-        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
-        other => panic!("expected an option error, got {other:?}"),
-    }
 }
 
 /// The x of every lifeline of a sequence diagram, from the left.
@@ -2682,14 +2660,14 @@ fn participant_box(svg: &str, name: &str) -> (f64, f64) {
 fn a_sequences_columns_share_one_pitch_unless_a_label_needs_more() {
     let text = "sequenceDiagram\n  participant A\n  participant B\n  participant C\n  participant D\n  A->>B: hi\n  B->>C: a much longer message between B and C\n  C->>D: ok\n";
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let xs = lifelines(&svg);
     let pitches: Vec<f64> = xs.windows(2).map(|pair| pair[1] - pair[0]).collect();
     assert_eq!(pitches[0], 150.0, "{pitches:?}");
     assert_eq!(pitches[2], 150.0, "{pitches:?}");
     assert!(pitches[1] > 300.0, "{pitches:?}");
     // The default spaces short names by the reference's 150 wide columns and 50 between them.
-    let plain = lifelines(&renderer.render_with(text, &default(None)).unwrap());
+    let plain = lifelines(&renderer.render_with(text, &compat(None)).unwrap());
     assert_eq!(plain[1] - plain[0], 200.0);
 }
 
@@ -2697,7 +2675,7 @@ fn a_sequences_columns_share_one_pitch_unless_a_label_needs_more() {
 fn a_participant_box_fits_its_name_and_the_row_fits_the_boxes() {
     let renderer = Renderer::new(&Value::empty_object());
     let text = "sequenceDiagram\n  participant A\n  participant Authentication\n  A->>Authentication: hi\n";
-    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let svg = renderer.render_with(text, &default(None)).unwrap();
     let (width, height) = participant_box(&svg, "A");
     assert_eq!(width, 96.0);
     assert_eq!(height, 44.0);
@@ -2706,7 +2684,7 @@ fn a_participant_box_fits_its_name_and_the_row_fits_the_boxes() {
     // Without a glyph, the lifelines start below the boxes, at the height of the row.
     assert!(svg.contains(" y1=\"44\""));
     // With an actor, the row is the glyph's, and the boxes stand on its bottom.
-    let svg = renderer.render_with(SEQUENCE, &design(None)).unwrap();
+    let svg = renderer.render_with(SEQUENCE, &default(None)).unwrap();
     let (_, height) = participant_box(&svg, "Web");
     assert_eq!(height, 44.0);
 }
@@ -2714,7 +2692,7 @@ fn a_participant_box_fits_its_name_and_the_row_fits_the_boxes() {
 #[test]
 fn a_frames_title_stands_beside_its_tag_and_labels_interrupt_the_lifelines() {
     let renderer = Renderer::new(&Value::empty_object());
-    let svg = renderer.render_with(SEQUENCE, &design(None)).unwrap();
+    let svg = renderer.render_with(SEQUENCE, &default(None)).unwrap();
     // The titles have no brackets.
     assert!(!svg.contains(">[") && !svg.contains("]<"));
     assert!(svg.contains("class=\"loopText\""));
@@ -2727,7 +2705,7 @@ fn a_frames_title_stands_beside_its_tag_and_labels_interrupt_the_lifelines() {
     let masked = svg.matches("mask=\"url(#d-label-gaps)\"").count();
     assert_eq!(masked, 3);
     assert!(svg.matches("fill=\"black\"").count() >= 7);
-    let plain = renderer.render_with(SEQUENCE, &default(None)).unwrap();
+    let plain = renderer.render_with(SEQUENCE, &compat(None)).unwrap();
     assert!(plain.contains("[Valid password]"));
     assert!(!plain.contains("label-gaps"));
 }

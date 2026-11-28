@@ -31,38 +31,33 @@ test('errors propagate and leave a reused renderer usable', () => {
   assert.match(renderer.render(diagram, { id: 'after' }), /<svg/);
 });
 
-void test('design draws flowcharts, state and class diagrams in the design mode and rejects what it does not support', () => {
+void test('the default draws roles for every graph and compat draws Mermaid geometry', () => {
   const renderer = new Renderer();
   const flow = 'flowchart TD\n A([Start]) --> B{Review}\n B --> C[(Store)]\n';
-  const designed = renderer.render(flow, { design: true });
-  assert.match(designed, /data-role="terminal"/);
-  assert.match(designed, /data-role="decision"/);
-  assert.match(designed, /data-role="data"/);
-  assert.equal(renderer.render(flow, { design: false }), renderer.render(flow));
-  assert.doesNotMatch(renderer.render(flow), /data-role/);
-  assert.throws(() => renderer.render(flow, { design: true, compat: true }), /compat/);
+  const drawn = renderer.render(flow);
+  assert.match(drawn, /data-role="terminal"/);
+  assert.match(drawn, /data-role="decision"/);
+  assert.match(drawn, /data-role="data"/);
+  assert.equal(renderer.render(flow, { compat: false }), drawn);
+  assert.doesNotMatch(renderer.render(flow, { compat: true }), /data-role/);
   const states =
     'stateDiagram-v2\n [*] --> Open\n state pick <<choice>>\n Open --> pick\n pick --> [*]\n';
-  const designedStates = renderer.render(states, { design: true });
-  assert.match(designedStates, /data-role="terminal"/);
-  assert.match(designedStates, /data-role="decision"/);
-  assert.doesNotMatch(renderer.render(states), /data-role/);
-  assert.throws(() => renderer.render(states, { design: true, compat: true }), /compat/);
+  assert.match(renderer.render(states), /data-role="decision"/);
+  assert.doesNotMatch(renderer.render(states, { compat: true }), /data-role/);
   const classes = 'classDiagram\n class Shape {\n  <<interface>>\n }\n Shape <|.. Circle\n';
-  assert.match(renderer.render(classes, { design: true }), /data-role="interface"/);
-  assert.doesNotMatch(renderer.render(classes), /data-role/);
-  assert.throws(() => renderer.render(classes, { design: true, compat: true }), /compat/);
-  assert.throws(() => renderer.render('pie\n "a" : 1\n', { design: true }), /design mode/);
+  assert.match(renderer.render(classes), /data-role="interface"/);
+  assert.doesNotMatch(renderer.render(classes, { compat: true }), /data-role/);
+  assert.match(renderer.render('pie\n "a" : 1\n'), /<svg/);
 });
 
 void test('compat selects Mermaid geometry for flowcharts and sequence participants', () => {
   const renderer = new Renderer();
   const sequence = 'sequenceDiagram\n participant App\n participant API\n App->>API: Request\n';
-  const compact = renderer.render(sequence);
+  const drawn = renderer.render(sequence);
   const compatible = renderer.render(sequence, { compat: true });
-  assert.match(compact, /height="32" name="App"/);
+  assert.match(drawn, /height="44" name="App"/);
   assert.match(compatible, /height="76" name="App"/);
-  assert.equal(renderer.render(sequence, { compat: false }), compact);
+  assert.equal(renderer.render(sequence, { compat: false }), drawn);
   assert.equal(renderer.render(sequence, { compat: true }), compatible);
   const flow = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
   assert.notEqual(renderer.render(flow), renderer.render(flow, { compat: true }));

@@ -248,11 +248,11 @@ impl Renderer<'_> {
         Ok(())
     }
 
-    /// A block's frame in the design mode (`docs/diagrams/sequence.md#design-mode`): one rounded
-    /// outline colored by the frame's role, sections divided by a dashed hairline, the keyword in a
-    /// tag that fills the frame's corner, and the title beside the tag, at the left, in the tag's
-    /// row. A section's title starts below its divider at the title's column. The titles interrupt
-    /// the lifelines behind them.
+    /// A block's frame in the default rendering (`docs/diagrams/sequence.md#default-look`): one
+    /// rounded outline colored by the frame's role, sections divided by a dashed hairline, the
+    /// keyword in a tag that fills the frame's corner, and the title beside the tag, at the left,
+    /// in the tag's row. A section's title starts below its divider at the title's column. The
+    /// titles interrupt the lifelines behind them.
     fn draw_frame(
         &mut self,
         block: &mut Block,
@@ -394,7 +394,8 @@ impl Renderer<'_> {
             && let Some(&loop_width) = loop_widths.get(&id)
         {
             let font = self.conf.message_font.clone();
-            // The design mode's title stands beside its tag, without the reference's brackets.
+            // The default rendering's title stands beside its tag, without the reference's
+            // brackets.
             let bracketed = if self.design.is_some() {
                 text.clone()
             } else {

@@ -1,5 +1,6 @@
-//! The layout of a mindmap in the design mode (`docs/diagrams/mindmap.md#design-mode`,
-//! `docs/decisions/0023-design-mode.md`): a tree around its center, drawn as a person draws one.
+//! The layout of a mindmap in the default rendering (`docs/diagrams/mindmap.md#default-look`,
+//! `docs/decisions/0023-the-default-rendering.md`): a tree around its center, drawn as a person
+//! draws one.
 //!
 //! The root stands in the middle. Its branches go to both sides, the first ones on the right from top
 //! to bottom and the rest on the left from bottom to top, so that the text's order runs clockwise
@@ -12,7 +13,7 @@
 //! its child's inner side, level at both ends, so that the lines of a node fan out of one point.
 //!
 //! The layout reads only the sizes of the nodes and the edges: it is deterministic (decision 0018),
-//! draws no random numbers and runs no engine. The default and `compat` never run it; they keep
+//! draws no random numbers and runs no engine. `compat` never runs it; it keeps
 //! cose-bilkent (`ferrigura-cose`).
 
 use std::collections::HashMap;

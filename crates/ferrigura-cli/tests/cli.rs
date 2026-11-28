@@ -44,25 +44,25 @@ fn animation_is_optional_and_has_validated_speed_and_order() {
 }
 
 #[test]
-fn design_draws_the_design_mode_and_excludes_compat() {
+fn the_default_draws_roles_and_compat_and_the_removed_design_option() {
     let text = "flowchart TD\n A([Start]) --> B{Review}\n B --> C[Done]\n";
-    let designed = run(&["--id", "look", "--design"], text);
-    assert!(designed.status.success(), "{}", stderr(&designed));
-    assert!(stdout(&designed).contains("data-role=\"terminal\""));
-    assert!(!stdout(&run(&["--id", "look"], text)).contains("data-role"));
-    let both = run(&["--design", "--compat"], text);
-    assert!(!both.status.success());
-    assert!(stderr(&both).contains("cannot be combined with compat"));
+    let drawn = run(&["--id", "look"], text);
+    assert!(drawn.status.success(), "{}", stderr(&drawn));
+    assert!(stdout(&drawn).contains("data-role=\"terminal\""));
+    assert!(!stdout(&run(&["--id", "look", "--compat"], text)).contains("data-role"));
+    let removed = run(&["--design"], text);
+    assert_eq!(removed.status.code(), Some(2));
+    assert!(stderr(&removed).contains("unknown option --design"));
 }
 
 #[test]
 fn compat_selects_reference_routing_and_the_removed_option_is_rejected() {
     let text = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
-    let adaptive = run(&["--id", "routing"], text);
+    let drawn = run(&["--id", "routing"], text);
     let compatible = run(&["--id", "routing", "--compat"], text);
-    assert!(adaptive.status.success(), "{}", stderr(&adaptive));
+    assert!(drawn.status.success(), "{}", stderr(&drawn));
     assert!(compatible.status.success(), "{}", stderr(&compatible));
-    assert_ne!(stdout(&adaptive), stdout(&compatible));
+    assert_ne!(stdout(&drawn), stdout(&compatible));
     let invalid = run(&["--flowchart-mode", "mermaid"], "");
     assert_eq!(invalid.status.code(), Some(2));
     assert!(stderr(&invalid).contains("unknown option --flowchart-mode"));
@@ -213,7 +213,7 @@ fn a_type_ferrigura_does_not_draw_is_an_error_of_the_diagram_that_names_it() {
         ("requirementDiagram\n", "requirement"),
         ("info\n", "info"),
     ] {
-        for mode in [&[][..], &["--compat"][..], &["--design"][..]] {
+        for mode in [&[][..], &["--compat"][..]] {
             let output = run(mode, text);
             assert_eq!(output.status.code(), Some(1), "{text:?} {mode:?}");
             assert!(stdout(&output).is_empty(), "{text:?} {mode:?}");
@@ -338,10 +338,10 @@ fn output_takes_one_input_and_output_dir_takes_files() {
 #[test]
 fn compat_selects_reference_geometry_across_diagram_types() {
     let sequence = "sequenceDiagram\n participant App\n participant API\n App->>API: Request\n";
-    let optimized = run(&["--id", "mode"], sequence);
+    let drawn = run(&["--id", "mode"], sequence);
     let compatible = run(&["--id", "mode", "--compat"], sequence);
     assert!(compatible.status.success(), "{}", stderr(&compatible));
-    assert!(stdout(&optimized).contains("height=\"32\" name=\"App\""));
+    assert!(stdout(&drawn).contains("height=\"44\" name=\"App\""));
     assert!(stdout(&compatible).contains("height=\"76\" name=\"App\""));
 }
 

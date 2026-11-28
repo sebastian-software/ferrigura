@@ -53,10 +53,10 @@ pub fn render_with_animation(
     render_with_design(input, animation, None)
 }
 
-/// [`render_with_animation`] in the design mode when `design` gives its tone
-/// (`docs/decisions/0023-design-mode.md`). The colors are the mode's theme variables; what the
-/// mode decides here is a data label's color where the theme gives none: the series' text color
-/// on a bar, the text color beside it.
+/// [`render_with_animation`] in the default rendering when `design` gives its tone
+/// (`docs/decisions/0023-the-default-rendering.md`). The colors are the default's theme variables;
+/// what the mode decides here is a data label's color where the theme gives none: the series' text
+/// color on a bar, the text color beside it.
 ///
 /// # Errors
 /// Returns the errors of [`render_with_animation`].

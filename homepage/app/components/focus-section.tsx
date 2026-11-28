@@ -24,7 +24,7 @@ const groups = [
     title: 'Graphs',
     types: 'flowchart · state · class · ER',
     body: 'Boxes and arrows, placed by one layout engine. These are the large diagrams, where the layout decides whether a reader can follow the structure.',
-    verdict: 'Flowcharts, state diagrams and class diagrams also draw in the design mode.',
+    verdict: 'Each one laid out by Ferrigura’s own measures, with room for its arrows.',
   },
   {
     title: 'A form of their own',
@@ -102,9 +102,10 @@ export function Focus() {
       </p>
       <p>
         Ten types instead of thirty is what makes room for the rest of this page: labels that are
-        measured, drawings that are checked to a twentieth of a pixel, and a design mode that goes
-        beyond Mermaid&rsquo;s own drawing. It keeps the engine small, too: the Node addon with all
-        ten types is <Size of="all" />. <Link to="/architecture/size/">What each type adds</Link>
+        measured, drawings that are checked to a twentieth of a pixel, and a look of its own that
+        goes beyond Mermaid&rsquo;s drawing, for every type. It keeps the engine small, too: the
+        Node addon with all ten types is <Size of="all" />.{' '}
+        <Link to="/architecture/size/">What each type adds</Link>
         {' · '}
         <Link to="/architecture/decisions/0024-a-fixed-list-of-diagram-types/">Why ten types</Link>
       </p>

@@ -10,11 +10,11 @@ import {
 import samples from '../data/diagram-samples.json';
 import designDark from '../data/diagrams/design-decision-dark.svg?raw';
 import designLight from '../data/diagrams/design-decision.svg?raw';
-import firstPlain from '../data/diagrams/design-pipeline-default.svg?raw';
+import firstPlain from '../data/diagrams/design-pipeline-compat.svg?raw';
 import firstDesigned from '../data/diagrams/design-pipeline.svg?raw';
 import { credit, Drawing, Source } from './homepage-specimens';
 
-/* The design mode's drawings, written by scripts/render-diagram-samples.mjs
+/* The drawings of Ferrigura's own look beside compat's, written by scripts/render-diagram-samples.mjs
    into app/data/ like every other drawing of the page. */
 
 // The other samples load when a visitor asks for them; the ones on the page
@@ -71,8 +71,8 @@ function useDesignSample() {
 }
 
 /**
-     Three flowcharts, a state diagram and a class diagram, each in the default drawing and in the
-    design mode.
+     Three flowcharts, a state diagram and a class diagram, each in compat, Mermaid's drawing, and in
+    the default rendering.
  */
 export function DesignSheets() {
   const { sample, choose, plain, designed } = useDesignSample();
@@ -91,11 +91,11 @@ export function DesignSheets() {
         onChange={choose}
       />
       <MonoFacing>
-        <MonoSheet label="Default" meta="design: false">
-          <Drawing svg={plain} label={`${sample.description} Drawn in the default mode.`} />
+        <MonoSheet label="Mermaid’s drawing" meta="compat: true">
+          <Drawing svg={plain} label={`${sample.description} Drawn with Mermaid’s geometry.`} />
         </MonoSheet>
-        <MonoSheet label="Design mode" meta="design: true">
-          <Drawing svg={designed} label={`${sample.description} Drawn in the design mode.`} />
+        <MonoSheet label="Ferrigura, the default" meta="compat: false">
+          <Drawing svg={designed} label={`${sample.description} Drawn in Ferrigura’s own look.`} />
         </MonoSheet>
       </MonoFacing>
       <MonoCaption>
@@ -110,17 +110,17 @@ export function DesignSheets() {
   );
 }
 
-/** The decision sample of the design mode in its light and its dark set. */
+/** The decision sample of the default rendering in its light and its dark set. */
 export function DesignSchemeSheets() {
   const sample = samples.design.samples.find(({ id }) => id === 'decision') ?? first;
   return (
     <figure className="mono-wide fgr-pair">
       <MonoFacing>
-        <MonoSheet label="Light" meta="design: true, colorScheme: 'light'">
-          <Drawing svg={designLight} label={`${sample.description} Design mode, light colors.`} />
+        <MonoSheet label="Light" meta="colorScheme: 'light'">
+          <Drawing svg={designLight} label={`${sample.description} Light colors.`} />
         </MonoSheet>
-        <MonoSheet label="Dark" meta="design: true, colorScheme: 'dark'" className="fgr-dark">
-          <Drawing svg={designDark} label={`${sample.description} Design mode, dark colors.`} />
+        <MonoSheet label="Dark" meta="colorScheme: 'dark'" className="fgr-dark">
+          <Drawing svg={designDark} label={`${sample.description} Dark colors.`} />
         </MonoSheet>
       </MonoFacing>
       <MonoCaption>

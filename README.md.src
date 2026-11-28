@@ -10,7 +10,7 @@
 
 <!-- mdtheme:badges:end -->
 
-ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It draws ten diagram types of Mermaid 12.2.0, each one completely, checked against Mermaid run in Chromium: flowchart, state, class and ER; mindmap, sequence and gantt; XY chart, pie and quadrant chart. A text of any other Mermaid type gives an error that names it. Flowcharts use adaptive port alignment and full-opacity edge-label backgrounds by default; an explicit [Mermaid-compatible rendering option](./docs/diagrams/flowchart.md#rendering-mode) preserves the reference's output.
+ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It draws ten diagram types of Mermaid 12.2.0, each one completely, checked against Mermaid run in Chromium: flowchart, state, class and ER; mindmap, sequence and gantt; XY chart, pie and quadrant chart. A text of any other Mermaid type gives an error that names it. By default every type is drawn in ferrigura's own look ([0023](./docs/decisions/0023-the-default-rendering.md)); the [`compat` option](./docs/decisions/0019-mermaid-geometry-with-compat.md) draws Mermaid's geometry, which the checks hold within 0.05 px of the reference.
 
 ```mermaid
 flowchart LR

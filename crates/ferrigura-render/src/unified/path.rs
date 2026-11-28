@@ -812,8 +812,8 @@ pub fn generate_rounded_path(points: &[Point], radius: f64) -> String {
 
 /// [`generate_rounded_path`] for points whose ends a marker pulled back by `pulled` (start, end):
 /// the corner next to an end takes at most half of that part as the layout left it, before the
-/// pull-back, and never more than the part that is drawn. The design mode draws its edges so, and
-/// an arrowhead does not make the turn before it tighter than the others.
+/// pull-back, and never more than the part that is drawn. The default rendering draws its edges so,
+/// and an arrowhead does not make the turn before it tighter than the others.
 #[must_use]
 pub fn generate_rounded_path_from_ends(
     points: &[Point],

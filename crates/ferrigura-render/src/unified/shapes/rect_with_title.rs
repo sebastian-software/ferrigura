@@ -99,9 +99,9 @@ pub(super) fn rect_with_title(
         .translate(title_x, 0.0)
         .union(rows_layout.bbox.translate(rows_x, rows_y));
 
-    // The design mode pads the sides by the room of a state's text, and makes the box at least
-    // as wide as a plain state: the state's minimum width and its padding, as `labelHelper` and
-    // `drawRect` give it unless the state has its own width. The title stays centered, and the
+    // The default rendering pads the sides by the room of a state's text, and makes the box at
+    // least as wide as a plain state: the state's minimum width and its padding, as `labelHelper`
+    // and `drawRect` give it unless the state has its own width. The title stays centered, and the
     // rows start at the left.
     let (outer, divider_y, divider_end, group_origin, title_x, rows_x) = if design {
         let side = crate::design::STATE_SIDE_ROOM;

@@ -25,7 +25,6 @@ The first run takes about half a minute; later runs reuse the build while the pi
 | 06    | `@{ shape: constructor }` was accepted as a shape, and `__proto__` twice in a subgraph stayed twice                                                      |
 | 07    | Not a fix: a capture hook, `globalThis.__mermaidElkCapture`, that gives the harness each ELK input and layout                                            |
 | 08    | The sankey, packet, xychart and block detectors took any word that starts with the keyword                                                               |
-| 10    | Not a fix: an optional measured-input hook for the adaptive flowchart geometry comparison ([0019](../../docs/decisions/0019-adaptive-flowchart-mode.md)) |
 | 11    | SVG flowchart edge labels mask their edges at full opacity, without changing layout                                                                      |
 | 12    | All nonempty shared SVG edge-label backgrounds use full opacity, retaining theme fill transparency; state, block and agentflow no longer halve it        |
 | 13    | Preserve CSS hex colors and statement separators in `style`/`classDef` and resolve source Mermaid entity placeholders in HTTP/HTTPS URLs with component-aware WHATWG encoding during `formatUrl` |

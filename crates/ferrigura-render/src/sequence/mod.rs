@@ -59,10 +59,8 @@ pub(super) struct Renderer<'a> {
     pub(super) theme: ThemeView<'a>,
     /// The resolved configuration.
     pub(super) conf: Conf,
-    /// Whether participant boxes fit their labels instead of spanning the shared row.
-    pub(super) compact_participants: bool,
-    /// The tone of the design mode, when the diagram is drawn in it
-    /// (`docs/decisions/0023-design-mode.md`).
+    /// The tone of the default rendering, when the diagram is drawn in it
+    /// (`docs/decisions/0023-the-default-rendering.md`).
     pub(super) design: Option<Tone>,
     /// The text measurements of this render.
     pub(super) memo: TextMemo,
@@ -74,7 +72,7 @@ pub(super) struct Renderer<'a> {
     pub(super) actor_cnt: i64,
     /// Whether the sequence numbers are shown (`db.sequenceNumbersEnabled`).
     pub(super) sequence_numbers: bool,
-    /// The boxes of the labels that interrupt the lifelines in the design mode.
+    /// The boxes of the labels that interrupt the lifelines in the default rendering.
     pub(super) gaps: Vec<design::Gap>,
     /// The children of the root that `lower()` moved to the front, in the order they were moved.
     front: Vec<Element>,
@@ -121,7 +119,6 @@ impl<'a> Renderer<'a> {
             id: input.id,
             theme: input.theme,
             conf,
-            compact_participants: false,
             design,
             gaps: Vec::new(),
             memo: TextMemo::new(),
@@ -539,9 +536,9 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    /// The design mode's gaps in the lifelines: a mask, white with a black box for each label, on
-    /// every lifeline, so that a label interrupts a lifeline that crosses it whatever stands behind
-    /// it (`docs/diagrams/sequence.md#design-mode`).
+    /// The default rendering's gaps in the lifelines: a mask, white with a black box for each
+    /// label, on every lifeline, so that a label interrupts a lifeline that crosses it whatever
+    /// stands behind it (`docs/diagrams/sequence.md#default-look`).
     fn mask_lifelines(&mut self) {
         if self.design.is_none() || self.gaps.is_empty() {
             return;
@@ -796,34 +793,22 @@ fn stop_y(block: &Block) -> f64 {
 pub fn render(
     input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
 ) -> Result<String, RenderError> {
-    render_with(input, true)
+    render_with_design(input, None)
 }
 
-/// Renders with Mermaid participant geometry when `compat` is true; otherwise boxes fit their labels.
-///
-/// # Errors
-///
-/// Returns the same errors as [`render`].
-pub fn render_with(
-    input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
-    compat: bool,
-) -> Result<String, RenderError> {
-    render_with_design(input, compat, None)
-}
-
-/// [`render_with`], in the design mode of `design`'s tone when it is set
-/// (`docs/decisions/0023-design-mode.md`). The facade never combines the mode with `compat`.
+/// [`render`], in ferrigura's own look of `design`'s tone when it is set
+/// (`docs/decisions/0023-the-default-rendering.md`): participant boxes fit their labels, and the
+/// parts take the look's colors and measures. `None` draws the reference's geometry, as [`render`]
+/// does.
 ///
 /// # Errors
 ///
 /// Returns the same errors as [`render`].
 pub fn render_with_design(
     input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
-    compat: bool,
     design: Option<Tone>,
 ) -> Result<String, RenderError> {
     let mut renderer = Renderer::new(input, design)?;
-    renderer.compact_participants = !compat;
     renderer.draw(&input.diagram.title)?;
     renderer.write(input)
 }

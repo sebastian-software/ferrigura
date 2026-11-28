@@ -1,10 +1,10 @@
-//! The entity box of the design mode (`docs/decisions/0023-design-mode.md`): a rounded box with
-//! the entity's name bold and centered in a row of its own and, when it has attributes, a row per
-//! attribute below a hairline divider. An attribute's name, type, keys and comment stand in
-//! columns that start on one line; the name is set in the text color, the rest muted, the keys
-//! smaller and bold, so that the name of each attribute leads its row. Faint hairlines divide the
-//! rows; a column that no attribute fills takes no room. An entity without attributes is its name
-//! alone, centered in its box however much the box grows.
+//! The entity box of the default rendering (`docs/decisions/0023-the-default-rendering.md`): a
+//! rounded box with the entity's name bold and centered in a row of its own and, when it has
+//! attributes, a row per attribute below a hairline divider. An attribute's name, type, keys and
+//! comment stand in columns that start on one line; the name is set in the text color, the rest
+//! muted, the keys smaller and bold, so that the name of each attribute leads its row. Faint
+//! hairlines divide the rows; a column that no attribute fills takes no room. An entity without
+//! attributes is its name alone, centered in its box however much the box grows.
 //!
 //! The texts are plain text, as the class box's are: entities are decoded, a generic type shows
 //! its angle brackets, and no Markdown is read, so a name such as `*id` keeps its asterisk. The
@@ -144,7 +144,8 @@ impl Row {
     }
 }
 
-/// Draws the design mode's entity box around the origin. Its label is its alias when it has one.
+/// Draws the default rendering's entity box around the origin. Its label is its alias when it has
+/// one.
 ///
 /// # Errors
 ///

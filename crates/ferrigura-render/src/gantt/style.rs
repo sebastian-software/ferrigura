@@ -255,12 +255,12 @@ pub(crate) fn style_element(
 }
 
 /// The number of section classes the rules name, `section0` to `section3`: the series colors of the
-/// sections in the design mode are the first this many of the palette.
+/// sections in the default rendering are the first this many of the palette.
 const SECTION_CLASSES: usize = 4;
 
-/// Whether the bars of each section take its series color in the design mode: they do while the
-/// task colors are the mode's own. A user's `taskBkgColor` or `taskBorderColor` colors every bar
-/// alike, as in the default.
+/// Whether the bars of each section take its series color in the default rendering: they do while
+/// the task colors are the default's own. A user's `taskBkgColor` or `taskBorderColor` colors every
+/// bar alike, as in `compat`.
 pub(crate) fn series_by_section(tokens: &ThemeTokens, design: Option<Tone>) -> bool {
     let Some(tone) = design else {
         return false;
@@ -276,13 +276,13 @@ pub(crate) fn series_by_section(tokens: &ThemeTokens, design: Option<Tone>) -> b
         && is(&tokens.active_task_border_color, design::series(tone)[0])
 }
 
-/// The series color and tint of a section's bars in the design mode, for a tone.
+/// The series color and tint of a section's bars in the default rendering, for a tone.
 pub(crate) fn section_series(tone: Tone, section: usize) -> (&'static str, &'static str) {
     let slot = section % design::SERIES_LENGTH;
     (design::series_tint(tone)[slot], design::series(tone)[slot])
 }
 
-/// Appends the custom properties of the sections' series colors in the design mode.
+/// Appends the custom properties of the sections' series colors in the default rendering.
 fn write_series_declarations(out: &mut String, tone: Tone) {
     for section in 0..SECTION_CLASSES {
         let (tint, colour) = section_series(tone, section);
@@ -293,11 +293,11 @@ fn write_series_declarations(out: &mut String, tone: Tone) {
     }
 }
 
-/// The rules of the design mode after the reference's (`docs/decisions/0023-design-mode.md`): the
-/// section bands without the reference's opacity, so that they alternate between a quiet gray and
-/// the background; hairline outlines, and a heavier one for an active task; muted tick labels; and,
-/// with `series`, the bars of a section in its series color, and an active critical task in the
-/// critical fill.
+/// The rules of the default rendering after the reference's
+/// (`docs/decisions/0023-the-default-rendering.md`): the section bands without the reference's
+/// opacity, so that they alternate between a quiet gray and the background; hairline outlines, and
+/// a heavier one for an active task; muted tick labels; and, with `series`, the bars of a section
+/// in its series color, and an active critical task in the critical fill.
 fn write_design_rules(out: &mut String, id: &str, series: bool) {
     let stroke = design::TASK_STROKE_WIDTH;
     let active = design::ACTIVE_TASK_STROKE_WIDTH;

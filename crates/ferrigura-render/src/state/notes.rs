@@ -1,11 +1,11 @@
-//! The place of a note in the design mode: beside its state, at the state's height
-//! (`docs/decisions/0023-design-mode.md`). The step is ferrigura's own, run around ELK's layout;
-//! the ELK port does not know it.
+//! The place of a note in the default rendering: beside its state, at the state's height
+//! (`docs/decisions/0023-the-default-rendering.md`). The step is ferrigura's own, run around ELK's
+//! layout; the ELK port does not know it.
 //!
 //! The reference lays a note out as a node of its own, in a group of its own, joined to its state
 //! by an edge. ELK gives it a layer of its own, so the note stands below or above its state, and
-//! the states of the main flow move off their axis to make room for it. In the design mode, the
-//! notes do not take part in the layout:
+//! the states of the main flow move off their axis to make room for it. In the default rendering,
+//! the notes do not take part in the layout:
 //!
 //! 1. **Out.** Before the layout, the notes, their groups and their connectors leave the layout
 //!    data. A state with notes keeps their room instead, on the note's side only: each note's box

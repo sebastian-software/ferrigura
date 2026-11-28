@@ -83,12 +83,13 @@ pub fn own_rules(id: &str, tokens: &ThemeTokens, look: &str) -> String {
     css
 }
 
-/// The rules of the mindmap in the design mode (`docs/decisions/0023-design-mode.md`), to append to
-/// the base style sheet: a branch's nodes in the tint of its color (`cScale<i>`) with a hairline in
-/// its color (`cScalePeer<i>`) and the text color (`cScaleLabel<i>`), its edges in its color and
-/// thinner with each level, and the root in the flowchart's terminal color (`git0`,
-/// `gitBranchLabel0`). The mode's theme variables give those colors, and the user's win. With both
-/// color schemes, the colors that differ are `light-dark()` pairs.
+/// The rules of the mindmap in the default rendering
+/// (`docs/decisions/0023-the-default-rendering.md`), to append to the base style sheet: a branch's
+/// nodes in the tint of its color (`cScale<i>`) with a hairline in its color (`cScalePeer<i>`) and
+/// the text color (`cScaleLabel<i>`), its edges in its color and thinner with each level, and the
+/// root in the flowchart's terminal color (`git0`, `gitBranchLabel0`). The default's theme
+/// variables give those colors, and the user's win. With both color schemes, the colors that differ
+/// are `light-dark()` pairs.
 #[must_use]
 pub fn design_rules(id: &str, theme: crate::context::ThemeView<'_>) -> String {
     let light = design_rules_of(id, theme.light);

@@ -50,9 +50,9 @@ const RULES_CAPACITY: usize = 8 * 1024;
 
 /// The `<style>` element's content for an ER diagram with the id `svg_id`. The look is read from
 /// `config.look`, the palette from the theme, and the families of the embedded text give the
-/// `@font-face` rules that come first. In the design mode (`design`), the mode's rules follow the
-/// entity rules, and the mode's own properties take the place of the palette and the look's flood
-/// (`docs/decisions/0023-design-mode.md`).
+/// `@font-face` rules that come first. In the default rendering (`design`), the default's rules
+/// follow the entity rules, and the default's own properties take the place of the palette and the
+/// look's flood (`docs/decisions/0023-the-default-rendering.md`).
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
@@ -80,7 +80,7 @@ pub fn style_sheet(
     // `look === 'neo' ? strokeWidth : '1px'` (`styles.ts` 117, 122).
     let neo = globals.look == "neo";
     let entity_stroke = if neo { stroke_width.as_str() } else { "1px" };
-    // The design mode uses no palette: every entity is neutral.
+    // The default rendering uses no palette: every entity is neutral.
     let palette = palette(globals, tokens).filter(|_| design.is_none());
     let shadow: Cow<'_, str> = match tokens.drop_shadow.text() {
         Some(shadow) if !shadow.is_empty() => Cow::Owned(shadow.replacen(
@@ -176,11 +176,11 @@ pub fn style_sheet(
     assemble_stylesheet(svg_id, families, css, false)
 }
 
-/// The rules of the design mode, after the entity rules (`docs/decisions/0023-design-mode.md`):
-/// hairline outlines and dividers, a relationship in the edge's weight, dashed when it is not
-/// identifying, the markers' paint, the muted columns of an attribute row, the relationship labels
-/// in the gap of their line, and a group frame without the node's shadow. An entity's own styles
-/// are written on its elements and keep the last word.
+/// The rules of the default rendering, after the entity rules
+/// (`docs/decisions/0023-the-default-rendering.md`): hairline outlines and dividers, a relationship
+/// in the edge's weight, dashed when it is not identifying, the markers' paint, the muted columns
+/// of an attribute row, the relationship labels in the gap of their line, and a group frame without
+/// the node's shadow. An entity's own styles are written on its elements and keep the last word.
 fn write_design_rules(out: &mut String, id: &str) {
     let node_width = design::NODE_STROKE_WIDTH;
     let edge_width = design::EDGE_STROKE_WIDTH;
@@ -203,9 +203,9 @@ fn write_design_rules(out: &mut String, id: &str) {
     );
 }
 
-/// Appends the custom properties of the design mode: the color tokens of each set and the page's
-/// ground, which fills a marker's ring, with the mode's own properties for its tone. With a light
-/// and a dark set, the values that differ are `light-dark()` pairs.
+/// Appends the custom properties of the default rendering: the color tokens of each set and the
+/// page's ground, which fills a marker's ring, with the default's own properties for its tone. With
+/// a light and a dark set, the values that differ are `light-dark()` pairs.
 fn write_design_properties(css: &mut String, id: &str, theme: ThemeView<'_>, tone: Tone) {
     let write_block = |out: &mut String, tokens: &ThemeTokens, tone: Tone| {
         out.push_str(id);

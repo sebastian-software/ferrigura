@@ -694,7 +694,7 @@ impl Chart<'_> {
         let state = bar_state(task.active, task.done, task.crit);
         let (fill, stroke) = style::bar_tokens(self.tokens(), state, section, task.vert);
         let mut attributes = String::new();
-        // The design mode draws a section's bars in its series color, as its rules do.
+        // The default rendering draws a section's bars in its series color, as its rules do.
         let series = self
             .design
             .filter(|_| {

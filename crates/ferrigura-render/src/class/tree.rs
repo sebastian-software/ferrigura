@@ -1,6 +1,7 @@
-//! The inheritance tree of the design mode (`docs/decisions/0023-design-mode.md`): the
-//! generalizations that meet a class on one side share one triangle in the middle of that side and
-//! one line into it, and branch on a bus to their children, as a person draws an inheritance tree.
+//! The inheritance tree of the default rendering (`docs/decisions/0023-the-default-rendering.md`):
+//! the generalizations that meet a class on one side share one triangle in the middle of that side
+//! and one line into it, and branch on a bus to their children, as a person draws an inheritance
+//! tree.
 //!
 //! ELK gives every edge a port of its own, so two children of one parent would meet it at two
 //! triangles side by side. After the layout, this step takes the edges with a triangle at the same

@@ -150,7 +150,7 @@ fn render_flowchart(
     prepared: &Prepared<'_>,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    with_flowchart(prepared, options.compat, |input| {
+    with_flowchart(prepared, |input| {
         flowchart::render_with_animation(input, options.animation)
     })
 }
@@ -266,7 +266,7 @@ fn read_sequence(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_
 
 fn render_sequence(
     prepared: &Prepared<'_>,
-    options: &RenderOptions,
+    _options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
@@ -284,7 +284,6 @@ fn render_sequence(
             theme: prepared.theme(),
             id,
         },
-        options.compat,
         prepared.design,
     )
 }
@@ -420,8 +419,8 @@ fn render_xy_chart(
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    // The design mode draws the plots in its palette, unless the text gives one: the parser reads
-    // the palette from the text's configuration only.
+    // The default rendering draws the plots in its palette, unless the text gives one: the parser
+    // reads the palette from the text's configuration only.
     let designed = prepared
         .design
         .and_then(|_| design_palette_directive(&prepared.directive, prepared.theme().light));

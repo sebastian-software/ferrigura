@@ -36,8 +36,8 @@ pub struct GanttSection<'a> {
     pub config: &'a GanttDiagramConfig,
     /// The current time in milliseconds since the epoch, for the today marker.
     pub now: i64,
-    /// The tone of the design mode, when the render draws in it
-    /// (`docs/decisions/0023-design-mode.md`).
+    /// The tone of the default rendering, when the render draws in it
+    /// (`docs/decisions/0023-the-default-rendering.md`).
     pub design: Option<crate::design::Tone>,
 }
 
@@ -197,7 +197,7 @@ pub(super) struct Chart<'a> {
     pub(super) theme: ThemeView<'a>,
     /// The time of the render, for the today marker.
     pub(super) now: i64,
-    /// The tone of the design mode, when the render draws in it.
+    /// The tone of the default rendering, when the render draws in it.
     pub(super) design: Option<crate::design::Tone>,
     pub(super) model: &'a GanttDiagram,
     pub(super) conf: &'a GanttDiagramConfig,

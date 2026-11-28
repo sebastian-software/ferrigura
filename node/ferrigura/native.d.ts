@@ -17,7 +17,8 @@ export declare class Renderer {
    * that reads it, as `render` reports it.
    *
    * # Errors
-   * Throws immediately if supplied font bytes or face metadata are invalid.
+   * Throws immediately if `config` is not an object (when provided) or if supplied font bytes or
+   * face metadata are invalid.
    */
   constructor(config?: any | undefined | null, fonts?: FontOptionsInput | undefined | null)
   /**
@@ -86,15 +87,10 @@ export interface RenderOptionsInput {
   /** Optional draw animation. An empty object enables the default speed and source order. */
   animation?: AnimationInput
   /**
-   * Mermaid-compatible geometry when true. False (default) enables optimized flowchart routing
-   * and compact sequence participant boxes. Font, color and readability fixes always apply.
+   * Mermaid's geometry and look when true. False (default) draws every diagram type in
+   * ferrigura's own look and measures. Font and readability fixes always apply.
    */
   compat?: boolean
-  /**
-   * The design mode when true: ferrigura's own look for flowcharts, state, class and ER diagrams, mindmaps, and pie, XY, quadrant and gantt charts, with
-   * roomier nodes and spacing for the first four. Other diagram types and the combination with `compat` are rejected.
-   */
-  design?: boolean
   /**
    * The id of the SVG element, which scopes its styles. By default it is derived from the text and
    * the configuration, so the same input gives the same id.

@@ -5,8 +5,8 @@ import samples from '../data/diagram-samples.json';
 import { DesignSchemeSheets, DesignSheets } from './design-specimens';
 import { DiagramGallery, FileContents, ModeSheets, SchemeSheets } from './homepage-specimens';
 
-/* The homepage's first chapters: what Ferrigura is, the design mode, its text
-   and fonts, the flowchart modes and the color schemes. The published anchor #example stays
+/* The homepage's first chapters: what Ferrigura is, its own look, its text
+   and fonts, Mermaid's geometry with compat and the color schemes. The published anchor #example stays
    where links expect it. */
 
 export function Explainer() {
@@ -120,7 +120,7 @@ export function Text() {
   );
 }
 
-/** What the design mode does for the other two types it draws, and where it ends. */
+/** What the default look does for the other types, and where Mermaid's drawing stays. */
 function DesignScope() {
   return (
     <>
@@ -132,12 +132,13 @@ function DesignScope() {
         arrowhead. Only an interface and an enumeration carry color.
       </p>
       <p>
-        The design mode draws flowcharts, state diagrams and class diagrams, and gives mindmaps and
-        the pie, XY, quadrant and gantt charts its colors and one calm palette for their series;
-        another diagram type reports an error when the mode is asked for. It is an option of each
-        render, like <code>compat</code>, and the two exclude each other. Your theme variables and
-        class definitions keep the last word.{' '}
-        <Link to="/architecture/decisions/0023-design-mode/">How the design mode decides</Link>
+        Every one of the ten types is drawn this way by default, so a page with a flowchart, a
+        sequence diagram and a pie shows one look. Sequence diagrams and mind maps get a layout of
+        their own, and the charts one calm palette for their series. Your theme variables and class
+        definitions keep the last word.{' '}
+        <Link to="/architecture/decisions/0023-the-default-rendering/">
+          How the default rendering decides
+        </Link>
       </p>
     </>
   );
@@ -148,7 +149,7 @@ export function Design() {
     <MonoSection
       id="design-mode"
       title="A diagram that looks designed."
-      standfirst="Matching Mermaid is where Ferrigura starts, so that nothing moves when you switch. For flowcharts, state diagrams and class diagrams, one option goes further and draws the diagram Ferrigura’s own way: calm, with room, and with color that means something."
+      standfirst="Ferrigura reads Mermaid’s text and lays it out with Mermaid’s engines, then draws it its own way: calm, with room, and with color that means something."
     >
       <MonoPassage
         note={{
@@ -166,17 +167,17 @@ export function Design() {
         </p>
       </MonoPassage>
       <p>
-        With <code>design: true</code>, Ferrigura places the boxes itself, in the layers and the
-        order the same engine decided. A chain stands on one line. A decision stands between its
-        branches, and the box where they meet again stands under it. The arrows of a box leave
-        together from the middle of its side, and the one that carries the main flow runs straight.
+        Ferrigura places the boxes itself, in the layers and the order the same engine decided. A
+        chain stands on one line. A decision stands between its branches, and the box where they
+        meet again stands under it. The arrows of a box leave together from the middle of its side,
+        and the one that carries the main flow runs straight.
       </p>
       <DesignSheets />
       <p>
         The look changes with the layout. Outlines are thin, corners are round, and the boxes have
         room. A label sits in a gap of its arrow and needs no background. Color follows what a shape
         stands for, not the order of the boxes: where a flow starts and ends, where it decides,
-        where data is kept. The mode has a light and a dark set of colors.
+        where data is kept. There is a light and a dark set of colors.
       </p>
       <DesignSchemeSheets />
       <DesignScope />
@@ -188,8 +189,8 @@ export function Modes() {
   return (
     <MonoSection
       id="flowchart-mode"
-      title="Two ways to draw a flowchart."
-      standfirst="By default, Ferrigura straightens the small steps Mermaid leaves in simple flowcharts. One option brings Mermaid’s drawing back."
+      title="Mermaid’s drawing, when you need it."
+      standfirst="One option draws what Mermaid draws, box for box: the drawing the checks compare with Mermaid’s."
     >
       <MonoPassage
         note={{
@@ -199,23 +200,23 @@ export function Modes() {
       >
         <p>
           Mermaid spreads the ports of a box across its side. When two boxes of different widths are
-          joined, their ports rarely line up, and the arrow between them takes a small step. Its
-          edge labels are also only half opaque, so a line shows through the text that sits on it.
+          joined, their ports rarely line up, and the arrow between them takes a small step.
+          Ferrigura&rsquo;s own drawing lines the boxes up instead, so its geometry is not
+          Mermaid&rsquo;s.
         </p>
       </MonoPassage>
       <p>
-        Ferrigura&rsquo;s adaptive mode centers the ports and leaves room for the labels, so the
-        layout engine can draw those arrows straight. It also gives the labels a solid background.
-        Necessary bends remain, and in a complex graph the nodes can move. Use{' '}
-        <code>compat: true</code> to preserve Mermaid-compatible geometry.
+        With <code>compat: true</code>, or <code>--compat</code> on the command line, Ferrigura
+        draws Mermaid&rsquo;s geometry and colors for every type instead. That is the drawing the
+        checks hold to within 0.05 pixels of Mermaid&rsquo;s, and the one to pick when a diagram
+        must look exactly as it does in Mermaid.
       </p>
       <ModeSheets />
       <p>
-        The mode is an option of each render, not a setting in the diagram text, so one renderer can
-        draw both. The same <code>compat</code> switch also controls compact sequence participant
-        boxes.{' '}
-        <Link to="/architecture/decisions/0019-adaptive-flowchart-mode/">
-          Why adaptive is the default
+        The option belongs to each render, not to the diagram text, so one renderer can draw both,
+        and the same text still renders in Mermaid.{' '}
+        <Link to="/architecture/decisions/0019-mermaid-geometry-with-compat/">
+          What compat keeps
         </Link>
       </p>
     </MonoSection>

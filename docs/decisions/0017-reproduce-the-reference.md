@@ -4,9 +4,9 @@
 
 ## Decision
 
-ferrigura reproduces what the reference does, also where it looks like a bug. The same text renders the same diagram, and fails where the reference fails.
+ferrigura reproduces what the reference does, also where it looks like a bug. The same text renders the same diagram in `compat` ([0019](./0019-mermaid-geometry-with-compat.md)), and fails where the reference fails.
 
-The general compatibility switch is an explicit exception ([0019](./0019-adaptive-flowchart-mode.md)): the optimized default centers flowchart ports with label-aware spacing and sizes sequence participant boxes to their labels. `compat: true` retains the reference's geometry. Both modes draw shared edge-label backgrounds at full opacity, also corrected in the reference by patches 11 and 12. The optional draw animation is another explicit addition ([0021](./0021-optional-svg-draw-animation.md)); it leaves static output unchanged. The optional design mode is a third ([0023](./0023-design-mode.md)): it draws ferrigura's own look and leaves the output without it unchanged. The rules below apply without that animation and that mode to compatibility rendering and to behavior outside these documented optimizations.
+The default rendering is the explicit exception ([0023](./0023-the-default-rendering.md)): it draws ferrigura's own look and measures and departs from the reference's geometry on purpose. It parses, configures and fails as the reference does; only the drawing differs. Both renderings draw shared edge-label backgrounds at full opacity, also corrected in the reference by patches 11 and 12. The optional draw animation is another explicit addition ([0021](./0021-optional-svg-draw-animation.md)); it leaves static output unchanged. The rules below apply to `compat` without that animation, and to everything outside the drawing in both renderings.
 
 - A quirk that changes the output is reproduced, and the probe that showed it becomes a test.
 - A reference bug is fixed in ferrigura only together with a patch on the pinned commit that fixes it in the reference too, so that both sides agree again ([0014](./0014-upstream-reference-at-a-pin.md)).

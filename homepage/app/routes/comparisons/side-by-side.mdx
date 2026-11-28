@@ -5,7 +5,7 @@ description: Nine everyday diagrams, drawn by Ferrigura and by Mermaid from the 
 
 import { SharedConfig, SideBySide, Versions } from '../../components/side-by-side';
 
-Ferrigura's checks compare every drawing with Mermaid's to within 0.05 px. This page lets you look instead: nine everyday diagrams of medium size, each drawn from the same text by both. Each figure lays Ferrigura's drawing over Mermaid's: Ferrigura shows left of the divider, Mermaid right of it. Drag the divider by its handle or use the arrow keys to move between them.
+Ferrigura's checks compare every drawing in `compat` with Mermaid's to within 0.05 px. This page lets you look instead: nine everyday diagrams of medium size, each drawn from the same text by both. Each figure lays Ferrigura's drawing over Mermaid's: Ferrigura shows left of the divider, Mermaid right of it. Drag the divider by its handle or use the arrow keys to move between them.
 
 ## How the drawings were made
 
@@ -13,13 +13,13 @@ The drawings come from <Versions />, and nothing is touched up afterwards. Merma
 
 <SharedConfig />
 
-These drawings use `{ compat: true }`, which preserves Mermaid-compatible geometry across diagram types. Ferrigura's optimized default (`compat: false`) centers flowchart ports and compacts sequence participant boxes; the routing difference is shown on the [homepage](/#flowchart-mode). Both drawings stand inline so the browser paints their text in the same context. Ferrigura's SVG embeds its font subsets; the page supplies the same face for Mermaid. Each figure links both files, and the diagram text opens below it.
+Ferrigura's drawings here use `{ compat: true }`, which draws Mermaid's geometry and colors for every diagram type. Ferrigura's default rendering (`compat: false`) draws its own look and layout instead; the [homepage](/#design-mode) shows it beside Mermaid's. Both drawings stand inline so the browser paints their text in the same context. Ferrigura's SVG embeds its font subsets; the page supplies the same face for Mermaid. Each figure links both files, and the diagram text opens below it.
 
 ## Where they differ
 
-Ferrigura draws shared edge-label backgrounds at full opacity in both render modes, so lines do not show through the text. This applies to flowchart, class, state and entity relationship diagrams. Each type keeps its theme's background color, including any explicitly configured transparency. Published Mermaid applies half opacity to some SVG labels, including flowcharts and state diagrams. This affects paint only, not layout.
+With `compat`, Ferrigura draws shared edge-label backgrounds at full opacity, so lines do not show through the text. This applies to flowchart, class, state and entity relationship diagrams. Each type keeps its theme's background color, including any explicitly configured transparency. Published Mermaid applies half opacity to some SVG labels, including flowcharts and state diagrams. This affects paint only, not layout.
 
-The full-opacity correction is also applied to the pinned reference used by the geometry checks. This page shows the published Mermaid package unchanged. Sequence participant boxes keep Mermaid's full row height here because compatibility mode is enabled; optimized rendering fits them to their labels without moving lifelines or messages.
+The full-opacity correction is also applied to the pinned reference used by the geometry checks. This page shows the published Mermaid package unchanged.
 
 ## Flowchart
 

@@ -2,11 +2,11 @@
 
 A Gantt diagram draws tasks as bars on a time axis, grouped in sections, with milestones, vertical markers, excluded days, a today marker and an optional title. It starts with the keyword `gantt`. ferrigura parses it with a hand-written parser that ports the Jison grammar `gantt.jison`, the DB `ganttDb.js` and the date rules they rely on (`crates/ferrigura-syntax/src/gantt/`), and draws it with a renderer of its own (`crates/ferrigura-render/src/gantt/`) on ports of d3-time, d3-scale, d3-time-format and d3-axis. There is no layout engine.
 
-## Design mode
+## Default look
 
-The design mode draws a gantt chart in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. It changes no layout: the colors are the mode's theme variables, laid under the user's `themeVariables`, and its rules follow the reference's.
+By default, ferrigura draws a gantt chart in its own look ([0023](../decisions/0023-the-default-rendering.md)); `compat` draws the reference's ([flowchart](./flowchart.md#default-look)). It changes no layout: the colors are the default's theme variables, laid under the user's `themeVariables`, and its rules follow the reference's.
 
-| Element       | Design mode                                                                                                                                                                                                                                    |
+| Element       | Default                                                                                                                                                                                                                                        |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Task          | Its section's color: the tint of the series color as the fill, the series color as a 1.25 px outline. The rules name four section classes, so the sections take the first four colors (blue, teal, amber, violet) and wrap as their classes do |
 | Active task   | Its section's colors with a 2.5 px outline                                                                                                                                                                                                     |
@@ -17,7 +17,7 @@ The design mode draws a gantt chart in ferrigura's own look ([0023](../decisions
 | Grid, ticks   | A light gray grid; tick labels and section titles in the muted `titleColor`                                                                                                                                                                    |
 | Today marker  | The critical red, 1.5 px                                                                                                                                                                                                                       |
 
-A section's bars take its series color while the task colors are the mode's own: a user's `taskBkgColor`, `taskBorderColor`, `activeTaskBkgColor` or `activeTaskBorderColor` colors every bar alike, as in the default. The bars carry their colors as presentation attributes, and `colorScheme: auto` writes both sets as `light-dark()` values.
+A section's bars take its series color while the task colors are the default's own: a user's `taskBkgColor`, `taskBorderColor`, `activeTaskBkgColor` or `activeTaskBorderColor` colors every bar alike, as in `compat`. The bars carry their colors as presentation attributes, and `colorScheme: auto` writes both sets as `light-dark()` values.
 
 ## Draw animation
 

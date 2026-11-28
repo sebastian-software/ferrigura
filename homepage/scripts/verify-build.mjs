@@ -111,7 +111,7 @@ function verifyHomepage(html) {
     `Real output of Ferrigura (${renderingSource})`,
     // The drawings that stand on the page before any choice is made.
     'id="homepage-flowchart"',
-    'id="homepage-mode-adaptive"',
+    'id="homepage-mode-default"',
     'id="homepage-mode-mermaid"',
     'id="homepage-scheme-light"',
     'id="homepage-scheme-dark"',

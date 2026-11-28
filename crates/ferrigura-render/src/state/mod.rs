@@ -39,12 +39,12 @@ fn measure(
     pipeline::measure(data, unified)
 }
 
-/// Gives each transition into an end state an end state of its own, in the design mode
-/// (`docs/decisions/0023-design-mode.md`). The end of a scope is one node in the layout data, and
-/// every transition that ends the scope would otherwise cross the drawing to meet the others at a
-/// circle too small to hold their arrowheads. A final state may be drawn more than once; each copy
-/// stands beside the state it ends. The first transition keeps the node, and a copy takes the
-/// node's id and DOM id with `-<k>` added, for the k-th transition after the first.
+/// Gives each transition into an end state an end state of its own, in the default rendering
+/// (`docs/decisions/0023-the-default-rendering.md`). The end of a scope is one node in the layout
+/// data, and every transition that ends the scope would otherwise cross the drawing to meet the
+/// others at a circle too small to hold their arrowheads. A final state may be drawn more than
+/// once; each copy stands beside the state it ends. The first transition keeps the node, and a copy
+/// takes the node's id and DOM id with `-<k>` added, for the k-th transition after the first.
 fn split_end_states(data: &mut LayoutData) {
     let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     let mut copies = Vec::new();
@@ -70,8 +70,8 @@ fn split_end_states(data: &mut LayoutData) {
     data.nodes.extend(copies);
 }
 
-/// Lays a diagram out in the design mode, with each note beside its state at the state's height
-/// (`notes`). Where the notes of a state cannot stand there, its transitions do not leave it
+/// Lays a diagram out in the default rendering, with each note beside its state at the state's
+/// height (`notes`). Where the notes of a state cannot stand there, its transitions do not leave it
 /// straight or a note would touch anything it does not belong to, the diagram is laid out again
 /// with that state's notes where the reference puts them.
 fn lay_out_with_notes_beside(
@@ -258,7 +258,7 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
         root = painted.root,
         coloured_markers = painted.coloured_markers,
         // `insertLookDefs` is shared with the flowchart: the drop shadows and the gradient.
-        // The design mode draws its own shadows under the same ids.
+        // The default rendering draws its own shadows under the same ids.
         defs = crate::flowchart::style::look_defs_for(id, input.theme, input.globals, design),
     ))
 }

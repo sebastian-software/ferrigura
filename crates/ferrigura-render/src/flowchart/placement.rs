@@ -1,6 +1,6 @@
-//! The node placement of the design mode: where the nodes stand along the layers that ELK decided
-//! (`docs/decisions/0023-design-mode.md`). It is ferrigura's own, run through the hook of
-//! `ferrigura_elk::placement`.
+//! The node placement of the default rendering: where the nodes stand along the layers that ELK
+//! decided (`docs/decisions/0023-the-default-rendering.md`). It is ferrigura's own, run through the
+//! hook of `ferrigura_elk::placement`.
 //!
 //! A drawing is calm when its nodes stand on few common lines and an edge is either straight or
 //! turns clearly. The lengths of the steps of the edges do not say that: a step of ten costs
@@ -85,7 +85,7 @@ const TURN: f64 = 20.0;
 /// a long edge.
 const RIGID: f64 = 16.0;
 
-/// The placement of the design mode.
+/// The placement of the default rendering.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Axes;
 

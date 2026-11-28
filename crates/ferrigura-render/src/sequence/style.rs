@@ -41,7 +41,7 @@ fn color_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 16] {
 }
 
 /// Appends the declarations of the tokens of one set of variables, as custom properties. In the
-/// design mode the mode's own properties (the role colors and the flood of the shadow) follow.
+/// default rendering its own properties (the role colors and the flood of the shadow) follow.
 fn write_declarations(css: &mut String, tokens: &ThemeTokens, design: Option<Tone>) {
     for (name, token) in color_tokens(tokens) {
         let value = token.text().unwrap_or_else(|| "none".to_owned());
@@ -135,9 +135,9 @@ pub fn style_sheet(
     css
 }
 
-/// The rules of the design mode (`docs/diagrams/sequence.md#design-mode`), after the reference's,
-/// which they override: hairline outlines, square flat notes, quiet frames, and the colors of the
-/// roles.
+/// The rules of the default rendering (`docs/diagrams/sequence.md#default-look`), after the
+/// reference's, which they override: hairline outlines, square flat notes, quiet frames, and the
+/// colors of the roles.
 fn write_design_rules(css: &mut String, id: &str) {
     let _ = write!(
         css,

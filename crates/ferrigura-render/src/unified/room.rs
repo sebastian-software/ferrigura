@@ -1,6 +1,6 @@
-//! Room beside a node in the design mode: the geometry that the steps share which keep room beside
-//! a node in the layout and set something into it afterwards (a state's note, a self-loop). The
-//! steps are ferrigura's own and run around ELK's layout.
+//! Room beside a node in the default rendering: the geometry that the steps share which keep room
+//! beside a node in the layout and set something into it afterwards (a state's note, a self-loop).
+//! The steps are ferrigura's own and run around ELK's layout.
 
 use std::collections::HashMap;
 

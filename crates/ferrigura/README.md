@@ -1,6 +1,6 @@
 # ferrigura
 
-ferrigura renders Mermaid diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0, checked against Mermaid run in Chromium. The optimized default centers flowchart ports and compacts sequence participant boxes. `RenderOptions { compat: true, ..Default::default() }` selects Mermaid-compatible geometry; font, fill and readability fixes apply in both modes.
+ferrigura renders Mermaid diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0, checked against Mermaid run in Chromium. By default it draws every type in its own look: hairline outlines, color by a node's role, rounded corners and soft shadows, one calm palette for a series, and roomier measures. `RenderOptions { compat: true, ..Default::default() }` draws Mermaid's geometry and look instead, the rendering the checks against Mermaid run on; font and readability fixes apply in both.
 
 The repository is [sebastian-software/ferrigura](https://github.com/sebastian-software/ferrigura).
 
@@ -113,8 +113,7 @@ The constructors of `ferrigura::diagrams` are named after the types (`flowchart`
 | `id`           | `Option<String>`      | The id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.                    |
 | `color_scheme` | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. `None` keeps the colors of the configured theme. |
 | `now`          | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                  |
-| `compat`       | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                          |
-| `design`       | `bool`                | `true` draws flowcharts in the design mode: ferrigura's own look, with hairline outlines, color by a node's role, rounded corners and soft shadows, and with roomier nodes, spacing and group padding. Other diagram types and the combination with `compat` return an option error.            |
+| `compat`       | `bool`                | `false` (default) draws ferrigura's own look and measures for every type. `true` draws Mermaid's geometry and look for every type.                                                                                                                               |
 | `animation`    | `Option<Animation>`   | Optional draw animation for flowchart, Gantt, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error.                          |
 
 ```rust
@@ -212,7 +211,7 @@ Two themes ship: `redux-color` (light) and `redux-dark-color` (dark), which are 
 
 ## Diagram types
 
-ferrigura draws ten diagram types, each one completely: its drawing is compared with Mermaid's, and flowcharts, state, class and ER diagrams, mindmaps, and pie, XY, quadrant and gantt charts also draw in the design mode. The header keyword of each is the one Mermaid uses:
+ferrigura draws ten diagram types, each one completely: drawn in ferrigura's own look by default, and in `compat` compared with Mermaid's drawing. The header keyword of each is the one Mermaid uses:
 
 | Group  | Diagram        | Header                            |
 | ------ | -------------- | --------------------------------- |

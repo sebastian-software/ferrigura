@@ -65,11 +65,11 @@ const ALT_BACKGROUND: &str = "#efefef";
 /// Room for the rules of a state style sheet besides its font faces: about 14 KiB with a palette.
 const RULES_CAPACITY: usize = 16 * 1024;
 
-/// The `<style>` element's content for a state diagram with the id `svg_id`, escaped for XML so that
-/// it can be written as the element's text. `families` are the embedded font subsets of the text,
-/// whose `@font-face` rules come first, as for the flowchart. In the design mode (`design`), the
-/// mode's rules follow the state rules, and the mode's own properties take the place of the
-/// palette and the look's flood (`docs/decisions/0023-design-mode.md`).
+/// The `<style>` element's content for a state diagram with the id `svg_id`, escaped for XML so
+/// that it can be written as the element's text. `families` are the embedded font subsets of the
+/// text, whose `@font-face` rules come first, as for the flowchart. In the default rendering
+/// (`design`), the mode's rules follow the state rules, and the default's own properties take the
+/// place of the palette and the look's flood (`docs/decisions/0023-the-default-rendering.md`).
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
@@ -157,8 +157,8 @@ pub fn style_sheet(
 {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:{stroke_neo};filter:{shadow};}}"
     );
 
-    // styles.js: the palette rules of each container slot, then the state rules. The design mode
-    // uses no palette: its groups are neutral.
+    // styles.js: the palette rules of each container slot, then the state rules. The default
+    // rendering uses no palette: its groups are neutral.
     if design.is_none() {
         write_palette_rules(&mut css, &id, globals, tokens);
     }
@@ -187,10 +187,11 @@ pub fn style_sheet(
     assemble_stylesheet(svg_id, families, css, false)
 }
 
-/// The rules of the design mode, after the state rules and before the `classDef` rules, which keep
-/// the last word (`docs/decisions/0023-design-mode.md`): hairlines, rounder states, an edge label
-/// without a background, a neutral composite state with its title in a row of its own, a
-/// concurrency region as a dashed frame without a fill, a flat note, and the colors of the roles.
+/// The rules of the default rendering, after the state rules and before the `classDef` rules, which
+/// keep the last word (`docs/decisions/0023-the-default-rendering.md`): hairlines, rounder states,
+/// an edge label without a background, a neutral composite state with its title in a row of its
+/// own, a concurrency region as a dashed frame without a fill, a flat note, and the colors of the
+/// roles.
 fn write_design_rules(out: &mut String, id: &str) {
     let node_width = design::NODE_STROKE_WIDTH;
     let edge_width = design::EDGE_STROKE_WIDTH;
@@ -626,7 +627,7 @@ fn write_scoped(out: &mut String, id: &str, selectors: &str, declarations: fmt::
 
 /// Appends the custom properties of the colors, declared on the diagram's id. With one set of
 /// variables they are written as they are; with a light and a dark set, the values that differ are
-/// `light-dark()` pairs, as the flowchart writes them. In the design mode, the mode's own
+/// `light-dark()` pairs, as the flowchart writes them. In the default rendering, the default's own
 /// properties for the tone of each set take the place of the look's flood.
 fn write_custom_properties(
     css: &mut String,

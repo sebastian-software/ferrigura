@@ -105,10 +105,6 @@ fn a_type_ferrigura_does_not_draw_gives_the_same_error_in_every_mode_and_rendere
             compat: true,
             ..ferrigura::RenderOptions::default()
         },
-        ferrigura::RenderOptions {
-            design: true,
-            ..ferrigura::RenderOptions::default()
-        },
     ] {
         match renderer.render_with("sankey-beta\n  a,b,8", &options) {
             Err(Error::Unsupported(message)) => assert_eq!(message, expected),

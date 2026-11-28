@@ -33,15 +33,15 @@ const VIEWBOX_PADDING: f64 = 8.0;
 /// reference's SVG sets `font-size` from the theme (`styles.ts` `svg`), and the title inherits it.
 const DEFAULT_FONT_SIZE: f64 = 16.0;
 
-/// The room the design mode keeps between an entity and the first turn of a relation's line,
-/// along the flow (`docs/decisions/0023-design-mode.md`): the longest cardinality marker, a crow's
-/// foot with its ring (24), and the corner's radius (10) with 2 to spare, so that every marker
-/// stands on a straight end of its line.
+/// The room the default rendering keeps between an entity and the first turn of a relation's line,
+/// along the flow (`docs/decisions/0023-the-default-rendering.md`): the longest cardinality marker,
+/// a crow's foot with its ring (24), and the corner's radius (10) with 2 to spare, so that every
+/// marker stands on a straight end of its line.
 pub const MARKER_ROOM: f64 = 36.0;
 
-/// Gives the relations of an ER diagram in the design mode a straight end for their markers: ELK
-/// keeps the turns of an edge between two layers [`MARKER_ROOM`] from the nodes, in the root and
-/// in every group.
+/// Gives the relations of an ER diagram in the default rendering a straight end for their markers:
+/// ELK keeps the turns of an edge between two layers [`MARKER_ROOM`] from the nodes, in the root
+/// and in every group.
 pub(crate) fn give_markers_room(graph: &mut ferrigura_elk::json::JsonNode) {
     graph.layout_options.get_or_insert_default().insert(
         "elk.layered.spacing.edgeNodeBetweenLayers".to_owned(),

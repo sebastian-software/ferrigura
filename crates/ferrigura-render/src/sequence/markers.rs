@@ -61,12 +61,12 @@ fn marker(
     Element::new("defs").child(marker)
 }
 
-/// The `defs` of the arrowhead markers, in the order the reference appends them: the arrowhead,
-/// the cross, the filled head, the sequence number, the four half arrows (`insertArrowHead`,
-/// `insertArrowCrossHead`, `insertArrowFilledHead`, `insertSequenceNumber`, `insertSolidTopArrowHead`,
-/// `insertSolidBottomArrowHead`, `insertStickTopArrowHead`, `insertStickBottomArrowHead`).
-/// In the design mode the arrowhead is the mode's slim one, notched at the back, with its tip where
-/// the reference's is: 2.1 past the end of the line.
+/// The `defs` of the arrowhead markers, in the order the reference appends them: the arrowhead, the
+/// cross, the filled head, the sequence number, the four half arrows (`insertArrowHead`,
+/// `insertArrowCrossHead`, `insertArrowFilledHead`, `insertSequenceNumber`,
+/// `insertSolidTopArrowHead`, `insertSolidBottomArrowHead`, `insertStickTopArrowHead`,
+/// `insertStickBottomArrowHead`). In the default rendering the arrowhead is the default's slim one,
+/// notched at the back, with its tip where the reference's is: 2.1 past the end of the line.
 #[must_use]
 pub fn arrow_markers(id: &str, design: bool) -> Vec<Element> {
     let path = |d: &str| Element::new("path").with("d", d);
@@ -179,12 +179,12 @@ pub fn arrow_markers(id: &str, design: bool) -> Vec<Element> {
     ]
 }
 
-/// The outline of the design mode's arrowhead in its box of 10 by 9: the tip at the right, notched
-/// at the back, as the flowchart's (`unified/markers.rs`).
+/// The outline of the default rendering's arrowhead in its box of 10 by 9: the tip at the right,
+/// notched at the back, as the flowchart's (`unified/markers.rs`).
 const DESIGN_HEAD: &str = "M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z";
 
-/// The drop shadow of the design mode: short and soft, under the neo look's id. The style sheet
-/// sets the flood per scheme.
+/// The drop shadow of the default rendering: short and soft, under the neo look's id. The style
+/// sheet sets the flood per scheme.
 #[must_use]
 pub fn design_drop_shadow(id: &str, tone: Tone) -> Element {
     let (flood, opacity) = crate::design::flood_attributes(tone);

@@ -1,8 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Paths are a fresh temporary directory and fixed files in this repository. */
 // Renders every homepage diagram from the current Rust source. The generated
-// files are checked against the same source; callers use the single compat
-// option for optimized and Mermaid-compatible drawings, and the design option
-// for the design mode.
+// files are checked against the same source. A drawing without options is
+// Ferrigura's default rendering; `compat: true` draws Mermaid's geometry.
 // Coordinates may differ by 0.01 on another architecture (published-output.mjs).
 import assert from 'node:assert/strict';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -126,7 +125,7 @@ const gallery = [
   },
 ];
 
-/** The flowchart the two rendering modes are compared on: a review cycle with labels. */
+/** The flowchart the default rendering and `compat` are compared on: a review cycle with labels. */
 const modeSource = `flowchart TD
   write[Write the guide] --> review{Review}
   review -->|Approved| publish[Publish]
@@ -136,7 +135,7 @@ const modeSource = `flowchart TD
 const modeDescription =
   'A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.';
 
-/** The design mode: three flowcharts, each drawn in the default and in the design mode. */
+/** Ferrigura's own look: three flowcharts, a state and a class diagram, each drawn in `compat` and by default. */
 const designSamples = [
   {
     id: 'pipeline',
@@ -269,23 +268,22 @@ try {
   const modes = {
     source: modeSource,
     description: modeDescription,
-    adaptive: render('mode-adaptive', modeSource, { compat: false }),
+    default: render('mode-default', modeSource),
     mermaid: render('mode-mermaid', modeSource, { compat: true }),
   };
   assert.notEqual(
-    svgs.get(modes.adaptive),
+    svgs.get(modes.default),
     svgs.get(modes.mermaid),
-    'The two flowchart modes must differ on the compared source'
+    'The default rendering and compat must differ on the compared source'
   );
   const design = {
     samples: designSamples.map((sample) => ({
       ...sample,
-      plain: render(`design-${sample.id}-default`, sample.source, { design: false }),
-      designed: render(`design-${sample.id}`, sample.source, { design: true }),
+      plain: render(`design-${sample.id}-compat`, sample.source, { compat: true }),
+      designed: render(`design-${sample.id}`, sample.source),
     })),
     // The second sample again, on a dark ground.
     dark: render(`design-${designSamples[1].id}-dark`, designSamples[1].source, {
-      design: true,
       colorScheme: 'dark',
     }),
   };
@@ -293,7 +291,7 @@ try {
     assert.notEqual(
       svgs.get(sample.plain),
       svgs.get(sample.designed),
-      `The design mode must change ${sample.id}`
+      `The default rendering must differ from compat on ${sample.id}`
     );
     assert.match(svgs.get(sample.designed), /data-role="/, `${sample.id} carries no role`);
   }
