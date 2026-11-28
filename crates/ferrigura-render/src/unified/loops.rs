@@ -27,8 +27,11 @@
 //! one at the bottom, each with its label at its right. A side that a state's note takes is not
 //! free ([`Reserved`]). A decision's loop stays off a side tip that a branch would leave from
 //! ([`Loops::wanted`], [`Avoided`]): it takes the other tip, or the side that faces the next layer
-//! where the branches need both. A node with more loops than free sides, an invisible loop, or a side too
-//! short for the ends of a loop, and a group, keep their loops where ELK puts them.
+//! where the branches need both. More loops than free sides share them, two on a side one after the
+//! other along it; where a state's notes take both sides, one loop stands at the end of the side
+//! its edges enter ([`assign`]). A group's loop stands on its frame, whose size a layout before
+//! gives. A node with more than two loops on a free side, an invisible loop, or a side too short for
+//! the ends of a loop keeps its loops where ELK puts them.
 
 use std::collections::{HashMap, HashSet};
 
@@ -153,13 +156,36 @@ impl Side {
     }
 }
 
+/// Where the label of a loop on the top or the bottom stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LabelAt {
+    /// At the right of the loop, halfway out.
+    After,
+    /// At the left of the loop, halfway out: the first of two loops on one side.
+    Before,
+    /// Past the loop, centered on it: a loop at the end of a side.
+    Past,
+}
+
 /// A loop beside its node.
 #[derive(Debug, Clone, PartialEq)]
 struct Loop {
     edge: String,
     side: Side,
-    /// The distance between its ends: [`PORT_PITCH`], or half the side of a node too small for it.
+    /// The distance between its ends: [`PORT_PITCH`], or half the side of a node too small for it,
+    /// or a quarter of it where two loops share the side.
     pitch: f64,
+    /// Where its middle stands along the side, from the side's middle.
+    offset: f64,
+    /// Where its label's middle stands along a side on the right or the left, from the side's
+    /// middle: its own middle, or apart from the label of a loop beside it.
+    label_offset: f64,
+    /// Where its label stands on the top or the bottom; on the right and the left, it stands past
+    /// the loop.
+    label: LabelAt,
+    /// Whether its room reaches as far along the side on both sides of the side's middle, where
+    /// the side runs along the flow.
+    centered: bool,
     /// The size of its label's box, the chip, when it has a label.
     chip: Option<(f64, f64)>,
     /// The largest size of a cardinality at its start and at its end.
@@ -168,60 +194,107 @@ struct Loop {
 }
 
 impl Loop {
-    /// How far the label stands right of the end of a loop on the top or the bottom: past the
-    /// cardinality at the end, which stands right of it.
-    fn label_shift(&self) -> f64 {
-        self.end_terminal
-            .map_or(0.0, |(width, _)| width + TERMINAL_ROOM)
+    /// A loop on a side, around the side's middle; [`assign`] sets its side and place.
+    fn new(edge: &Edge) -> Self {
+        Self {
+            edge: edge.id.clone(),
+            side: Side::Right,
+            pitch: PORT_PITCH,
+            offset: 0.0,
+            label_offset: 0.0,
+            label: LabelAt::After,
+            centered: true,
+            chip: chip_of(edge),
+            start_terminal: terminal_at(edge, true),
+            end_terminal: terminal_at(edge, false),
+        }
     }
 
-    /// The room the loop and its label take out of the side, and half the room they take along it.
-    fn room(&self) -> (f64, f64) {
+    /// How far the label stands beside the end of a loop on the top or the bottom: past the
+    /// cardinality at that end, which stands beside it.
+    fn label_shift(&self) -> f64 {
+        let terminal = if self.label == LabelAt::Before {
+            self.start_terminal
+        } else {
+            self.end_terminal
+        };
+        terminal.map_or(0.0, |(width, _)| width + TERMINAL_ROOM)
+    }
+
+    /// The room the loop and its label take out of the side, and where it starts and ends along
+    /// the side, from the side's middle.
+    fn extent(&self) -> (f64, f64, f64) {
         let terminals = [self.start_terminal, self.end_terminal]
             .into_iter()
             .flatten();
+        let half = self.pitch / 2.0;
         match self.side {
             Side::Right | Side::Left => {
                 let reach = LOOP_REACH
                     + self
                         .chip
                         .map_or(0.0, |(width, _)| LOOP_LABEL_GAP + width + CHIP_MARGIN);
-                let half = terminals
-                    .map(|(_, height)| self.pitch / 2.0 + TERMINAL_ROOM + height)
-                    .fold(self.pitch / 2.0 + END_ROOM, f64::max)
-                    .max(self.chip.map_or(0.0, |(_, height)| height / 2.0));
-                (reach, half)
+                let ends = terminals
+                    .map(|(_, height)| half + TERMINAL_ROOM + height)
+                    .fold(half + END_ROOM, f64::max);
+                let (mut low, mut high) = (self.offset - ends, self.offset + ends);
+                if let Some((_, height)) = self.chip {
+                    low = low.min(self.label_offset - height / 2.0);
+                    high = high.max(self.label_offset + height / 2.0);
+                }
+                (reach, low, high)
             }
             Side::Top | Side::Bottom => {
-                let reach = terminals
+                let mut reach = terminals
                     .clone()
                     .map(|(_, height)| LOOP_LABEL_GAP + height)
-                    .fold(LOOP_REACH, f64::max)
-                    .max(
-                        self.chip
-                            .map_or(0.0, |(_, height)| LOOP_REACH / 2.0 + height / 2.0),
-                    );
-                let half = terminals
-                    .map(|(width, _)| self.pitch / 2.0 + TERMINAL_ROOM + width)
-                    .fold(self.pitch / 2.0 + END_ROOM, f64::max)
-                    .max(self.chip.map_or(0.0, |(width, _)| {
-                        self.pitch / 2.0 + self.label_shift() + LOOP_LABEL_GAP + width + CHIP_MARGIN
-                    }));
-                (reach, half)
+                    .fold(LOOP_REACH, f64::max);
+                let ends = terminals
+                    .map(|(width, _)| half + TERMINAL_ROOM + width)
+                    .fold(half + END_ROOM, f64::max);
+                let Some((width, height)) = self.chip else {
+                    return (reach, self.offset - ends, self.offset + ends);
+                };
+                let beside = half + self.label_shift() + LOOP_LABEL_GAP + width + CHIP_MARGIN;
+                match self.label {
+                    LabelAt::After => (
+                        reach.max(LOOP_REACH / 2.0 + height / 2.0),
+                        self.offset - ends,
+                        self.offset + ends.max(beside),
+                    ),
+                    LabelAt::Before => (
+                        reach.max(LOOP_REACH / 2.0 + height / 2.0),
+                        self.offset - ends.max(beside),
+                        self.offset + ends,
+                    ),
+                    LabelAt::Past => {
+                        reach = reach.max(LOOP_REACH + LOOP_LABEL_GAP + height);
+                        let half_label = width / 2.0 + CHIP_MARGIN;
+                        (
+                            reach,
+                            self.offset - ends.max(half_label),
+                            self.offset + ends.max(half_label),
+                        )
+                    }
+                }
             }
         }
     }
 
     /// The room of the loop, its label and its cardinalities beside a node of the given size, from
-    /// the node's top left corner: out of its side, and along the side as far on both sides of
-    /// the middle.
+    /// the node's top left corner: out of its side, and along the side as far as they reach, on
+    /// both sides of the side's middle where the loop is centered.
     fn room_box(&self, width: f64, height: f64) -> BBox {
-        let (reach, half) = self.room();
+        let (reach, mut low, mut high) = self.extent();
+        if self.centered {
+            high = high.max(-low);
+            low = -high;
+        }
         match self.side {
-            Side::Right => BBox::new(width, height / 2.0 - half, reach, 2.0 * half),
-            Side::Left => BBox::new(-reach, height / 2.0 - half, reach, 2.0 * half),
-            Side::Top => BBox::new(width / 2.0 - half, -reach, 2.0 * half, reach),
-            Side::Bottom => BBox::new(width / 2.0 - half, height, 2.0 * half, reach),
+            Side::Right => BBox::new(width, height / 2.0 + low, reach, high - low),
+            Side::Left => BBox::new(-reach, height / 2.0 + low, reach, high - low),
+            Side::Top => BBox::new(width / 2.0 + low, -reach, high - low, reach),
+            Side::Bottom => BBox::new(width / 2.0 + low, height, high - low, reach),
         }
     }
 
@@ -230,8 +303,8 @@ impl Loop {
         let (middle, out, along) = (self.side.middle(real), self.side.out(), self.side.along());
         let at = |step: f64, reach: f64| {
             Point::new(
-                middle.x + along.x * step + out.x * reach,
-                middle.y + along.y * step + out.y * reach,
+                middle.x + along.x * (self.offset + step) + out.x * reach,
+                middle.y + along.y * (self.offset + step) + out.y * reach,
             )
         };
         let half = self.pitch / 2.0;
@@ -244,25 +317,116 @@ impl Loop {
     }
 
     /// The center of the label's box beside the loop: past the loop on the right and the left,
-    /// at the right of it on the top and the bottom, centered on the loop.
-    fn label_centre(&self, real: BBox, chip_width: f64) -> Point {
+    /// beside it or past it on the top and the bottom, centered on the loop.
+    fn label_centre(&self, real: BBox, (chip_width, chip_height): (f64, f64)) -> Point {
         let middle = self.side.middle(real);
         let out = self.side.out();
         match self.side {
             Side::Right | Side::Left => {
                 let distance = LOOP_REACH + LOOP_LABEL_GAP + chip_width / 2.0;
-                Point::new(middle.x + out.x * distance, middle.y)
+                Point::new(middle.x + out.x * distance, middle.y + self.label_offset)
             }
-            Side::Top | Side::Bottom => Point::new(
-                middle.x
-                    + self.pitch / 2.0
-                    + self.label_shift()
-                    + LOOP_LABEL_GAP
-                    + chip_width / 2.0,
-                middle.y + out.y * LOOP_REACH / 2.0,
-            ),
+            Side::Top | Side::Bottom => {
+                let beside =
+                    self.pitch / 2.0 + self.label_shift() + LOOP_LABEL_GAP + chip_width / 2.0;
+                match self.label {
+                    LabelAt::Past => Point::new(
+                        middle.x + self.offset,
+                        middle.y + out.y * (LOOP_REACH + LOOP_LABEL_GAP + chip_height / 2.0),
+                    ),
+                    LabelAt::Before | LabelAt::After => {
+                        let sign = if self.label == LabelAt::Before {
+                            -1.0
+                        } else {
+                            1.0
+                        };
+                        Point::new(
+                            middle.x + self.offset + sign * beside,
+                            middle.y + out.y * LOOP_REACH / 2.0,
+                        )
+                    }
+                }
+            }
         }
     }
+}
+
+/// The distance between the labels of two loops that share a side on the right or the left.
+const LABEL_STACK_GAP: f64 = 4.0;
+
+/// The side opposite a side.
+fn opposite(side: Side) -> Side {
+    match side {
+        Side::Right => Side::Left,
+        Side::Left => Side::Right,
+        Side::Top => Side::Bottom,
+        Side::Bottom => Side::Top,
+    }
+}
+
+/// Gives the loops of a node their sides and places, from the sides they may take in order: one
+/// loop around the middle of each side, and where there are more loops than sides, two on a side,
+/// one after the other along it, the first sides first. Where no side is free, one loop stands on
+/// the side `entry`, at the end of it. `false` where the loops do not fit so.
+fn assign(
+    host: &mut Host,
+    sides: &[Side],
+    entry: Option<Side>,
+    centered: impl Fn(Side) -> bool,
+) -> bool {
+    let count = host.loops.len();
+    let (width, height) = (host.width, host.height);
+    if sides.is_empty() {
+        let Some(side) = entry.filter(|_| count == 1) else {
+            return false;
+        };
+        let length = side.length(width, height);
+        let entry_loop = &mut host.loops[0];
+        entry_loop.side = side;
+        entry_loop.pitch = PORT_PITCH.min(length / 4.0);
+        entry_loop.offset = length / 2.0 - END_ROOM - entry_loop.pitch / 2.0;
+        entry_loop.label_offset = entry_loop.offset;
+        entry_loop.label = LabelAt::Past;
+        entry_loop.centered = centered(side);
+        return true;
+    }
+    if count > 2 * sides.len() {
+        return false;
+    }
+    let mut next = 0;
+    for (index, &side) in sides.iter().enumerate() {
+        let shared = count / sides.len() + usize::from(index < count % sides.len());
+        let length = side.length(width, height);
+        let members = next..next + shared;
+        next += shared;
+        if shared == 1 {
+            let only = &mut host.loops[members.start];
+            only.side = side;
+            only.pitch = PORT_PITCH.min(length / 2.0);
+            only.centered = centered(side);
+        } else if shared == 2 {
+            // One after the other along the side, a quarter of it from its middle, their labels
+            // apart past them on the right and the left, at their outer ends on the top and the
+            // bottom.
+            let (first, second) = (members.start, members.start + 1);
+            let quarter = length / 4.0;
+            let heights = [first, second]
+                .map(|index| host.loops[index].chip.map_or(0.0, |(_, height)| height));
+            let apart = ((heights[0] + heights[1]) / 2.0 + LABEL_STACK_GAP).max(2.0 * quarter);
+            for (index, sign) in [(first, -1.0), (second, 1.0)] {
+                let entry = &mut host.loops[index];
+                entry.side = side;
+                entry.pitch = PORT_PITCH.min(quarter);
+                entry.offset = sign * quarter;
+                entry.label_offset = sign * apart / 2.0;
+                if sign < 0.0 {
+                    entry.label = LabelAt::Before;
+                }
+                entry.centered = centered(side);
+            }
+        }
+    }
+    true
 }
 
 /// A node with loops beside it.
@@ -402,6 +566,7 @@ pub(crate) fn take_out(
     turned: &HashSet<String>,
     avoided: &Avoided,
     reserved: &[Reserved],
+    sizes: &HashMap<String, (f64, f64)>,
 ) -> Option<Loops> {
     if !data.edges.iter().any(|edge| edge.start == edge.end) {
         return None;
@@ -424,24 +589,35 @@ pub(crate) fn take_out(
         let Some(node) = by_id.get(edge.start.as_str()).copied() else {
             continue;
         };
-        let taken = reserved.iter().find(|entry| entry.id == node.id);
-        let (Some(width), Some(height)) = (
-            node.width.filter(|width| *width > 0.0),
-            node.height.filter(|height| *height > 0.0),
-        ) else {
+        // A group takes the size of its frame from a layout before.
+        let size = if node.is_group {
+            sizes.get(&node.id).copied()
+        } else {
+            node.width.zip(node.height)
+        };
+        let Some((width, height)) = size.filter(|(width, height)| *width > 0.0 && *height > 0.0)
+        else {
             unusable.insert(node.id.as_str());
             continue;
         };
-        if node.is_group || edge.thickness == "invisible" || kept_hosts.contains(&node.id) {
+        if edge.thickness == "invisible" || kept_hosts.contains(&node.id) {
             unusable.insert(node.id.as_str());
             continue;
         }
         let host = match hosts.iter().position(|host| host.id == node.id) {
             Some(position) => &mut hosts[position],
             None => {
-                let direction =
-                    crate::unified::pipeline::node_dir(data, index[node.id.as_str()], &by_id)
-                        .unwrap_or(data.direction.as_str());
+                // A group meets its edges in the direction of its parent.
+                let at = if node.is_group {
+                    node.parent_id
+                        .as_deref()
+                        .and_then(|parent| index.get(parent).copied())
+                } else {
+                    Some(index[node.id.as_str()])
+                };
+                let direction = at
+                    .and_then(|at| crate::unified::pipeline::node_dir(data, at, &by_id))
+                    .unwrap_or(data.direction.as_str());
                 hosts.push(Host {
                     id: node.id.clone(),
                     width,
@@ -453,10 +629,25 @@ pub(crate) fn take_out(
                 hosts.last_mut()?
             }
         };
+        host.loops.push(Loop::new(edge));
+    }
+    hosts.retain(|host| !unusable.contains(host.id.as_str()));
+    let decisions: HashSet<String> = hosts
+        .iter()
+        .filter(|host| {
+            by_id
+                .get(host.id.as_str())
+                .is_some_and(|node| shapes::is_decision(node) || shapes::is_choice(node))
+        })
+        .map(|host| host.id.clone())
+        .collect();
+    hosts.retain_mut(|host| {
+        let taken = reserved.iter().find(|entry| entry.id == host.id);
+        let is_turned = turned.contains(&host.id);
         // A decision whose side tips its branches need takes the side that faces the next layer.
-        let avoid = avoided.of(&node.id);
+        let avoid = avoided.of(&host.id);
         let mut order = Side::of(host.across).to_vec();
-        if !avoid.is_empty() && !turned.contains(&node.id) {
+        if !avoid.is_empty() && !is_turned {
             order.push(host.flow);
         }
         let sides: Vec<Side> = order
@@ -472,26 +663,14 @@ pub(crate) fn take_out(
                     })
             })
             .collect();
-        let Some(&side) = sides.get(host.loops.len()) else {
-            unusable.insert(node.id.as_str());
-            continue;
-        };
-        let length = side.length(host.width, host.height);
-        host.loops.push(Loop {
-            edge: edge.id.clone(),
-            side,
-            pitch: PORT_PITCH.min(length / 2.0),
-            chip: chip_of(edge),
-            start_terminal: terminal_at(edge, true),
-            end_terminal: terminal_at(edge, false),
-        });
-    }
-    hosts.retain(|host| {
-        !unusable.contains(host.id.as_str())
-            && host
-                .loops
-                .iter()
-                .all(|entry| entry.side.length(host.width, host.height) >= 2.0 * MIN_PITCH)
+        // Where notes take both free sides, the loop stands on the side its edges enter, at its
+        // end; not on a decision, whose tip that is.
+        let entry = (!is_turned && !decisions.contains(&host.id)).then(|| opposite(host.flow));
+        let flow_along_y = matches!(host.flow, Side::Top | Side::Bottom);
+        let centered =
+            |side: Side| is_turned || matches!(side, Side::Right | Side::Left) == flow_along_y;
+        assign(host, &sides, entry, centered)
+            && host.loops.iter().all(|entry| entry.pitch >= MIN_PITCH)
     });
     if hosts.is_empty() {
         return None;
@@ -579,7 +758,7 @@ impl Loops {
                     None => (0.0, 0.0),
                 };
                 let centre = match entry.chip {
-                    Some((chip_width, _)) => entry.label_centre(real, chip_width),
+                    Some(chip) => entry.label_centre(real, chip),
                     None => Point::new((first.x + second.x) / 2.0, (first.y + second.y) / 2.0),
                 };
                 let corner = relative(Point::new(centre.x - width / 2.0, centre.y - height / 2.0));
@@ -738,12 +917,9 @@ mod tests {
 
     fn looped(side: Side, chip: Option<(f64, f64)>) -> Loop {
         Loop {
-            edge: "e".to_owned(),
             side,
-            pitch: PORT_PITCH,
             chip,
-            start_terminal: None,
-            end_terminal: None,
+            ..Loop::new(&edge("e", "a", "a"))
         }
     }
 
@@ -781,11 +957,20 @@ mod tests {
     fn the_label_stands_beside_the_loop_centered_on_it() {
         let real = BBox::new(0.0, 0.0, 120.0, 44.0);
         let right = looped(Side::Right, Some((40.0, 24.0)));
-        assert_eq!(right.label_centre(real, 40.0), Point::new(176.0, 22.0));
+        assert_eq!(
+            right.label_centre(real, (40.0, 24.0)),
+            Point::new(176.0, 22.0)
+        );
         let left = looped(Side::Left, Some((40.0, 24.0)));
-        assert_eq!(left.label_centre(real, 40.0), Point::new(-56.0, 22.0));
+        assert_eq!(
+            left.label_centre(real, (40.0, 24.0)),
+            Point::new(-56.0, 22.0)
+        );
         let top = looped(Side::Top, Some((40.0, 24.0)));
-        assert_eq!(top.label_centre(real, 40.0), Point::new(94.0, -16.0));
+        assert_eq!(
+            top.label_centre(real, (40.0, 24.0)),
+            Point::new(94.0, -16.0)
+        );
     }
 
     #[test]
@@ -846,6 +1031,7 @@ mod tests {
             &HashSet::new(),
             &Avoided::default(),
             &[],
+            &HashMap::new(),
         )
         .expect("a loop beside its node");
         assert_eq!(data.edges.len(), 1);
@@ -857,45 +1043,90 @@ mod tests {
     }
 
     #[test]
-    fn a_second_loop_takes_the_other_free_side_and_a_third_leaves_them_to_elk() {
+    fn a_second_loop_takes_the_other_free_side_and_more_share_the_sides() {
         let mut data = LayoutData {
             nodes: vec![node("a", 120.0, 44.0)],
             edges: vec![edge("l1", "a", "a"), edge("l2", "a", "a")],
             direction: "LR".to_owned(),
             ..LayoutData::default()
         };
-        let loops = take_out(
-            &mut data,
-            &HashSet::new(),
-            &HashSet::new(),
-            &Avoided::default(),
-            &[],
-        )
-        .expect("two loops beside their node");
+        let none = (HashSet::new(), Avoided::default(), HashMap::new());
+        let loops = take_out(&mut data, &none.0, &none.0, &none.1, &[], &none.2)
+            .expect("two loops beside their node");
         let sides: Vec<Side> = loops.hosts[0].loops.iter().map(|l| l.side).collect();
         assert_eq!(sides, vec![Side::Top, Side::Bottom]);
 
+        // A third loop shares the first side: one after the other along it, a quarter of the side
+        // from its middle, their ends a quarter of the side apart.
         let mut three = LayoutData {
             nodes: vec![node("a", 120.0, 44.0)],
-            edges: vec![
-                edge("l1", "a", "a"),
-                edge("l2", "a", "a"),
-                edge("l3", "a", "a"),
-            ],
-            direction: "LR".to_owned(),
+            edges: (1..=3)
+                .map(|index| edge(&format!("l{index}"), "a", "a"))
+                .collect(),
+            direction: "TB".to_owned(),
             ..LayoutData::default()
         };
-        assert!(
-            take_out(
-                &mut three,
-                &HashSet::new(),
-                &HashSet::new(),
-                &Avoided::default(),
-                &[]
-            )
-            .is_none()
+        let loops = take_out(&mut three, &none.0, &none.0, &none.1, &[], &none.2)
+            .expect("three loops beside their node");
+        let placed: Vec<(Side, f64, f64)> = loops.hosts[0]
+            .loops
+            .iter()
+            .map(|entry| (entry.side, entry.offset, entry.pitch))
+            .collect();
+        assert_eq!(
+            placed,
+            [
+                (Side::Right, -11.0, 11.0),
+                (Side::Right, 11.0, 11.0),
+                (Side::Left, 0.0, 20.0)
+            ]
         );
-        assert_eq!(three.edges.len(), 3);
+
+        // More than two on each free side are left to ELK.
+        let mut five = LayoutData {
+            nodes: vec![node("a", 120.0, 44.0)],
+            edges: (1..=5)
+                .map(|index| edge(&format!("l{index}"), "a", "a"))
+                .collect(),
+            direction: "TB".to_owned(),
+            ..LayoutData::default()
+        };
+        assert!(take_out(&mut five, &none.0, &none.0, &none.1, &[], &none.2).is_none());
+        assert_eq!(five.edges.len(), 5);
+    }
+
+    #[test]
+    fn where_notes_take_both_sides_a_loop_stands_at_the_end_of_the_entry_side() {
+        let mut data = LayoutData {
+            nodes: vec![node("a", 120.0, 44.0)],
+            edges: vec![edge("l", "a", "a")],
+            direction: "TB".to_owned(),
+            ..LayoutData::default()
+        };
+        let reserved = [Reserved {
+            id: "a".to_owned(),
+            before: true,
+            after: true,
+        }];
+        let none = (HashSet::new(), Avoided::default(), HashMap::new());
+        let loops = take_out(&mut data, &none.0, &none.0, &none.1, &reserved, &none.2)
+            .expect("a loop on the top");
+        let entry = &loops.hosts[0].loops[0];
+        // On the top, its end 4 from the right corner, its label past it.
+        assert_eq!(
+            (entry.side, entry.offset, entry.label),
+            (Side::Top, 46.0, LabelAt::Past)
+        );
+        let real = BBox::new(0.0, 0.0, 120.0, 44.0);
+        assert_eq!(
+            entry.route(real),
+            [
+                Point::new(96.0, 0.0),
+                Point::new(96.0, -32.0),
+                Point::new(116.0, -32.0),
+                Point::new(116.0, 0.0),
+            ]
+        );
     }
 
     #[test]
@@ -920,6 +1151,7 @@ mod tests {
             &HashSet::new(),
             &Avoided::default(),
             &reserved,
+            &HashMap::new(),
         )
         .expect("a loop");
         assert_eq!(loops.hosts[0].loops[0].side, Side::Left);
@@ -946,6 +1178,7 @@ mod tests {
             &turned,
             &Avoided::default(),
             &[],
+            &HashMap::new(),
         )
         .expect("a loop");
         assert_eq!(loops.hosts[0].loops[0].side, Side::Top);
@@ -974,7 +1207,17 @@ mod tests {
             ..LayoutData::default()
         };
         let kept = HashSet::from(["a".to_owned()]);
-        assert!(take_out(&mut data, &kept, &HashSet::new(), &Avoided::default(), &[]).is_none());
+        assert!(
+            take_out(
+                &mut data,
+                &kept,
+                &HashSet::new(),
+                &Avoided::default(),
+                &[],
+                &HashMap::new()
+            )
+            .is_none()
+        );
         assert_eq!(data.edges.len(), 2);
     }
 }

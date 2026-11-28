@@ -79,8 +79,9 @@ fn lay_out_with_notes_beside(
     config: &Config<'_>,
 ) -> Result<(), RenderError> {
     let original = measured.data.clone();
+    let sizes = composite_sizes(measured, config)?;
     let mut kept = std::collections::HashSet::new();
-    while let Some(notes) = notes::take_out(&mut measured.data, &kept) {
+    while let Some(notes) = notes::take_out(&mut measured.data, &kept, Some(&sizes)) {
         let mut failed = None;
         let reserved = notes.reserved();
         let laid =
@@ -103,6 +104,31 @@ fn lay_out_with_notes_beside(
     }
     measured.data = original;
     pipeline::lay_out_for_render(measured, config)
+}
+
+/// The sizes of the composite states with a note beside them, from a layout with the notes of
+/// composites out of it and the other notes beside their states. A note's room beside a composite
+/// is a box at a fixed place from the frame's corner, so it needs the frame's size before the
+/// layout; the frame holds the same states either way.
+fn composite_sizes(
+    measured: &Measured,
+    config: &Config<'_>,
+) -> Result<std::collections::HashMap<String, (f64, f64)>, RenderError> {
+    if !notes::on_composite(&measured.data) {
+        return Ok(std::collections::HashMap::new());
+    }
+    let mut probe = measured.clone();
+    let reserved = notes::take_out(&mut probe.data, &std::collections::HashSet::new(), None)
+        .map(|notes| notes.reserved())
+        .unwrap_or_default();
+    pipeline::lay_out_adjusted(&mut probe, config, &reserved, |_, _, _| true)?;
+    Ok(probe
+        .data
+        .nodes
+        .iter()
+        .filter(|node| node.is_group)
+        .filter_map(|node| Some((node.id.clone(), (node.width?, node.height?))))
+        .collect())
 }
 
 /// Renders a state diagram as an SVG document (`stateRenderer-v3-unified.ts`, `draw`): the layout

@@ -802,7 +802,7 @@ e2e/diagrams/flowchart/visual-check/should-render-aws-icons-with-labels-and-rect
 e2e/diagrams/flowchart/visual-check/should-render-labeled-self-loops.mmd	a3276ea337b0bc75	444d426104eb4c9d	1d833a2160420a41
 e2e/diagrams/flowchart/visual-check/should-render-multiple-aws-icons-with-rect-elements-in-a-flowchart.mmd	72704ce5683e67fd	72704ce5683e67fd	58eae26cb76178bc
 e2e/diagrams/flowchart/visual-check/should-render-self-loops-in-non-tb-directions.mmd	1da650d48b4a377c	1da650d48b4a377c	b9d73908f60d997f
-e2e/diagrams/flowchart/visual-check/should-render-self-loops.mmd	9c4666a5895ef841	9c4666a5895ef841	90710525e905783f
+e2e/diagrams/flowchart/visual-check/should-render-self-loops.mmd	9c4666a5895ef841	9c4666a5895ef841	92968f69c7284ac7
 e2e/diagrams/flowchart/visual-check/should-render-single-aws-icon-with-rect-elements-without-unintended-opacity.mmd	c61a1302c1c5cbbb	c61a1302c1c5cbbb	5cd50b585d35f380
 e2e/diagrams/flowchart/visual-check/should-render-subgraphs-with-title-margins-and-edge-labels.mmd	6bfd7cb1f88a61b7	6bfd7cb1f88a61b7	4b5df9aa48593809
 e2e/diagrams/flowchart/visual-check/should-render-subgraphs-with-title-margins-set-lr-and-htmllabels-set-to-false.mmd	4911d69e1263e56f	4911d69e1263e56f	2ef75009803f9b3b
@@ -1237,7 +1237,7 @@ e2e/diagrams/state-diagram-v2/nightly-check/v2-width-of-compound-state-should-gr
 e2e/diagrams/state-diagram-v2/pr-check/can-have-styles-applied.mmd	e348c9bc1c814688	7b1e71ff26ec5786
 e2e/diagrams/state-diagram-v2/pr-check/composite-with-a-loop-starts-on-its-start-state.mmd	f0fa4ec4721be334	fbd0b31e10bd2960
 e2e/diagrams/state-diagram-v2/pr-check/should-render-edge-labels-correctly-with-multiple-transitions.mmd	433e6d54e4dab678	94c3aa8c32e44b90
-e2e/diagrams/state-diagram-v2/pr-check/v2-a-compound-state-should-be-able-to-link-to-itself.mmd	87bddd3754d88888	a1daeff8356e4d70
+e2e/diagrams/state-diagram-v2/pr-check/v2-a-compound-state-should-be-able-to-link-to-itself.mmd	87bddd3754d88888	f69b78c655ff7580
 e2e/diagrams/state-diagram-v2/pr-check/v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state.mmd	b00e28009177bed2	a854d7651ff4b4a6
 e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-long-descriptions-instead-of-id-when-available.mmd	dbd2d8fa0453a50a	05c85bef9705b6fe
 e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-state-with-a-note.mmd	3861b3fcf90a7b08	59187ea5a3256df1
@@ -1252,10 +1252,10 @@ e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-neo-dark-t
 e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-neo-theme.mmd	1a8cc365b63488c1	416ffdc6c739027d
 e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-redux-dark-theme.mmd	101554fa3b7423f3	b4ec9648915793a5
 e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-redux-theme.mmd	eca1d77ce54ae6f5	86bd88d9e4144dc7
-e2e/diagrams/state-diagram/nightly-check/dark-theme.mmd	59ca5a11082cd005	3e96f2a594b9560f
-e2e/diagrams/state-diagram/nightly-check/default-theme.mmd	8ad2573280bc9a6b	7450163e2c94e2ad
-e2e/diagrams/state-diagram/nightly-check/forest-theme.mmd	fbce1117bbb1f41b	0403db246704f5d7
-e2e/diagrams/state-diagram/nightly-check/neutral-theme.mmd	dae93055f4beb51b	4fa543f976ab3365
+e2e/diagrams/state-diagram/nightly-check/dark-theme.mmd	59ca5a11082cd005	1ce7e1ba48a630c9
+e2e/diagrams/state-diagram/nightly-check/default-theme.mmd	8ad2573280bc9a6b	42c97c9905255eaf
+e2e/diagrams/state-diagram/nightly-check/forest-theme.mmd	fbce1117bbb1f41b	3097bcb405980535
+e2e/diagrams/state-diagram/nightly-check/neutral-theme.mmd	dae93055f4beb51b	6ee1ab414ae1c293
 e2e/diagrams/state-diagram/nightly-check/should-group-all-state-elements-under-a-single-root-g-wrapper.mmd	09862a88bba5b6f2	72b9e3eaeacd2cca
 e2e/diagrams/state-diagram/nightly-check/should-handle-multiline-notes-with-different-line-breaks.mmd	4b8f038037cacbfa	39e4cc98b05c3c49
 e2e/diagrams/state-diagram/nightly-check/should-handle-multiple-arrows-from-one-node-to-another.mmd	0b8be2f5a31cbf4c	6caa8384cf2021f0

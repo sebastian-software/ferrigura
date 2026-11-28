@@ -436,19 +436,37 @@ pub(crate) fn lay_out_adjusted(
     measured: &mut Measured,
     config: &Config<'_>,
     reserved: &[loops::Reserved],
-    mut adjust: impl FnMut(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
+    adjust: impl FnMut(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
 ) -> Result<bool, RenderError> {
     if config.section.design.is_none() {
         return lay_out_once(measured, config, adjust);
     }
+    let sizes = group_sizes(measured, config, reserved)?;
+    lay_out_with_loops(measured, config, reserved, &sizes, adjust)
+}
+
+/// [`lay_out_adjusted`] in the design mode, with the sizes of the groups with a loop given.
+fn lay_out_with_loops(
+    measured: &mut Measured,
+    config: &Config<'_>,
+    reserved: &[loops::Reserved],
+    sizes: &HashMap<String, (f64, f64)>,
+    mut adjust: impl FnMut(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
+) -> Result<bool, RenderError> {
     let original = measured.data.clone();
     let (mut kept, mut turned) = (
         std::collections::HashSet::new(),
         std::collections::HashSet::new(),
     );
     let mut avoided = loops::Avoided::default();
-    while let Some(beside) = loops::take_out(&mut measured.data, &kept, &turned, &avoided, reserved)
-    {
+    while let Some(beside) = loops::take_out(
+        &mut measured.data,
+        &kept,
+        &turned,
+        &avoided,
+        reserved,
+        sizes,
+    ) {
         let mut failed = None;
         let laid = lay_out_once(measured, config, |graph, data, state| {
             if let Err(host) = beside.put_back(graph, data, state) {
@@ -490,6 +508,63 @@ pub(crate) fn lay_out_adjusted(
     }
     measured.data = original;
     lay_out_once(measured, config, adjust)
+}
+
+/// The sizes of the groups with a self-loop: a loop's room beside a group is a box at a fixed place
+/// from the frame's corner, so it needs the frame's size before the layout. A first layout without
+/// the loops of groups gives the size of each group that holds no other group with a loop; each
+/// further layout, with the loops beside the groups of the sizes before, gives the next level, up to
+/// the outermost groups.
+fn group_sizes(
+    measured: &Measured,
+    config: &Config<'_>,
+    reserved: &[loops::Reserved],
+) -> Result<HashMap<String, (f64, f64)>, RenderError> {
+    let looped: HashSet<String> = measured
+        .data
+        .edges
+        .iter()
+        .filter(|edge| edge.start == edge.end)
+        .filter(|edge| {
+            measured
+                .data
+                .nodes
+                .iter()
+                .any(|node| node.is_group && node.id == edge.start)
+        })
+        .map(|edge| edge.start.clone())
+        .collect();
+    if looped.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let sizes_of = |probe: &Measured| -> HashMap<String, (f64, f64)> {
+        probe
+            .data
+            .nodes
+            .iter()
+            .filter(|node| looped.contains(&node.id))
+            .filter_map(|node| Some((node.id.clone(), (node.width?, node.height?))))
+            .collect()
+    };
+    let mut probe = measured.clone();
+    probe
+        .data
+        .edges
+        .retain(|edge| !(edge.start == edge.end && looped.contains(&edge.start)));
+    lay_out_with_loops(&mut probe, config, reserved, &HashMap::new(), |_, _, _| {
+        true
+    })?;
+    let mut sizes = sizes_of(&probe);
+    for _ in 1..looped.len().min(MAX_HIERARCHY_DEPTH) {
+        let mut probe = measured.clone();
+        lay_out_with_loops(&mut probe, config, reserved, &sizes, |_, _, _| true)?;
+        let next = sizes_of(&probe);
+        if next == sizes {
+            break;
+        }
+        sizes = next;
+    }
+    Ok(sizes)
 }
 
 /// One layout with the caller's step: see [`lay_out_adjusted`].
