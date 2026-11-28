@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0](https://github.com/sebastian-software/ferrigura/compare/v0.10.0...v0.11.0) (2026-11-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* every diagram type draws in ferrigura's own look by default, colors included. `RenderOptions.design`, `design: true` and `--design` are removed. `compat: true` keeps Mermaid's geometry and look.
+
+### Features
+
+* add an experimental native TALA flowchart engine ([#317](https://github.com/sebastian-software/ferrigura/issues/317)) ([c86efac](https://github.com/sebastian-software/ferrigura/commit/c86efaca303f508dafcaa22c5582cd19c39ae381))
+* draw every diagram in ferrigura's own look by default ([#302](https://github.com/sebastian-software/ferrigura/issues/302)) ([393b2f5](https://github.com/sebastian-software/ferrigura/commit/393b2f5af69765a199278d74cf4afff8482d552c)), closes [#297](https://github.com/sebastian-software/ferrigura/issues/297) [#298](https://github.com/sebastian-software/ferrigura/issues/298) [#299](https://github.com/sebastian-software/ferrigura/issues/299) [#300](https://github.com/sebastian-software/ferrigura/issues/300) [#301](https://github.com/sebastian-software/ferrigura/issues/301) [#270](https://github.com/sebastian-software/ferrigura/issues/270) [#269](https://github.com/sebastian-software/ferrigura/issues/269) [#271](https://github.com/sebastian-software/ferrigura/issues/271) [#272](https://github.com/sebastian-software/ferrigura/issues/272) [#273](https://github.com/sebastian-software/ferrigura/issues/273) [#274](https://github.com/sebastian-software/ferrigura/issues/274) [#275](https://github.com/sebastian-software/ferrigura/issues/275) [#276](https://github.com/sebastian-software/ferrigura/issues/276) [#277](https://github.com/sebastian-software/ferrigura/issues/277)
+* **tala:** port bounded connected and nested flowcharts ([#318](https://github.com/sebastian-software/ferrigura/issues/318)) ([163ed34](https://github.com/sebastian-software/ferrigura/commit/163ed34dd6e8b1ce6153336134f172e030ef48e2))
+* **tala:** render ordinary cyclic flowcharts with seeded layout ([d97952b](https://github.com/sebastian-software/ferrigura/commit/d97952bcdf4188cc7f7a15899bf9f428171462a6))
+* **tala:** route bounded compound and parallel flowcharts ([#320](https://github.com/sebastian-software/ferrigura/issues/320)) ([b8b5ffb](https://github.com/sebastian-software/ferrigura/commit/b8b5ffbb5b4d241c1381c9b578648b6f994ef368))
+
 ## [0.10.0](https://github.com/sebastian-software/ferrigura/compare/v0.9.0...v0.10.0) (2026-11-27)
 
 

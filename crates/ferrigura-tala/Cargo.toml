@@ -1,6 +1,6 @@
 [package]
 name = "ferrigura-tala"
-version = "0.10.0"
+version = "0.11.0"
 description = "Experimental Rust port of the D2 TALA layout engine"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/LICENSE-GO", "/NOTICE.md"]
