@@ -151,16 +151,7 @@ Error texts are ferrigura's own. Where a ported spec asserts Mermaid's exact tex
 
 ### The pipeline
 
-```mermaid
-flowchart LR
-  model[FlowchartDiagram] --> data[get_data]
-  data --> measure[measure: labels and shapes]
-  measure --> build[elk_build]
-  build --> elk[ferrigura-elk]
-  elk --> apply[elk_apply]
-  apply --> paint[paint: clusters, edges, labels, nodes]
-  paint --> svg[SVG with style, defs, viewBox]
-```
+![The flowchart model goes through get_data, measure, elk_build, ferrigura-elk, elk_apply and paint, and comes out as SVG with style, defs and viewBox.](../images/flowchart-pipeline.svg)
 
 The steps follow the reference's `flowRenderer-v3-unified.ts`, `rendering-util/render.ts`, `layout-algorithms/common/index.ts` and `createGraph.ts`, one module per step, so that each step's output can be compared with the reference's:
 

@@ -12,10 +12,7 @@
 
 ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It draws ten diagram types of Mermaid 12.2.0, each one completely, checked against Mermaid run in Chromium: flowchart, state, class and ER; mindmap, sequence and gantt; XY chart, pie and quadrant chart. A text of any other Mermaid type gives an error that names it. By default every type is drawn in ferrigura's own look ([0023](./docs/decisions/0023-the-default-rendering.md)); the [`compat` option](./docs/decisions/0019-mermaid-geometry-with-compat.md) draws Mermaid's geometry, which the checks hold within 0.05 px of the reference.
 
-```mermaid
-flowchart LR
-  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, cose-bilkent, tidy tree] --> svg[SVG]
-```
+![Diagram text goes through the parser and a layout, ELK, cose-bilkent or the tidy tree, and comes out as SVG.](./docs/images/overview.svg)
 
 [Website and getting started](https://sebastian-software.github.io/ferrigura/) ·
 [Diagram reference](https://sebastian-software.github.io/ferrigura/diagrams/overview/)

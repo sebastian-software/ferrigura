@@ -4,16 +4,7 @@ ferrigura renders Mermaid diagram text to SVG in Rust, without a browser ([0006]
 
 ## From text to SVG
 
-```mermaid
-flowchart LR
-  text[Diagram text] --> pre[Preprocess and detect]
-  pre --> parse[Parse]
-  parse --> model[Canonical model]
-  config[Configuration and theme] --> view[Typed view]
-  model --> render[Lay out and render]
-  view --> render
-  render --> svg[SVG with embedded font subsets]
-```
+![Diagram text is preprocessed and detected, then parsed into the canonical model. The model and the typed view of the configuration and theme go into layout and rendering, which writes SVG with embedded font subsets.](./images/architecture.svg)
 
 1. **Preprocess and detect** (`ferrigura-syntax`): line endings are normalized, the YAML front matter and the `%%{init}%%` directives are read, and the detector picks the diagram type from the start of the text. A header of a Mermaid type that ferrigura does not draw is recognized as such, and the facade refuses the text with `Error::Unsupported`.
 2. **Parse** (`ferrigura-syntax`): a hand-written parser per diagram type fills a DB that follows Mermaid's diagram DB ([0007](./decisions/0007-hand-written-parsers.md)).

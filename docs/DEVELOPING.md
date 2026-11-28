@@ -161,7 +161,10 @@ From `homepage/`, run `pnpm install`, then `pnpm dev` for a local server.
 Every Ferrigura drawing is generated from the current Rust source through
 `homepage/scripts/source-renderer.mjs`. Run `pnpm sample:write` to refresh the
 homepage specimens, and `pnpm comparison:write` on macOS to refresh the
-side-by-side page with the published Mermaid reference too. Commit generated
+side-by-side page with the published Mermaid reference too. A diagram in the
+README or under `docs/` is an image, never a `mermaid` block: write its text to
+`docs/images/<name>.mmd`, link `<name>.svg`, and run `pnpm docs-diagrams:write`,
+which renders it in both color schemes. Commit generated
 files with changes that move the output. `pnpm verify` checks the drawings
 against the source, website code, rendered links and browser behavior. No
 Mermaid runtime is shipped to render them in the visitor's browser. GitHub
