@@ -212,7 +212,7 @@ Two themes ship: `redux-color` (light) and `redux-dark-color` (dark), which are 
 
 ## Diagram types
 
-ferrigura draws ten diagram types, each one completely: its drawing is compared with Mermaid's, and flowcharts, state diagrams and class diagrams also draw in the design mode. The header keyword of each is the one Mermaid uses:
+ferrigura draws ten diagram types, each one completely: its drawing is compared with Mermaid's, and flowcharts, state and class diagrams, mindmaps, and pie, XY, quadrant and gantt charts also draw in the design mode. The header keyword of each is the one Mermaid uses:
 
 | Group  | Diagram        | Header                            |
 | ------ | -------------- | --------------------------------- |

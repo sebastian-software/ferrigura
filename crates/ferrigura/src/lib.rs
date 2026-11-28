@@ -56,8 +56,10 @@ pub struct RenderOptions {
     /// Draw in the design mode: ferrigura's own look, with hairline outlines, color by the role of
     /// a node, rounded corners and soft shadows, and with its own measures: a node grows to give its
     /// edges room, and spacings and group paddings are wider. Flowcharts, state diagrams and class
-    /// diagrams support it; other diagram types return an option error, and so does the combination
-    /// with `compat`. The user's `themeVariables` and `classDef` styles still apply on top.
+    /// diagrams support it; mindmaps and the pie, XY, quadrant and gantt charts take its look (its
+    /// colors, with one calm palette for a series, its outlines and its type) and keep their layout.
+    /// Other diagram types return an option error, and so does the combination with `compat`. The
+    /// user's `themeVariables` and `classDef` styles still apply on top.
     pub design: bool,
     /// Optional one-time SVG draw animation for flowcharts, Gantt, mind maps, pie charts, and XY
     /// charts. `None` leaves the SVG unchanged.
@@ -235,7 +237,14 @@ impl Renderer {
             }
             if !matches!(
                 kind,
-                DiagramType::Flowchart | DiagramType::State | DiagramType::Class
+                DiagramType::Flowchart
+                    | DiagramType::State
+                    | DiagramType::Class
+                    | DiagramType::Pie
+                    | DiagramType::XyChart
+                    | DiagramType::QuadrantChart
+                    | DiagramType::Gantt
+                    | DiagramType::Mindmap
             ) {
                 return Err(RenderError::Options(
                     "the design mode is not supported for this diagram type".to_owned(),
@@ -1092,6 +1101,16 @@ fn compute_design_tokens(tone: Tone, overrides: &Value) -> Arc<ThemeTokens> {
     let mut variables = design::theme_variables(tone);
     if let (Value::Object(variables), Value::Object(overrides)) = (&mut variables, overrides) {
         for (name, value) in overrides {
+            // The `xyChart` group is merged key by key too, so that a user's title color keeps the
+            // mode's palette.
+            if let (Some(Value::Object(group)), Value::Object(user)) =
+                (variables.get_mut(name), value)
+            {
+                for (key, value) in user {
+                    group.insert(key.clone(), value.clone());
+                }
+                continue;
+            }
             variables.insert(name.clone(), value.clone());
         }
     }

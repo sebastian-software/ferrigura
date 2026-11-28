@@ -2,6 +2,19 @@
 
 The quadrant chart places labeled points on a square divided into four quadrants, with two axes and a text for each quadrant. It starts with `quadrantChart`. ferrigura parses it with a hand-written scanner and recursive-descent grammar in `ferrigura-syntax/src/quadrant_chart/`, and draws it with the type's own renderer in `ferrigura-render/src/quadrant_chart/`, a port of Mermaid's quadrant builder. Nothing is measured: every box is arithmetic on the configuration, so no layout engine is involved.
 
+## Design mode
+
+The design mode draws a quadrant chart in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. It changes no layout: the colors are the mode's theme variables, laid under the user's `themeVariables`, and a point's own style keeps the last word.
+
+| Element                      | Design mode                                                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Quadrants                    | The tints of the first four colors of the series palette (`quadrant1Fill` to `quadrant4Fill`): blue, teal, amber, violet             |
+| Borders                      | The background color, so the quadrants stand apart by a gap (`quadrantInternalBorderStrokeFill`, `quadrantExternalBorderStrokeFill`) |
+| Quadrant labels, axis labels | The muted `titleColor`                                                                                                               |
+| Points                       | The first series color; their labels and the title in the text color                                                                 |
+
+The chart's colors are presentation attributes, so `colorScheme: auto` draws the light set, as the default does.
+
 ## Model
 
 `ferrigura_model::quadrant_chart::QuadrantChartDiagram` is the DB state after the parse, before the builder lays anything out ([canonical-model.md](../canonical-model.md#quadrantchart) has the conventions):

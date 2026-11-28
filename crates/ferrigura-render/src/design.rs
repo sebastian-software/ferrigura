@@ -170,8 +170,196 @@ pub fn theme_variables(tone: Tone) -> Value {
         for (name, colour) in variables {
             map.insert((*name).into(), Value::from(*colour));
         }
+        chart_variables(tone, map);
     }
     object
+}
+
+/// The number of colors of the series palette.
+pub const SERIES_LENGTH: usize = 8;
+
+/// The series palette of the light set: one calm color for each series of a chart, in a fixed
+/// order: blue, teal, amber, violet, green, rose, cyan and brick. A series takes the color of its
+/// position and wraps after the last. Each is dark enough for white text on it
+/// ([`series_text`]), and neighbors, the last and the first included, stay apart for a reader
+/// with a red-green deficiency.
+pub const SERIES_LIGHT: [&str; SERIES_LENGTH] = [
+    "#3E63DD", "#0F8466", "#9C6310", "#7A55C7", "#4A812B", "#C2456B", "#1C75AB", "#B0573A",
+];
+
+/// The series palette of the dark set: the hues of [`SERIES_LIGHT`], light enough for the dark
+/// background's color as text on them.
+pub const SERIES_DARK: [&str; SERIES_LENGTH] = [
+    "#7C9AF2", "#4DB89A", "#D9A04A", "#A88DE8", "#8CBF66", "#E98BA6", "#5FAED8", "#E09A7A",
+];
+
+/// The tints of the light series: each color at 12 percent on the background, the fill of a box
+/// that a series color outlines, with the text color on it.
+pub const SERIES_TINT_LIGHT: [&str; SERIES_LENGTH] = [
+    "#E8ECFB", "#E2F0ED", "#F3ECE2", "#EFEBF8", "#E9F0E6", "#F8E9ED", "#E4EEF5", "#F6EBE7",
+];
+
+/// The tints of the dark series: each color at 18 percent on the background.
+pub const SERIES_TINT_DARK: [&str; SERIES_LENGTH] = [
+    "#252C41", "#1D3231", "#362D23", "#2D2A3F", "#283328", "#392933", "#20303C", "#372C2B",
+];
+
+/// The series palette of a tone: the solid colors of the marks of a chart (a pie's slices, an XY
+/// chart's bars and lines) and the outlines and edges of a series of boxes.
+#[must_use]
+pub const fn series(tone: Tone) -> &'static [&'static str; SERIES_LENGTH] {
+    match tone {
+        Tone::Light => &SERIES_LIGHT,
+        Tone::Dark => &SERIES_DARK,
+    }
+}
+
+/// The tints of the series palette of a tone: the fills of a series of boxes (a gantt section's
+/// bars, a mindmap branch's nodes).
+#[must_use]
+pub const fn series_tint(tone: Tone) -> &'static [&'static str; SERIES_LENGTH] {
+    match tone {
+        Tone::Light => &SERIES_TINT_LIGHT,
+        Tone::Dark => &SERIES_TINT_DARK,
+    }
+}
+
+/// The color of text on a solid series color: white on the light set, the background's on the dark.
+#[must_use]
+pub const fn series_text(tone: Tone) -> &'static str {
+    match tone {
+        Tone::Light => "#FFFFFF",
+        Tone::Dark => "#12141A",
+    }
+}
+
+/// The color of a critical gantt task's outline and of the today marker: a red that the series
+/// palette does not use, for a part that means attention.
+#[must_use]
+pub const fn critical(tone: Tone) -> (&'static str, &'static str) {
+    match tone {
+        Tone::Light => ("#FBEAEA", "#C93C37"),
+        Tone::Dark => ("#3A2224", "#F0776F"),
+    }
+}
+
+/// The stroke width of a gantt task's outline in the mode, the node outline's.
+pub const TASK_STROKE_WIDTH: &str = NODE_STROKE_WIDTH;
+
+/// The stroke width of an active gantt task's outline: heavier than a task's, so that it stands out
+/// without a color of its own.
+pub const ACTIVE_TASK_STROKE_WIDTH: &str = "2.5px";
+
+/// The theme variables of the charts and the series types for a tone: the pie, the XY chart, the
+/// quadrant chart, the gantt chart and the mindmap read them from the shared theme, and the user's
+/// variables win over them as over the others.
+fn chart_variables(tone: Tone, map: &mut std::collections::BTreeMap<String, Value>) {
+    let series = series(tone);
+    let tint = series_tint(tone);
+    let (critical_fill, critical_line) = critical(tone);
+    let (background, text, muted, border, band, grid, done) = match tone {
+        Tone::Light => (
+            "#FFFFFF", "#1A1F2B", "#4A5364", "#7C8698", "#F6F7F9", "#E3E6EC", "#EEF0F3",
+        ),
+        Tone::Dark => (
+            "#12141A", "#E7E9EE", "#A3ACBC", "#667085", "#171A22", "#2A2F3A", "#1D212A",
+        ),
+    };
+    let mut set = |name: String, colour: &str| {
+        map.insert(name, Value::from(colour));
+    };
+    // The pie: the slices in the series colors, parted by the background, with no outer ring.
+    for index in 0..12 {
+        set(format!("pie{}", index + 1), series[index % SERIES_LENGTH]);
+    }
+    set("pieStrokeColor".into(), background);
+    set("pieOuterStrokeColor".into(), background);
+    set("pieStrokeWidth".into(), "2px");
+    set("pieOuterStrokeWidth".into(), "0px");
+    set("pieOpacity".into(), "1");
+    set("pieTitleTextColor".into(), text);
+    set("pieSectionTextColor".into(), series_text(tone));
+    set("pieLegendTextColor".into(), text);
+    set("pieTitleTextSize".into(), "18px");
+    set("pieSectionTextSize".into(), "14px");
+    set("pieLegendTextSize".into(), "14px");
+    // The quadrant chart: four tints of the palette parted by the background, muted labels.
+    for (index, colour) in tint.iter().take(4).enumerate() {
+        set(format!("quadrant{}Fill", index + 1), colour);
+        set(format!("quadrant{}TextFill", index + 1), muted);
+    }
+    set("quadrantPointFill".into(), series[0]);
+    set("quadrantPointTextFill".into(), text);
+    set("quadrantXAxisTextFill".into(), muted);
+    set("quadrantYAxisTextFill".into(), muted);
+    set("quadrantInternalBorderStrokeFill".into(), background);
+    set("quadrantExternalBorderStrokeFill".into(), background);
+    set("quadrantTitleFill".into(), text);
+    // The gantt chart: quiet section bands and grid, the bars of a section in its series color,
+    // done tasks neutral and critical ones red.
+    set("sectionBkgColor".into(), band);
+    set("sectionBkgColor2".into(), band);
+    set("altSectionBkgColor".into(), background);
+    set("excludeBkgColor".into(), done);
+    set("gridColor".into(), grid);
+    set("todayLineColor".into(), critical_line);
+    set("taskBkgColor".into(), tint[0]);
+    set("taskBorderColor".into(), series[0]);
+    set("activeTaskBkgColor".into(), tint[0]);
+    set("activeTaskBorderColor".into(), series[0]);
+    set("doneTaskBkgColor".into(), done);
+    set("doneTaskBorderColor".into(), border);
+    set("critBkgColor".into(), critical_fill);
+    set("critBorderColor".into(), critical_line);
+    for name in [
+        "taskTextColor",
+        "taskTextOutsideColor",
+        "taskTextDarkColor",
+        "taskTextLightColor",
+    ] {
+        set(name.into(), text);
+    }
+    // A link in a bar's text: the terminal's blue, which reads on the bar's tint.
+    let link = match tone {
+        Tone::Light => "#2F54D6",
+        Tone::Dark => series[0],
+    };
+    set("taskTextClickableColor".into(), link);
+    set("vertLineColor".into(), muted);
+    // The mindmap: a branch's nodes in the tint of its series color, outlined and joined in it;
+    // the root in the flowchart's terminal color. Slot `i` is the section `i - 1`, so the first
+    // branch takes the second color, and the root's blue returns only after the eighth.
+    for index in 0..12 {
+        let slot = index % SERIES_LENGTH;
+        set(format!("cScale{index}"), tint[slot]);
+        set(format!("cScalePeer{index}"), series[slot]);
+        set(format!("cScaleLabel{index}"), text);
+    }
+    let (root, root_text) = match tone {
+        Tone::Light => ("#2F54D6", "#FFFFFF"),
+        Tone::Dark => ("#4263EB", "#FFFFFF"),
+    };
+    set("git0".into(), root);
+    set("gitBranchLabel0".into(), root_text);
+    // The XY chart: the plots in the series colors, the axes and their texts muted.
+    let mut xy = std::collections::BTreeMap::new();
+    for (name, colour) in [
+        ("backgroundColor", background),
+        ("titleColor", text),
+        ("legendTextColor", text),
+        ("xAxisTitleColor", muted),
+        ("xAxisLabelColor", muted),
+        ("xAxisTickColor", border),
+        ("xAxisLineColor", border),
+        ("yAxisTitleColor", muted),
+        ("yAxisLabelColor", muted),
+        ("yAxisTickColor", border),
+        ("yAxisLineColor", border),
+    ] {
+        xy.insert(name.to_owned(), Value::from(colour));
+    }
+    xy.insert("plotColorPalette".to_owned(), Value::from(series.join(",")));
+    map.insert("xyChart".into(), Value::Object(xy));
 }
 
 /// The length a node needs along the side its edges meet, for the number of edges on its busiest
@@ -330,7 +518,9 @@ mod tests {
         let mut colours = std::collections::BTreeMap::new();
         if let Value::Object(map) = &theme_variables(tone) {
             for (name, value) in map {
-                colours.insert(name.clone(), value.as_str().unwrap().to_owned());
+                if let Some(value) = value.as_str() {
+                    colours.insert(name.clone(), value.to_owned());
+                }
             }
         }
         for declaration in declarations(tone)
@@ -405,6 +595,89 @@ mod tests {
             }
             let ratio = contrast(of("clusterBorder"), of("background"));
             assert!(ratio >= 3.0, "{tone:?}: clusterBorder is {ratio:.2}");
+        }
+    }
+
+    #[test]
+    fn the_series_and_the_charts_keep_their_contrast_in_both_tones() {
+        // The series palette: a mark reaches 3 to 1 on the background (1.4.11), the text on a
+        // mark 4.5 (1.4.3), the text on a tint 4.5, and the outline of a tint 3.
+        for tone in [Tone::Light, Tone::Dark] {
+            let colours = colours(tone);
+            let of = |name: &str| colours[name].as_str();
+            for ((colour, tint), slot) in series(tone).iter().zip(series_tint(tone)).zip(0..) {
+                let on = |a: &str, b: &str| contrast(a, b);
+                assert!(
+                    on(colour, of("background")) >= 3.0,
+                    "{tone:?}: series {slot}"
+                );
+                assert!(
+                    on(series_text(tone), colour) >= 4.5,
+                    "{tone:?}: text on {slot}"
+                );
+                assert!(
+                    on(of("textColor"), tint) >= 4.5,
+                    "{tone:?}: text on tint {slot}"
+                );
+                assert!(
+                    on(colour, tint) >= 3.0,
+                    "{tone:?}: series {slot} on its tint"
+                );
+            }
+            // The charts' text on its ground, and their lines on theirs.
+            const TEXT: [(&str, &str); 16] = [
+                ("pieTitleTextColor", "background"),
+                ("pieLegendTextColor", "background"),
+                ("taskTextColor", "critBkgColor"),
+                ("taskTextColor", "doneTaskBkgColor"),
+                ("taskTextColor", "sectionBkgColor"),
+                ("taskTextOutsideColor", "background"),
+                ("taskTextClickableColor", "taskBkgColor"),
+                ("taskTextClickableColor", "background"),
+                ("titleColor", "sectionBkgColor"),
+                ("vertLineColor", "background"),
+                ("quadrant1TextFill", "quadrant1Fill"),
+                ("quadrant2TextFill", "quadrant2Fill"),
+                ("quadrant3TextFill", "quadrant3Fill"),
+                ("quadrant4TextFill", "quadrant4Fill"),
+                ("quadrantXAxisTextFill", "background"),
+                ("gitBranchLabel0", "git0"),
+            ];
+            for (text, ground) in TEXT {
+                let ratio = contrast(of(text), of(ground));
+                assert!(ratio >= 4.5, "{tone:?}: {text} on {ground} is {ratio:.2}");
+            }
+            const LINES: [(&str, &str); 7] = [
+                ("critBorderColor", "background"),
+                ("critBorderColor", "critBkgColor"),
+                ("doneTaskBorderColor", "background"),
+                ("doneTaskBorderColor", "doneTaskBkgColor"),
+                ("todayLineColor", "background"),
+                ("quadrantPointFill", "quadrant1Fill"),
+                ("git0", "background"),
+            ];
+            for (line, ground) in LINES {
+                let ratio = contrast(of(line), of(ground));
+                assert!(ratio >= 3.0, "{tone:?}: {line} on {ground} is {ratio:.2}");
+            }
+            // The XY chart's texts and axes.
+            let variables = theme_variables(tone);
+            let xy = variables.get("xyChart").expect("the XY chart's group");
+            let xy = |name: &str| xy.get(name).and_then(Value::as_str).expect(name).to_owned();
+            for name in [
+                "titleColor",
+                "legendTextColor",
+                "xAxisLabelColor",
+                "yAxisTitleColor",
+            ] {
+                let ratio = contrast(&xy(name), of("background"));
+                assert!(ratio >= 4.5, "{tone:?}: xyChart.{name} is {ratio:.2}");
+            }
+            for name in ["xAxisLineColor", "yAxisTickColor"] {
+                let ratio = contrast(&xy(name), of("background"));
+                assert!(ratio >= 3.0, "{tone:?}: xyChart.{name} is {ratio:.2}");
+            }
+            assert_eq!(xy("plotColorPalette"), series(tone).join(","));
         }
     }
 

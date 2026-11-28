@@ -1,5 +1,6 @@
 //! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look and measures for a
-//! flowchart, a state diagram and a class diagram, laid out by the engine of the default rendering.
+//! flowchart, a state diagram and a class diagram, laid out by the engine of the default rendering,
+//! and its look for the pie, the XY chart, the quadrant chart, the gantt chart and the mindmap.
 
 use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
 
@@ -787,7 +788,6 @@ fn the_mode_excludes_compat_and_other_diagram_types() {
         other => panic!("expected an option error, got {other:?}"),
     }
     for other in [
-        "pie\n \"a\" : 1\n",
         "sequenceDiagram\n  A->>B: hi\n",
         "erDiagram\n  A ||--o{ B : has\n",
     ] {
@@ -1723,4 +1723,224 @@ fn two_labeled_relations_between_two_classes_are_one_unit_beside_another_edge() 
     assert!((x("Team") - x("User")).abs() <= 20.0);
     assert!((x("Profile") - x("User")).abs() > 40.0);
     assert!(!runs_straight_down(&svg, "id_User_Profile_3"));
+}
+
+/// The series palette of the light set and of the dark set (`ferrigura_render::design`).
+const SERIES_LIGHT: [&str; 8] = [
+    "#3E63DD", "#0F8466", "#9C6310", "#7A55C7", "#4A812B", "#C2456B", "#1C75AB", "#B0573A",
+];
+const SERIES_DARK: [&str; 8] = [
+    "#7C9AF2", "#4DB89A", "#D9A04A", "#A88DE8", "#8CBF66", "#E98BA6", "#5FAED8", "#E09A7A",
+];
+const TINT_LIGHT: [&str; 4] = ["#E8ECFB", "#E2F0ED", "#F3ECE2", "#EFEBF8"];
+
+const PIE: &str = "pie title Pets\n  \"Dogs\" : 386\n  \"Cats\" : 85\n  \"Rats\" : 15\n";
+const XY: &str = "xychart\n  title \"Sales\"\n  x-axis [jan, feb, mar]\n  y-axis \"Revenue\" 0 --> 100\n  bar [30, 60, 90]\n  line [20, 50, 80]\n";
+const QUADRANT: &str = "quadrantChart\n  title Reach\n  x-axis Low --> High\n  y-axis Low --> High\n  quadrant-1 Expand\n  quadrant-2 Promote\n  quadrant-3 Re-evaluate\n  quadrant-4 Improve\n  A: [0.3, 0.6]\n  B: [0.7, 0.2]\n";
+const GANTT: &str = "gantt\n  dateFormat YYYY-MM-DD\n  title Plan\n  section Build\n  Parser :a1, 2024-01-01, 3d\n  Tests :active, a2, after a1, 2d\n  section Ship\n  Release :crit, b1, after a2, 2d\n  Notes :b2, after a2, 1d\n  Old :done, b3, 2024-01-01, 1d\n";
+const MINDMAP: &str =
+    "mindmap\n  root((Plan))\n    Research\n      Papers\n    Build\n      Parser\n";
+
+/// The renders of a text in the design mode and in the default, with one renderer.
+fn both_renders(text: &str, config: &Value, scheme: Option<ColorScheme>) -> (String, String) {
+    let renderer = Renderer::new(config);
+    let designed = renderer.render_with(text, &design(scheme)).expect("design");
+    let plain = renderer
+        .render_with(text, &default(scheme))
+        .expect("default");
+    (designed, plain)
+}
+
+/// The values of an attribute on the elements whose class starts with `class`.
+fn attribute_of_class<'a>(svg: &'a str, class: &str, name: &str) -> Vec<&'a str> {
+    let marker = format!("class=\"{class}");
+    svg.match_indices(&marker)
+        .filter_map(|(at, _)| {
+            let start = svg[..at].rfind('<')?;
+            let end = at + svg[at..].find('>')?;
+            attribute_values(&svg[start..end], name).first().copied()
+        })
+        .collect()
+}
+
+/// The `viewBox` of an SVG.
+fn view_box(svg: &str) -> &str {
+    attribute_values(svg, "viewBox")[0]
+}
+
+#[test]
+fn the_charts_and_the_mindmap_draw_in_the_design_mode() {
+    for text in [PIE, XY, QUADRANT, GANTT, MINDMAP] {
+        let (designed, plain) = both_renders(text, &Value::empty_object(), None);
+        assert_ne!(designed, plain, "{text}");
+    }
+}
+
+#[test]
+fn the_charts_keep_their_layout() {
+    for text in [XY, QUADRANT, GANTT] {
+        for scheme in [None, Some(ColorScheme::Dark)] {
+            let (designed, plain) = both_renders(text, &Value::empty_object(), scheme);
+            assert_eq!(view_box(&designed), view_box(&plain), "{text}");
+            assert_eq!(
+                attribute_values(&designed, "x"),
+                attribute_values(&plain, "x"),
+                "{text}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_pies_slices_take_the_series_palette_in_order() {
+    let (svg, _) = both_renders(PIE, &Value::empty_object(), None);
+    assert_eq!(
+        attribute_of_class(&svg, "pieCircle", "fill"),
+        &SERIES_LIGHT[..3]
+    );
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("opacity: 1;"), "{sheet}");
+    assert!(sheet.contains("--pieStrokeColor: #FFFFFF;"), "{sheet}");
+    let (svg, _) = both_renders(PIE, &Value::empty_object(), Some(ColorScheme::Dark));
+    assert_eq!(
+        attribute_of_class(&svg, "pieCircle", "fill"),
+        &SERIES_DARK[..3]
+    );
+    // Both schemes: the light colors as attributes, the pairs in the sheet.
+    let (svg, _) = both_renders(PIE, &Value::empty_object(), Some(ColorScheme::Auto));
+    assert!(style_sheet(&svg).contains(&format!(
+        "--pie1:light-dark({},{});",
+        SERIES_LIGHT[0], SERIES_DARK[0]
+    )));
+}
+
+#[test]
+fn a_users_slice_color_wins_in_a_pie() {
+    let config = Value::from(serde_json::json!({"themeVariables": {"pie2": "#ff0000"}}));
+    let (svg, _) = both_renders(PIE, &config, None);
+    assert_eq!(
+        attribute_of_class(&svg, "pieCircle", "fill"),
+        [SERIES_LIGHT[0], "#ff0000", SERIES_LIGHT[2]]
+    );
+}
+
+#[test]
+fn an_xy_charts_plots_take_the_series_palette() {
+    let (svg, _) = both_renders(XY, &Value::empty_object(), None);
+    assert!(
+        svg.contains(&format!("fill=\"{}\"", SERIES_LIGHT[0])),
+        "the bars"
+    );
+    assert!(
+        svg.contains(&format!("stroke=\"{}\"", SERIES_LIGHT[1])),
+        "the line"
+    );
+    let (svg, _) = both_renders(XY, &Value::empty_object(), Some(ColorScheme::Dark));
+    assert!(
+        svg.contains(&format!("fill=\"{}\"", SERIES_DARK[0])),
+        "the dark bars"
+    );
+}
+
+#[test]
+fn a_users_palette_and_xy_colors_win_in_an_xy_chart() {
+    // The text's palette wins, as in the default.
+    let text = format!(
+        "---\nconfig:\n  themeVariables:\n    xyChart:\n      plotColorPalette: \"#111111, #222222\"\n---\n{XY}"
+    );
+    let (svg, _) = both_renders(&text, &Value::empty_object(), None);
+    assert!(svg.contains("fill=\"#111111\""), "the text's palette");
+    assert!(!svg.contains(SERIES_LIGHT[0]), "no series color");
+    // A site's title color keeps the mode's palette: the group is merged key by key.
+    let config =
+        Value::from(serde_json::json!({"themeVariables": {"xyChart": {"titleColor": "#123456"}}}));
+    let (svg, _) = both_renders(XY, &config, None);
+    assert!(svg.contains("fill=\"#123456\""), "the site's title color");
+    assert!(
+        svg.contains(&format!("fill=\"{}\"", SERIES_LIGHT[0])),
+        "the mode's palette"
+    );
+}
+
+#[test]
+fn a_quadrant_charts_quadrants_are_tints_of_the_palette() {
+    let (svg, _) = both_renders(QUADRANT, &Value::empty_object(), None);
+    for tint in TINT_LIGHT {
+        assert!(svg.contains(&format!("fill=\"{tint}\"")), "{tint}");
+    }
+    assert!(
+        svg.contains(&format!("fill=\"{}\"", SERIES_LIGHT[0])),
+        "the points"
+    );
+    let config = Value::from(serde_json::json!({"themeVariables": {"quadrant1Fill": "#abcdef"}}));
+    let (svg, _) = both_renders(QUADRANT, &config, None);
+    assert!(
+        svg.contains("fill=\"#abcdef\""),
+        "the user's quadrant color"
+    );
+}
+
+#[test]
+fn a_gantt_sections_bars_take_its_series_color() {
+    let (svg, plain) = both_renders(GANTT, &Value::empty_object(), None);
+    let task = |section: usize| attribute_of_class(&svg, &format!("task task{section}"), "fill");
+    assert_eq!(task(0), [TINT_LIGHT[0]]);
+    assert_eq!(task(1), [TINT_LIGHT[1]]);
+    assert_eq!(
+        attribute_of_class(&svg, "task task1", "stroke"),
+        [SERIES_LIGHT[1]]
+    );
+    // A critical task is red and a done one neutral, whatever their section.
+    assert_eq!(
+        attribute_of_class(&svg, "task crit1", "stroke"),
+        ["#C93C37"]
+    );
+    assert_eq!(attribute_of_class(&svg, "task done1", "fill"), ["#EEF0F3"]);
+    let sheet = style_sheet(&svg);
+    assert!(
+        sheet.contains(".task1, #d .active1{fill: var(--seriesTint1); stroke: var(--series1)}")
+    );
+    assert!(sheet.contains(".task{stroke-width: 1.25px}"));
+    assert!(!style_sheet(&plain).contains("seriesTint"));
+    // Both schemes carry the dark series as the second value.
+    let (svg, _) = both_renders(GANTT, &Value::empty_object(), Some(ColorScheme::Auto));
+    assert!(style_sheet(&svg).contains(&format!(
+        "--series1:light-dark({},{});",
+        SERIES_LIGHT[1], SERIES_DARK[1]
+    )));
+}
+
+#[test]
+fn a_users_task_color_colors_every_gantt_bar() {
+    let config = Value::from(serde_json::json!({"themeVariables": {"taskBkgColor": "#abcdef"}}));
+    let (svg, _) = both_renders(GANTT, &config, None);
+    assert_eq!(attribute_of_class(&svg, "task task0", "fill"), ["#abcdef"]);
+    assert_eq!(attribute_of_class(&svg, "task task1", "fill"), ["#abcdef"]);
+    assert!(!style_sheet(&svg).contains("var(--seriesTint1)"));
+}
+
+#[test]
+fn a_mindmaps_branches_take_the_series_palette() {
+    let (svg, _) = both_renders(MINDMAP, &Value::empty_object(), None);
+    let sheet = style_sheet(&svg);
+    // The first branch is the second color, the second the third; the root is the terminal's.
+    assert!(sheet.contains(&format!(
+        "#d .section-0 rect,#d .section-0 path,#d .section-0 circle,#d .section-0 polygon{{fill:#E2F0ED;stroke:{};stroke-width:1.25px;}}",
+        SERIES_LIGHT[1]
+    )), "{sheet}");
+    assert!(sheet.contains(&format!(
+        "#d .section-edge-1{{stroke:{};}}",
+        SERIES_LIGHT[2]
+    )));
+    assert!(sheet.contains("#d .section-root rect,#d .section-root path,#d .section-root circle,#d .section-root polygon{fill:#2F54D6;stroke:#2F54D6;}"));
+    // Both schemes: the colors that differ are pairs.
+    let (svg, _) = both_renders(MINDMAP, &Value::empty_object(), Some(ColorScheme::Auto));
+    assert!(style_sheet(&svg).contains(&format!(
+        "stroke:light-dark({},{});",
+        SERIES_LIGHT[1], SERIES_DARK[1]
+    )));
+    // A user's branch color wins.
+    let config = Value::from(serde_json::json!({"themeVariables": {"cScale1": "#abcdef"}}));
+    let (svg, _) = both_renders(MINDMAP, &config, None);
+    assert!(style_sheet(&svg).contains("#d .section-0 polygon{fill:#abcdef;"));
 }

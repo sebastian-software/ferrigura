@@ -9,7 +9,8 @@
 # Each changed file is rendered under the test's three configurations and four color schemes, with
 # the base's renderer and with the working tree's, into target/snapshots/{base,head}/<file>/
 # <configuration>-<scheme>.svg, and the renders that differ are listed. A file of a type the design mode
-# draws, a flowchart, a state or a class diagram, also has its design renders, named
+# draws (the renderer says which: it refuses the others with the mode's option error) also has its
+# design renders, named
 # design-<configuration>-<scheme>.svg. Compare them side by side, or check the new output
 # against the reference with `pnpm -C tools/port port:geometry <type> --filter <file>`.
 set -euo pipefail

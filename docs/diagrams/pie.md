@@ -2,6 +2,19 @@
 
 A pie diagram draws labeled values as slices of a circle, with a legend and an optional title. It starts with the keyword `pie`, optionally followed by `showData` to print the values in the legend. ferrigura parses it with a hand-written parser on the shared `logos` lexer (`crates/ferrigura-syntax/src/pie.rs`) that follows the Langium grammar `pie.langium` and the DB of `pieDb.ts`, and draws it with a renderer of its own (`crates/ferrigura-render/src/pie.rs`). There is no layout engine: the layout is arithmetic, with the slice angles of d3's pie.
 
+## Design mode
+
+The design mode draws a pie in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. It changes no layout: the colors and the text sizes are the mode's theme variables, laid under the user's `themeVariables`, which win key by key, in a light and a dark set.
+
+| Element       | Design mode                                                                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Slices        | `pie1` to `pie12` from the mode's series palette, in its order, wrapping after its eight colors; full opacity, where the reference draws them at 0.7 |
+| Slice borders | 2 px in the background color (`pieStrokeColor`), so the slices stand apart by a gap; no outer ring (`pieOuterStrokeWidth` 0)                         |
+| Percentages   | 14 px in the series' text color (`pieSectionTextColor`): white on the light set, the background's on the dark                                        |
+| Title, legend | The text color, 18 px and 14 px                                                                                                                      |
+
+`colorScheme: auto` writes the colors of both sets as `light-dark()` values, as in the default.
+
 ## Draw animation
 
 The optional [draw animation](../animation.md) render option draws one element

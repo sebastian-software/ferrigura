@@ -63,8 +63,8 @@ pub struct RenderOptionsInput {
     /// Mermaid-compatible geometry when true. False (default) enables optimized flowchart routing
     /// and compact sequence participant boxes. Font, color and readability fixes always apply.
     pub compat: Option<bool>,
-    /// The design mode when true: ferrigura's own look for flowcharts, state diagrams and class diagrams, with
-    /// roomier nodes and spacing. Other diagram types and the combination with `compat` are rejected.
+    /// The design mode when true: ferrigura's own look for flowcharts, state and class diagrams, mindmaps, and pie, XY, quadrant and gantt charts, with
+    /// roomier nodes and spacing for the first three. Other diagram types and the combination with `compat` are rejected.
     pub design: Option<bool>,
     /// The id of the SVG element, which scopes its styles. By default it is derived from the text and
     /// the configuration, so the same input gives the same id.

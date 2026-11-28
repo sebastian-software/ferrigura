@@ -11,6 +11,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::ThemeView;
+use crate::design::{self, Tone};
 use crate::svg::assemble_stylesheet;
 
 /// Room for the gantt rules besides its font faces and `extra`: about 4 KiB.
@@ -193,6 +194,7 @@ pub(crate) fn style_element(
     family: &str,
     families: &[EmbeddedFamily],
     extra: &str,
+    design: Option<Tone>,
 ) -> String {
     // `family` is the quoted `font-family` list of the embedded faces, or empty.
     let font = if family.is_empty() {
@@ -213,14 +215,21 @@ pub(crate) fn style_element(
         None => {
             let _ = write!(out, "#{id}{{");
             write_declarations(&mut out, theme.light);
+            if let Some(tone) = design {
+                write_series_declarations(&mut out, tone);
+            }
             out.push('}');
         }
         Some(dark) => {
             let mut light_block = format!("#{id}{{");
             write_declarations(&mut light_block, theme.light);
-            light_block.push('}');
             let mut dark_block = format!("#{id}{{");
             write_declarations(&mut dark_block, dark);
+            if design.is_some() {
+                write_series_declarations(&mut light_block, Tone::Light);
+                write_series_declarations(&mut dark_block, Tone::Dark);
+            }
+            light_block.push('}');
             dark_block.push('}');
             out.push_str(&crate::scheme::both(&light_block, &dark_block));
         }
@@ -238,8 +247,82 @@ pub(crate) fn style_element(
         }
         let _ = write!(out, "{{{body}}}");
     }
+    if design.is_some() {
+        write_design_rules(&mut out, id, series_by_section(theme.light, design));
+    }
     out.push_str(extra);
     assemble_stylesheet(id, families, out, true)
+}
+
+/// The number of section classes the rules name, `section0` to `section3`: the series colors of the
+/// sections in the design mode are the first this many of the palette.
+const SECTION_CLASSES: usize = 4;
+
+/// Whether the bars of each section take its series color in the design mode: they do while the
+/// task colors are the mode's own. A user's `taskBkgColor` or `taskBorderColor` colors every bar
+/// alike, as in the default.
+pub(crate) fn series_by_section(tokens: &ThemeTokens, design: Option<Tone>) -> bool {
+    let Some(tone) = design else {
+        return false;
+    };
+    let is = |token: &Token, colour: &str| {
+        token
+            .text()
+            .is_some_and(|text| text.eq_ignore_ascii_case(colour))
+    };
+    is(&tokens.task_bkg_color, design::series_tint(tone)[0])
+        && is(&tokens.task_border_color, design::series(tone)[0])
+        && is(&tokens.active_task_bkg_color, design::series_tint(tone)[0])
+        && is(&tokens.active_task_border_color, design::series(tone)[0])
+}
+
+/// The series color and tint of a section's bars in the design mode, for a tone.
+pub(crate) fn section_series(tone: Tone, section: usize) -> (&'static str, &'static str) {
+    let slot = section % design::SERIES_LENGTH;
+    (design::series_tint(tone)[slot], design::series(tone)[slot])
+}
+
+/// Appends the custom properties of the sections' series colors in the design mode.
+fn write_series_declarations(out: &mut String, tone: Tone) {
+    for section in 0..SECTION_CLASSES {
+        let (tint, colour) = section_series(tone, section);
+        let _ = write!(
+            out,
+            "--seriesTint{section}: {tint};--series{section}: {colour};"
+        );
+    }
+}
+
+/// The rules of the design mode after the reference's (`docs/decisions/0023-design-mode.md`): the
+/// section bands without the reference's opacity, so that they alternate between a quiet gray and
+/// the background; hairline outlines, and a heavier one for an active task; muted tick labels; and,
+/// with `series`, the bars of a section in its series color, and an active critical task in the
+/// critical fill.
+fn write_design_rules(out: &mut String, id: &str, series: bool) {
+    let stroke = design::TASK_STROKE_WIDTH;
+    let active = design::ACTIVE_TASK_STROKE_WIDTH;
+    let _ = write!(
+        out,
+        "#{id} .section, #{id} .section1, #{id} .section3{{opacity: 1}}#{id} .task{{stroke-width: {stroke}}}#{id} .grid .tick text{{fill: var(--titleColor)}}#{id} .today{{stroke-width: 1.5px}}"
+    );
+    for section in 0..SECTION_CLASSES {
+        for state in ["done", "crit", "doneCrit"] {
+            let _ = write!(out, "#{id} .{state}{section}{{stroke-width: {stroke}}}");
+        }
+        let _ = write!(
+            out,
+            "#{id} .active{section}, #{id} .activeCrit{section}{{stroke-width: {active}}}"
+        );
+    }
+    if series {
+        for section in 0..SECTION_CLASSES {
+            let _ = write!(
+                out,
+                "#{id} .task{section}, #{id} .active{section}{{fill: var(--seriesTint{section}); stroke: var(--series{section})}}\
+#{id} .activeCrit{section}{{fill: var(--critBkgColor)}}"
+            );
+        }
+    }
 }
 
 /// Appends the custom property declarations of the color tokens a set gives.

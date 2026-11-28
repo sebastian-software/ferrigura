@@ -1,9 +1,10 @@
 //! ferrigura's own output, pinned (`docs/decisions/0015-differential-testing.md`). Every `.mmd` of the corpus is
 //! rendered under three configurations and four color schemes, and one hash over its twelve SVGs (or
 //! errors) is compared with `snapshots/svg.tsv`. Flowcharts and sequences have a third column that independently
-//! pins the twelve Mermaid-compatible renders. Flowcharts, state diagrams and class diagrams have one more
-//! column, the last, that pins the twelve renders of the design mode (`docs/decisions/0023-design-mode.md`):
-//! a flowchart's line has four columns, a state or a class diagram's three. Any change of the output fails the test, the ones the
+//! pins the twelve Mermaid-compatible renders. The types the design mode draws (flowcharts, state, class,
+//! pie, XY, quadrant and gantt charts and mindmaps) have one more column, the last, that pins the twelve
+//! renders of the design mode (`docs/decisions/0023-design-mode.md`): a flowchart's line has four columns,
+//! the line of another type the mode draws three. Any change of the output fails the test, the ones the
 //! geometry check cannot see included (markup, styles, embedded fonts).
 //!
 //! An intended change rewrites the manifest in the same commit:
@@ -13,8 +14,8 @@
 //! ```
 //!
 //! and `tools/snapshots/diff.sh` shows which renders of the changed files moved. When the test fails,
-//! the new renders of the changed files are in `target/snapshots/head/` (the design renders of a
-//! flowchart, a state or a class diagram with a `design-` prefix).
+//! the new renders of the changed files are in `target/snapshots/head/` (the design renders of a type
+//! the design mode draws with a `design-` prefix).
 //!
 //! The output depends on the machine: `ferrigura_jsmath` rounds as V8 does there, with fused
 //! multiply-adds on aarch64 and without them on x86-64. The manifest holds the aarch64 renders, so
@@ -179,9 +180,9 @@ enum Mode {
 }
 
 /// Which of the optional columns of a file's line the file has: the compatibility hash for a flowchart
-/// or a sequence, and the design hash for a flowchart or a state diagram, the types the design mode
-/// draws. The test and the review renders use this one rule; `tools/snapshots/diff.sh` asks the
-/// renderer instead, as the number of columns does not tell a sequence from a state diagram.
+/// or a sequence, and the design hash for the types the design mode draws. The test and the review
+/// renders use this one rule; `tools/snapshots/diff.sh` asks the renderer instead, as the number of
+/// columns does not tell a sequence from a state diagram.
 fn columns(text: &str) -> (bool, bool) {
     let kind = ferrigura_syntax::detect(text);
     let compat = matches!(
@@ -194,6 +195,11 @@ fn columns(text: &str) -> (bool, bool) {
             ferrigura_syntax::DiagramType::Flowchart
                 | ferrigura_syntax::DiagramType::State
                 | ferrigura_syntax::DiagramType::Class
+                | ferrigura_syntax::DiagramType::Pie
+                | ferrigura_syntax::DiagramType::XyChart
+                | ferrigura_syntax::DiagramType::QuadrantChart
+                | ferrigura_syntax::DiagramType::Gantt
+                | ferrigura_syntax::DiagramType::Mindmap
         )
     );
     (compat, design)

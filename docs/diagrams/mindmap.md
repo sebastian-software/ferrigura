@@ -2,6 +2,18 @@
 
 A mindmap draws a tree of nodes from an indented outline, with seven shapes, icons and classes. It starts with `mindmap`. ferrigura parses it with a hand-written scanner and recursive-descent parser in `ferrigura-syntax` (`src/mindmap/`) and draws it with a renderer of the type's own in `ferrigura-render` (`src/mindmap/`) that builds on the unified renderer's shapes, labels and edge paths. The layout is cose-bilkent by default (`ferrigura-cose`), or the tidy tree for `layout: tidy-tree` (`src/unified/tidy_tree.rs`), or ELK Layered for an ELK layout name ([0012](../decisions/0012-layout-engines-ported-exactly.md)). The shared machinery is in [flowchart.md](./flowchart.md); this page covers what is specific to mindmaps.
 
+## Design mode
+
+The design mode draws a mindmap in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. Its look is paint: the colors come from the mode's theme variables (`cScale<i>`, `cScalePeer<i>`, `cScaleLabel<i>`, `git0`, `gitBranchLabel0`), laid under the user's `themeVariables`, which win key by key.
+
+| Element | Design mode                                                                                                                                                                                                             |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Branch  | Each section takes a color of the series palette, the first branch the second color (teal), and wraps after the eighth: its nodes take the color's tint as fill and the color as a 1.25 px outline, with the text color |
+| Root    | The flowchart's terminal blue, filled, with white text                                                                                                                                                                  |
+| Edges   | The branch's color, 2.5 px from the root, 1.75 one level down, then 1.5, where the reference tapers from 11                                                                                                             |
+
+`colorScheme: auto` writes the colors that differ as `light-dark()` values. The neo look's rules are not written in the mode.
+
 ## Draw animation
 
 The optional [draw animation](../animation.md) render option draws one element

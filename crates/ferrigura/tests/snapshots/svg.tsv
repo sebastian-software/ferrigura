@@ -821,134 +821,134 @@ e2e/diagrams/flowchart/visual-check/with-styling-and-classes-2.mmd	5010d528e37f3
 e2e/diagrams/flowchart/visual-check/with-styling-and-classes.mmd	29eb92aa986fe3b3	29eb92aa986fe3b3	4d923075f02b2e53
 e2e/diagrams/flowchart/visual-check/wrapping-long-text-with-a-new-line-2.mmd	76b0667d4d74ae2b	76b0667d4d74ae2b	168ec98e7efb267d
 e2e/diagrams/flowchart/visual-check/wrapping-long-text-with-a-new-line.mmd	b64e9859d17371b3	b64e9859d17371b3	033bfb8c9fe25abf
-e2e/diagrams/gantt/nightly-check/handle-multiline-section-titles-with-different-line-breaks.mmd	2aa81fc6c132a85d
-e2e/diagrams/gantt/nightly-check/should-default-to-showing-today-marker.mmd	945322752d398a1b
-e2e/diagrams/gantt/nightly-check/should-fail-rendering-a-gantt-chart-for-issue-1060-with-invalid-date.mmd	3fa603fb9acd2eb9
-e2e/diagrams/gantt/nightly-check/should-handle-dates-with-year-typo-like-202-instead-of-2024-issue-5496.mmd	f7ac8d822f476277
-e2e/diagrams/gantt/nightly-check/should-handle-milliseconds.mmd	b629d860f62027a3
-e2e/diagrams/gantt/nightly-check/should-handle-multiple-dependencies-syntax-with-after-and-until.mmd	dcd694ed6365b424
-e2e/diagrams/gantt/nightly-check/should-handle-numeric-timestamps-with-dateformat-x-2.mmd	3c7fa0086fe4d68c
-e2e/diagrams/gantt/nightly-check/should-handle-numeric-timestamps-with-dateformat-x.mmd	c705771e6363625c
-e2e/diagrams/gantt/nightly-check/should-handle-seconds-only-format-with-tickinterval-issue-5496.mmd	2798fc55d379303f
-e2e/diagrams/gantt/nightly-check/should-hide-today-marker.mmd	f9dd928ff6834647
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-excluding-friday-and-saturday-in-yyyy-mm-dd-hh-mm-ss-format.mmd	f7591ef86148d1bf
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-excluding-friday-and-saturday.mmd	d3b2eef590c6a7a0
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-excluding-saturday-and-sunday.mmd	53c1d49d939fbccc
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-day-and-topaxis-is-true.mmd	9fa86000b694c9f3
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-day.mmd	3ffb9679775d3fd1
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-month.mmd	eabff03864a61614
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-week.mmd	684c4c756e56a4c1
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-15-minutes.mmd	80f926ade10fcf62
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-2-milliseconds.mmd	9e0e2bc6a9b83468
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-2-seconds.mmd	d426dbd8e42aa262
-e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-6-hours.mmd	c82df37b14a28252
-e2e/diagrams/gantt/nightly-check/should-render-done-task-outside-text-readable-in-dark-mode-regression-7433.mmd	83fd9ca2f1401dce
-e2e/diagrams/gantt/nightly-check/should-render-done-tasks-with-readable-text-in-dark-mode.mmd	10d266bb9a8ee6ee
-e2e/diagrams/gantt/nightly-check/should-render-multi-line-excludes-issue-6270.mmd	99b904f112d4ac02
-e2e/diagrams/gantt/nightly-check/should-render-only-the-day-when-using-dateformat-d.mmd	395797aab627647a
-e2e/diagrams/gantt/nightly-check/should-render-when-compact-is-true.mmd	208c8ce4324d0635
-e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-hashtag-in-a-section-is-true.mmd	eddcc69ca7c8f574
-e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-hashtag-in-the-task-data.mmd	aa5733cec1df4ef0
-e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-hashtag-in-the-title.mmd	7c581f5cbb0ef772
-e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-semicolon-in-a-section-is-true.mmd	1294f41f11d0ef88
-e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-semicolon-in-the-task-data.mmd	057a18e8e6e8dd30
-e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-semicolon-in-the-title.mmd	27bcf4663f402178
-e2e/diagrams/gantt/nightly-check/should-style-today-marker.mmd	fef0970a0f7e6421
-e2e/diagrams/gantt/pr-check/multiple-dependencies-syntax.mmd	a6770cc61c319a90
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-chart-usemaxwidth-false.mmd	6b92c545d40cbd9f
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-chart.mmd	257ee3aa5684ad0b
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-excluding-a-specific-date-in-yyyy-mm-dd-hh-mm-ss-format.mmd	823d18aee0e0a0dd
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-excluding-saturday-and-sunday-in-yyyy-mm-dd-hh-mm-ss-format.mmd	22199cf7f5595a23
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-a-vert-tag.mmd	61bf2b6386e88d7d
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-data-labels-at-the-top-when-topaxis-is-true.mmd	eb66141c558da55e
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-tick-is-1-week-with-the-day-starting-on-monday.mmd	d7e32a90ef028999
-e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-very-large-intervals-skipping-excludes-if-interval-5-years.mmd	6b8444bec77cb8b4
-e2e/diagrams/gantt/pr-check/should-render-done-task-inside-text-readable-in-dark-mode.mmd	fae0a4aff48ae078
-e2e/diagrams/gantt/pr-check/should-render-vertical-markers-without-creating-extra-rows-and-show-their-labels.mmd	7cb172cbc7f05abd
-e2e/diagrams/gantt/visual-check/dark-theme.mmd	909dfd5ac237dc56
-e2e/diagrams/gantt/visual-check/default-theme.mmd	f4111bf52c71114a
-e2e/diagrams/gantt/visual-check/forest-theme.mmd	de26a0c8759b4528
-e2e/diagrams/gantt/visual-check/neutral-theme.mmd	3a6332e88e8beeec
-e2e/diagrams/gantt/visual-check/redux-color-theme.mmd	760b03918d9d9b10
-e2e/diagrams/gantt/visual-check/redux-dark-color-theme.mmd	98ef45013415c988
-e2e/diagrams/gantt/visual-check/redux-dark-theme.mmd	06ce41d7c705433a
-e2e/diagrams/gantt/visual-check/redux-theme.mmd	88d3007ec79be694
+e2e/diagrams/gantt/nightly-check/handle-multiline-section-titles-with-different-line-breaks.mmd	2aa81fc6c132a85d	d26582e0e0837e0a
+e2e/diagrams/gantt/nightly-check/should-default-to-showing-today-marker.mmd	945322752d398a1b	64db4cef54ae7a4f
+e2e/diagrams/gantt/nightly-check/should-fail-rendering-a-gantt-chart-for-issue-1060-with-invalid-date.mmd	3fa603fb9acd2eb9	beef90e3a5d639ff
+e2e/diagrams/gantt/nightly-check/should-handle-dates-with-year-typo-like-202-instead-of-2024-issue-5496.mmd	f7ac8d822f476277	e0ec0a3f664a7a3b
+e2e/diagrams/gantt/nightly-check/should-handle-milliseconds.mmd	b629d860f62027a3	55130536c8867a3e
+e2e/diagrams/gantt/nightly-check/should-handle-multiple-dependencies-syntax-with-after-and-until.mmd	dcd694ed6365b424	c74cd44fb3aafd75
+e2e/diagrams/gantt/nightly-check/should-handle-numeric-timestamps-with-dateformat-x-2.mmd	3c7fa0086fe4d68c	9dc144cb414eeae5
+e2e/diagrams/gantt/nightly-check/should-handle-numeric-timestamps-with-dateformat-x.mmd	c705771e6363625c	ed1e82bbcb97dba7
+e2e/diagrams/gantt/nightly-check/should-handle-seconds-only-format-with-tickinterval-issue-5496.mmd	2798fc55d379303f	c5628b2252b9d7be
+e2e/diagrams/gantt/nightly-check/should-hide-today-marker.mmd	f9dd928ff6834647	01e79f5efef96a27
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-excluding-friday-and-saturday-in-yyyy-mm-dd-hh-mm-ss-format.mmd	f7591ef86148d1bf	771ed3fe99023f8d
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-excluding-friday-and-saturday.mmd	d3b2eef590c6a7a0	751e22328b3b35d3
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-excluding-saturday-and-sunday.mmd	53c1d49d939fbccc	8c0449e3b334b93b
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-day-and-topaxis-is-true.mmd	9fa86000b694c9f3	f54a68094f4cb440
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-day.mmd	3ffb9679775d3fd1	c2b1c33007143f34
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-month.mmd	eabff03864a61614	c864d89e16a80755
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-1-week.mmd	684c4c756e56a4c1	f3b68e3dcd6d8694
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-15-minutes.mmd	80f926ade10fcf62	95d1d84317a98579
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-2-milliseconds.mmd	9e0e2bc6a9b83468	3a81113ac89194fb
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-2-seconds.mmd	d426dbd8e42aa262	eabaf399f53b2149
+e2e/diagrams/gantt/nightly-check/should-render-a-gantt-diagram-with-tick-is-6-hours.mmd	c82df37b14a28252	c1701d6f13e21779
+e2e/diagrams/gantt/nightly-check/should-render-done-task-outside-text-readable-in-dark-mode-regression-7433.mmd	83fd9ca2f1401dce	af62d5fdefd0006c
+e2e/diagrams/gantt/nightly-check/should-render-done-tasks-with-readable-text-in-dark-mode.mmd	10d266bb9a8ee6ee	917de4f94eea3d22
+e2e/diagrams/gantt/nightly-check/should-render-multi-line-excludes-issue-6270.mmd	99b904f112d4ac02	9b2712ebc62d0ccf
+e2e/diagrams/gantt/nightly-check/should-render-only-the-day-when-using-dateformat-d.mmd	395797aab627647a	91e668bb8a4ab2b7
+e2e/diagrams/gantt/nightly-check/should-render-when-compact-is-true.mmd	208c8ce4324d0635	cac020b92c9ac61e
+e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-hashtag-in-a-section-is-true.mmd	eddcc69ca7c8f574	84d569a20b3b48c3
+e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-hashtag-in-the-task-data.mmd	aa5733cec1df4ef0	640fd581ab3403bd
+e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-hashtag-in-the-title.mmd	7c581f5cbb0ef772	2d6461a5f1aafbe3
+e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-semicolon-in-a-section-is-true.mmd	1294f41f11d0ef88	13d61456cf96a96b
+e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-semicolon-in-the-task-data.mmd	057a18e8e6e8dd30	8b9d9b16fe9f4f75
+e2e/diagrams/gantt/nightly-check/should-render-when-theres-a-semicolon-in-the-title.mmd	27bcf4663f402178	dbbc0be4f5e7f673
+e2e/diagrams/gantt/nightly-check/should-style-today-marker.mmd	fef0970a0f7e6421	964d0f62c9ec9f03
+e2e/diagrams/gantt/pr-check/multiple-dependencies-syntax.mmd	a6770cc61c319a90	1dbdb7da00f8adf6
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-chart-usemaxwidth-false.mmd	6b92c545d40cbd9f	cee0eb5ed0f94c82
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-chart.mmd	257ee3aa5684ad0b	0dd44a71e770510a
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-excluding-a-specific-date-in-yyyy-mm-dd-hh-mm-ss-format.mmd	823d18aee0e0a0dd	16ead0de4050ab43
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-excluding-saturday-and-sunday-in-yyyy-mm-dd-hh-mm-ss-format.mmd	22199cf7f5595a23	c15f06283f968547
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-a-vert-tag.mmd	61bf2b6386e88d7d	b26826a8ae0cf6b9
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-data-labels-at-the-top-when-topaxis-is-true.mmd	eb66141c558da55e	cbb8ff235fbaa6db
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-tick-is-1-week-with-the-day-starting-on-monday.mmd	d7e32a90ef028999	d29ba0b99fe7506e
+e2e/diagrams/gantt/pr-check/should-render-a-gantt-diagram-with-very-large-intervals-skipping-excludes-if-interval-5-years.mmd	6b8444bec77cb8b4	1bf309773f267fd9
+e2e/diagrams/gantt/pr-check/should-render-done-task-inside-text-readable-in-dark-mode.mmd	fae0a4aff48ae078	036f748e99161ee0
+e2e/diagrams/gantt/pr-check/should-render-vertical-markers-without-creating-extra-rows-and-show-their-labels.mmd	7cb172cbc7f05abd	c4379e05f02a891d
+e2e/diagrams/gantt/visual-check/dark-theme.mmd	909dfd5ac237dc56	6df3a703bc926f9a
+e2e/diagrams/gantt/visual-check/default-theme.mmd	f4111bf52c71114a	320920ccf88acc7a
+e2e/diagrams/gantt/visual-check/forest-theme.mmd	de26a0c8759b4528	209b759f345be760
+e2e/diagrams/gantt/visual-check/neutral-theme.mmd	3a6332e88e8beeec	00b3e827cdfa38e8
+e2e/diagrams/gantt/visual-check/redux-color-theme.mmd	760b03918d9d9b10	10e240e15b90d960
+e2e/diagrams/gantt/visual-check/redux-dark-color-theme.mmd	98ef45013415c988	728999833cca9782
+e2e/diagrams/gantt/visual-check/redux-dark-theme.mmd	06ce41d7c705433a	b7b6f7ede0ac783e
+e2e/diagrams/gantt/visual-check/redux-theme.mmd	88d3007ec79be694	aea7bac8098c24f4
 e2e/diagrams/katex/pr-check/1-should-render-a-complex-katex-flowchart-no-htmllabels.mmd	3f5f255b4eae0053	cd283434d9e3d77b	62b1e199fa7404ef
 e2e/diagrams/katex/pr-check/2-should-render-a-katex-flowchart-containing-the-greek-alphabet.mmd	55ad61c769a67469	55ad61c769a67469	4f689e9e6b610807
 e2e/diagrams/katex/pr-check/3-should-render-a-katex-flowchart-containing-set-theory-symbols.mmd	259ab7ee4fb5e6fb	259ab7ee4fb5e6fb	300b203452ed0265
 e2e/diagrams/katex/pr-check/4-should-render-consecutive-latex-equations-separated-by-text.mmd	2fb8546ea4879cf1	2fb8546ea4879cf1	8ed1a4505c9bc823
-e2e/diagrams/mindmap/nightly-check/a-root-with-a-shape.mmd	f8e71aaa6630a20e
-e2e/diagrams/mindmap/nightly-check/a-root-with-an-icon.mmd	3f1dc5e315239da0
-e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-a-shape.mmd	fe7de2c9ab10001a
-e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-long-words-that-exceed-width.mmd	4df1cb9e4d55b540
-e2e/diagrams/mindmap/nightly-check/adding-children.mmd	98edbd325de252b0
-e2e/diagrams/mindmap/nightly-check/adding-grand-children.mmd	9e4dca18c142f5ca
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-dark-theme.mmd	a7f95bc46e3ce858
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-theme.mmd	2e307f7c78631a48
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-color-theme.mmd	c4c91a0704d108ac
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-color-theme.mmd	b40cdd904828d290
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-theme.mmd	c08343f315f99e68
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-theme.mmd	486df2550d4d9fb0
-e2e/diagrams/mindmap/nightly-check/all-shapes-with-mdi-fire-icon.mmd	66dc8786372588c0
-e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape-with-icons.mmd	5b01beb81a2e68d2
-e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape.mmd	b9003b2513728d14
-e2e/diagrams/mindmap/nightly-check/branches-with-shapes-and-labels.mmd	ac6d6bff764b7dc6
-e2e/diagrams/mindmap/nightly-check/branches.mmd	950db55d0ad387e8
-e2e/diagrams/mindmap/nightly-check/circle-shape.mmd	2341bd29d7d31ec8
-e2e/diagrams/mindmap/nightly-check/default-shape.mmd	678e792caf925408
-e2e/diagrams/mindmap/nightly-check/level-2-nodes-exceeding-11.mmd	13ad47827028d3f2
-e2e/diagrams/mindmap/nightly-check/only-a-root.mmd	c7b1361224f19cb6
-e2e/diagrams/mindmap/nightly-check/rounded-rect-shape.mmd	f3e8dae9cf4d3944
-e2e/diagrams/mindmap/nightly-check/square-shape.mmd	202e0ee437b203a6
-e2e/diagrams/mindmap/nightly-check/text-should-wrap-with-icon.mmd	197cedcc80ad912e
-e2e/diagrams/mindmap/pr-check/6-should-centre-svg-text-labels-in-all-node-shapes-issue-8387.mmd	e48d8d64d9264456
-e2e/diagrams/mindmap/pr-check/depth-colors.mmd	8bde6c3b47e75426
-e2e/diagrams/mindmap/pr-check/formatted-label-with-linebreak-and-a-wrapping-label-and-emojis.mmd	5512b65b6f4130fe
-e2e/diagrams/mindmap/pr-check/simple-mindmap.mmd	1521a2ee03acb020
-e2e/diagrams/mindmap/visual-check/1-tidy-tree-should-render-a-simple-mindmap-without-children.mmd	a317eb0e9c69d95e
-e2e/diagrams/mindmap/visual-check/2-tidy-tree-should-render-a-simple-mindmap.mmd	59d11216440ba3a8
-e2e/diagrams/mindmap/visual-check/3-tidy-tree-should-render-a-mindmap-with-different-shapes.mmd	008e9826fc1ee568
-e2e/diagrams/mindmap/visual-check/4-tidy-tree-should-render-a-mindmap-with-children.mmd	7a6d06cc8ba31854
-e2e/diagrams/mindmap/visual-check/5-tidy-tree-should-keep-root-edges-connected-to-a-rectangular-root-issue-7572.mmd	3ce3fc99d545b332
-e2e/diagrams/mindmap/visual-check/knsv2-16-mindmap-tidy-tree.mmd	e67c0d252d033e64
-e2e/diagrams/pie/nightly-check/dark-theme.mmd	24aa08b3fbc70a6a
-e2e/diagrams/pie/nightly-check/default-theme.mmd	5b9e070878a2fdd2
-e2e/diagrams/pie/nightly-check/forest-theme.mmd	bcc62e7e071d986a
-e2e/diagrams/pie/nightly-check/highlights-hovered-slice.mmd	3ac19f5643ab2a4e
-e2e/diagrams/pie/nightly-check/highlights-specific-slice.mmd	53a879321323f2d0
-e2e/diagrams/pie/nightly-check/neutral-theme.mmd	b0e0a7d5243ca38e
-e2e/diagrams/pie/nightly-check/redux-color-theme.mmd	55b0500f47b9069a
-e2e/diagrams/pie/nightly-check/redux-dark-color-theme.mmd	830947d06ffbb296
-e2e/diagrams/pie/nightly-check/redux-dark-theme.mmd	299ad2da0f8e0502
-e2e/diagrams/pie/nightly-check/redux-theme.mmd	09e75ec375ef3016
-e2e/diagrams/pie/nightly-check/should-render-a-pie-diagram-with-legend-at-the-bottom-of-the-diagram.mmd	4d4ae2de5bf03d6f
-e2e/diagrams/pie/nightly-check/should-render-a-simple-pie-diagram-with-long-labels.mmd	cfd1694c7026a67d
-e2e/diagrams/pie/nightly-check/should-render-pie-slices-only-for-non-zero-values-but-shows-all-legends.mmd	84d8c3f660e5819a
-e2e/diagrams/pie/nightly-check/should-render-usemaxwidth-false.mmd	9e58db954362ca5e
-e2e/diagrams/pie/pr-check/should-render-a-donut-diagram.mmd	49e3ce8a6d245f12
-e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-if-donuthole-parameter-is-negative.mmd	78c0b03801c70674
-e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-if-donuthole-parameter-is-too-large.mmd	2332256bc79b52b7
-e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-when-textposition-is-set.mmd	2bf7d9d33051ce4f
-e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-a-long-title-without-clipping.mmd	16ffb5bffeabf116
-e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-readable-title-and-legend-in-dark-mode.mmd	c304729dc1b5d1b8
-e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-showdata.mmd	53e45b773ddc12fd
-e2e/diagrams/pie/pr-check/should-render-a-simple-pie-diagram-with-capital-letters-for-labels.mmd	f819a383ffca19ae
-e2e/diagrams/pie/pr-check/should-render-a-simple-pie-diagram.mmd	ebf3c7307c4bbce8
-e2e/diagrams/pie/pr-check/simple-sports.mmd	55fc956c11e07450
-e2e/diagrams/quadrant-chart/nightly-check/should-able-to-render-x-axis-on-bottom.mmd	5e485447009f0627
-e2e/diagrams/quadrant-chart/nightly-check/should-render-both-axes-labels-on-the-left-and-bottom-if-both-axes-have-only-one-label.mmd	336f04ae6fa935ef
-e2e/diagrams/quadrant-chart/nightly-check/should-render-if-only-chart-type-is-provided.mmd	35d862d73860f3f4
-e2e/diagrams/quadrant-chart/nightly-check/should-render-without-title.mmd	11136b4693497b5e
-e2e/diagrams/quadrant-chart/pr-check/it-should-render-data-points-with-styles-classes.mmd	add10c4d69531475
-e2e/diagrams/quadrant-chart/pr-check/it-should-render-data-points-with-styles.mmd	519ed4f576dfb8b3
-e2e/diagrams/quadrant-chart/pr-check/should-able-to-render-x-axis-on-bottom-and-y-axis-on-right.mmd	7624597fd0f209a5
-e2e/diagrams/quadrant-chart/pr-check/should-able-to-render-y-axis-on-right-side.mmd	d36b422ea13943b3
-e2e/diagrams/quadrant-chart/pr-check/should-render-a-complete-quadrant-chart.mmd	bc1ccbd2abb98cff
-e2e/diagrams/quadrant-chart/pr-check/should-render-without-points.mmd	e3be8e4fb42f7ccb
-e2e/diagrams/quadrant-chart/pr-check/should-render-x-axis-labels-in-the-center-if-x-axis-has-two-labels.mmd	b6d5da3c18e21c4c
-e2e/diagrams/quadrant-chart/pr-check/should-render-y-axis-labels-in-the-center-if-y-axis-has-two-labels.mmd	412c24b1d3014eb4
-e2e/diagrams/quadrant-chart/pr-check/should-use-all-the-config.mmd	7febcfb7f87571bb
-e2e/diagrams/quadrant-chart/pr-check/should-use-all-the-theme-variable.mmd	5570a6d7b88d6e8a
+e2e/diagrams/mindmap/nightly-check/a-root-with-a-shape.mmd	f8e71aaa6630a20e	63fdfe0677a8d41c
+e2e/diagrams/mindmap/nightly-check/a-root-with-an-icon.mmd	3f1dc5e315239da0	b709a391c91b5ee6
+e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-a-shape.mmd	fe7de2c9ab10001a	e7fd45333855bb90
+e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-long-words-that-exceed-width.mmd	4df1cb9e4d55b540	e3bc64ffd3543450
+e2e/diagrams/mindmap/nightly-check/adding-children.mmd	98edbd325de252b0	02c39563a5011112
+e2e/diagrams/mindmap/nightly-check/adding-grand-children.mmd	9e4dca18c142f5ca	96addbf5e7125b50
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-dark-theme.mmd	a7f95bc46e3ce858	6d01f15694b659fe
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-theme.mmd	2e307f7c78631a48	f580a8e6002c3664
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-color-theme.mmd	c4c91a0704d108ac	0bd7502b5589eaca
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-color-theme.mmd	b40cdd904828d290	a685935900546108
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-theme.mmd	c08343f315f99e68	1509c5d19261d4d4
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-theme.mmd	486df2550d4d9fb0	7737ecca3399084a
+e2e/diagrams/mindmap/nightly-check/all-shapes-with-mdi-fire-icon.mmd	66dc8786372588c0	7410653e7d026fb2
+e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape-with-icons.mmd	5b01beb81a2e68d2	1116fe63e19b1fde
+e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape.mmd	b9003b2513728d14	4fa3edcf305b5968
+e2e/diagrams/mindmap/nightly-check/branches-with-shapes-and-labels.mmd	ac6d6bff764b7dc6	1aaa6509baf8b82c
+e2e/diagrams/mindmap/nightly-check/branches.mmd	950db55d0ad387e8	bcf172b0ced53e66
+e2e/diagrams/mindmap/nightly-check/circle-shape.mmd	2341bd29d7d31ec8	e2bc08b9aa5f8ff2
+e2e/diagrams/mindmap/nightly-check/default-shape.mmd	678e792caf925408	ce72cd55555af290
+e2e/diagrams/mindmap/nightly-check/level-2-nodes-exceeding-11.mmd	13ad47827028d3f2	96b33fb4d185319c
+e2e/diagrams/mindmap/nightly-check/only-a-root.mmd	c7b1361224f19cb6	5bdb5f216dfc39cc
+e2e/diagrams/mindmap/nightly-check/rounded-rect-shape.mmd	f3e8dae9cf4d3944	a77d205d327cd9e4
+e2e/diagrams/mindmap/nightly-check/square-shape.mmd	202e0ee437b203a6	44b23e4204c12c7c
+e2e/diagrams/mindmap/nightly-check/text-should-wrap-with-icon.mmd	197cedcc80ad912e	953ebe2c3ee0346e
+e2e/diagrams/mindmap/pr-check/6-should-centre-svg-text-labels-in-all-node-shapes-issue-8387.mmd	e48d8d64d9264456	a7babe0d540b0e6a
+e2e/diagrams/mindmap/pr-check/depth-colors.mmd	8bde6c3b47e75426	2ab8680d87e0972c
+e2e/diagrams/mindmap/pr-check/formatted-label-with-linebreak-and-a-wrapping-label-and-emojis.mmd	5512b65b6f4130fe	0d29cf73dffdd412
+e2e/diagrams/mindmap/pr-check/simple-mindmap.mmd	1521a2ee03acb020	8456cb2baeecbb60
+e2e/diagrams/mindmap/visual-check/1-tidy-tree-should-render-a-simple-mindmap-without-children.mmd	a317eb0e9c69d95e	deb02e1e2278d7c6
+e2e/diagrams/mindmap/visual-check/2-tidy-tree-should-render-a-simple-mindmap.mmd	59d11216440ba3a8	0c5c60152d51354a
+e2e/diagrams/mindmap/visual-check/3-tidy-tree-should-render-a-mindmap-with-different-shapes.mmd	008e9826fc1ee568	9c139739d9090950
+e2e/diagrams/mindmap/visual-check/4-tidy-tree-should-render-a-mindmap-with-children.mmd	7a6d06cc8ba31854	369d9cd88f906652
+e2e/diagrams/mindmap/visual-check/5-tidy-tree-should-keep-root-edges-connected-to-a-rectangular-root-issue-7572.mmd	3ce3fc99d545b332	64fcdbb680fb0ec8
+e2e/diagrams/mindmap/visual-check/knsv2-16-mindmap-tidy-tree.mmd	e67c0d252d033e64	fc6613ffda708a8a
+e2e/diagrams/pie/nightly-check/dark-theme.mmd	24aa08b3fbc70a6a	ff6e10a9dd69daf0
+e2e/diagrams/pie/nightly-check/default-theme.mmd	5b9e070878a2fdd2	098a4ab88bc6797e
+e2e/diagrams/pie/nightly-check/forest-theme.mmd	bcc62e7e071d986a	54c0882ea72ccf5a
+e2e/diagrams/pie/nightly-check/highlights-hovered-slice.mmd	3ac19f5643ab2a4e	ec66733468f9323f
+e2e/diagrams/pie/nightly-check/highlights-specific-slice.mmd	53a879321323f2d0	77711aa6e4aca8af
+e2e/diagrams/pie/nightly-check/neutral-theme.mmd	b0e0a7d5243ca38e	2f26ed80d82f8fd6
+e2e/diagrams/pie/nightly-check/redux-color-theme.mmd	55b0500f47b9069a	faacd28c6826d56a
+e2e/diagrams/pie/nightly-check/redux-dark-color-theme.mmd	830947d06ffbb296	11b2d59ce5a653f0
+e2e/diagrams/pie/nightly-check/redux-dark-theme.mmd	299ad2da0f8e0502	6357b5f9c0db118c
+e2e/diagrams/pie/nightly-check/redux-theme.mmd	09e75ec375ef3016	f9a6d87998b0b5ca
+e2e/diagrams/pie/nightly-check/should-render-a-pie-diagram-with-legend-at-the-bottom-of-the-diagram.mmd	4d4ae2de5bf03d6f	ceede797e9d53610
+e2e/diagrams/pie/nightly-check/should-render-a-simple-pie-diagram-with-long-labels.mmd	cfd1694c7026a67d	bc4c6451502727c9
+e2e/diagrams/pie/nightly-check/should-render-pie-slices-only-for-non-zero-values-but-shows-all-legends.mmd	84d8c3f660e5819a	078ebf59d05634c8
+e2e/diagrams/pie/nightly-check/should-render-usemaxwidth-false.mmd	9e58db954362ca5e	29b98081d66a89e5
+e2e/diagrams/pie/pr-check/should-render-a-donut-diagram.mmd	49e3ce8a6d245f12	212196036c6af085
+e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-if-donuthole-parameter-is-negative.mmd	78c0b03801c70674	c5d491cf50d732c3
+e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-if-donuthole-parameter-is-too-large.mmd	2332256bc79b52b7	f0e416ced222dd22
+e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-when-textposition-is-set.mmd	2bf7d9d33051ce4f	50683943eaa30965
+e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-a-long-title-without-clipping.mmd	16ffb5bffeabf116	197a0486dbdb1107
+e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-readable-title-and-legend-in-dark-mode.mmd	c304729dc1b5d1b8	e84ab966c621dfea
+e2e/diagrams/pie/pr-check/should-render-a-pie-diagram-with-showdata.mmd	53e45b773ddc12fd	c64550005f965373
+e2e/diagrams/pie/pr-check/should-render-a-simple-pie-diagram-with-capital-letters-for-labels.mmd	f819a383ffca19ae	b80d41050a9229f1
+e2e/diagrams/pie/pr-check/should-render-a-simple-pie-diagram.mmd	ebf3c7307c4bbce8	6711e87f002f0fdf
+e2e/diagrams/pie/pr-check/simple-sports.mmd	55fc956c11e07450	0ea2868d3ac34ccf
+e2e/diagrams/quadrant-chart/nightly-check/should-able-to-render-x-axis-on-bottom.mmd	5e485447009f0627	c74f08b2012b0a55
+e2e/diagrams/quadrant-chart/nightly-check/should-render-both-axes-labels-on-the-left-and-bottom-if-both-axes-have-only-one-label.mmd	336f04ae6fa935ef	c06329d662fd355b
+e2e/diagrams/quadrant-chart/nightly-check/should-render-if-only-chart-type-is-provided.mmd	35d862d73860f3f4	47a9534a2179f65a
+e2e/diagrams/quadrant-chart/nightly-check/should-render-without-title.mmd	11136b4693497b5e	a636b95c6655aed6
+e2e/diagrams/quadrant-chart/pr-check/it-should-render-data-points-with-styles-classes.mmd	add10c4d69531475	bf78400ee94bb59e
+e2e/diagrams/quadrant-chart/pr-check/it-should-render-data-points-with-styles.mmd	519ed4f576dfb8b3	dc8fe1d468e49b7f
+e2e/diagrams/quadrant-chart/pr-check/should-able-to-render-x-axis-on-bottom-and-y-axis-on-right.mmd	7624597fd0f209a5	db095ec6ced4ab99
+e2e/diagrams/quadrant-chart/pr-check/should-able-to-render-y-axis-on-right-side.mmd	d36b422ea13943b3	484b3dcae9fef7ed
+e2e/diagrams/quadrant-chart/pr-check/should-render-a-complete-quadrant-chart.mmd	bc1ccbd2abb98cff	c9358a8832365a63
+e2e/diagrams/quadrant-chart/pr-check/should-render-without-points.mmd	e3be8e4fb42f7ccb	49a2d41cd3e6581f
+e2e/diagrams/quadrant-chart/pr-check/should-render-x-axis-labels-in-the-center-if-x-axis-has-two-labels.mmd	b6d5da3c18e21c4c	a0536ad34bdc6ef5
+e2e/diagrams/quadrant-chart/pr-check/should-render-y-axis-labels-in-the-center-if-y-axis-has-two-labels.mmd	412c24b1d3014eb4	c16af1fff3fff2e1
+e2e/diagrams/quadrant-chart/pr-check/should-use-all-the-config.mmd	7febcfb7f87571bb	68a74a88f5a9cd63
+e2e/diagrams/quadrant-chart/pr-check/should-use-all-the-theme-variable.mmd	5570a6d7b88d6e8a	7559b6a099ed7b92
 e2e/diagrams/sequence/nightly-check/dark-theme.mmd	7898a6f41dd4f1e4	4a6dcf40fcb92e50
 e2e/diagrams/sequence/nightly-check/default-theme.mmd	8e14a8de8b69bca0	e1e6a803d94276b0
 e2e/diagrams/sequence/nightly-check/forest-theme.mmd	4f074cb04e40ce74	f9d8f79d05ecd668
@@ -1286,53 +1286,53 @@ e2e/diagrams/state-diagram/pr-check/should-render-forks-and-joins.mmd	1944a03fb9
 e2e/diagrams/state-diagram/pr-check/should-render-forks-in-composit-states.mmd	5906506987075068	bdd9188752803349
 e2e/diagrams/state-diagram/pr-check/should-render-multiple-composit-states.mmd	f081ff338edfebc0	717acd45035bfa76
 e2e/diagrams/state-diagram/pr-check/should-render-state-descriptions.mmd	9286cf641555a0e6	a3c224af4ee727b0
-e2e/diagrams/xychart/nightly-check/correct-distances-between-data-points.mmd	6c30bcc3f7032978
-e2e/diagrams/xychart/nightly-check/data-labels-single-bar-horizontal.mmd	90059d8e861f9d99
-e2e/diagrams/xychart/nightly-check/data-labels-single-bar-vertical.mmd	cf4bb12eb3ffbba1
-e2e/diagrams/xychart/nightly-check/data-labels-within-bars-horizontal-many-bars.mmd	beba9f657a3a31b5
-e2e/diagrams/xychart/nightly-check/data-labels-within-bars-horizontal.mmd	3b298593691917c5
-e2e/diagrams/xychart/nightly-check/data-labels-within-bars-vertical-many-bars.mmd	72f4a208334e067b
-e2e/diagrams/xychart/nightly-check/data-labels-within-bars-vertical.mmd	8b8d44a465fb8b6d
-e2e/diagrams/xychart/nightly-check/label-rotation-clamped-above-limit.mmd	9f62050d583da535
-e2e/diagrams/xychart/nightly-check/label-rotation-clamped-below-limit.mmd	0e46dfa1b7e32e2d
-e2e/diagrams/xychart/nightly-check/legends-for-named-plots.mmd	98afc0d299f3988f
-e2e/diagrams/xychart/nightly-check/render-spark-bar-without-displaying-other-property.mmd	057f0406e2a44344
-e2e/diagrams/xychart/nightly-check/render-spark-line-with-plotreservedspacepercent.mmd	9a0006dd9296ebf6
-e2e/diagrams/xychart/nightly-check/render-with-show-axis-label-false.mmd	6933aad96a8867aa
-e2e/diagrams/xychart/nightly-check/render-with-show-axis-tick-false.mmd	19a66c573a4e80d4
-e2e/diagrams/xychart/nightly-check/render-with-show-axis-title-false.mmd	4dafcbf84429a5d1
-e2e/diagrams/xychart/nightly-check/rotated-label-45-degrees.mmd	f761d02466e19933
-e2e/diagrams/xychart/nightly-check/should-drop-the-title-when-the-chart-is-too-short.mmd	712fa7551414ca36
-e2e/diagrams/xychart/nightly-check/should-keep-legend-inside-a-wide-chart-scaled-to-fit.mmd	5468fbc926e743f1
-e2e/diagrams/xychart/nightly-check/should-render-a-chart-without-title.mmd	b4de2b3871d5fb1e
-e2e/diagrams/xychart/nightly-check/should-render-a-horizontal-line-chart-with-point-labels.mmd	4be9050a8d9c7dc6
-e2e/diagrams/xychart/nightly-check/should-render-a-line-chart-with-mixed-labels-some-points-labeled-some-not.mmd	46dff8e56c92b03e
-e2e/diagrams/xychart/nightly-check/should-render-a-line-chart-with-point-labels.mmd	5a0af2ce63a00569
-e2e/diagrams/xychart/nightly-check/should-render-a-single-bar-with-label-for-a-horizontal-xy-chart.mmd	df347aafc91aef4f
-e2e/diagrams/xychart/nightly-check/should-render-a-single-bar-with-label-for-a-vertical-xy-chart.mmd	6fce9629200d678f
-e2e/diagrams/xychart/nightly-check/should-render-horizontal-bar-chart-with-labels-outside-bar.mmd	d725113e7a4b9939
-e2e/diagrams/xychart/nightly-check/should-render-horizontal-bar-chart-without-labels-by-default.mmd	1d167f4360c2738b
-e2e/diagrams/xychart/nightly-check/should-render-multiple-bar-plots-horizontally-with-labels-correctly.mmd	9ac7325b1942a96b
-e2e/diagrams/xychart/nightly-check/should-render-multiple-lines-where-only-one-has-labels.mmd	273df81430d54ffe
-e2e/diagrams/xychart/nightly-check/should-render-negative-and-decimal-values-with-correct-labels-for-vertical-xy-chart.mmd	a2197344a8659776
-e2e/diagrams/xychart/nightly-check/should-render-the-simplest-possible-xy-chart.mmd	2cf3ba7abe35ba04
-e2e/diagrams/xychart/nightly-check/should-render-vertical-bar-chart-with-labels-outside-bar.mmd	c9014614473fddf9
-e2e/diagrams/xychart/nightly-check/should-render-vertical-bar-chart-without-labels-by-default.mmd	fc3b6654cc0d8307
-e2e/diagrams/xychart/nightly-check/should-use-all-the-config-from-directive.mmd	63455a872d0b3ec5
-e2e/diagrams/xychart/nightly-check/should-use-all-the-config-from-yaml.mmd	f85fc49aed84076a
-e2e/diagrams/xychart/nightly-check/x-axis-range-same-value.mmd	b99448825363e0df
-e2e/diagrams/xychart/nightly-check/x-axis-title-not-required.mmd	69a0f6f7c129782e
-e2e/diagrams/xychart/nightly-check/y-axis-title-not-required.mmd	8fb9d7208aee79d3
-e2e/diagrams/xychart/pr-check/decimals-and-negative-numbers-are-supported.mmd	da763d65cd73c224
-e2e/diagrams/xychart/pr-check/multiple-plots-can-be-rendered.mmd	0929c8120d07e0fe
-e2e/diagrams/xychart/pr-check/render-all-the-theme-color.mmd	84496ebfeefcd994
-e2e/diagrams/xychart/pr-check/render-with-show-axis-line-false.mmd	fc37e1943d1a1883
-e2e/diagrams/xychart/pr-check/should-render-a-chart-without-y-axis-with-different-range.mmd	389f7b4df72fff35
-e2e/diagrams/xychart/pr-check/should-render-a-complete-chart.mmd	23ed8b3e01c431f7
-e2e/diagrams/xychart/pr-check/should-render-horizontal-bar-chart-with-labels.mmd	196104a169fa09b3
-e2e/diagrams/xychart/pr-check/should-render-multiple-bar-plots-vertically-with-labels-correctly.mmd	f96cd9cb0793de55
-e2e/diagrams/xychart/pr-check/should-render-negative-and-decimal-values-with-correct-labels-for-horizontal-xy-chart.mmd	37dc56d3668470ee
-e2e/diagrams/xychart/pr-check/should-render-vertical-bar-chart-with-labels.mmd	73d05ceb9e01974b
+e2e/diagrams/xychart/nightly-check/correct-distances-between-data-points.mmd	6c30bcc3f7032978	eee7ba02b0c7b597
+e2e/diagrams/xychart/nightly-check/data-labels-single-bar-horizontal.mmd	90059d8e861f9d99	662d150b02fc0696
+e2e/diagrams/xychart/nightly-check/data-labels-single-bar-vertical.mmd	cf4bb12eb3ffbba1	8f21c2ed4181de2e
+e2e/diagrams/xychart/nightly-check/data-labels-within-bars-horizontal-many-bars.mmd	beba9f657a3a31b5	30ef84b50c4ea37e
+e2e/diagrams/xychart/nightly-check/data-labels-within-bars-horizontal.mmd	3b298593691917c5	ca6aa21e62c18e67
+e2e/diagrams/xychart/nightly-check/data-labels-within-bars-vertical-many-bars.mmd	72f4a208334e067b	3b30fa8e30a561b0
+e2e/diagrams/xychart/nightly-check/data-labels-within-bars-vertical.mmd	8b8d44a465fb8b6d	7c8776ebf24a7cf7
+e2e/diagrams/xychart/nightly-check/label-rotation-clamped-above-limit.mmd	9f62050d583da535	e35a4f010c55d231
+e2e/diagrams/xychart/nightly-check/label-rotation-clamped-below-limit.mmd	0e46dfa1b7e32e2d	4e84da3423d61f39
+e2e/diagrams/xychart/nightly-check/legends-for-named-plots.mmd	98afc0d299f3988f	80cd4adf5d3c1b2e
+e2e/diagrams/xychart/nightly-check/render-spark-bar-without-displaying-other-property.mmd	057f0406e2a44344	4741a989b06803ea
+e2e/diagrams/xychart/nightly-check/render-spark-line-with-plotreservedspacepercent.mmd	9a0006dd9296ebf6	a83bf32707706718
+e2e/diagrams/xychart/nightly-check/render-with-show-axis-label-false.mmd	6933aad96a8867aa	8709c9134a7d5b1c
+e2e/diagrams/xychart/nightly-check/render-with-show-axis-tick-false.mmd	19a66c573a4e80d4	c6beb45d62cf67ff
+e2e/diagrams/xychart/nightly-check/render-with-show-axis-title-false.mmd	4dafcbf84429a5d1	46d277eb4aefc904
+e2e/diagrams/xychart/nightly-check/rotated-label-45-degrees.mmd	f761d02466e19933	bad44949a52b160c
+e2e/diagrams/xychart/nightly-check/should-drop-the-title-when-the-chart-is-too-short.mmd	712fa7551414ca36	d332b62068293ef8
+e2e/diagrams/xychart/nightly-check/should-keep-legend-inside-a-wide-chart-scaled-to-fit.mmd	5468fbc926e743f1	d50aab0c3ea6e55b
+e2e/diagrams/xychart/nightly-check/should-render-a-chart-without-title.mmd	b4de2b3871d5fb1e	1b78923dd824caff
+e2e/diagrams/xychart/nightly-check/should-render-a-horizontal-line-chart-with-point-labels.mmd	4be9050a8d9c7dc6	86bedfff29b36641
+e2e/diagrams/xychart/nightly-check/should-render-a-line-chart-with-mixed-labels-some-points-labeled-some-not.mmd	46dff8e56c92b03e	8e163519939b8089
+e2e/diagrams/xychart/nightly-check/should-render-a-line-chart-with-point-labels.mmd	5a0af2ce63a00569	a5af793a7902c7d9
+e2e/diagrams/xychart/nightly-check/should-render-a-single-bar-with-label-for-a-horizontal-xy-chart.mmd	df347aafc91aef4f	f37482400741ca89
+e2e/diagrams/xychart/nightly-check/should-render-a-single-bar-with-label-for-a-vertical-xy-chart.mmd	6fce9629200d678f	ece68e389646973f
+e2e/diagrams/xychart/nightly-check/should-render-horizontal-bar-chart-with-labels-outside-bar.mmd	d725113e7a4b9939	a2d286f0bcb5da38
+e2e/diagrams/xychart/nightly-check/should-render-horizontal-bar-chart-without-labels-by-default.mmd	1d167f4360c2738b	a84569fe6745ac36
+e2e/diagrams/xychart/nightly-check/should-render-multiple-bar-plots-horizontally-with-labels-correctly.mmd	9ac7325b1942a96b	6886075d81cfc89d
+e2e/diagrams/xychart/nightly-check/should-render-multiple-lines-where-only-one-has-labels.mmd	273df81430d54ffe	418da2b71c9d41ad
+e2e/diagrams/xychart/nightly-check/should-render-negative-and-decimal-values-with-correct-labels-for-vertical-xy-chart.mmd	a2197344a8659776	5bb9fe49f30aee05
+e2e/diagrams/xychart/nightly-check/should-render-the-simplest-possible-xy-chart.mmd	2cf3ba7abe35ba04	a49e37bc2070750f
+e2e/diagrams/xychart/nightly-check/should-render-vertical-bar-chart-with-labels-outside-bar.mmd	c9014614473fddf9	4eb70d6a5906be9e
+e2e/diagrams/xychart/nightly-check/should-render-vertical-bar-chart-without-labels-by-default.mmd	fc3b6654cc0d8307	5dde435657317056
+e2e/diagrams/xychart/nightly-check/should-use-all-the-config-from-directive.mmd	63455a872d0b3ec5	3871beb2552e9bec
+e2e/diagrams/xychart/nightly-check/should-use-all-the-config-from-yaml.mmd	f85fc49aed84076a	5aaf381074472b94
+e2e/diagrams/xychart/nightly-check/x-axis-range-same-value.mmd	b99448825363e0df	fcb5a3e7cfd423f6
+e2e/diagrams/xychart/nightly-check/x-axis-title-not-required.mmd	69a0f6f7c129782e	a358a1f0bc27f7e7
+e2e/diagrams/xychart/nightly-check/y-axis-title-not-required.mmd	8fb9d7208aee79d3	44164b6d8ebc4215
+e2e/diagrams/xychart/pr-check/decimals-and-negative-numbers-are-supported.mmd	da763d65cd73c224	12f632bd79450cdf
+e2e/diagrams/xychart/pr-check/multiple-plots-can-be-rendered.mmd	0929c8120d07e0fe	1c952d20457bc885
+e2e/diagrams/xychart/pr-check/render-all-the-theme-color.mmd	84496ebfeefcd994	d542870a5d4d2134
+e2e/diagrams/xychart/pr-check/render-with-show-axis-line-false.mmd	fc37e1943d1a1883	af1153add586454a
+e2e/diagrams/xychart/pr-check/should-render-a-chart-without-y-axis-with-different-range.mmd	389f7b4df72fff35	9cfaf7ddcc92b153
+e2e/diagrams/xychart/pr-check/should-render-a-complete-chart.mmd	23ed8b3e01c431f7	f5bd12be1eba6f4e
+e2e/diagrams/xychart/pr-check/should-render-horizontal-bar-chart-with-labels.mmd	196104a169fa09b3	59ef31ed6b581ae4
+e2e/diagrams/xychart/pr-check/should-render-multiple-bar-plots-vertically-with-labels-correctly.mmd	f96cd9cb0793de55	4f39ffe71272755f
+e2e/diagrams/xychart/pr-check/should-render-negative-and-decimal-values-with-correct-labels-for-horizontal-xy-chart.mmd	37dc56d3668470ee	2135954a24d415f9
+e2e/diagrams/xychart/pr-check/should-render-vertical-bar-chart-with-labels.mmd	73d05ceb9e01974b	ffe3dd0eb7bc7c9c
 e2e/platform/dev-diagrams/diagrams/sequence-fixes/01-actor-vs-database.mmd	cbecf3aa67908336	cbecf3aa67908336
 e2e/platform/dev-diagrams/diagrams/sequence-fixes/02-actor-among-all-participant-types.mmd	3f3e35da6fdedb8a	2ec3a83e9e431068
 e2e/platform/dev-diagrams/diagrams/sequence-fixes/03-note-font-weight.mmd	43e4408a1d157c5a	b56cbdc37e8b7d28
@@ -1351,8 +1351,8 @@ e2e/platform/dev-diagrams/diagrams/state-diagram/6-states-with-descriptions.mmd	
 e2e/platform/dev-diagrams/diagrams/state-diagram/7-special-state-types-fork-join.mmd	babec8687481bf3e	03768380852e95ab
 e2e/platform/dev-diagrams/diagrams/state-diagram/8-composite-states.mmd	35ab03a575f71edc	7109bbdcd55bd25a
 e2e/platform/dev-diagrams/diagrams/state-diagram/9-concurrent-states.mmd	2fb15b845cc36a4a	756a1a886bd2124a
-e2e/platform/dev-diagrams/diagrams/xychart/should-drop-the-title-when-the-chart-is-too-short.mmd	712fa7551414ca36
-e2e/platform/dev-diagrams/diagrams/xychart/should-keep-legend-inside-a-wide-chart-scaled-to-fit.mmd	5468fbc926e743f1
+e2e/platform/dev-diagrams/diagrams/xychart/should-drop-the-title-when-the-chart-is-too-short.mmd	712fa7551414ca36	d332b62068293ef8
+e2e/platform/dev-diagrams/diagrams/xychart/should-keep-legend-inside-a-wide-chart-scaled-to-fit.mmd	5468fbc926e743f1	d50aab0c3ea6e55b
 e2e/platform/dev-diagrams/layout-tests/Company-simp.mmd	e07a96ad61173d5b	27d1f2bf9c59576b	e09629974585cb85
 e2e/platform/dev-diagrams/layout-tests/Company.mmd	da1aae7b9c73281d	9e8af252e708331b	3d8a848747e8e90b
 e2e/platform/dev-diagrams/layout-tests/class-diagram-2.mmd	7761a35c1fe0c087	4ba3d641b258e813
@@ -1423,42 +1423,42 @@ e2e/platform/dev-diagrams/performance/flowcharts/medium2.mmd	7fd398b66f3aa3d0	7f
 e2e/platform/dev-diagrams/performance/flowcharts/medium3.mmd	6a5c537ba54822d7	1d470d39b52c8713	c458c4667025fd59
 e2e/platform/dev-diagrams/performance/flowcharts/medium4.mmd	9c00ebad148f7469	9c00ebad148f7469	2ad6b2a8f3a77a99
 e2e/platform/dev-diagrams/performance/flowcharts/medium5.mmd	79622f4736c800b5	e0ff15a29c913671	9189b47512b768cf
-tools/port/geometry/probes/mindmap/p01-rounded-tree.mmd	ebbb6958ed01e118
-tools/port/geometry/probes/mindmap/p02-rect-tree.mmd	818adec44f0de97e
-tools/port/geometry/probes/mindmap/p03-circle-tree.mmd	44df0dd659153be4
-tools/port/geometry/probes/mindmap/p04-cloud-tree.mmd	095627a6ec51412a
-tools/port/geometry/probes/mindmap/p05-bang-tree.mmd	d1d030db558d4c2e
-tools/port/geometry/probes/mindmap/p06-hexagon-tree.mmd	fe2966f99949be84
-tools/port/geometry/probes/mindmap/p07-depth-plain.mmd	82d9b4d7b24aac22
-tools/port/geometry/probes/mindmap/p08-depth-rounded.mmd	3db6c0a6f3bdd1dc
-tools/port/geometry/probes/mindmap/p09-wide-plain.mmd	6597af86939827be
-tools/port/geometry/probes/mindmap/p10-all-shapes-classic.mmd	a57184f31cce61bc
-tools/port/geometry/probes/mindmap/p11-neo-plain.mmd	42e5b1d3efb8be9c
-tools/port/geometry/probes/mindmap/p12-branches-first-three.mmd	786dd09b7f8fd2fa
-tools/port/geometry/probes/mindmap/p13-branches-last-four.mmd	2e02aed0e4bf2ab4
-tools/port/geometry/probes/mindmap/p14-long-text-wrap.mmd	cd59703a56e6cd1e
-tools/port/geometry/probes/mindmap/p15-markdown-multiline.mmd	36edb8466e488c4e
-tools/port/geometry/probes/mindmap/p16-classes-and-icons.mmd	eb0ac35e6b49a9ae
-tools/port/geometry/probes/mindmap/p17-many-sections.mmd	7f06171ef1a1c7fa
-tools/port/geometry/probes/mindmap/p18-color-by-depth.mmd	f02c52715eb349f8
-tools/port/geometry/probes/mindmap/p19-deep-chain.mmd	5719c3a37f3535a8
-tools/port/geometry/probes/mindmap/p20-tidy-both-sides.mmd	842e5abca53ef642
-tools/port/geometry/probes/mindmap/p21-empty-tree.mmd	5569e8931cb2122c
-tools/port/geometry/probes/mindmap/p22-unregistered-layout.mmd	81c7347f8c287964
-tools/port/geometry/probes/mindmap/p23-diagram-scoped-layout.mmd	a5b0800e873d1304
-tools/port/geometry/probes/quadrantChart/p01-points-on-the-edges.mmd	20e72631e196aed8
-tools/port/geometry/probes/quadrantChart/p02-coordinates-outside-the-chart.mmd	4a90564aef12d4b4
-tools/port/geometry/probes/quadrantChart/p03-coordinates-the-scale-cannot-read.mmd	5cd0e5e54e63b3ea
-tools/port/geometry/probes/quadrantChart/p04-long-axis-and-quadrant-texts.mmd	c2b8a71b4a182d79
-tools/port/geometry/probes/quadrantChart/p05-classes-and-point-styles.mmd	1e2573ab7b52f212
-tools/port/geometry/probes/quadrantChart/p06-many-points.mmd	c253cb252877d296
-tools/port/geometry/probes/quadrantChart/p07-axis-texts-and-delimiters.mmd	d2606991c90c6d4d
-tools/port/geometry/probes/quadrantChart/p08-quadrant-texts-without-points.mmd	fab087ba222ff41b
-tools/port/geometry/probes/quadrantChart/p09-entities-and-markup.mmd	0a972d591b7589a4
-tools/port/geometry/probes/quadrantChart/p10-theme-colours-in-css-forms.mmd	5b116c7bca95170a
-tools/port/geometry/probes/quadrantChart/p11-dark-theme.mmd	4f616118a409fb46
-tools/port/geometry/probes/quadrantChart/p12-configuration-sizes.mmd	297f852799fddbf7
-tools/port/geometry/probes/quadrantChart/p13-accessibility-and-title.mmd	2db5020afb382cd3
-tools/port/geometry/probes/quadrantChart/p14-empty-quadrant-texts-with-points.mmd	4f03585667a811c0
-tools/port/geometry/probes/quadrantChart/p15-a-chart-too-small-for-its-axes.mmd	04c9413ec9694676
-tools/port/geometry/probes/quadrantChart/p16-border-in-hsl.mmd	d5a01fcb9021ad1e
+tools/port/geometry/probes/mindmap/p01-rounded-tree.mmd	ebbb6958ed01e118	cb2477d779c3305c
+tools/port/geometry/probes/mindmap/p02-rect-tree.mmd	818adec44f0de97e	37c9daa0d4010b98
+tools/port/geometry/probes/mindmap/p03-circle-tree.mmd	44df0dd659153be4	3c6b986f437f8c50
+tools/port/geometry/probes/mindmap/p04-cloud-tree.mmd	095627a6ec51412a	16e2d510e9347a24
+tools/port/geometry/probes/mindmap/p05-bang-tree.mmd	d1d030db558d4c2e	0ba3aa84d2b25842
+tools/port/geometry/probes/mindmap/p06-hexagon-tree.mmd	fe2966f99949be84	04b5283eaad1f05c
+tools/port/geometry/probes/mindmap/p07-depth-plain.mmd	82d9b4d7b24aac22	9b6f7681e262c0dc
+tools/port/geometry/probes/mindmap/p08-depth-rounded.mmd	3db6c0a6f3bdd1dc	d1c5f4d699c40548
+tools/port/geometry/probes/mindmap/p09-wide-plain.mmd	6597af86939827be	7e2101a23800c632
+tools/port/geometry/probes/mindmap/p10-all-shapes-classic.mmd	a57184f31cce61bc	ec52dfdac3a8649e
+tools/port/geometry/probes/mindmap/p11-neo-plain.mmd	42e5b1d3efb8be9c	8a53f5abf110b4ea
+tools/port/geometry/probes/mindmap/p12-branches-first-three.mmd	786dd09b7f8fd2fa	bf413b4601092b02
+tools/port/geometry/probes/mindmap/p13-branches-last-four.mmd	2e02aed0e4bf2ab4	86dc9e1366276766
+tools/port/geometry/probes/mindmap/p14-long-text-wrap.mmd	cd59703a56e6cd1e	3ac45b5f37f3c3dc
+tools/port/geometry/probes/mindmap/p15-markdown-multiline.mmd	36edb8466e488c4e	3e4c924962b48360
+tools/port/geometry/probes/mindmap/p16-classes-and-icons.mmd	eb0ac35e6b49a9ae	c8c6ad0931d36e1c
+tools/port/geometry/probes/mindmap/p17-many-sections.mmd	7f06171ef1a1c7fa	05eda94bdb164426
+tools/port/geometry/probes/mindmap/p18-color-by-depth.mmd	f02c52715eb349f8	21165d51e572fed8
+tools/port/geometry/probes/mindmap/p19-deep-chain.mmd	5719c3a37f3535a8	5b22e3abf069763c
+tools/port/geometry/probes/mindmap/p20-tidy-both-sides.mmd	842e5abca53ef642	6a76f16b0d16ba50
+tools/port/geometry/probes/mindmap/p21-empty-tree.mmd	5569e8931cb2122c	5569e8931cb2122c
+tools/port/geometry/probes/mindmap/p22-unregistered-layout.mmd	81c7347f8c287964	e86a158abe92809e
+tools/port/geometry/probes/mindmap/p23-diagram-scoped-layout.mmd	a5b0800e873d1304	9c51a772e7ab8cc8
+tools/port/geometry/probes/quadrantChart/p01-points-on-the-edges.mmd	20e72631e196aed8	f0d99700260ac466
+tools/port/geometry/probes/quadrantChart/p02-coordinates-outside-the-chart.mmd	4a90564aef12d4b4	636d2e37b85a0bac
+tools/port/geometry/probes/quadrantChart/p03-coordinates-the-scale-cannot-read.mmd	5cd0e5e54e63b3ea	24aa9955bebfb7ba
+tools/port/geometry/probes/quadrantChart/p04-long-axis-and-quadrant-texts.mmd	c2b8a71b4a182d79	8517806146cde7af
+tools/port/geometry/probes/quadrantChart/p05-classes-and-point-styles.mmd	1e2573ab7b52f212	8ff0cf66ae121f42
+tools/port/geometry/probes/quadrantChart/p06-many-points.mmd	c253cb252877d296	ecf800a72a1cef6e
+tools/port/geometry/probes/quadrantChart/p07-axis-texts-and-delimiters.mmd	d2606991c90c6d4d	09111a311dac0d2e
+tools/port/geometry/probes/quadrantChart/p08-quadrant-texts-without-points.mmd	fab087ba222ff41b	6f2787aaace7190b
+tools/port/geometry/probes/quadrantChart/p09-entities-and-markup.mmd	0a972d591b7589a4	b4184be4817ad0ba
+tools/port/geometry/probes/quadrantChart/p10-theme-colours-in-css-forms.mmd	5b116c7bca95170a	e61fd89f7b4d557f
+tools/port/geometry/probes/quadrantChart/p11-dark-theme.mmd	4f616118a409fb46	5205e2e49d8d88c8
+tools/port/geometry/probes/quadrantChart/p12-configuration-sizes.mmd	297f852799fddbf7	0bbaa0161118bb15
+tools/port/geometry/probes/quadrantChart/p13-accessibility-and-title.mmd	2db5020afb382cd3	582da612f57a726d
+tools/port/geometry/probes/quadrantChart/p14-empty-quadrant-texts-with-points.mmd	4f03585667a811c0	a6f45ba1591ffafc
+tools/port/geometry/probes/quadrantChart/p15-a-chart-too-small-for-its-axes.mmd	04c9413ec9694676	5616ba1105d30d60
+tools/port/geometry/probes/quadrantChart/p16-border-in-hsl.mmd	d5a01fcb9021ad1e	68c5dc21531ffb1e
