@@ -187,6 +187,30 @@ node tools/tala-pilot/check-sizeless-placement.mjs \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
 
+### Authored routes and edge labels
+
+The native rectangle-loop paths use the same projection as the general
+adapter for completed polylines. It restores source-only edge traversal,
+mirrors the label anchor and unlocked fraction, and drops redundant route
+points before calculating the label center used by Ferrigura.
+
+This check feeds the pinned Go winner's routes to that Rust projection
+for all measured flowcharts and repeats each with a source-only arrow.
+The observer leaves the Go layout output unchanged.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-route-output route-output
+GOFLAGS=-overlay=/tmp/ferrigura-tala-route-output/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-output
+node tools/tala-pilot/check-route-output.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --trace /tmp/ferrigura-tala-traced-output \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Pass `--write` to refresh the checked-in route projection fixtures after
+the comparison passes.
+
 ### Initial orthogonal visibility graph
 
 The replay includes ordered initial visibility vertices, the twelve port slots

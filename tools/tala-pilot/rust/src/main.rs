@@ -64,6 +64,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             let seed = ferrigura_tala::ovg_seed::rectangular_visibility_seed(&nodes)?;
             serde_json::to_writer(output, &seed)?;
         }
+        Some("--route-output") => {
+            let edges = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &ferrigura_tala::route_output::project(edges)?)?;
+        }
         Some("--simplify") => {
             let RoutedCapture { graph, mut layout } = serde_json::from_reader(input)?;
             ferrigura_tala::simplify::simplify_routes(&graph, &mut layout)?;
@@ -83,7 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(concat!(
                 "expected --layout, --translate, --prescale, --initialize, --initialize-by-distance, ",
                 "--sizeless-first-pass, --sizeless-phase, --sized-transition, --ovg-seed, ",
-                "--simplify, --balance, or no argument"
+                "--route-output, --simplify, --balance, or no argument"
             )
             .into());
         }

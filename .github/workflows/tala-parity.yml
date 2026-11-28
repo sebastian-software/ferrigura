@@ -57,6 +57,16 @@ jobs:
           node tools/tala-pilot/check-sizeless-placement.mjs \
             "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-sizeless-reference" \
             tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare authored edge routes and label centers with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-route-output" route-output
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-route-output/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-route-output-reference"
+          node tools/tala-pilot/check-route-output.mjs \
+            --reference "$RUNNER_TEMP/tala-reference" \
+            --trace "$RUNNER_TEMP/tala-route-output-reference" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Require a passing Rust counterpart for every upstream correctness test
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

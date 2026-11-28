@@ -22,6 +22,8 @@ pub mod normalize;
 #[doc(hidden)]
 pub mod ovg_seed;
 mod placement;
+#[doc(hidden)]
+pub mod route_output;
 mod routing;
 #[doc(hidden)]
 pub mod simplify;
@@ -191,9 +193,9 @@ pub fn layout(graph: &Graph) -> Result<Layout, Error> {
             height: node.height,
         };
         let edges = match graph.edges.as_slice() {
-            [edge] => vec![routing::isolated_rectangle_loop(&mut geometry, edge)],
+            [edge] => vec![routing::isolated_rectangle_loop(&mut geometry, edge)?],
             edges if edges.iter().all(|edge| edge.label.is_empty()) => {
-                routing::isolated_unlabeled_loops(&mut geometry, edges)
+                routing::isolated_unlabeled_loops(&mut geometry, edges)?
             }
             _ => return Err(Error::UnsupportedGraph),
         };

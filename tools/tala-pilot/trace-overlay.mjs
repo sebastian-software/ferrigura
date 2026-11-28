@@ -14,10 +14,11 @@ const modes = {
     traceSizelessPlacement,
   ],
   'layout-graph': ['seedgraph.go', 'seedgraph-overlay.go', traceLayoutGraph],
+  'route-output': ['patch.go', 'patch-overlay.go', traceRouteOutput],
 };
 assert(
   sourceRoot && output && Object.hasOwn(modes, mode),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement]'
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
@@ -78,6 +79,17 @@ function traceLayoutGraph(source) {
     ),
     graphReady,
     graphReady + '\ttracePilotLayoutGraph(ctx, graph, internal)\n'
+  );
+}
+
+function traceRouteOutput(source) {
+  const imports = '\t"fmt"\n';
+  const append =
+    '\t\tpatch.edges = append(patch.edges, edgePatch)\n\t\tpatch.finalEdges = append(patch.finalEdges, edge)\n';
+  return replaceOnce(
+    replaceOnce(source, imports, imports + '\t"encoding/json"\n\t"os"\n'),
+    append,
+    '\t\ttracePilotRouteOutput(edge, resultEdge)\n' + append
   );
 }
 
