@@ -13,7 +13,7 @@
 use crate::{Edge, EdgeGeometry, NodeGeometry, Point};
 
 const SHARED_PORT_LOOP_GAP: f64 = 30.0;
-const SIDE_EDGE_SPACING: f64 = 40.0;
+pub(super) const SIDE_EDGE_SPACING: f64 = 40.0;
 const PLACEMENT_PADDING: f64 = 1000.0;
 const LABEL_PADDING: f64 = 5.0;
 const LAYOUT_STROKE_WIDTH: f64 = 3.0;

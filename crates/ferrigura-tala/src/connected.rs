@@ -11,6 +11,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{Edge, EdgeGeometry, Graph, Layout, Node, NodeGeometry, Point};
 
+mod parallel;
+
 const MIN_BODY_GAP: f64 = 60.0;
 const IDEAL_BODY_GAP: f64 = 2.5 * MIN_BODY_GAP;
 const PLACEMENT_PADDING: f64 = 1_000.0;
@@ -29,6 +31,11 @@ pub(crate) fn layout(graph: &Graph) -> Option<Layout> {
         return None;
     }
     let nodes: Vec<_> = graph.nodes.iter().collect();
+    if let [first, second] = nodes.as_slice()
+        && graph.edges.len() > 1
+    {
+        return parallel::layout(graph.direction.as_deref(), [first, second], &graph.edges);
+    }
     layout_path(graph.direction.as_deref(), &nodes, &graph.edges)
 }
 
@@ -42,28 +49,17 @@ pub(crate) fn layout_pair(
 }
 
 fn layout_path(direction_hint: Option<&str>, nodes: &[&Node], edges: &[Edge]) -> Option<Layout> {
-    let first = nodes.first()?;
-    if !(2..=MAX_STRAIGHT_CHAIN).contains(&nodes.len())
-        || edges.len() + 1 != nodes.len()
-        || !(100.0..=220.0).contains(&first.width)
-        || !(40.0..=92.0).contains(&first.height)
-        || nodes.iter().any(|node| {
-            node.direction.is_some()
-                || first.width != node.width
-                || first.height != node.height
-                || node.label_width.ceil() > node.width
-                || node.label_height.ceil() > node.height
-        })
-    {
+    if !(2..=MAX_STRAIGHT_CHAIN).contains(&nodes.len()) || edges.len() + 1 != nodes.len() {
         return None;
     }
+    let (width, height) = congruent_measurements(nodes)?;
 
     // Longer chains can fold, and without a direction hint the reference can
     // choose either axis. This branch covers short, standard measured paths.
     let implicit = matches!(direction_hint, None | Some(""));
     if (nodes.len() > 2 || implicit)
-        && (first.width != 152.0
-            || first.height != 41.0
+        && (width != 152.0
+            || height != 41.0
             || edges
                 .iter()
                 .any(|edge| edge.source_arrow == edge.target_arrow)
@@ -78,24 +74,14 @@ fn layout_path(direction_hint: Option<&str>, nodes: &[&Node], edges: &[Edge]) ->
     }
 
     let direction = Direction::from_hint(direction_hint)?;
-    let (body_axis, body_cross) = direction.axes(first.width, first.height);
+    let (body_axis, body_cross) = direction.axes(width, height);
     if body_axis.fract() != 0.0 {
         return None;
     }
     let count = u32::try_from(nodes.len()).ok()?;
     let ranks = rank_nodes(nodes, edges, count)?;
 
-    // ComputeCellSize supplies the compaction lattice. The minimum legal
-    // separation on that lattice is then bounded by GapNormalization.
-    let smaller = body_axis.min(body_cross);
-    let larger = body_axis.max(body_cross);
-    let cell_size = if larger < 3.0 * smaller {
-        larger.ceil()
-    } else {
-        (1.5 * smaller).ceil()
-    };
-    let distance = (((body_axis + MIN_BODY_GAP) / cell_size).ceil() * cell_size)
-        .min(body_axis + IDEAL_BODY_GAP);
+    let distance = separation(body_axis, body_cross);
 
     // Pad precedes BalanceEdgeSegments. For the collinear routes between equal
     // bodies, the perpendicular coordinate is the floored center of their span.
@@ -182,6 +168,36 @@ fn layout_path(direction_hint: Option<&str>, nodes: &[&Node], edges: &[Edge]) ->
         })
         .collect();
     Some(Layout { nodes, edges })
+}
+
+fn congruent_measurements(nodes: &[&Node]) -> Option<(f64, f64)> {
+    let first = nodes.first()?;
+    if !(100.0..=220.0).contains(&first.width)
+        || !(40.0..=92.0).contains(&first.height)
+        || nodes.iter().any(|node| {
+            node.direction.is_some()
+                || first.width != node.width
+                || first.height != node.height
+                || node.label_width.ceil() > node.width
+                || node.label_height.ceil() > node.height
+        })
+    {
+        return None;
+    }
+    Some((first.width, first.height))
+}
+
+fn separation(body_axis: f64, body_cross: f64) -> f64 {
+    // ComputeCellSize supplies the compaction lattice. The minimum legal
+    // separation on that lattice is then bounded by GapNormalization.
+    let smaller = body_axis.min(body_cross);
+    let larger = body_axis.max(body_cross);
+    let cell_size = if larger < 3.0 * smaller {
+        larger.ceil()
+    } else {
+        (1.5 * smaller).ceil()
+    };
+    (((body_axis + MIN_BODY_GAP) / cell_size).ceil() * cell_size).min(body_axis + IDEAL_BODY_GAP)
 }
 
 fn rank_nodes<'a>(
@@ -283,6 +299,7 @@ mod tests {
         let fixtures = [
             include_str!("connected/pairs.json"),
             include_str!("connected/chains.json"),
+            include_str!("connected/parallel.json"),
         ];
         for fixture in fixtures {
             let cases: Vec<Case> = serde_json::from_str(fixture).unwrap();
@@ -316,6 +333,19 @@ mod tests {
         assert!(layout(input).is_none());
         input.edges[1].source = input.edges[2].target.clone();
         input.edges[1].target = input.edges[2].source.clone();
+        assert!(layout(input).is_none());
+    }
+
+    #[test]
+    fn excludes_parallel_edges_with_unported_orientation_or_caption_layout() {
+        let mut cases: Vec<Case> =
+            serde_json::from_str(include_str!("connected/parallel.json")).unwrap();
+        let input = &mut cases[0].input;
+        input.edges[1].label_height += 1.0;
+        assert!(layout(input).is_none());
+        input.edges[1].label_height -= 1.0;
+        let reversed = &mut input.edges[1];
+        std::mem::swap(&mut reversed.source, &mut reversed.target);
         assert!(layout(input).is_none());
     }
 }

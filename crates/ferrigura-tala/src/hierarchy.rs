@@ -14,8 +14,12 @@ const LABEL_FIT_MARGIN: f64 = 20.0;
 const MAX_FIXED_PADDING_LABEL_HEIGHT: f64 = 50.0;
 const MAX_LEAF_SIDE: f64 = 2000.0;
 
-/// Places a single chain of rectangular containers around one component.
+/// Places the verified rectangular container layouts.
 pub(crate) fn layout(graph: &Graph) -> Option<Layout> {
+    if let Some(layout) = boundary::layout(graph) {
+        return Some(layout);
+    }
+
     let indices: HashMap<_, _> = graph
         .nodes
         .iter()
@@ -26,7 +30,7 @@ pub(crate) fn layout(graph: &Graph) -> Option<Layout> {
         return None;
     }
 
-    let mut root = None;
+    let mut roots = Vec::new();
     let mut children = vec![Vec::new(); graph.nodes.len()];
     for (index, node) in graph.nodes.iter().enumerate() {
         if let Some(parent) = node.parent_id.as_deref() {
@@ -35,17 +39,27 @@ pub(crate) fn layout(graph: &Graph) -> Option<Layout> {
                 return None;
             }
             children[parent_index].push(index);
-        } else if root.replace(index).is_some() {
-            return None;
+        } else {
+            roots.push(index);
         }
     }
-    let mut inner_group = root?;
+    let mut inner_group = match roots.as_slice() {
+        [first, second] if graph.edges.is_empty() => {
+            return siblings::layout(graph, &children, [*first, *second], None);
+        }
+        [outer] if graph.edges.is_empty() => {
+            if let [first, second] = children[*outer].as_slice() {
+                return siblings::layout(graph, &children, [*first, *second], Some(*outer));
+            }
+            *outer
+        }
+        [only] => *only,
+        _ => return None,
+    };
     let mut groups = vec![inner_group];
     let leaves = loop {
         let group = &graph.nodes[inner_group];
-        if !group.is_group
-            || !group.label.is_empty() && group.label_height.ceil() > MAX_FIXED_PADDING_LABEL_HEIGHT
-        {
+        if !is_fitted_group(group) {
             return None;
         }
         if let [child] = children[inner_group].as_slice()
@@ -91,14 +105,8 @@ pub(crate) fn layout(graph: &Graph) -> Option<Layout> {
     }
 
     for &index in groups.iter().rev() {
-        let group = &graph.nodes[index];
-        // Bin packing fits the group to the content's rounded bounds. A wide
-        // inside-top title can extend the right edge without moving the child.
-        content_width = content_width.round() + 2.0 * CONTAINER_PADDING;
-        content_height = content_height.round() + 2.0 * CONTAINER_PADDING;
-        if !group.label.is_empty() {
-            content_width = content_width.max(group.label_width.ceil() + LABEL_FIT_MARGIN);
-        }
+        (content_width, content_height) =
+            fitted_frame(&graph.nodes[index], content_width, content_height);
         geometry[index].width = content_width;
         geometry[index].height = content_height;
     }
@@ -173,6 +181,21 @@ fn node_geometry(node: &Node) -> NodeGeometry {
     }
 }
 
+fn is_fitted_group(node: &Node) -> bool {
+    node.is_group
+        && (node.label.is_empty() || node.label_height.ceil() <= MAX_FIXED_PADDING_LABEL_HEIGHT)
+}
+
+fn fitted_frame(group: &Node, width: f64, height: f64) -> (f64, f64) {
+    // Bin packing fits the group to the content's rounded bounds. A wide
+    // inside-top title can extend the right edge without moving the child.
+    let mut width = width.round() + 2.0 * CONTAINER_PADDING;
+    if !group.label.is_empty() {
+        width = width.max(group.label_width.ceil() + LABEL_FIT_MARGIN);
+    }
+    (width, height.round() + 2.0 * CONTAINER_PADDING)
+}
+
 fn is_rectangular_leaf(node: &Node) -> bool {
     !node.is_group
         && matches!(node.shape.as_str(), "rect" | "rectangle" | "squareRect")
@@ -181,6 +204,9 @@ fn is_rectangular_leaf(node: &Node) -> bool {
         && (node.label.is_empty()
             || (node.label_width.ceil() <= node.width && node.label_height.ceil() <= node.height))
 }
+
+mod boundary;
+mod siblings;
 
 #[cfg(test)]
 mod tests;

@@ -67,7 +67,7 @@ fn tala_uses_native_placement_and_routing_without_falling_back() {
 
     for source in [
         "flowchart LR\nA --> B\nA --> C",
-        "flowchart LR\nsubgraph System\nA[Worker]\nend\nA --> B[Queue]",
+        "flowchart LR\nsubgraph System\nA[Worker]\nC[Store]\nend\nA --> B[Queue]",
     ] {
         let error = renderer
             .render_with_engine(source, &options, LayoutEngine::Tala)
@@ -120,6 +120,18 @@ fn tala_draws_connected_paths_and_bounded_nested_subgraphs() {
             "flowchart TB\nsubgraph Outer\nsubgraph Inner\nA[Worker]\nend\nend",
             &["Outer", "Inner", "Worker"][..],
         ),
+        (
+            "flowchart LR\nsubgraph System\nA[Worker]\nend\nA --> B[Queue]",
+            &["System", "Worker", "Queue"][..],
+        ),
+        (
+            "flowchart LR\nSensor -->|reading| Panel\nSensor -->|rate| Panel",
+            &["Sensor", "Panel", "reading", "rate"][..],
+        ),
+        (
+            "flowchart TB\nsubgraph Left\nA[Worker]\nend\nsubgraph Right\nB[Queue]\nend",
+            &["Left", "Worker", "Right", "Queue"][..],
+        ),
     ] {
         let svg = renderer
             .render_with_engine(text, &options, LayoutEngine::Tala)
@@ -132,4 +144,59 @@ fn tala_draws_connected_paths_and_bounded_nested_subgraphs() {
             );
         }
     }
+}
+
+#[cfg(feature = "experimental-tala")]
+#[test]
+fn tala_uses_the_shared_theme_font_and_animation_path() {
+    use ferrigura::{Animation, ColorScheme};
+
+    let font = include_bytes!("../../ferrigura-text/fonts/AtkinsonHyperlegibleMono-Regular.ttf");
+    let renderer = Renderer::builder(&Value::empty_object())
+        .with_all()
+        .font("Fixture Mono", font.to_vec())
+        .unwrap()
+        .build();
+    let source = "flowchart LR\n A[Worker] -->|retry| A";
+    let render = |options| {
+        renderer
+            .render_with_engine(source, &options, LayoutEngine::Tala)
+            .unwrap()
+    };
+    let options = RenderOptions {
+        color_scheme: Some(ColorScheme::Auto),
+        id: Some("tala-styled".into()),
+        ..RenderOptions::default()
+    };
+    let still = render(options.clone());
+    assert!(still.contains("id=\"tala-styled\""));
+    assert!(still.contains("light-dark("));
+    assert!(still.contains("data:font/"));
+    assert!(still.contains("--fg-font-"));
+    assert!(!still.contains("data-draw-style"));
+
+    let animated = render(RenderOptions {
+        animation: Some(Animation::default()),
+        ..options
+    });
+    assert!(animated.contains("data-draw-part=\"edge\""));
+    assert!(animated.contains("prefers-reduced-motion:no-preference"));
+}
+
+#[cfg(feature = "experimental-tala")]
+#[test]
+fn tala_reports_its_work_limit_without_changing_subsequent_renders() {
+    let renderer = renderer();
+    let render =
+        |source| renderer.render_with_engine(source, &RenderOptions::default(), LayoutEngine::Tala);
+    let small = "flowchart TB\nA --> A";
+    let reference = render(small).unwrap();
+    let large = format!("flowchart TB\n{}", "A --> A\n".repeat(33));
+    let error = render(&large).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("TALA input exceeds its work limit")
+    );
+    assert_eq!(render(small).unwrap(), reference);
 }

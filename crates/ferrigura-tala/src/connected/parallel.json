@@ -1,0 +1,621 @@
+[
+  {
+    "name": "Measured workshop sensor and panel projection",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "direction": null,
+          "height": 68.0,
+          "id": "sensor",
+          "isGroup": false,
+          "label": "Temperature sensor",
+          "labelHeight": 0.0,
+          "labelWidth": 0.0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152.0
+        },
+        {
+          "direction": null,
+          "height": 68.0,
+          "id": "panel",
+          "isGroup": false,
+          "label": "Control panel",
+          "labelHeight": 0.0,
+          "labelWidth": 0.0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "L_sensor_panel_0",
+          "label": "reading",
+          "labelHeight": 21.0,
+          "labelWidth": 72.75,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "L_sensor_panel_2",
+          "label": "low battery",
+          "labelHeight": 21.0,
+          "labelWidth": 93.203125,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "sensor", "x": 0, "y": 0, "width": 152, "height": 120 },
+        { "id": "panel", "x": 302, "y": 0, "width": 152, "height": 120 }
+      ],
+      "edges": [
+        {
+          "id": "L_sensor_panel_0",
+          "points": [
+            { "x": 152, "y": 40 },
+            { "x": 302, "y": 40 }
+          ],
+          "label": { "x": 227.5, "y": 23.5 }
+        },
+        {
+          "id": "L_sensor_panel_2",
+          "points": [
+            { "x": 152, "y": 80 },
+            { "x": 302, "y": 80 }
+          ],
+          "label": { "x": 227, "y": 63.5 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Two top-to-bottom rails use floored spacing",
+    "input": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "a",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"a\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        },
+        {
+          "id": "b",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"b\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "e0",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "e1",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "a", "x": 0, "y": 0, "width": 152, "height": 120 },
+        { "id": "b", "x": 0, "y": 270, "width": 152, "height": 120 }
+      ],
+      "edges": [
+        {
+          "id": "e0",
+          "points": [
+            { "x": 50, "y": 120 },
+            { "x": 50, "y": 270 }
+          ]
+        },
+        {
+          "id": "e1",
+          "points": [
+            { "x": 100, "y": 120 },
+            { "x": 100, "y": 270 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Three upward rails preserve source edge order",
+    "input": {
+      "direction": "BT",
+      "nodes": [
+        {
+          "id": "a",
+          "shape": "squareRect",
+          "width": 219,
+          "height": 92,
+          "label": "Node \"a\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        },
+        {
+          "id": "b",
+          "shape": "squareRect",
+          "width": 219,
+          "height": 92,
+          "label": "Node \"b\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "e2",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "e0",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "a", "x": 0, "y": 0, "width": 219, "height": 160 },
+        { "id": "b", "x": 0, "y": 310, "width": 219, "height": 160 }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "points": [
+            { "x": 54, "y": 310 },
+            { "x": 54, "y": 160 }
+          ]
+        },
+        {
+          "id": "e2",
+          "points": [
+            { "x": 108, "y": 310 },
+            { "x": 108, "y": 160 }
+          ]
+        },
+        {
+          "id": "e0",
+          "points": [
+            { "x": 162, "y": 310 },
+            { "x": 162, "y": 160 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Four leftward rails expand both bodies",
+    "input": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "b",
+          "shape": "squareRect",
+          "width": 112,
+          "height": 42,
+          "label": "Node \"b\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        },
+        {
+          "id": "a",
+          "shape": "squareRect",
+          "width": 112,
+          "height": 42,
+          "label": "Node \"a\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "e3",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "e2",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "e1",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "e0",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "b", "x": 0, "y": 0, "width": 200, "height": 200 },
+        { "id": "a", "x": 350, "y": 0, "width": 200, "height": 200 }
+      ],
+      "edges": [
+        {
+          "id": "e3",
+          "points": [
+            { "x": 350, "y": 40 },
+            { "x": 200, "y": 40 }
+          ]
+        },
+        {
+          "id": "e2",
+          "points": [
+            { "x": 350, "y": 80 },
+            { "x": 200, "y": 80 }
+          ]
+        },
+        {
+          "id": "e1",
+          "points": [
+            { "x": 350, "y": 120 },
+            { "x": 200, "y": 120 }
+          ]
+        },
+        {
+          "id": "e0",
+          "points": [
+            { "x": 350, "y": 160 },
+            { "x": 200, "y": 160 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Different caption widths share the same leftward rail clearance",
+    "input": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "b",
+          "shape": "squareRect",
+          "width": 143,
+          "height": 67,
+          "label": "Node \"b\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        },
+        {
+          "id": "a",
+          "shape": "squareRect",
+          "width": 143,
+          "height": 67,
+          "label": "Node \"a\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "e2",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "test label",
+          "labelWidth": 6.1,
+          "labelHeight": 23
+        },
+        {
+          "id": "e0",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "test label",
+          "labelWidth": 64.8,
+          "labelHeight": 22.9
+        },
+        {
+          "id": "e1",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "test label",
+          "labelWidth": 121.8,
+          "labelHeight": 22.3
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "b", "x": 310, "y": 0, "width": 160, "height": 160 },
+        { "id": "a", "x": 0, "y": 0, "width": 160, "height": 160 }
+      ],
+      "edges": [
+        {
+          "id": "e2",
+          "points": [
+            { "x": 310, "y": 40 },
+            { "x": 160, "y": 40 }
+          ],
+          "label": { "x": 235.5, "y": 57.5 }
+        },
+        {
+          "id": "e0",
+          "points": [
+            { "x": 310, "y": 80 },
+            { "x": 160, "y": 80 }
+          ],
+          "label": { "x": 235.5, "y": 97.5 }
+        },
+        {
+          "id": "e1",
+          "points": [
+            { "x": 310, "y": 120 },
+            { "x": 160, "y": 120 }
+          ],
+          "label": { "x": 235, "y": 137.5 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Top-down alias with a smaller body gap",
+    "input": {
+      "direction": "TD",
+      "nodes": [
+        {
+          "id": "a",
+          "shape": "squareRect",
+          "width": 214,
+          "height": 65,
+          "label": "Node \"a\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        },
+        {
+          "id": "b",
+          "shape": "squareRect",
+          "width": 214,
+          "height": 65,
+          "label": "Node \"b\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "e0",
+          "source": "b",
+          "target": "a",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "a", "x": 0, "y": 214, "width": 214, "height": 120 },
+        { "id": "b", "x": 0, "y": 0, "width": 214, "height": 120 }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "points": [
+            { "x": 71, "y": 120 },
+            { "x": 71, "y": 214 }
+          ]
+        },
+        {
+          "id": "e0",
+          "points": [
+            { "x": 142, "y": 120 },
+            { "x": 142, "y": 214 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Maximum caption height and clear longitudinal fit",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "b",
+          "shape": "squareRect",
+          "width": 220,
+          "height": 40,
+          "label": "Node \"b\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        },
+        {
+          "id": "a",
+          "shape": "squareRect",
+          "width": 220,
+          "height": 40,
+          "label": "Node \"a\"",
+          "isGroup": false,
+          "labelWidth": 0.0,
+          "labelHeight": 0.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "test label",
+          "labelWidth": 63,
+          "labelHeight": 24
+        },
+        {
+          "id": "e3",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "test label",
+          "labelWidth": 21,
+          "labelHeight": 24
+        },
+        {
+          "id": "e2",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "test label",
+          "labelWidth": 13,
+          "labelHeight": 24
+        },
+        {
+          "id": "e0",
+          "source": "a",
+          "target": "b",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "test label",
+          "labelWidth": 130,
+          "labelHeight": 24
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "b", "x": 370, "y": 0, "width": 220, "height": 200 },
+        { "id": "a", "x": 0, "y": 0, "width": 220, "height": 200 }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "points": [
+            { "x": 220, "y": 40 },
+            { "x": 370, "y": 40 }
+          ],
+          "label": { "x": 295.5, "y": 22 }
+        },
+        {
+          "id": "e3",
+          "points": [
+            { "x": 220, "y": 80 },
+            { "x": 370, "y": 80 }
+          ],
+          "label": { "x": 295.5, "y": 62 }
+        },
+        {
+          "id": "e2",
+          "points": [
+            { "x": 220, "y": 120 },
+            { "x": 370, "y": 120 }
+          ],
+          "label": { "x": 295.5, "y": 102 }
+        },
+        {
+          "id": "e0",
+          "points": [
+            { "x": 220, "y": 160 },
+            { "x": 370, "y": 160 }
+          ],
+          "label": { "x": 295, "y": 142 }
+        }
+      ]
+    }
+  }
+]
