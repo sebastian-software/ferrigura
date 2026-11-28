@@ -2122,3 +2122,141 @@ fn a_mindmaps_branches_take_the_series_palette() {
     let (svg, _) = both_renders(MINDMAP, &config, None);
     assert!(style_sheet(&svg).contains("#d .section-0 polygon{fill:#abcdef;"));
 }
+
+/// A mindmap whose root has four branches, the first with three leaves.
+const MINDMAP_TREE: &str = "mindmap\n  root\n    North\n      one\n      two\n      three\n    East\n    South\n    West\n";
+
+/// The center of the mindmap node with the given number, from its group's `translate`.
+fn mindmap_center(svg: &str, number: usize) -> (f64, f64) {
+    let group = &svg[svg
+        .find(&format!("id=\"d-node_{number}\""))
+        .expect("the node")..];
+    let transform = attribute_values(group, "transform")[0];
+    let inner = transform
+        .strip_prefix("translate(")
+        .and_then(|rest| rest.strip_suffix(')'))
+        .expect("a translate");
+    let (x, y) = inner.split_once(',').expect("two numbers");
+    (x.trim().parse().unwrap(), y.trim().parse().unwrap())
+}
+
+/// The size of the outline of the mindmap node with the given number.
+fn mindmap_size(svg: &str, number: usize) -> (f64, f64) {
+    let group = &svg[svg
+        .find(&format!("id=\"d-node_{number}\""))
+        .expect("the node")..];
+    let rect = &group[group
+        .find("<rect class=\"basic label-container\"")
+        .expect("its rect")..];
+    let rect = &rect[..rect.find("/>").expect("the rect's end")];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    (number("width"), number("height"))
+}
+
+#[test]
+fn a_mindmap_runs_clockwise_around_its_root() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(MINDMAP_TREE, &design(None)).unwrap();
+    // Nodes in pre-order: 0 root, 1 North, 2-4 its leaves, 5 East, 6 South, 7 West.
+    let root = mindmap_center(&svg, 0);
+    let [north, east, south, west] = [1, 5, 6, 7].map(|n| mindmap_center(&svg, n));
+    // The split that evens the sides puts North alone on the right; East, South and West go left,
+    // from bottom to top, so that the order of the text runs clockwise.
+    assert!(north.0 > root.0, "{north:?} right of {root:?}");
+    for branch in [east, south, west] {
+        assert!(branch.0 < root.0, "{branch:?} left of {root:?}");
+    }
+    assert!(
+        east.1 > south.1 && south.1 > west.1,
+        "{east:?} {south:?} {west:?}"
+    );
+    // The branches of the left side start on one line.
+    let inner = |n: usize, center: (f64, f64)| center.0 + mindmap_size(&svg, n).0 / 2.0;
+    assert_eq!(inner(5, east), inner(6, south));
+    assert_eq!(inner(6, south), inner(7, west));
+    // The same text gives the same drawing.
+    assert_eq!(
+        svg,
+        renderer.render_with(MINDMAP_TREE, &design(None)).unwrap()
+    );
+}
+
+#[test]
+fn a_mindmap_node_stands_between_its_children_with_even_room() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(MINDMAP_TREE, &design(None)).unwrap();
+    let north = mindmap_center(&svg, 1);
+    let leaves = [2, 3, 4].map(|n| (mindmap_center(&svg, n), mindmap_size(&svg, n)));
+    // In the order of the text, from top to bottom, beyond their parent.
+    assert!(leaves[0].0.1 < leaves[1].0.1 && leaves[1].0.1 < leaves[2].0.1);
+    for (center, _) in &leaves {
+        assert!(center.0 > north.0);
+    }
+    assert_eq!(north.1, f64::midpoint(leaves[0].0.1, leaves[2].0.1));
+    // The same room between each two siblings.
+    let gap = |a: &((f64, f64), (f64, f64)), b: &((f64, f64), (f64, f64))| {
+        (b.0.1 - b.1.1 / 2.0) - (a.0.1 + a.1.1 / 2.0)
+    };
+    let first = gap(&leaves[0], &leaves[1]);
+    assert!((first - gap(&leaves[1], &leaves[2])).abs() < 1e-9);
+    assert!((first - 10.0).abs() < 1e-9, "{first}");
+}
+
+#[test]
+fn a_mindmap_line_meets_its_nodes_level() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(MINDMAP_TREE, &design(None)).unwrap();
+    let north = mindmap_center(&svg, 1);
+    let (north_width, _) = mindmap_size(&svg, 1);
+    let one = mindmap_center(&svg, 2);
+    let (one_width, _) = mindmap_size(&svg, 2);
+    let points = route(&svg, "edge_1_2");
+    let (first, last) = (points[0], points[points.len() - 1]);
+    // From the middle of the parent's outer side to the middle of the child's inner side, level at
+    // both ends.
+    assert_eq!(first, (north.0 + north_width / 2.0, north.1));
+    assert_eq!(last, (one.0 - one_width / 2.0, one.1));
+    assert_eq!(points[1].1, first.1);
+    assert_eq!(points[points.len() - 2].1, last.1);
+    // A branch's line starts in the root's center and runs level into the branch.
+    let root = mindmap_center(&svg, 0);
+    let branch = route(&svg, "edge_0_5");
+    assert_eq!(branch[0], root);
+    assert_eq!(branch[branch.len() - 2].1, branch[branch.len() - 1].1);
+}
+
+#[test]
+fn a_mindmap_node_is_smaller_the_further_it_stands_from_the_root() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer
+        .render_with("mindmap\n  Word\n    Word\n      Word\n", &design(None))
+        .unwrap();
+    let [root, branch, leaf] = [0, 1, 2].map(|n| mindmap_size(&svg, n));
+    assert!(
+        root.0 > branch.0 && branch.0 > leaf.0,
+        "{root:?} {branch:?} {leaf:?}"
+    );
+    assert!(
+        root.1 > branch.1 && branch.1 > leaf.1,
+        "{root:?} {branch:?} {leaf:?}"
+    );
+    // The default draws every depth alike.
+    let plain = renderer
+        .render_with("mindmap\n  Word\n    Word\n      Word\n", &default(None))
+        .unwrap();
+    assert_eq!(mindmap_size(&plain, 1), mindmap_size(&plain, 2));
+}
+
+#[test]
+fn a_mindmap_keeps_a_layout_its_configuration_names() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "---\nconfig:\n  layout: tidy-tree\n---\nmindmap\n  root\n    a\n    b\n    c\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    // The tidy tree alternates the branches between the sides, the first one on the left. The
+    // mode's own layout would put the first two on the right.
+    let root = mindmap_center(&svg, 0);
+    assert!(mindmap_center(&svg, 1).0 < root.0);
+    assert!(mindmap_center(&svg, 2).0 > root.0);
+    let elk = "---\nconfig:\n  layout: elk\n---\nmindmap\n  root\n    a\n    b\n";
+    assert!(renderer.render_with(elk, &design(None)).is_ok());
+}

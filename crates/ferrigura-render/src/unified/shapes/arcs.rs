@@ -108,8 +108,13 @@ pub(super) fn bang(input: &ShapeInput<'_>) -> Part {
         number(translate_x),
         number(translate_y),
     );
-    // The label is moved to `translate(-W/2, -H/2)` (`bang.ts`), not to the centered offset.
-    let label_offset = Point::new(-label.bbox.width / 2.0, -label.bbox.height / 2.0);
+    // The label is moved to `translate(-W/2, -H/2)` (`bang.ts`), not to the centered offset, which
+    // puts a centered label's lines left of the shape; the design mode centers it.
+    let label_offset = if input.config.section.design.is_some() {
+        util::centered_label_offset(&label)
+    } else {
+        Point::new(-label.bbox.width / 2.0, -label.bbox.height / 2.0)
+    };
     Part {
         svg,
         after_label: String::new(),
@@ -161,8 +166,13 @@ pub(super) fn cloud(input: &ShapeInput<'_>) -> Part {
         number(translate_x),
         number(translate_y),
     );
-    // The label is moved to `translate(-W/2, -H/2)` (`cloud.ts`), not to the centered offset.
-    let label_offset = Point::new(-label.bbox.width / 2.0, -label.bbox.height / 2.0);
+    // The label is moved to `translate(-W/2, -H/2)` (`cloud.ts`), not to the centered offset, which
+    // puts a centered label's lines left of the shape; the design mode centers it.
+    let label_offset = if input.config.section.design.is_some() {
+        util::centered_label_offset(&label)
+    } else {
+        Point::new(-label.bbox.width / 2.0, -label.bbox.height / 2.0)
+    };
     Part {
         svg,
         after_label: String::new(),
