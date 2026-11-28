@@ -121,8 +121,6 @@ Weighed and not chosen: changing the default look, which breaks the comparison w
 - A diagram type has the mode in its style sheet and shapes, and a new type gains it there.
 - Roles are read from the shape and the diagram type alone, a class's from its first annotation, a sequence participant's from its type and a frame's from its keyword. A diagram that uses one of those shapes for every node is colored throughout.
 - A diagram in the mode takes longer to lay out than in the default rendering. ELK places the nodes with network simplex where the default uses Brandes & Koepf, the mode's placement solves the same graph again in each of its passes, and a node whose self-loops or notes do not stand clear lays the whole diagram out again. Most diagrams take about as long as in the default; a large one with such a node takes several times as long ([LEARNINGS](../LEARNINGS.md#elks-network-simplex-is-quadratic-and-the-port-takes-the-same-steps-faster)).
-- A diagram type gains the mode in its style sheet and shapes; the option error lists nothing and names no types, so adding a type changes no message.
-- Roles are read from the shape and the diagram type alone, and a class's from its first annotation. A diagram that uses one of those shapes for every node is colored throughout.
 
 ## Related
 
