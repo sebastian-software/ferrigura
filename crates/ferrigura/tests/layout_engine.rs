@@ -124,6 +124,10 @@ fn tala_draws_connected_paths_and_bounded_nested_subgraphs() {
             "flowchart LR\nsubgraph System\nA[Worker]\nend\nA --> B[Queue]",
             &["System", "Worker", "Queue"][..],
         ),
+        (
+            "flowchart LR\nSensor -->|reading| Panel\nSensor -->|rate| Panel",
+            &["Sensor", "Panel", "reading", "rate"][..],
+        ),
     ] {
         let svg = renderer
             .render_with_engine(text, &options, LayoutEngine::Tala)

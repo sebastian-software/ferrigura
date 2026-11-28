@@ -109,3 +109,20 @@ TALA support failures are recorded with their diagnostics in the JSON.
 The [recorded result](./benchmark-results.json) identifies the versions,
 hardware, seed and build profile, plus median, p95 and memory for each case.
 It uses the instrumented source based on the named Ferrigura revision.
+
+## Replay native layout fixtures
+
+The Rust crate tests compare native coordinates against the committed Go
+captures with no Go installation. To verify both sides against a fresh
+pinned bridge, build it as described above, then run:
+
+```sh
+cargo build --offline --locked --manifest-path tools/tala-pilot/rust/Cargo.toml
+node tools/tala-pilot/check-native.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+The verifier runs each stored measured graph through both engines. It
+compares node boxes, ordered route points, and label positions. The Rust
+renderer receives only the native engine's geometry in an opt-in render.

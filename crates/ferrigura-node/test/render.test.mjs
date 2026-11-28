@@ -1,7 +1,8 @@
 // The addon in Node.js. The test builds the library, then loads it with `process.dlopen`, which is how
 // Node loads a `.node` file.
 //
-// Run from the repository root: `node --test crates/ferrigura-node/test/render.test.mjs`
+// Run from the repository root: `node --test crates/ferrigura-node/test/render.test.mjs`.
+// Set FERRIGURA_TEST_TALA=1 to exercise the experimental build.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -10,7 +11,10 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
-execFileSync('cargo', ['build', '-q', '-p', 'ferrigura-node'], { cwd: root, stdio: 'inherit' });
+const tala = process.env.FERRIGURA_TEST_TALA === '1';
+const build = ['build', '--locked', '-q', '-p', 'ferrigura-node'];
+if (tala) build.push('--features', 'experimental-tala');
+execFileSync('cargo', build, { cwd: root, stdio: 'inherit' });
 
 const library =
   {
@@ -32,11 +36,22 @@ void test('the default rendering and compat are chosen per render', () => {
   assert.equal(renderer.render(text, { compat: true }), compatible);
 });
 
-void test('TALA selection in the default addon reports the required Cargo feature', () => {
-  const flow = 'flowchart LR\n A[Input]\n';
+void test('TALA selection follows the addon build feature', () => {
+  const flow = 'flowchart TB\n A[Worker] -->|retry| A\n';
+  const options = { layoutEngine: 'tala' };
+  if (!tala) {
+    assert.throws(() => render(flow, undefined, options), /enable the experimental-tala feature/);
+    return;
+  }
+
+  const svg = render(flow, undefined, options);
+  assert.match(svg, /^<svg /);
+  assert.match(svg, />retry<\/tspan>/);
+  assert.equal(new Renderer().render(flow, options), svg);
+  assert.notEqual(render(flow, undefined, { layoutEngine: 'elk' }), svg);
   assert.throws(
-    () => render(flow, undefined, { layoutEngine: 'tala' }),
-    /enable the experimental-tala feature/
+    () => render(flow, undefined, { ...options, compat: true }),
+    /cannot be used with compatibility mode/
   );
 });
 
