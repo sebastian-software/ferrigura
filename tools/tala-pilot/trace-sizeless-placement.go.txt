@@ -24,7 +24,12 @@ func tracePilotSizelessPlacement(stage string, seed []int64, g *layoutgraph.Grap
 			"id": id, "width": n.Width, "height": n.Height, "shape": "rect",
 			"isGroup": false, "label": "", "labelWidth": 0, "labelHeight": 0,
 		})
-		positions = append(positions, map[string]any{"id": id, "x": n.TopLeft.X, "y": n.TopLeft.Y})
+		position := map[string]any{"id": id, "x": n.TopLeft.X, "y": n.TopLeft.Y}
+		if stage == "sizedTransition" {
+			position["width"] = n.Width
+			position["height"] = n.Height
+		}
+		positions = append(positions, position)
 	}
 	edges := make([]map[string]any, 0, len(g.Edges))
 	for i, e := range g.Edges {
@@ -33,19 +38,28 @@ func tracePilotSizelessPlacement(stage string, seed []int64, g *layoutgraph.Grap
 		if !fromOK || !toOK {
 			return
 		}
+		var label string
+		var width, height float64
+		if e.Label != nil {
+			label, width, height = e.Label.Text, e.Label.Width, e.Label.Height
+		}
 		edges = append(edges, map[string]any{
 			"id": fmt.Sprintf("e%d", i), "source": from, "target": to,
 			"sourceArrow": e.HasSourceArrow(), "targetArrow": e.HasTargetArrow(),
-			"label": "", "labelWidth": 0, "labelHeight": 0,
+			"label": label, "labelWidth": width, "labelHeight": height,
 		})
 	}
 	direction := map[geo.Orientation]string{
 		geo.Right: "LR", geo.Left: "RL", geo.Bottom: "TB", geo.Top: "BT",
 	}[g.Direction(g.Nodes[0].Container)]
+	var expected any = map[string]any{"cellSize": g.CellSize, "nodes": positions}
+	if stage == "sizedTransition" {
+		expected = positions
+	}
 	trace := map[string]any{
 		"stage": stage, "seed": seed[0],
 		"graph": map[string]any{"direction": direction, "nodes": nodes, "edges": edges},
-		"expected": map[string]any{"cellSize": g.CellSize, "nodes": positions},
+		"expected": expected,
 	}
 	if data, err := json.Marshal(trace); err == nil {
 		fmt.Fprintf(os.Stderr, "TALA_PILOT_SIZELESS %s\n", data)

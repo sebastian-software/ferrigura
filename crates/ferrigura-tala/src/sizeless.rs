@@ -18,6 +18,9 @@ use crate::stress_initialize::initialize_by_graph_distance;
 use crate::{Error, Graph};
 
 mod compaction;
+mod transition;
+
+pub use transition::transition_to_sized;
 
 const ITERATIONS_PER_SQRT_NODE: f64 = 90.0;
 const COMPACTION_ITERATION: usize = 9;

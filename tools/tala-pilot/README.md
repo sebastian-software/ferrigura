@@ -171,9 +171,10 @@ live trace after the comparison passes.
 The Rust stage initializes a flat rectangular component, then optimizes
 its positions using Go-compatible shuffles and jitter and alternating
 compactions. The Observatory check compares every ordered grid location
-with Go after the first pass and after the complete sizeless phase for
-all three default seeds. The observable layout remains unchanged by the
-trace.
+with Go after the first pass and the complete sizeless phase for all
+three default seeds. The check also compares the node boxes before
+sized optimization, after compaction accounts for node sizes and
+measured edge captions. The trace preserves the final Go layout.
 
 ```sh
 node tools/tala-pilot/trace-overlay.mjs \

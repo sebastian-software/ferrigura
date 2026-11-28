@@ -5,6 +5,7 @@
 use serde::Deserialize;
 
 use super::*;
+use crate::NodeGeometry;
 
 const OCCUPIED: [Cell; 5] = [(1, 0), (0, 1), (1, 2), (2, 1), (0, 0)];
 
@@ -58,24 +59,48 @@ struct InitializerFixture {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct ObservatoryFixture {
+    edge_labels: Vec<EdgeLabel>,
+    seeds: Vec<ExpectedPlacement>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EdgeLabel {
+    id: String,
+    label: String,
+    label_width: f64,
+    label_height: f64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ExpectedPlacement {
     seed: i64,
     first_pass: Grid,
     full_phase: Grid,
+    sized_transition: Vec<NodeGeometry>,
 }
 
 #[test]
 fn seeded_observatory_placement_matches_the_go_stages() {
     let source: Vec<InitializerFixture> =
         serde_json::from_str(include_str!("../initialize/fixtures.json")).unwrap();
-    let graph = source
+    let mut graph = source
         .into_iter()
         .find(|fixture| fixture.name == "Cyclic observatory services")
         .unwrap()
         .graph;
-    let passes: Vec<ExpectedPlacement> =
+    let fixture: ObservatoryFixture =
         serde_json::from_str(include_str!("observatory.json")).unwrap();
-    for expected in passes {
+    assert_eq!(graph.edges.len(), fixture.edge_labels.len());
+    for (edge, label) in graph.edges.iter_mut().zip(fixture.edge_labels) {
+        assert_eq!(edge.id, label.id);
+        edge.label = label.label;
+        edge.label_width = label.label_width;
+        edge.label_height = label.label_height;
+    }
+    for expected in fixture.seeds {
         let seed = expected.seed;
         assert_eq!(
             first_pass(&graph, seed),
@@ -86,6 +111,11 @@ fn seeded_observatory_placement_matches_the_go_stages() {
             optimize_phase(&graph, seed),
             Ok(expected.full_phase),
             "phase, seed {seed}"
+        );
+        assert_eq!(
+            transition_to_sized(&graph, seed),
+            Ok(expected.sized_transition),
+            "sized transition, seed {seed}"
         );
     }
 }

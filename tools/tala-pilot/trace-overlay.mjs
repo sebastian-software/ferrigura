@@ -100,9 +100,16 @@ function traceSizelessPlacement(source) {
     optimize,
     optimize + '\t\tif i == 0 { tracePilotSizelessPlacement("firstPass", seed, subgraph) }\n'
   );
-  return replaceOnce(
+  const withFullPhase = replaceOnce(
     withFirstPass,
     transition,
     '\ttracePilotSizelessPlacement("fullPhase", seed, subgraph)\n' + transition
+  );
+  const aligned =
+    '\tif err := validateGridAlignment(subgraph); err != nil {\n' + '\t\treturn err\n\t}\n';
+  return replaceOnce(
+    withFullPhase,
+    aligned,
+    aligned + '\ttracePilotSizelessPlacement("sizedTransition", seed, subgraph)\n'
   );
 }

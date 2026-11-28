@@ -14,9 +14,14 @@ const input = await readFile(
   new URL('captures/observatory-services.measured.json', import.meta.url),
   'utf8'
 );
-const fixtures = await readFixture('sizeless/observatory.json');
+const { edgeLabels, seeds } = await readFixture('sizeless/observatory.json');
 const initialization = await readFixture('initialize/fixtures.json');
 const { graph } = initialization.find(({ name }) => name === 'Cyclic observatory services');
+assert.equal(edgeLabels.length, graph.edges.length);
+for (const [index, edge] of graph.edges.entries()) {
+  assert.equal(edge.id, edgeLabels[index].id);
+  Object.assign(edge, edgeLabels[index]);
+}
 const options = { input, encoding: 'utf8', maxBuffer: 8_000_000, timeout: 30_000 };
 const baseline = execFileSync(reference, ['--default'], options);
 const trace = spawnSync(tracedReference, ['--default'], {
@@ -32,26 +37,31 @@ const captures = trace.stderr
   .split('\n')
   .filter((line) => line.startsWith(prefix))
   .map((line) => JSON.parse(line.slice(prefix.length)));
-assert.equal(captures.length, fixtures.length * 2, 'Expected both stages for each default seed');
+assert.equal(captures.length, seeds.length * 3, 'Expected all stages for each default seed');
 
-for (const { seed, firstPass, fullPhase } of fixtures) {
+for (const { seed, firstPass, fullPhase, sizedTransition } of seeds) {
   const stages = [
     ['firstPass', '--sizeless-first-pass', firstPass],
     ['fullPhase', '--sizeless-phase', fullPhase],
+    ['sizedTransition', '--sized-transition', sizedTransition],
   ];
   for (const [stage, command, expected] of stages) {
     const capture = captures.find((item) => item.seed === seed && item.stage === stage);
     assert(capture, `Missing Go trace for ${stage}, seed ${seed}`);
     assert.deepEqual(capture.graph, graph, `${stage}, seed ${seed}: placement input changed`);
-    assert.deepEqual(capture.expected, expected, `${stage}, seed ${seed}: saved Go grid changed`);
+    assert.deepEqual(
+      capture.expected,
+      expected,
+      `${stage}, seed ${seed}: saved Go geometry changed`
+    );
     const run = execFileSync(rust, [command], {
       ...options,
       input: JSON.stringify({ graph, seed }),
     });
-    assert.deepEqual(JSON.parse(run), expected, `${stage}, seed ${seed}: native grid differs`);
+    assert.deepEqual(JSON.parse(run), expected, `${stage}, seed ${seed}: native geometry differs`);
   }
 }
-console.log(`Matched ${captures.length} sizeless placement stages with pinned Go.`);
+console.log(`Matched ${captures.length} seeded placement stages with pinned Go.`);
 
 async function readFixture(path) {
   const source = new URL('../../crates/ferrigura-tala/src/', import.meta.url);

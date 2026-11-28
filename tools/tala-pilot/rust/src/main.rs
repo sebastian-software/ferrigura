@@ -54,6 +54,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             let result = ferrigura_tala::sizeless::optimize_phase(&graph, seed)?;
             serde_json::to_writer(output, &result)?;
         }
+        Some("--sized-transition") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::transition_to_sized(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
         Some("--ovg-seed") => {
             let nodes: Vec<_> = serde_json::from_reader(input)?;
             let seed = ferrigura_tala::ovg_seed::rectangular_visibility_seed(&nodes)?;
@@ -77,7 +82,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         _ => {
             return Err(concat!(
                 "expected --layout, --translate, --prescale, --initialize, --initialize-by-distance, ",
-                "--sizeless-first-pass, --sizeless-phase, --ovg-seed, --simplify, --balance, or no argument"
+                "--sizeless-first-pass, --sizeless-phase, --sized-transition, --ovg-seed, ",
+                "--simplify, --balance, or no argument"
             )
             .into());
         }
