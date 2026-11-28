@@ -153,10 +153,11 @@ fn positioned_optimizer(
             "sourceArrow": false, "targetArrow": false, "label": "", "labelWidth": 0, "labelHeight": 0
         })).collect::<Vec<_>>()
     })).unwrap();
-    let mut optimizer = SizedOptimizer::new(&graph, 1).unwrap();
+    let order = (0..nodes.len()).collect::<Vec<_>>();
+    let mut optimizer = SizedOptimizer::new(&graph, 1, &order).unwrap();
     optimizer.state.phase.rng = GoRand::new(1);
     optimizer.state.nodes = nodes;
-    optimizer.scorer = EdgeCost::new(&graph, &optimizer.state.nodes, cell).unwrap();
+    optimizer.scorer = EdgeCost::new(&graph, &optimizer.state.nodes, cell, &order).unwrap();
     optimizer.cell = cell;
     optimizer
 }

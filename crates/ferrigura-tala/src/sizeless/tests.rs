@@ -62,6 +62,7 @@ struct InitializerFixture {
 #[serde(rename_all = "camelCase")]
 struct ObservatoryFixture {
     edge_labels: Vec<EdgeLabel>,
+    obstacle_order: Vec<usize>,
     seeds: Vec<ExpectedPlacement>,
 }
 
@@ -85,6 +86,10 @@ struct ExpectedPlacement {
     first_sized_edge_costs: SizedEdgeCosts,
     first_sized_move: Point,
     first_sized_pass: Vec<NodeGeometry>,
+    first_sized_compaction: Vec<NodeGeometry>,
+    sized_phase: Vec<NodeGeometry>,
+    directed_component: Vec<NodeGeometry>,
+    placed_component: Vec<NodeGeometry>,
 }
 
 #[test]
@@ -105,6 +110,7 @@ fn seeded_observatory_placement_matches_the_go_stages() {
         edge.label_width = label.label_width;
         edge.label_height = label.label_height;
     }
+    let order = &fixture.obstacle_order;
     for expected in fixture.seeds {
         let seed = expected.seed;
         assert_eq!(
@@ -123,11 +129,11 @@ fn seeded_observatory_placement_matches_the_go_stages() {
             "sized transition, seed {seed}"
         );
         assert_eq!(
-            first_sized_candidates(&graph, seed),
+            first_sized_candidates(&graph, seed, order),
             Ok(expected.first_sized_candidates),
             "first sized candidates, seed {seed}"
         );
-        let scores = first_sized_edge_costs(&graph, seed).unwrap();
+        let scores = first_sized_edge_costs(&graph, seed, order).unwrap();
         let expected_scores = expected.first_sized_edge_costs;
         assert_eq!(scores.node, expected_scores.node);
         assert_eq!(scores.symmetry, expected_scores.symmetry);
@@ -145,14 +151,31 @@ fn seeded_observatory_placement_matches_the_go_stages() {
             }
         }
         assert_eq!(
-            first_sized_move(&graph, seed),
+            first_sized_move(&graph, seed, order),
             Ok(expected.first_sized_move),
             "first sized move, seed {seed}"
         );
         assert_eq!(
-            first_sized_pass(&graph, seed),
+            first_sized_pass(&graph, seed, order),
             Ok(expected.first_sized_pass),
             "first sized pass, seed {seed}"
+        );
+        assert_eq!(
+            first_sized_compaction(&graph, seed, order),
+            Ok(expected.first_sized_compaction),
+            "first sized compaction, seed {seed}"
+        );
+        let mut bodies = optimize_sized_phase(&graph, seed, order).unwrap();
+        assert_eq!(bodies, expected.sized_phase, "sized phase, seed {seed}");
+        direct_flat_component(&graph, &mut bodies).unwrap();
+        assert_eq!(
+            bodies, expected.directed_component,
+            "directed component, seed {seed}"
+        );
+        assert_eq!(
+            place_flat_component(&graph, seed, order),
+            Ok(expected.placed_component),
+            "placed component, seed {seed}"
         );
     }
 }

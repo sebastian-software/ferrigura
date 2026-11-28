@@ -9,106 +9,12 @@
 use std::collections::HashMap;
 
 use super::{PhaseState, compaction::Axis, run};
-use crate::layout_graph::{Direction, LayoutGraph, Shape};
-use crate::{Edge, Error, Graph, Node, NodeGeometry, valid_dimension};
+use crate::{Error, Graph, NodeGeometry, Point, valid_dimension};
 
 const NODE_GAP: f64 = 20.0;
 const CONNECTED_NODE_GAP: f64 = 60.0;
 const EDGE_LABEL_PADDING: f64 = 10.0;
 const TRANSITION_FACTOR: f64 = 3.0;
-
-/// Runs translation, prescale and seeded placement on the measured input of a
-/// flat rectangular component whose topology is unchanged by preprocessing.
-///
-/// # Errors
-/// Rejects invalid measurements, nested or nonrectangular input, or topology
-/// outside the flat placement stages.
-pub fn sized_transition_from_measurements(
-    input: &Graph,
-    seed: i64,
-) -> Result<Vec<NodeGeometry>, Error> {
-    transition_to_sized(&measured_component(input)?, seed)
-}
-
-/// Runs the first complete sized-search pass from Ferrigura's measured input.
-///
-/// # Errors
-/// Returns an error for invalid measurements, unsupported topology, or placement work limits.
-pub fn first_sized_pass_from_measurements(
-    input: &Graph,
-    seed: i64,
-) -> Result<Vec<NodeGeometry>, Error> {
-    super::first_sized_pass(&measured_component(input)?, seed)
-}
-
-fn measured_component(input: &Graph) -> Result<Graph, Error> {
-    let mut graph = LayoutGraph::translate(input)?;
-    if graph.roots.len() != graph.nodes.len()
-        || graph.nodes.iter().any(|node| node.shape != Shape::Square)
-    {
-        return Err(Error::UnsupportedGraph);
-    }
-    graph.prescale();
-    let components = graph.flat_components();
-    let [component] = components.as_slice() else {
-        return Err(Error::UnsupportedGraph);
-    };
-    let direction = graph.direction.map(|direction| {
-        match direction {
-            Direction::Top => "BT",
-            Direction::Right => "LR",
-            Direction::Bottom => "TB",
-            Direction::Left => "RL",
-        }
-        .to_owned()
-    });
-    let ids = |index: usize| &input.nodes[graph.nodes[index].input_index].id;
-    let nodes = component
-        .nodes
-        .iter()
-        .map(|&index| {
-            let node = &graph.nodes[index];
-            Node {
-                id: ids(index).clone(),
-                parent_id: None,
-                direction: None,
-                is_group: false,
-                shape: "rect".into(),
-                width: node.width,
-                height: node.height,
-                label: String::new(),
-                label_width: 0.0,
-                label_height: 0.0,
-            }
-        })
-        .collect();
-    let edges = component
-        .edges
-        .iter()
-        .map(|&index| {
-            let edge = &graph.edges[index];
-            let (label, label_width, label_height) =
-                edge.label.as_ref().map_or_else(Default::default, |label| {
-                    (label.text.clone(), label.width, label.height)
-                });
-            Edge {
-                id: input.edges[index].id.clone(),
-                source: ids(edge.from).clone(),
-                target: ids(edge.to).clone(),
-                source_arrow: edge.source_arrow,
-                target_arrow: edge.target_arrow,
-                label,
-                label_width,
-                label_height,
-            }
-        })
-        .collect();
-    Ok(Graph {
-        direction,
-        nodes,
-        edges,
-    })
-}
 
 /// Initializes the sized optimizer's rectangular bodies on the grid.
 /// The transition inflates each axis of the preceding sizeless solution.
@@ -207,30 +113,36 @@ pub(super) fn edge_gaps(graph: &Graph) -> Result<Vec<Vec<Spacing>>, Error> {
 
 fn transition_axis(nodes: &mut [NodeGeometry], gaps: &[Vec<Spacing>], axis: Axis, cell: f64) {
     let predecessors = visibility_predecessors(nodes, gaps, axis);
-    let mut order: Vec<_> = (0..nodes.len()).collect();
-    order.sort_unstable_by(|&a, &b| {
-        start(axis, &nodes[a])
-            .total_cmp(&start(axis, &nodes[b]))
-            .then(a.cmp(&b))
-    });
-    for target in order {
-        let anchor = predecessors[target]
-            .iter()
-            .copied()
-            .fold(None, |best, index| {
-                if best.is_none_or(|old| end(axis, &nodes[index]) > end(axis, &nodes[old])) {
-                    Some(index)
-                } else {
-                    best
-                }
-            });
-        let Some(anchor) = anchor else { continue };
-        let body = &nodes[anchor];
-        let mut floor =
-            ((start(axis, body) + TRANSITION_FACTOR * length(axis, body)) / cell).ceil();
-        while floor * cell - end(axis, body) <= CONNECTED_NODE_GAP {
-            floor += 1.0;
-        }
+    inflate_axis(
+        nodes,
+        gaps,
+        &predecessors,
+        axis,
+        cell,
+        TRANSITION_FACTOR,
+        true,
+    );
+}
+
+pub(super) fn inflate_axis(
+    nodes: &mut [NodeGeometry],
+    gaps: &[Vec<Spacing>],
+    predecessors: &[Vec<usize>],
+    axis: Axis,
+    cell: f64,
+    factor: f64,
+    transition: bool,
+) {
+    for target in ordered_along_axis(nodes, axis) {
+        let Some(anchor) = nearest_predecessor(nodes, predecessors, axis, target) else {
+            continue;
+        };
+        let spacing = if transition {
+            CONNECTED_NODE_GAP
+        } else {
+            oriented_body_gap(&nodes[target], &nodes[anchor], gaps[target][anchor])
+        };
+        let floor = compaction_floor(&nodes[anchor], axis, cell, factor, spacing);
         let coordinate = match axis {
             Axis::Horizontal => &mut nodes[target].x,
             Axis::Vertical => &mut nodes[target].y,
@@ -239,7 +151,84 @@ fn transition_axis(nodes: &mut [NodeGeometry], gaps: &[Vec<Spacing>], axis: Axis
     }
 }
 
-fn visibility_predecessors(
+pub(super) fn ordered_along_axis(nodes: &[NodeGeometry], axis: Axis) -> Vec<usize> {
+    let mut order: Vec<_> = (0..nodes.len()).collect();
+    order.sort_unstable_by(|&a, &b| {
+        start(axis, &nodes[a])
+            .total_cmp(&start(axis, &nodes[b]))
+            .then(a.cmp(&b))
+    });
+    order
+}
+
+pub(super) fn nearest_predecessor(
+    nodes: &[NodeGeometry],
+    predecessors: &[Vec<usize>],
+    axis: Axis,
+    target: usize,
+) -> Option<usize> {
+    predecessors[target]
+        .iter()
+        .copied()
+        .fold(None, |best, index| {
+            if best.is_none_or(|old| end(axis, &nodes[index]) > end(axis, &nodes[old])) {
+                Some(index)
+            } else {
+                best
+            }
+        })
+}
+
+pub(super) fn compaction_floor(
+    anchor: &NodeGeometry,
+    axis: Axis,
+    cell: f64,
+    factor: f64,
+    gap: f64,
+) -> f64 {
+    let mut floor = ((start(axis, anchor) + factor * length(axis, anchor)) / cell).ceil();
+    while floor * cell - end(axis, anchor) <= gap {
+        floor += 1.0;
+    }
+    floor
+}
+
+pub(super) fn oriented_body_gap(
+    first: &NodeGeometry,
+    second: &NodeGeometry,
+    spacing: Spacing,
+) -> f64 {
+    oriented_gap(
+        first.x,
+        first.y,
+        first.width,
+        first.height,
+        second,
+        spacing.gap(),
+    )
+}
+
+pub(super) fn overlaps_at(
+    first: &NodeGeometry,
+    second: &NodeGeometry,
+    point: Point,
+    spacing: Spacing,
+) -> bool {
+    let gap = oriented_gap(
+        point.x,
+        point.y,
+        first.width,
+        first.height,
+        second,
+        spacing.gap(),
+    );
+    point.x < second.x + second.width + gap
+        && point.x + first.width + gap > second.x
+        && point.y < second.y + second.height + gap
+        && point.y + first.height + gap > second.y
+}
+
+pub(super) fn visibility_predecessors(
     nodes: &[NodeGeometry],
     gaps: &[Vec<Spacing>],
     axis: Axis,
@@ -251,14 +240,7 @@ fn visibility_predecessors(
             if start(axis, first) >= start(axis, second) {
                 continue;
             }
-            let gap = oriented_gap(
-                first.x,
-                first.y,
-                first.width,
-                first.height,
-                second,
-                gaps[first_index][second_index].gap(),
-            );
+            let gap = oriented_body_gap(first, second, gaps[first_index][second_index]);
             if start(across, first) > end(across, second) + gap
                 || end(across, first) + gap < start(across, second)
             {
@@ -297,7 +279,7 @@ pub(super) fn oriented_gap(
     }
 }
 
-fn start(axis: Axis, body: &NodeGeometry) -> f64 {
+pub(super) fn start(axis: Axis, body: &NodeGeometry) -> f64 {
     match axis {
         Axis::Horizontal => body.x,
         Axis::Vertical => body.y,
@@ -311,6 +293,6 @@ fn length(axis: Axis, body: &NodeGeometry) -> f64 {
     }
 }
 
-fn end(axis: Axis, body: &NodeGeometry) -> f64 {
+pub(super) fn end(axis: Axis, body: &NodeGeometry) -> f64 {
     start(axis, body) + length(axis, body)
 }

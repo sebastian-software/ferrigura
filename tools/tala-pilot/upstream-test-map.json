@@ -32,6 +32,12 @@
   "adapter_test.go#TestNormalizeSeeds": [
     "seed_selection::tests::normalize_seeds_in_first_seen_order"
   ],
+  "internal/placement/extracted_kernels_test.go#TestCompareDirectionCountsIsReflexiveAndPreservesTies": [
+    "sizeless::direct::tests::direction_count_comparison_is_reflexive_and_stable"
+  ],
+  "internal/placement/extracted_kernels_test.go#TestDirectionTransforms": [
+    "sizeless::direct::tests::direction_transforms_follow_primary_and_secondary_votes"
+  ],
   "internal/placement/sized_optimizer_test.go#TestBestSwapCandidate": [
     "sizeless::sized_candidates::tests::best_swap_candidate_respects_adjacent_spacing"
   ],

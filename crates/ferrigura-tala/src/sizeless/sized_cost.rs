@@ -34,6 +34,7 @@ pub(super) struct EdgeCost {
     direction: Option<i32>,
     cell_size: f64,
     turn_cost: f64,
+    obstacle_order: Vec<usize>,
 }
 
 impl EdgeCost {
@@ -41,7 +42,18 @@ impl EdgeCost {
         graph: &Graph,
         nodes: &[NodeGeometry],
         cell_size: f64,
+        obstacle_order: &[usize],
     ) -> Result<Self, Error> {
+        if obstacle_order.len() != nodes.len() {
+            return Err(Error::InvalidGraph);
+        }
+        let mut seen = vec![false; nodes.len()];
+        for &index in obstacle_order {
+            let visited = seen.get_mut(index).ok_or(Error::InvalidGraph)?;
+            if std::mem::replace(visited, true) {
+                return Err(Error::InvalidGraph);
+            }
+        }
         let indices: HashMap<_, _> = nodes
             .iter()
             .enumerate()
@@ -82,6 +94,7 @@ impl EdgeCost {
             direction: preferred_direction(graph)?,
             cell_size,
             turn_cost,
+            obstacle_order: obstacle_order.to_vec(),
         })
     }
 
@@ -138,11 +151,11 @@ impl EdgeCost {
                 continue;
             };
             let obstacles = || {
-                nodes
+                self.obstacle_order
                     .iter()
-                    .enumerate()
-                    .filter(|&(index, _)| index != node && index != edge.neighbor)
-                    .map(|(_, body)| Bounds::from(body))
+                    .copied()
+                    .filter(|&index| index != node && index != edge.neighbor)
+                    .map(|index| Bounds::from(&nodes[index]))
             };
             let mut distance = bounds.distance_to(adjacent);
             if relative.abs() % 2 == 1 {
@@ -280,7 +293,7 @@ impl EdgeCost {
     }
 }
 
-fn opposite(direction: i32) -> i32 {
+pub(super) fn opposite(direction: i32) -> i32 {
     (direction + 7).rem_euclid(8) - 3
 }
 

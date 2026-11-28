@@ -10,8 +10,8 @@ use super::{Cell, MAX_OPTIMIZATION_WORK, Neighbor, Work, node_score, preferred_c
 use crate::Error;
 
 const MIN_SPACING: i32 = 3;
-const MAX_ROUNDS: usize = 20;
-const MAX_CANDIDATES: i32 = 30_003;
+pub(super) const MAX_ROUNDS: usize = 20;
+pub(super) const MAX_CANDIDATES: i32 = 30_003;
 
 #[derive(Clone, Copy)]
 pub(super) enum Axis {

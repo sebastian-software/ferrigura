@@ -16,6 +16,9 @@ use crate::go_rand::GoRand;
 use crate::{Error, Graph, NodeGeometry, Point};
 
 mod adjustments;
+mod compaction;
+
+pub use compaction::{first_sized_compaction, optimize_sized_phase, sized_phase_snapshots};
 
 #[cfg(test)]
 mod tests;
@@ -36,8 +39,12 @@ pub struct SizedCandidates {
 /// # Errors
 /// Returns an error if the flat rectangular component is unsupported or outside
 /// the bounded placement search.
-pub fn first_sized_candidates(graph: &Graph, seed: i64) -> Result<SizedCandidates, Error> {
-    let mut optimizer = SizedOptimizer::new(graph, seed)?;
+pub fn first_sized_candidates(
+    graph: &Graph,
+    seed: i64,
+    obstacle_order: &[usize],
+) -> Result<SizedCandidates, Error> {
+    let mut optimizer = SizedOptimizer::new(graph, seed, obstacle_order)?;
     let mut work = Work(MAX_OPTIMIZATION_WORK);
     let node = optimizer.first_node(&mut work)?;
     optimizer.candidates(node, optimizer.state.phase.temperature, &mut work)
@@ -57,24 +64,36 @@ pub struct SizedEdgeCosts {
 ///
 /// # Errors
 /// Returns an error if the component or its search exceeds the placement limits.
-pub fn first_sized_edge_costs(graph: &Graph, seed: i64) -> Result<SizedEdgeCosts, Error> {
-    Ok(first_sized_evaluation(graph, seed)?.0)
+pub fn first_sized_edge_costs(
+    graph: &Graph,
+    seed: i64,
+    obstacle_order: &[usize],
+) -> Result<SizedEdgeCosts, Error> {
+    Ok(first_sized_evaluation(graph, seed, obstacle_order)?.0)
 }
 
 /// Returns the location selected by the first sized move.
 ///
 /// # Errors
 /// Returns an error if the component or its search exceeds the placement limits.
-pub fn first_sized_move(graph: &Graph, seed: i64) -> Result<Point, Error> {
-    let point = first_sized_evaluation(graph, seed)?.1;
+pub fn first_sized_move(
+    graph: &Graph,
+    seed: i64,
+    obstacle_order: &[usize],
+) -> Result<Point, Error> {
+    let point = first_sized_evaluation(graph, seed, obstacle_order)?.1;
     Ok(Point {
         x: point.x + 0.0,
         y: point.y + 0.0,
     })
 }
 
-fn first_sized_evaluation(graph: &Graph, seed: i64) -> Result<(SizedEdgeCosts, Point), Error> {
-    let mut optimizer = SizedOptimizer::new(graph, seed)?;
+fn first_sized_evaluation(
+    graph: &Graph,
+    seed: i64,
+    obstacle_order: &[usize],
+) -> Result<(SizedEdgeCosts, Point), Error> {
+    let mut optimizer = SizedOptimizer::new(graph, seed, obstacle_order)?;
     let mut work = Work(MAX_OPTIMIZATION_WORK);
     let node = optimizer.first_node(&mut work)?;
     let candidates = optimizer.candidates(node, optimizer.state.phase.temperature, &mut work)?;
@@ -98,8 +117,12 @@ fn first_sized_evaluation(graph: &Graph, seed: i64) -> Result<(SizedEdgeCosts, P
 ///
 /// # Errors
 /// Returns an error for unsupported component topology or exhausted placement work.
-pub fn first_sized_pass(graph: &Graph, seed: i64) -> Result<Vec<NodeGeometry>, Error> {
-    let mut optimizer = SizedOptimizer::new(graph, seed)?;
+pub fn first_sized_pass(
+    graph: &Graph,
+    seed: i64,
+    obstacle_order: &[usize],
+) -> Result<Vec<NodeGeometry>, Error> {
+    let mut optimizer = SizedOptimizer::new(graph, seed, obstacle_order)?;
     optimizer.pass(optimizer.state.phase.temperature)?;
     Ok(optimizer.state.nodes)
 }
@@ -112,11 +135,11 @@ struct SizedOptimizer {
 }
 
 impl SizedOptimizer {
-    fn new(graph: &Graph, seed: i64) -> Result<Self, Error> {
+    fn new(graph: &Graph, seed: i64, obstacle_order: &[usize]) -> Result<Self, Error> {
         let state = prepared_transition(graph, seed)?;
         let cell = state.phase.grid.cell_size;
         let adjacency = placement_adjacency(graph)?;
-        let scorer = EdgeCost::new(graph, &state.nodes, cell)?;
+        let scorer = EdgeCost::new(graph, &state.nodes, cell, obstacle_order)?;
         Ok(Self {
             state,
             adjacency,

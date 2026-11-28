@@ -1,0 +1,31 @@
+func tracePilotPlacementBodies(p *pipeline, stage string, index int) {
+	if os.Getenv("TALA_PILOT_TRACE_PLACEMENT_BODIES") != "1" {
+		return
+	}
+	type body struct {
+		ID string `json:"id"`
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+		Width float64 `json:"width"`
+		Height float64 `json:"height"`
+	}
+	bodies := make([]body, 0, len(p.graph.Nodes))
+	for _, node := range p.graph.Nodes {
+		if node.TopLeft == nil {
+			return
+		}
+		id := node.DebugID()
+		if len(id) < 2 || id[0] != 'n' {
+			return
+		}
+		decoded, err := hex.DecodeString(id[1:])
+		if err != nil {
+			return
+		}
+		bodies = append(bodies, body{string(decoded), node.TopLeft.X, node.TopLeft.Y, node.Width, node.Height})
+	}
+	payload := map[string]any{"seed":p.seed,"stage":stage,"index":index,"nodes":bodies,"cellSize":p.graph.CellSize}
+	if data, err := json.Marshal(payload); err == nil {
+		fmt.Fprintf(os.Stderr, "TALA_PILOT_PLACEMENT_BODIES %s\n", data)
+	}
+}

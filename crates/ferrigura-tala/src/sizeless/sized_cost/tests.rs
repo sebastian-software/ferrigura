@@ -39,6 +39,7 @@ fn fixture(n: usize, incoming: &[bool]) -> EdgeCost {
         direction: None,
         cell_size: 40.0,
         turn_cost: 1.0,
+        obstacle_order: (0..n).collect(),
     }
 }
 

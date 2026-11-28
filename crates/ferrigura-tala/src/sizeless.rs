@@ -18,17 +18,23 @@ use crate::stress_initialize::initialize_by_graph_distance;
 use crate::{Error, Graph};
 
 mod compaction;
+mod direct;
+mod measured;
 mod sized_candidates;
 mod sized_cost;
 mod transition;
 
 pub use self::{
+    direct::{direct_flat_component, place_flat_component},
+    measured::{
+        first_sized_pass_from_measurements, flat_placement_from_measurements,
+        sized_phase_from_measurements, sized_transition_from_measurements,
+    },
     sized_candidates::{
-        first_sized_candidates, first_sized_edge_costs, first_sized_move, first_sized_pass,
+        first_sized_candidates, first_sized_compaction, first_sized_edge_costs, first_sized_move,
+        first_sized_pass, optimize_sized_phase, sized_phase_snapshots,
     },
-    transition::{
-        first_sized_pass_from_measurements, sized_transition_from_measurements, transition_to_sized,
-    },
+    transition::transition_to_sized,
 };
 
 const ITERATIONS_PER_SQRT_NODE: f64 = 90.0;
@@ -69,6 +75,9 @@ struct PhaseState {
     grid: Grid,
     rng: GoRand,
     temperature: f64,
+    iterations: usize,
+    cooling: f64,
+    next_compaction: compaction::Axis,
 }
 
 fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<PhaseState, Error> {
@@ -82,14 +91,11 @@ fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<PhaseState, Er
     }
     let size = f64::from(u32::try_from(grid.nodes.len()).map_err(|_| Error::WorkLimit)?).sqrt();
     let mut temperature = 2.0 * size;
-    let iteration_count = ITERATIONS_PER_SQRT_NODE * size;
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let passes = if first_pass_only {
-        1
-    } else {
-        (iteration_count as usize) / 2
-    };
-    let cooling = (0.2 / temperature).powf(1.0 / iteration_count.floor());
+    let iterations = (ITERATIONS_PER_SQRT_NODE * size) as usize;
+    let passes = if first_pass_only { 1 } else { iterations / 2 };
+    let iteration_count = u32::try_from(iterations).map_err(|_| Error::WorkLimit)?;
+    let cooling = (0.2 / temperature).powf(1.0 / f64::from(iteration_count));
     let mut rng = GoRand::new(seed);
     let adjacency = placement_adjacency(graph)?;
     let direction = preferred_direction(graph)?;
@@ -114,6 +120,9 @@ fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<PhaseState, Er
         grid,
         rng,
         temperature,
+        iterations,
+        cooling,
+        next_compaction: axis,
     })
 }
 

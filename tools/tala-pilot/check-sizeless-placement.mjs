@@ -14,8 +14,8 @@ const input = await readFile(
   new URL('captures/observatory-services.measured.json', import.meta.url),
   'utf8'
 );
-const { edgeLabels, seeds } = await readFixture('sizeless/observatory.json');
 const measuredGraph = JSON.parse(input);
+const { edgeLabels, obstacleOrder, seeds } = await readFixture('sizeless/observatory.json');
 const initialization = await readFixture('initialize/fixtures.json');
 const { graph } = initialization.find(({ name }) => name === 'Cyclic observatory services');
 assert.equal(edgeLabels.length, graph.edges.length);
@@ -27,18 +27,19 @@ const options = { input, encoding: 'utf8', maxBuffer: 8_000_000, timeout: 30_000
 const baseline = execFileSync(reference, ['--default'], options);
 const trace = spawnSync(tracedReference, ['--default'], {
   ...options,
-  env: { ...process.env, TALA_PILOT_TRACE_SIZELESS: '1' },
+  env: {
+    ...process.env,
+    TALA_PILOT_TRACE_SIZELESS: '1',
+    TALA_PILOT_TRACE_SIZED_ITERATIONS: '1',
+  },
 });
 assert.ifError(trace.error);
 assert.equal(trace.status, 0, trace.stderr);
 assert.equal(trace.stdout, baseline, 'Tracing changed the final pinned Go layout');
 
-const prefix = 'TALA_PILOT_SIZELESS ';
-const captures = trace.stderr
-  .split('\n')
-  .filter((line) => line.startsWith(prefix))
-  .map((line) => JSON.parse(line.slice(prefix.length)));
-assert.equal(captures.length, seeds.length * 7, 'Expected all stages for each default seed');
+const captures = traceEntries('TALA_PILOT_SIZELESS ');
+const iterations = traceEntries('TALA_PILOT_SIZED_ITERATION ');
+assert.equal(captures.length, seeds.length * 11, 'Expected all stages for each default seed');
 
 for (const {
   seed,
@@ -49,6 +50,10 @@ for (const {
   firstSizedEdgeCosts,
   firstSizedMove,
   firstSizedPass,
+  firstSizedCompaction,
+  sizedPhase,
+  directedComponent,
+  placedComponent,
 } of seeds) {
   const stages = [
     ['firstPass', '--sizeless-first-pass', firstPass],
@@ -58,22 +63,35 @@ for (const {
     ['firstSizedEdgeCosts', '--first-sized-edge-costs', firstSizedEdgeCosts],
     ['firstSizedMove', '--first-sized-move', firstSizedMove],
     ['firstSizedPass', '--first-sized-pass', firstSizedPass],
+    ['firstSizedCompaction', '--first-sized-compaction', firstSizedCompaction],
+    ['sizedPhase', '--sized-phase', sizedPhase],
+    ['directedComponent', '--direct-flat-component', directedComponent],
+    ['placedComponent', '--place-flat-component', placedComponent],
   ];
+  const request = JSON.stringify({ graph, seed, obstacleOrder });
   for (const [stage, command, expected] of stages) {
     const capture = captures.find((item) => item.seed === seed && item.stage === stage);
     assert(capture, `Missing Go trace for ${stage}, seed ${seed}`);
     assert.deepEqual(capture.graph, graph, `${stage}, seed ${seed}: placement input changed`);
+    assert.deepEqual(
+      capture.obstacleOrder,
+      obstacleOrder,
+      `${stage}, seed ${seed}: Go obstruction order changed`
+    );
     const compare = stage === 'firstSizedEdgeCosts' ? assertScoresEqual : assert.deepEqual;
     compare(capture.expected, expected, `${stage}, seed ${seed}: saved Go geometry changed`);
     const run = execFileSync(rust, [command], {
       ...options,
-      input: JSON.stringify({ graph, seed }),
+      input: request,
     });
     compare(JSON.parse(run), capture.expected, `${stage}, seed ${seed}: native geometry differs`);
   }
+
   for (const [command, expected] of [
     ['--measured-sized-transition', sizedTransition],
     ['--measured-first-sized-pass', firstSizedPass],
+    ['--measured-sized-phase', sizedPhase],
+    ['--measured-flat-placement', placedComponent],
   ]) {
     const run = execFileSync(rust, [command], {
       ...options,
@@ -85,10 +103,26 @@ for (const {
       `${command}: measured input differs for seed ${seed}`
     );
   }
+
+  const expected = iterations.filter((entry) => entry.seed === seed).map((entry) => entry.value);
+  assert(expected.length > 0, `Missing Go sized-optimizer snapshots for seed ${seed}`);
+  const actual = execFileSync(rust, ['--sized-phase-snapshots'], { ...options, input: request });
+  assert.deepEqual(
+    JSON.parse(actual),
+    expected,
+    `Sized-optimizer coordinates differ for seed ${seed}`
+  );
 }
 console.log(
-  `Matched ${captures.length} seeded placement stages and ${seeds.length * 2} measured-input stages with pinned Go.`
+  `Matched ${captures.length} seeded placement stages and ${iterations.length} sized-optimizer snapshots with pinned Go. The measured input matches ${seeds.length * 4} times.`
 );
+
+function traceEntries(prefix) {
+  return trace.stderr
+    .split('\n')
+    .filter((line) => line.startsWith(prefix))
+    .map((line) => JSON.parse(line.slice(prefix.length)));
+}
 
 async function readFixture(path) {
   const source = new URL('../../crates/ferrigura-tala/src/', import.meta.url);

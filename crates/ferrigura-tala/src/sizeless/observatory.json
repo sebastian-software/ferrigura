@@ -55,6 +55,7 @@
       "labelHeight": 21
     }
   ],
+  "obstacleOrder": [0, 1, 4, 5, 2, 6, 3],
   "seeds": [
     {
       "seed": 1,
@@ -329,6 +330,210 @@
           "width": 152,
           "x": 1302,
           "y": 0
+        }
+      ],
+      "firstSizedCompaction": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 1302,
+          "y": 62
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 806,
+          "y": 0
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 682,
+          "y": 124
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 1054,
+          "y": 186
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 930,
+          "y": -186
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 806,
+          "y": 310
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 1426,
+          "y": 186
+        }
+      ],
+      "sizedPhase": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 682,
+          "y": 620
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 930,
+          "y": 682
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 682,
+          "y": 806
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 806,
+          "y": 496
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 558,
+          "y": 744
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 434,
+          "y": 930
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 682,
+          "y": 992
+        }
+      ],
+      "directedComponent": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 682,
+          "y": 620
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 930,
+          "y": 682
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 682,
+          "y": 806
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 806,
+          "y": 496
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 558,
+          "y": 744
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 434,
+          "y": 930
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 682,
+          "y": 992
+        }
+      ],
+      "placedComponent": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 248,
+          "y": 124
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 496,
+          "y": 186
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 248,
+          "y": 310
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 372,
+          "y": 0
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 124,
+          "y": 248
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 0,
+          "y": 434
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 248,
+          "y": 496
         }
       ]
     },
@@ -645,6 +850,210 @@
           "x": 1240,
           "y": 124
         }
+      ],
+      "firstSizedCompaction": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 186,
+          "y": 248
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 62,
+          "y": 434
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 248,
+          "y": -62
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": -186,
+          "y": 310
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 434,
+          "y": 434
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 310,
+          "y": 124
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 558,
+          "y": 62
+        }
+      ],
+      "sizedPhase": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": -496,
+          "y": 248
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": -372,
+          "y": 434
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": -434,
+          "y": 558
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": -248,
+          "y": 310
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": -124,
+          "y": 496
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": -124,
+          "y": 620
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": -248,
+          "y": 806
+        }
+      ],
+      "directedComponent": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": -496,
+          "y": 248
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": -372,
+          "y": 434
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": -434,
+          "y": 558
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": -248,
+          "y": 310
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": -124,
+          "y": 496
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": -124,
+          "y": 620
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": -248,
+          "y": 806
+        }
+      ],
+      "placedComponent": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 124,
+          "y": 186
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 62,
+          "y": 310
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 248,
+          "y": 62
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 372,
+          "y": 248
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 372,
+          "y": 372
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 248,
+          "y": 558
+        }
       ]
     },
     {
@@ -959,6 +1368,210 @@
           "width": 152,
           "x": 1240,
           "y": 434
+        }
+      ],
+      "firstSizedCompaction": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 1302,
+          "y": -372
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 1054,
+          "y": -186
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 1364,
+          "y": 0
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 930,
+          "y": -310
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 992,
+          "y": 0
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 1116,
+          "y": 186
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 1488,
+          "y": 186
+        }
+      ],
+      "sizedPhase": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 1240,
+          "y": 186
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 1116,
+          "y": 372
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 1302,
+          "y": -248
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 992,
+          "y": 248
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 1178,
+          "y": 124
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 1178,
+          "y": -62
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 1426,
+          "y": -62
+        }
+      ],
+      "directedComponent": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 1240,
+          "y": 186
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 1116,
+          "y": 372
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 1302,
+          "y": -248
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 992,
+          "y": 248
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 1178,
+          "y": 124
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 1178,
+          "y": -62
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 1426,
+          "y": -62
+        }
+      ],
+      "placedComponent": [
+        {
+          "height": 68,
+          "id": "control",
+          "width": 152,
+          "x": 248,
+          "y": 434
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "width": 152,
+          "x": 124,
+          "y": 620
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "width": 152,
+          "x": 310,
+          "y": 0
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "width": 152,
+          "x": 0,
+          "y": 496
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "width": 152,
+          "x": 186,
+          "y": 372
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "width": 152,
+          "x": 186,
+          "y": 186
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "width": 152,
+          "x": 434,
+          "y": 186
         }
       ]
     }

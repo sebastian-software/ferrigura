@@ -15,6 +15,11 @@ const modes = {
   ],
   'layout-graph': ['seedgraph.go', 'seedgraph-overlay.go', traceLayoutGraph],
   'route-output': ['patch.go', 'patch-overlay.go', traceRouteOutput],
+  'placement-bodies': [
+    'internal/engine/pipeline.go',
+    'placement-bodies-overlay.go',
+    tracePlacementBodies,
+  ],
   'edge-label-placement': [
     'internal/labeling/placement.go',
     'edge-label-placement-overlay.go',
@@ -23,7 +28,7 @@ const modes = {
 };
 assert(
   sourceRoot && output && (Object.hasOwn(modes, mode) || mode === 'candidate-score'),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|edge-label-placement|candidate-score]'
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|edge-label-placement|placement-bodies|candidate-score]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
@@ -69,6 +74,16 @@ function traceNormalization(source) {
     '\ttracePilotNormalization("before", p.graph)\n' +
       '\tif err := runPilotNormalization(ctx, p.graph); err != nil { return err }\n' +
       '\ttracePilotNormalization("after", p.graph)\n'
+  );
+}
+
+function tracePlacementBodies(source) {
+  const imports = '\t"encoding/json"\n';
+  const run = '\t\tif err := stage.run(p, ctx); err != nil {\n\t\t\treturn err\n\t\t}\n';
+  return replaceOnce(
+    replaceOnce(source, imports, imports + '\t"encoding/hex"\n\t"os"\n'),
+    run,
+    run + '\t\ttracePilotPlacementBodies(p, stage.name, stageIndex)\n'
   );
 }
 
@@ -164,19 +179,58 @@ function traceSizelessPlacement(source) {
     aligned,
     aligned + '\ttracePilotSizelessPlacement("sizedTransition", seed, subgraph, nil)\n'
   );
-  const withSeed = replaceOnce(
+  const validatePlaced = '\t\tif err := validatePlacedNodes(root, subgraph.Nodes); err != nil {\n';
+  const withDirection = replaceOnce(
     withTransition,
+    validatePlaced,
+    '\t\ttracePilotSizelessPlacement("directedComponent", []int64{randomSeed}, subgraph, nil)\n' +
+      validatePlaced
+  );
+  const combined =
+    '\tif err := orientSourceInterior(ctx, combined, root, ancestorObstacles); err != nil {\n\t\treturn err\n\t}\n';
+  const withCombined = replaceOnce(
+    withDirection,
+    combined,
+    combined +
+      '\ttracePilotSizelessPlacement("placedComponent", []int64{randomSeed}, combined, nil)\n'
+  );
+  const withSeed = replaceOnce(
+    withCombined,
     '\tdefer sized.release()\n',
     '\tsized.pilotSeed = seed\n\tdefer sized.release()\n'
   );
   const sizedCompaction =
     '\t\tif (i % compactionIteration) == 0 {\n' +
     '\t\t\t// These stages only move nodes and set herd fences:';
-  return replaceOnce(
+  const withFirstSizedPass = replaceOnce(
     withSeed,
     sizedCompaction,
     '\t\tif i == firstSized { tracePilotSizelessPlacement("firstSizedPass", seed, subgraph, nil) }\n' +
+      '\t\ttracePilotSizedIteration("pass", i, seed, subgraph)\n' +
       sizedCompaction
+  );
+  const afterCompaction =
+    '\t\t\tproximity.SyncHerdFences(subgraph)\n' + '\t\t\tsized.endExternalChanges()\n';
+  const withFirstCompaction = replaceOnce(
+    withFirstSizedPass,
+    afterCompaction,
+    afterCompaction +
+      '\t\t\ttracePilotSizedIteration("compaction", i, seed, subgraph)\n' +
+      '\t\t\tif i - firstSized < compactionIteration { tracePilotSizelessPlacement("firstSizedCompaction", seed, subgraph, nil) }\n'
+  );
+  const settlingPasses =
+    '\tfor i := 0; i < 10 && !idle; i++ {\n' +
+    '\t\tchanged, err := sized.optimize(ctx, 0.0)\n' +
+    '\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n' +
+    '\t\tif !changed {\n\t\t\tbreak\n\t\t}\n\t}\n';
+  const tracedSettling = settlingPasses.replace(
+    '\t\tif !changed {',
+    '\t\ttracePilotSizedIteration("settlingPass", i, seed, subgraph)\n\t\tif !changed {'
+  );
+  return replaceOnce(
+    withFirstCompaction,
+    settlingPasses,
+    tracedSettling + '\ttracePilotSizelessPlacement("sizedPhase", seed, subgraph, nil)\n'
   );
 }
 
