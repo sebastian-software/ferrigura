@@ -115,6 +115,11 @@ jobs:
             "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-raw-routes-reference" \
             tools/tala-pilot/rust/target/debug/ferrigura-tala "$RUNNER_TEMP/tala-observatory-label-reference" \
             target/debug/examples/tala_pilot
+      - name: Compare generated raw routing graphs with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/check-raw-route-matrix.mjs \
+            .tala-reference tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Compare ordinary edge label placement with Go
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |
@@ -124,7 +129,7 @@ jobs:
           node tools/tala-pilot/check-edge-label-placement.mjs \
             "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-edge-label-reference" \
             tools/tala-pilot/rust/target/debug/ferrigura-tala
-      - name: Compare tree preprocessing and hierarchy scope with Go
+      - name: Compare tree, hierarchy, and leaf cluster preprocessing with Go
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |
           node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-hierarchy" hierarchy-preprocess

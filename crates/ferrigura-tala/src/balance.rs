@@ -217,13 +217,7 @@ fn validate_stage_input(graph: &Graph, layout: &Layout) -> Result<(), Error> {
         }
     }
     for (source, edge) in graph.edges.iter().zip(&layout.edges) {
-        if source.source == source.target
-            || edge.label.is_some()
-            || edge
-                .points
-                .windows(2)
-                .any(|pair| pair[0].x != pair[1].x && pair[0].y != pair[1].y)
-        {
+        if source.source == source.target || edge.label.is_some() {
             return Err(Error::UnsupportedGraph);
         }
         if source.id != edge.id

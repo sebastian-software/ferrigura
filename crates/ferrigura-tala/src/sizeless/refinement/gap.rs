@@ -66,7 +66,12 @@ enum GapTrial {
 impl Refinement<'_> {
     pub(super) fn normalize_gaps(&mut self, work: &mut Work) -> Result<bool, Error> {
         let mut order = self.order.to_vec();
-        order.sort_by_key(|&node| std::cmp::Reverse(self.adjacency[node].len()));
+        order.sort_unstable_by_key(|&node| {
+            (
+                std::cmp::Reverse(self.adjacency[node].len()),
+                self.ranks[node],
+            )
+        });
         let mut accepted = false;
         for axis in [Axis::Horizontal, Axis::Vertical] {
             for forwards in [true, false] {

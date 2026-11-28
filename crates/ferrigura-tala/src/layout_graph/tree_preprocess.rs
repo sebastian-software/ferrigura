@@ -58,6 +58,28 @@ struct DetachedMember {
 }
 
 impl TreePreprocess {
+    pub(crate) fn container_order(&self) -> Vec<usize> {
+        let mut order = Vec::new();
+        let mut stack: Vec<_> = self.containers[0]
+            .iter()
+            .map(|&node| (node + 1, false))
+            .collect();
+        while let Some((container, emit)) = stack.pop() {
+            if emit {
+                order.push(container);
+            } else if !self.containers[container].is_empty() {
+                stack.push((container, true));
+                stack.extend(
+                    self.containers[container]
+                        .iter()
+                        .map(|&node| (node + 1, false)),
+                );
+            }
+        }
+        order.push(0);
+        order
+    }
+
     pub(crate) fn from_authored(graph: &LayoutGraph) -> Self {
         let mut containers = Vec::with_capacity(graph.nodes.len() + 1);
         containers.push(graph.roots.clone());
@@ -153,7 +175,7 @@ impl LayoutGraph {
     /// graphs have no table columns, Nears, fixed nodes or sequence vessels.
     pub(crate) fn tree_preprocess(&self) -> Result<TreePreprocess, Error> {
         let mut preprocessing = Preprocessing::new(self);
-        let containers = preprocessing.container_order();
+        let containers = preprocessing.state.container_order();
         for &container in &containers {
             preprocessing.extract(container)?;
         }
@@ -171,28 +193,6 @@ impl<'a> Preprocessing<'a> {
             state: TreePreprocess::from_authored(graph),
             work: 0,
         }
-    }
-
-    fn container_order(&self) -> Vec<usize> {
-        let mut order = Vec::new();
-        let mut stack: Vec<_> = self.state.containers[0]
-            .iter()
-            .map(|&node| (node + 1, false))
-            .collect();
-        while let Some((container, emit)) = stack.pop() {
-            if emit {
-                order.push(container);
-            } else if !self.state.containers[container].is_empty() {
-                stack.push((container, true));
-                stack.extend(
-                    self.state.containers[container]
-                        .iter()
-                        .map(|&node| (node + 1, false)),
-                );
-            }
-        }
-        order.push(0);
-        order
     }
 
     fn extract(&mut self, container: usize) -> Result<(), Error> {

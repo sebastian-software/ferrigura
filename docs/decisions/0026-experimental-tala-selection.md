@@ -21,8 +21,9 @@ separately licensed `ferrigura-tala` crate for native-only layout. The
 experimental subset covers flat disconnected rectangles, isolated rectangular
 self-loops, bounded straight paths and parallel edges, bounded container
 packing, and individual routes within a container or across one boundary.
-Branching layouts, multi-node cycles, and more general compound routes return
-an unsupported-graph error. The [crate README](../../crates/ferrigura-tala/README.md)
+The ordinary seeded path also handles a single rectangular component with
+cycles and labeled routes. More general compound graphs return an
+unsupported-graph error. The [crate README](../../crates/ferrigura-tala/README.md)
 records the current size and topology limits.
 
 ## Consequences

@@ -57,10 +57,11 @@ pub(super) fn compact(
     positions: &mut [Cell],
     direction: Option<i32>,
     axis: Axis,
+    ranks: &[usize],
 ) -> Result<(), Error> {
     let mut work = Work(MAX_OPTIMIZATION_WORK);
     let predecessors = visibility_predecessors(positions, axis);
-    for node in ordered_nodes(positions, axis) {
+    for node in ordered_nodes(positions, axis, ranks) {
         if let Some(anchor) = predecessors[node] {
             let floor = axis.value(positions[anchor]) + MIN_SPACING;
             if axis.value(positions[node]) < floor {
@@ -73,6 +74,7 @@ pub(super) fn compact(
         direction,
         predecessors,
         axis,
+        ranks,
     };
     for _ in 0..MAX_ROUNDS {
         if !pass.shift_groups(positions, &mut work)? {
@@ -87,9 +89,9 @@ pub(super) fn compact(
     Ok(())
 }
 
-fn ordered_nodes(positions: &[Cell], axis: Axis) -> Vec<usize> {
+fn ordered_nodes(positions: &[Cell], axis: Axis, ranks: &[usize]) -> Vec<usize> {
     let mut order: Vec<_> = (0..positions.len()).collect();
-    order.sort_unstable_by_key(|&node| (axis.value(positions[node]), node));
+    order.sort_unstable_by_key(|&node| (axis.value(positions[node]), ranks[node]));
     order
 }
 
@@ -111,6 +113,7 @@ struct Compaction<'a> {
     direction: Option<i32>,
     predecessors: Vec<Option<usize>>,
     axis: Axis,
+    ranks: &'a [usize],
 }
 
 impl Compaction<'_> {
@@ -153,7 +156,7 @@ impl Compaction<'_> {
     fn shift_groups(&self, positions: &mut [Cell], work: &mut Work) -> Result<bool, Error> {
         let mut groups = vec![Vec::new(); positions.len()];
         let mut roots = Vec::new();
-        for node in ordered_nodes(positions, self.axis) {
+        for node in ordered_nodes(positions, self.axis, self.ranks) {
             if let Some(anchor) = self.predecessors[node] {
                 groups[anchor].push(node);
             } else {
@@ -223,7 +226,7 @@ impl Compaction<'_> {
 
     fn shift_nodes(&self, positions: &mut [Cell], work: &mut Work) -> Result<bool, Error> {
         let mut changed = false;
-        for node in ordered_nodes(positions, self.axis) {
+        for node in ordered_nodes(positions, self.axis, self.ranks) {
             let previous = positions[node];
             let mut candidates = Vec::new();
             for candidate in self.candidate_positions(positions, node, 0)? {

@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use super::{Work, preferred_direction};
+use super::{Work, order_ranks, preferred_direction};
 use crate::{Error, Graph, NodeGeometry, Point};
 
 mod symmetry;
@@ -44,16 +44,7 @@ impl EdgeCost {
         cell_size: f64,
         obstacle_order: &[usize],
     ) -> Result<Self, Error> {
-        if obstacle_order.len() != nodes.len() {
-            return Err(Error::InvalidGraph);
-        }
-        let mut seen = vec![false; nodes.len()];
-        for &index in obstacle_order {
-            let visited = seen.get_mut(index).ok_or(Error::InvalidGraph)?;
-            if std::mem::replace(visited, true) {
-                return Err(Error::InvalidGraph);
-            }
-        }
+        order_ranks(nodes.len(), obstacle_order)?;
         let indices: HashMap<_, _> = nodes
             .iter()
             .enumerate()

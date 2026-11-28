@@ -24,6 +24,10 @@ const treeSnapshot = new URL(
   '../../crates/ferrigura-tala/src/layout_graph/tree_preprocess/fixtures.json',
   import.meta.url
 );
+const clusterSnapshot = new URL(
+  '../../crates/ferrigura-tala/src/layout_graph/leaf_clusters/publishing.json',
+  import.meta.url
+);
 const files = (await readdir(captures)).filter((file) => file.endsWith('.measured.json')).sort();
 assert.equal(files.length, 8, 'Expected all known measured fixtures.');
 const processOptions = { encoding: 'utf8', maxBuffer: 8_000_000, timeout: 60_000 };
@@ -31,6 +35,7 @@ const prefix = 'tala-hierarchy-preprocess ';
 const treeSnapshots = [];
 let checked = 0;
 let snapshot;
+let publishing;
 
 for (const file of files) {
   const name = file.replace(/\.measured\.json$/, '');
@@ -53,11 +58,24 @@ for (const file of files) {
   const preprocessed = JSON.parse(
     execFileSync(resolve(values.rust), ['--tree-preprocess'], options)
   );
+  const clustered = JSON.parse(execFileSync(resolve(values.rust), ['--leaf-clusters'], options));
   for (const seed of [1, 2, 3]) {
     const checkpoints = decoded.filter((record) => record.seed === seed);
-    assert.equal(checkpoints.length, 5, `${name}: expected all five early Go stages per seed`);
+    assert.equal(checkpoints.length, 6, `${name}: expected all six early Go stages per seed`);
     const upstream = checkpoints.find(({ stage }) => stage === 'PreprocessTrees');
     const prescale = checkpoints.find(({ stage }) => stage === 'Prescale');
+    const hierarchy = checkpoints.find(({ stage }) => stage === 'PreprocessHierarchies');
+    const cluster = checkpoints.find(({ stage }) => stage === 'PreprocessClusters');
+    assert(hierarchy && cluster?.leafClusters, `${name}: missing cluster trace for seed ${seed}`);
+    assert(
+      hierarchy.nodes.every(({ hierarchyLevel }) => hierarchyLevel === null),
+      `${name}: the measured cluster checkpoint requires no assigned hierarchy`
+    );
+    assert.deepEqual(
+      clustered,
+      cluster.leafClusters,
+      `${name}: leaf clusters differ for seed ${seed}`
+    );
     assert(
       upstream?.scopes?.length && prescale?.scopes?.length,
       `${name}: missing hierarchy trace for seed ${seed}`
@@ -84,6 +102,10 @@ for (const file of files) {
     if (name === 'library-architecture' && seed === 1) {
       snapshot = { input: JSON.parse(input), expected };
     }
+    if (name === 'publishing-flow' && seed === 1) {
+      assert.equal(clustered.clusters.length, 1);
+      publishing = cluster.leafClusters;
+    }
     if (
       ['publishing-flow', 'workshop-edges', 'library-architecture'].includes(name) &&
       seed === 1
@@ -99,14 +121,17 @@ for (const file of files) {
 
 assert.equal(checked, 24);
 assert(snapshot, 'The Library Architecture snapshot was not captured.');
+assert(publishing, 'The Publishing Flow leaf cluster was not captured.');
 assert.equal(treeSnapshots.length, 3, 'Expected the three tree regression captures.');
 if (values.write) {
   await writeFile(librarySnapshot, `${JSON.stringify(snapshot, null, 2)}\n`);
   await writeFile(treeSnapshot, `${JSON.stringify(treeSnapshots, null, 2)}\n`);
+  await writeFile(clusterSnapshot, `${JSON.stringify(publishing, null, 2)}\n`);
 } else {
   assert.deepEqual(snapshot, JSON.parse(await readFile(librarySnapshot, 'utf8')));
   assert.deepEqual(treeSnapshots, JSON.parse(await readFile(treeSnapshot, 'utf8')));
+  assert.deepEqual(publishing, JSON.parse(await readFile(clusterSnapshot, 'utf8')));
 }
 console.log(
-  `Verified ${checked} measured projections, tree states and hierarchy inputs. Publishing Flow pruned a tree and Workshop Edges restored one in a new order.`
+  `Verified ${checked} measured projections, tree states, hierarchy inputs and leaf cluster decisions.`
 );

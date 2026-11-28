@@ -1,0 +1,74 @@
+package routing
+
+import (
+	"fmt"
+	"github.com/d2lang/d2/d2layouts/d2talalayout/internal/layoutgraph"
+	"github.com/d2lang/d2/lib/geo"
+	"math/rand"
+	"testing"
+)
+
+func TestPilotOrdinaryRawMatrix(t *testing.T) {
+	rng := rand.New(rand.NewSource(183))
+	for trial := 0; trial < 128; trial++ {
+		count := 2 + rng.Intn(6)
+		graph := layoutgraph.NewGraph()
+		perm := rng.Perm(20)
+		for i := range count {
+			width := float64(40 + rng.Intn(35))
+			height := float64(40 + rng.Intn(35))
+			node := layoutgraph.NewNode(int64(i+1), width, height)
+			node.SetShape("Square")
+			x := float64((perm[i]%4)*100 + rng.Intn(12))
+			y := float64((perm[i]/4)*100 + rng.Intn(12))
+			if trial%4 == 0 {
+				x = float64((perm[i] % 4) * 100)
+				y = float64((perm[i] / 4) * 100)
+			}
+			node.TopLeft = geo.NewPoint(x, y)
+			graph.AddNode(node)
+		}
+		add := func(a, b int) {
+			edge := graph.Connect(graph.Nodes[a], graph.Nodes[b])
+			picks := rng.Intn(8)
+			if picks == 1 || picks == 2 {
+				edge.SourceArrowhead = layoutgraph.TriangleArrowhead
+			} else {
+				edge.SourceArrowhead = layoutgraph.NoArrowhead
+			}
+			if picks == 1 || picks >= 3 {
+				edge.TargetArrowhead = layoutgraph.TriangleArrowhead
+			} else {
+				edge.TargetArrowhead = layoutgraph.NoArrowhead
+			}
+			if trial%8 == 0 {
+				edge.Style.Stroke = &layoutgraph.StyleScalar{Value: fmt.Sprint(rng.Intn(2))}
+			}
+		}
+		for i := range count - 1 {
+			add(i, i+1)
+		}
+		for i := 0; i < 1+rng.Intn(count); i++ {
+			a, b := rng.Intn(count), rng.Intn(count)
+			if a != b {
+				add(a, b)
+			}
+		}
+		ctx := withTestLogger(t.Context(), t)
+		ovg, err := buildOVGFromGraph(ctx, graph, nil)
+		if err != nil {
+			t.Fatalf("trial %d: %v", trial, err)
+		}
+		fmt.Printf("TALA_PILOT_MATRIX_TRIAL %d\n", trial)
+		for _, flavor := range []RouteGenerationFlavor{ShortestToLongest, LongestToShortest, Default} {
+			router, err := newOVGEdgeRouter(ctx, flavor, ovg, graph, nil, graph.Edges)
+			if err != nil {
+				t.Fatalf("trial %d %s: %v", trial, flavor, err)
+			}
+			response := router.generateRoutes(ctx, true)
+			if response.Err != nil {
+				t.Logf("trial %d %s: %v", trial, flavor, response.Err)
+			}
+		}
+	}
+}

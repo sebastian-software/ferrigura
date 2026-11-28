@@ -47,7 +47,7 @@ pub(super) struct RawRoutingOutput {
     flavors: Vec<RawFlavor>,
     selected: SelectedFlavor,
     before_balance: Vec<SelectedPath>,
-    balanced: Vec<SelectedPath>,
+    balanced: Option<Vec<SelectedPath>>,
 }
 
 #[derive(Serialize)]
@@ -77,7 +77,10 @@ struct SelectedPath {
     points: Vec<[f64; 2]>,
 }
 
-pub(super) fn trace_raw_routes(capture: RawRouteInput) -> Result<RawRoutingOutput, Box<dyn Error>> {
+pub(super) fn trace_raw_routes(
+    capture: RawRouteInput,
+    include_balance: bool,
+) -> Result<RawRoutingOutput, Box<dyn Error>> {
     let RawRouteInput {
         nodes,
         node_ids,
@@ -175,7 +178,11 @@ pub(super) fn trace_raw_routes(capture: RawRouteInput) -> Result<RawRoutingOutpu
             points: raw_points[route.edge].iter().copied().map(point).collect(),
         })
         .collect();
-    let balanced = balance_raw_routes(&nodes, &edges, raw_points)?;
+    let balanced = if include_balance {
+        Some(balance_raw_routes(&nodes, &edges, raw_points)?)
+    } else {
+        None
+    };
     Ok(RawRoutingOutput {
         flavors,
         selected: SelectedFlavor {

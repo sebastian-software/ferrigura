@@ -17,14 +17,18 @@ use super::search::{
 use super::slingshot::{Orientation, VisibilityAdjacency, step};
 use super::{LinkedVisibility, PortOwner, SLOTS_PER_RECTANGLE, Vertex, point_key};
 
+mod assignment;
+pub use assignment::MaterializedRoute;
 mod flavors;
 mod flight;
 pub use flavors::{Flavor, FlavorRoutes, RouteChoice, RouteStrategy, order_routes};
 mod history;
 mod line;
+mod port_swap;
 pub use history::{Appearance, OrdinaryEdge, RouteHistory};
 use history::{Passage, UsedPorts};
 pub use line::{ExistingLine, StraightRoute};
+pub use port_swap::{swap_ports, swap_ports_on_same_side};
 
 const CONNECTED_NODE_GAP: f64 = 60.0;
 const TURN_MULTIPLIER: f64 = 0.125;

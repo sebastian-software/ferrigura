@@ -4,7 +4,7 @@
 use serde::Serialize;
 
 use crate::layout_graph::LayoutGraph;
-use crate::ovg_seed::flat_search::{Appearance, FlatSearch, OrdinaryEdge, Weights};
+use crate::ovg_seed::flat_search::{Appearance, FlatSearch, OrdinaryEdge, Weights, swap_ports};
 use crate::ovg_seed::rectangular_linked_visibility;
 use crate::quality::{Box, EvaluationError, PositionedEdge, PositionedGraph, PositionedNode};
 use crate::route_output::{LAYOUT_STROKE_WIDTH, RoutedEdge};
@@ -46,30 +46,40 @@ pub fn layout_for_seed(graph: &Graph, seed: i64) -> Result<FlatSeed, Error> {
 /// # Errors
 /// Returns an input error or the failure reported by the unsuccessful seed attempts.
 pub fn default_layout(graph: &Graph) -> Result<FlatSeed, Error> {
-    let workspace = FlatWorkspace::new(graph)?;
-    let plan = SeedPlan::new(None, None, 0).map_err(|_| Error::InvalidGraph)?;
-    let selected = plan
-        .coordinate(
-            || false,
-            |_, seed| {
-                let candidate = workspace.layout(seed)?;
-                Ok(Scored {
-                    score: candidate.score,
-                    candidate,
-                })
-            },
-        )
-        .map_err(|error| match error {
-            SelectionError::Cancelled => Error::WorkLimit,
-            SelectionError::AllFailed(failures) => failures
-                .into_iter()
-                .find_map(|failure| match failure.error {
-                    AttemptError::Failed(error) => Some(error),
-                    AttemptError::Panicked => None,
-                })
-                .unwrap_or(Error::InvalidGraph),
-        })?;
-    Ok(selected.result.candidate)
+    FlatWorkspace::new(graph)?.select()
+}
+
+pub(crate) fn production_layout(graph: &Graph, translated: LayoutGraph) -> Result<Layout, Error> {
+    let workspace = FlatWorkspace::from_translated(graph, translated)?;
+    workspace.select().map(|seed| seed.layout)
+}
+
+impl FlatWorkspace {
+    fn select(&self) -> Result<FlatSeed, Error> {
+        let plan = SeedPlan::new(None, None, 0).map_err(|_| Error::InvalidGraph)?;
+        let selected = plan
+            .coordinate(
+                || false,
+                |_, seed| {
+                    let candidate = self.layout(seed)?;
+                    Ok(Scored {
+                        score: candidate.score,
+                        candidate,
+                    })
+                },
+            )
+            .map_err(|error| match error {
+                SelectionError::Cancelled => Error::WorkLimit,
+                SelectionError::AllFailed(failures) => failures
+                    .into_iter()
+                    .find_map(|failure| match failure.error {
+                        AttemptError::Failed(error) => Some(error),
+                        AttemptError::Panicked => None,
+                    })
+                    .unwrap_or(Error::InvalidGraph),
+            })?;
+        Ok(selected.result.candidate)
+    }
 }
 
 struct FlatWorkspace {
@@ -79,7 +89,10 @@ struct FlatWorkspace {
 
 impl FlatWorkspace {
     fn new(graph: &Graph) -> Result<Self, Error> {
-        let translated = LayoutGraph::translate(graph)?;
+        Self::from_translated(graph, LayoutGraph::translate(graph)?)
+    }
+
+    fn from_translated(graph: &Graph, translated: LayoutGraph) -> Result<Self, Error> {
         let component = MeasuredComponent::new(graph, translated.clone())?;
         Ok(Self {
             component,
@@ -297,7 +310,7 @@ fn body_box(body: &NodeGeometry) -> Box {
 }
 
 fn route_component(component: &MeasuredComponent, seed: i64) -> Result<Layout, Error> {
-    let nodes = component.place(seed)?;
+    let mut nodes = component.place(seed)?;
     let edges: Vec<_> = component
         .graph
         .edges
@@ -311,47 +324,68 @@ fn route_component(component: &MeasuredComponent, seed: i64) -> Result<Layout, E
             invisible: false,
         })
         .collect();
-    let paths = {
-        let graph = rectangular_linked_visibility(&nodes, &component.edge_owners)?;
-        let weights = Weights::from_graph(&nodes, &component.edge_owners)?;
-        let labels = vec![None; nodes.len()];
-        let search = FlatSearch::new(&graph, &nodes, &labels, weights)?;
-        let mut work = MAX_ROUTE_WORK;
-        let selection = search
-            .select_flavor(&component.node_ids, &edges, &mut work)?
-            .ok_or(Error::UnsupportedGraph)?;
-        let mut paths = search.route_points_in_input_order(&selection)?;
-        let mut stage = Layout {
-            nodes: nodes.clone(),
-            edges: component
-                .graph
-                .edges
-                .iter()
-                .zip(paths.drain(..))
-                .map(|(edge, points)| EdgeGeometry {
-                    id: edge.id.clone(),
-                    points,
-                    label: None,
-                })
-                .collect(),
-        };
-        crate::simplify::simplify_routes(&component.graph, &mut stage)?;
-        paths.extend(
-            stage
-                .edges
-                .iter_mut()
-                .map(|edge| std::mem::take(&mut edge.points)),
-        );
-        search.straight_edges_fallback(&edges, &mut paths, &mut work)?;
-        for (edge, path) in stage.edges.iter_mut().zip(paths) {
-            edge.points = path;
-        }
-        stage.edges
-    };
+    let mut paths = route_ordinary(component, &nodes, &edges)?;
+    if crate::sizeless::dejitter::dejitter(
+        &component.graph,
+        &component.edge_owners,
+        &component.obstacle_order,
+        &mut nodes,
+        &mut paths,
+    )? {
+        paths = route_ordinary(component, &nodes, &edges)?;
+    }
     let mut layout = Layout {
         nodes,
-        edges: paths,
+        edges: component
+            .graph
+            .edges
+            .iter()
+            .zip(paths)
+            .map(|(edge, points)| EdgeGeometry {
+                id: edge.id.clone(),
+                points,
+                label: None,
+            })
+            .collect(),
     };
+    crate::simplify::simplify_routes(&component.graph, &mut layout)?;
+    let mut paths: Vec<_> = layout
+        .edges
+        .iter_mut()
+        .map(|edge| std::mem::take(&mut edge.points))
+        .collect();
+
+    let mut work = MAX_ROUTE_WORK;
+    let parents = vec![None; layout.nodes.len()];
+    swap_ports(&layout.nodes, &parents, &edges, &mut paths, &mut work)?;
+    let visibility = rectangular_linked_visibility(&layout.nodes, &component.edge_owners)?;
+    let weights = Weights::from_graph(&layout.nodes, &component.edge_owners)?;
+    let labels = vec![None; layout.nodes.len()];
+    let search = FlatSearch::new(&visibility, &layout.nodes, &labels, weights)?;
+    search.straight_edges_fallback(&edges, &mut paths, &mut work)?;
+    for (edge, path) in layout.edges.iter_mut().zip(paths) {
+        edge.points = path;
+    }
     crate::balance::balance_routes(&component.graph, &mut layout)?;
     Ok(layout)
+}
+
+fn route_ordinary(
+    component: &MeasuredComponent,
+    nodes: &[NodeGeometry],
+    edges: &[OrdinaryEdge],
+) -> Result<Vec<Vec<Point>>, Error> {
+    let visibility = rectangular_linked_visibility(nodes, &component.edge_owners)?;
+    let weights = Weights::from_graph(nodes, &component.edge_owners)?;
+    let labels = vec![None; nodes.len()];
+    let search = FlatSearch::new(&visibility, nodes, &labels, weights)?;
+    let mut work = MAX_ROUTE_WORK;
+    let selection = search
+        .select_flavor(&component.node_ids, edges, &mut work)?
+        .ok_or(Error::UnsupportedGraph)?;
+    let mut paths = vec![Vec::new(); edges.len()];
+    for route in search.materialize_selected_routes(&selection, edges, &mut work)? {
+        paths[route.edge] = route.points;
+    }
+    Ok(paths)
 }

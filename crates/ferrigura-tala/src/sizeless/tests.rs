@@ -63,6 +63,7 @@ struct InitializerFixture {
 struct ObservatoryFixture {
     edge_labels: Vec<EdgeLabel>,
     obstacle_order: Vec<usize>,
+    entity_order: Vec<usize>,
     seeds: Vec<ExpectedPlacement>,
 }
 
@@ -111,7 +112,10 @@ fn seeded_observatory_placement_matches_the_go_stages() {
         edge.label_width = label.label_width;
         edge.label_height = label.label_height;
     }
-    let order = &fixture.obstacle_order;
+    let order = PlacementOrder {
+        obstacles: &fixture.obstacle_order,
+        entities: &fixture.entity_order,
+    };
     for expected in fixture.seeds {
         let seed = expected.seed;
         assert_eq!(
@@ -120,12 +124,12 @@ fn seeded_observatory_placement_matches_the_go_stages() {
             "first pass, seed {seed}"
         );
         assert_eq!(
-            optimize_phase(&graph, seed),
+            optimize_phase(&graph, seed, order.entities),
             Ok(expected.full_phase),
             "phase, seed {seed}"
         );
         assert_eq!(
-            transition_to_sized(&graph, seed),
+            transition_to_sized(&graph, seed, order.entities),
             Ok(expected.sized_transition),
             "sized transition, seed {seed}"
         );

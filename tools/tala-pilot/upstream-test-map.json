@@ -38,11 +38,35 @@
   "candidate_test.go#TestOptionalSeedCandidatePreservesValidIncumbent": [
     "seed_selection::refinement::tests::optional_seed_candidate_preserves_valid_incumbent"
   ],
+  "internal/grouping/clusters_test.go#TestAddClusters": [
+    "layout_graph::leaf_clusters::tests::add_clusters"
+  ],
+  "internal/grouping/clusters_test.go#TestAddClustersHierarchy": [
+    "layout_graph::leaf_clusters::tests::add_clusters_hierarchy"
+  ],
+  "internal/grouping/clusters_test.go#TestConsistentMultipleSharedAdjacent": [
+    "layout_graph::leaf_clusters::tests::consistent_multiple_shared_adjacent"
+  ],
+  "internal/grouping/clusters_test.go#TestMultipleSharedAdjacent": [
+    "layout_graph::leaf_clusters::tests::multiple_shared_adjacent"
+  ],
+  "internal/labeling/refine_test.go#TestParallelLabelRepairKeepsCompletedPlacementWhenBudgetRunsOut": [
+    "labeling::ordinary::tests::parallel_label_repair_keeps_completed_placement_when_budget_runs_out"
+  ],
   "internal/placement/centered_neighbors_test.go#TestBalanceSymmetryUsesExactPeerCenterline": [
     "sizeless::refinement::tests::symmetry_uses_the_exact_peer_centerline"
   ],
   "internal/placement/centered_neighbors_test.go#TestEquidistanceDoesNotReportAlreadyCenteredNodeAsMoved": [
     "sizeless::refinement::tests::equidistance_leaves_already_centered_nodes_in_place"
+  ],
+  "internal/placement/dejitter_test.go#TestBasicDejitter": [
+    "sizeless::dejitter::tests::basic_dejitter"
+  ],
+  "internal/placement/dejitter_test.go#TestDejitterProhibitOne": [
+    "sizeless::dejitter::tests::prohibit_moving_a_node_with_another_tangent_edge"
+  ],
+  "internal/placement/dejitter_test.go#TestNoDejitter1": [
+    "sizeless::dejitter::tests::preserve_jitter_when_both_nodes_have_tangent_edges"
   ],
   "internal/placement/extracted_kernels_test.go#TestCompareDirectionCountsIsReflexiveAndPreservesTies": [
     "sizeless::direct::tests::direction_count_comparison_is_reflexive_and_stable"
@@ -206,11 +230,26 @@
   "internal/routing/route_test.go#TestRouteOpposingColinear": [
     "ovg_seed::flat_search::history::tests::route_opposing_colinear"
   ],
+  "internal/routing/routing_cancellation_test.go#TestRouteLineIgnoresNonOverlappingEdgesWhenCheckingSharedRoutes": [
+    "ovg_seed::flat_search::line::tests::route_line_ignores_non_overlapping_edges_when_checking_shared_routes"
+  ],
+  "internal/routing/routing_cancellation_test.go#TestRouteLineReturnsPorts": [
+    "ovg_seed::flat_search::line::tests::route_line_returns_ports"
+  ],
   "internal/routing/slingshot_test.go#TestFillPath": ["ovg_seed::slingshot::tests::fill_path"],
   "internal/routing/slingshot_test.go#TestPreferLaunchingVertically": [
     "ovg_seed::slingshot::tests::prefer_launching_vertically"
   ],
   "internal/routing/slingshot_test.go#TestSlingshot": ["ovg_seed::flat_search::tests::slingshot"],
+  "internal/routing/swap_ports_test.go#TestInvalidSwapArrowhead": [
+    "ovg_seed::flat_search::port_swap::tests::invalid_swap_arrowhead"
+  ],
+  "internal/routing/swap_ports_test.go#TestInvalidSwapNodeOverlap": [
+    "ovg_seed::flat_search::port_swap::tests::invalid_swap_node_overlap"
+  ],
+  "internal/routing/swap_ports_test.go#TestSwapEdgePorts": [
+    "ovg_seed::flat_search::port_swap::tests::swap_edge_ports"
+  ],
   "internal/routing/tunnel_test.go#TestTunnelMultiple": [
     "ovg_seed::tunnels::tests::tunnel_multiple"
   ],

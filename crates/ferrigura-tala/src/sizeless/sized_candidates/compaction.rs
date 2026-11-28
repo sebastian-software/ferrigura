@@ -10,10 +10,10 @@ use serde::Serialize;
 use super::super::COMPACTION_ITERATION;
 use super::super::compaction::{Axis, MAX_CANDIDATES, MAX_ROUNDS};
 use super::super::transition::{
-    compaction_floor, end, inflate_axis, nearest_predecessor, ordered_along_axis,
+    Inflation, compaction_floor, end, inflate_axis, nearest_predecessor, ordered_along_axis,
     oriented_body_gap, overlaps_at, start, visibility_predecessors,
 };
-use super::{MAX_OPTIMIZATION_WORK, SizedOptimizer, Work};
+use super::{MAX_OPTIMIZATION_WORK, PlacementOrder, SizedOptimizer, Work};
 use crate::{Error, Graph, NodeGeometry, Point};
 
 const MAX_SIZED_PHASE_WORK: usize = 48_000;
@@ -26,24 +26,24 @@ const MAX_QUIET_SIZED_PASSES: usize = 20;
 pub fn first_sized_compaction(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Vec<NodeGeometry>, Error> {
-    sized_phase(graph, seed, obstacle_order, true, |_, _, _| {})
+    sized_phase(graph, seed, order, true, |_, _, _| {})
 }
 
 /// Places an already preprocessed flat rectangular component using the entire
 /// sized annealing phase, alternating compactions, and temperature-zero passes.
-/// Node order drives optimization. The required obstacle-order permutation
-/// projects D2's authored sibling scan order into those node indices.
+/// The component order drives optimization, while authored sibling and numeric
+/// entity order control obstruction scans and tie-breaking.
 ///
 /// # Errors
 /// Returns an error for unsupported component topology or exhausted placement work.
 pub fn optimize_sized_phase(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Vec<NodeGeometry>, Error> {
-    sized_phase(graph, seed, obstacle_order, false, |_, _, _| {})
+    sized_phase(graph, seed, order, false, |_, _, _| {})
 }
 
 #[derive(Debug, Serialize)]
@@ -68,33 +68,27 @@ enum Step {
 pub fn sized_phase_snapshots(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Vec<SizedStep>, Error> {
     let mut captures = Vec::new();
-    sized_phase(
-        graph,
-        seed,
-        obstacle_order,
-        false,
-        |step, iteration, nodes| {
-            captures.push(SizedStep {
-                step,
-                iteration,
-                positions: nodes.iter().map(|node| [node.x, node.y]).collect(),
-            });
-        },
-    )?;
+    sized_phase(graph, seed, order, false, |step, iteration, nodes| {
+        captures.push(SizedStep {
+            step,
+            iteration,
+            positions: nodes.iter().map(|node| [node.x, node.y]).collect(),
+        });
+    })?;
     Ok(captures)
 }
 
 fn sized_phase(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
     compaction_only: bool,
     mut observe: impl FnMut(Step, usize, &[NodeGeometry]),
 ) -> Result<Vec<NodeGeometry>, Error> {
-    let mut optimizer = SizedOptimizer::new(graph, seed, obstacle_order)?;
+    let mut optimizer = SizedOptimizer::new(graph, seed, order)?;
     let phase = &optimizer.state.phase;
     let mut temperature = phase.temperature;
     let mut cooling = phase.cooling;
@@ -126,6 +120,7 @@ fn sized_phase(
             let factor =
                 (1.0 + 2.0 * (remaining - 30.0) / (0.5 * iteration_number(iterations)?)).max(1.0);
             optimizer.compact(axis, factor)?;
+            optimizer.join_distanced_clusters()?;
             observe(Step::Compaction, i, &optimizer.state.nodes);
             if compaction_only {
                 return Ok(optimizer.state.nodes);
@@ -137,6 +132,7 @@ fn sized_phase(
     if compaction_only {
         return Err(Error::UnsupportedGraph);
     }
+    optimizer.join_distanced_clusters()?;
     for i in 0..10 {
         let changed = optimizer.pass(0.0)?;
         observe(Step::SettlingPass, i, &optimizer.state.nodes);
@@ -167,10 +163,13 @@ impl SizedOptimizer {
             &mut self.state.nodes,
             &self.state.gaps,
             &predecessors,
-            axis,
-            self.cell,
-            factor,
-            false,
+            &self.state.ranks,
+            Inflation {
+                axis,
+                cell: self.cell,
+                factor,
+                transition: false,
+            },
         );
         let pass = SizedCompaction {
             predecessors,
@@ -245,7 +244,7 @@ impl SizedCompaction {
         let nodes = &optimizer.state.nodes;
         let mut groups = vec![Vec::new(); nodes.len()];
         let mut roots = Vec::new();
-        for node in ordered_along_axis(nodes, self.axis) {
+        for node in ordered_along_axis(nodes, self.axis, &optimizer.state.ranks) {
             if let Some(anchor) = nearest_predecessor(nodes, &self.predecessors, self.axis, node) {
                 groups[anchor].push(node);
             } else {
@@ -350,7 +349,7 @@ impl SizedCompaction {
 
     fn shift_nodes(&self, optimizer: &mut SizedOptimizer, work: &mut Work) -> Result<bool, Error> {
         let mut changed = false;
-        for node in ordered_along_axis(&optimizer.state.nodes, self.axis) {
+        for node in ordered_along_axis(&optimizer.state.nodes, self.axis, &optimizer.state.ranks) {
             let candidates = self.candidates(optimizer, node, 0.0, work)?;
             let chosen = optimizer.choose_move(node, &candidates, false, work, None)?;
             changed |= chosen != optimizer.position(node);

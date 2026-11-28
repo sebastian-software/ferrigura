@@ -18,6 +18,7 @@ use crate::stress_initialize::initialize_by_graph_distance;
 use crate::{Error, Graph};
 
 mod compaction;
+pub(crate) mod dejitter;
 mod direct;
 pub(crate) mod measured;
 mod refinement;
@@ -39,6 +40,15 @@ pub use self::{
     },
     transition::transition_to_sized,
 };
+
+/// Projects sibling and entity order into the prepared component's node indices.
+#[derive(Clone, Copy)]
+pub struct PlacementOrder<'a> {
+    /// Authored sibling order used for obstacle scans.
+    pub obstacles: &'a [usize],
+    /// Ascending numeric D2 entity ID, used when geometry or degree ties.
+    pub entities: &'a [usize],
+}
 
 const ITERATIONS_PER_SQRT_NODE: f64 = 90.0;
 const COMPACTION_ITERATION: usize = 9;
@@ -62,7 +72,7 @@ impl Work {
 /// Returns an error for unsupported component topology or invalid measurements,
 /// exhausted work, or a placement grid that lacks a candidate.
 pub fn first_pass(graph: &Graph, seed: i64) -> Result<Grid, Error> {
-    Ok(run(graph, seed, true)?.grid)
+    Ok(run(graph, seed, true, &[])?.grid)
 }
 
 /// Executes the entire sizeless phase including alternating-axis compaction.
@@ -70,8 +80,26 @@ pub fn first_pass(graph: &Graph, seed: i64) -> Result<Grid, Error> {
 /// # Errors
 /// Returns an error for unsupported component topology or invalid measurements,
 /// exhausted work, or a placement grid that lacks a candidate.
-pub fn optimize_phase(graph: &Graph, seed: i64) -> Result<Grid, Error> {
-    Ok(run(graph, seed, false)?.grid)
+pub fn optimize_phase(graph: &Graph, seed: i64, entity_order: &[usize]) -> Result<Grid, Error> {
+    let ranks = order_ranks(graph.nodes.len(), entity_order)?;
+    Ok(run(graph, seed, false, &ranks)?.grid)
+}
+
+fn order_ranks(node_count: usize, order: &[usize]) -> Result<Vec<usize>, Error> {
+    if node_count > crate::MAX_NODES {
+        return Err(Error::WorkLimit);
+    }
+    if order.len() != node_count {
+        return Err(Error::InvalidGraph);
+    }
+    let mut by_node = vec![usize::MAX; node_count];
+    for (rank, &node) in order.iter().enumerate() {
+        let current = by_node.get_mut(node).ok_or(Error::InvalidGraph)?;
+        if std::mem::replace(current, rank) != usize::MAX {
+            return Err(Error::InvalidGraph);
+        }
+    }
+    Ok(by_node)
 }
 
 struct PhaseState {
@@ -83,7 +111,12 @@ struct PhaseState {
     next_compaction: compaction::Axis,
 }
 
-fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<PhaseState, Error> {
+fn run(
+    graph: &Graph,
+    seed: i64,
+    first_pass_only: bool,
+    ranks: &[usize],
+) -> Result<PhaseState, Error> {
     let mut grid = initialize(graph)?;
     if seed % 2 == 0
         && let Some(points) = initialize_by_graph_distance(graph)?
@@ -111,7 +144,7 @@ fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<PhaseState, Er
     for pass in 0..passes {
         optimize_pass(&adjacency, &mut positions, direction, temperature, &mut rng)?;
         if !first_pass_only && pass % COMPACTION_ITERATION == 0 {
-            compaction::compact(&adjacency, &mut positions, direction, axis)?;
+            compaction::compact(&adjacency, &mut positions, direction, axis, ranks)?;
             axis = axis.opposite();
         }
         temperature *= cooling;

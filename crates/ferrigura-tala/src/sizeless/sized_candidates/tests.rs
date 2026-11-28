@@ -154,7 +154,15 @@ fn positioned_optimizer(
         })).collect::<Vec<_>>()
     })).unwrap();
     let order = (0..nodes.len()).collect::<Vec<_>>();
-    let mut optimizer = SizedOptimizer::new(&graph, 1, &order).unwrap();
+    let mut optimizer = SizedOptimizer::new(
+        &graph,
+        1,
+        PlacementOrder {
+            obstacles: &order,
+            entities: &order,
+        },
+    )
+    .unwrap();
     optimizer.state.phase.rng = GoRand::new(1);
     optimizer.state.nodes = nodes;
     optimizer.scorer = EdgeCost::new(&graph, &optimizer.state.nodes, cell, &order).unwrap();

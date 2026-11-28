@@ -51,7 +51,7 @@ pub struct FlavorRoutes {
     pub cost: f64,
     /// Routing order for this flavor.
     pub routes: Vec<RouteChoice>,
-    detached: Vec<Point>,
+    pub(super) detached: Vec<Point>,
 }
 
 /// Orders edges by the reference flavor and stably moves cluster edges first.
@@ -371,7 +371,11 @@ impl FlatSearch<'_> {
             .collect()
     }
 
-    fn materialize(&self, route: &SearchRoute, detached: &[Point]) -> Result<Vec<Point>, Error> {
+    pub(super) fn materialize(
+        &self,
+        route: &SearchRoute,
+        detached: &[Point],
+    ) -> Result<Vec<Point>, Error> {
         let interior = route
             .vertices
             .get(1..route.vertices.len().saturating_sub(1))
@@ -421,7 +425,7 @@ fn first_border_intersection(rectangle: Rectangle, from: Point, to: Point) -> Op
 
 // The fallback uses the reference's rounded segment intersections, whose
 // coordinates are measured from the beginning of the center-to-center line.
-fn segment_intersection(u0: Point, u1: Point, v0: Point, v1: Point) -> Option<Point> {
+pub(super) fn segment_intersection(u0: Point, u1: Point, v0: Point, v1: Point) -> Option<Point> {
     let udx = u1.x - u0.x;
     let vdx = v1.x - v0.x;
     let uvdx = v0.x - u0.x;

@@ -20,6 +20,7 @@ const FIRST_SPILL_ID: i64 = 1 << 32;
 const LABEL_PADDING: f64 = 5.0;
 
 pub(crate) mod hierarchy_preprocess;
+pub(crate) mod leaf_clusters;
 mod prescale;
 pub(crate) mod tree_preprocess;
 pub(crate) use prescale::port_dimensions;
@@ -341,6 +342,17 @@ pub fn tree_preprocess_checkpoint(graph: &Graph) -> Result<impl Serialize, Error
         tree: trees.capture(&graph),
         hierarchy: graph.hierarchy_for(&trees),
     })
+}
+
+/// Captures measured leaf cluster admission and endpoint rebinding.
+/// # Errors
+/// Returns measured translation, tree preprocessing, or work-limit errors.
+pub fn leaf_cluster_checkpoint(graph: &Graph) -> Result<impl Serialize, Error> {
+    let mut graph = LayoutGraph::translate(graph)?;
+    graph.prescale();
+    let trees = graph.tree_preprocess()?;
+    let state = graph.leaf_clusters(&trees, &[])?;
+    Ok(state.capture(&graph))
 }
 
 struct Topology<'a> {

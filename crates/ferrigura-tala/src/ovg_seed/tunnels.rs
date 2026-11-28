@@ -15,13 +15,13 @@ use super::{Bounds, PortOwner, TunnelVisibility, Vertex, VisibilitySeed, point_k
 const SPACING: f64 = 40.0;
 
 #[derive(Clone, Copy)]
-struct Span {
-    start: f64,
-    end: f64,
+pub(super) struct Span {
+    pub start: f64,
+    pub end: f64,
 }
 
 #[derive(Clone, Copy)]
-enum Axis {
+pub(super) enum Axis {
     Horizontal,
     Vertical,
 }
@@ -131,7 +131,7 @@ fn add_endpoint(
 }
 
 fn tunnel_points(bounds: &[Bounds], a: usize, b: usize, count: usize) -> Vec<[Point; 2]> {
-    let Some((axis, first, second, ranges)) = tunnel_ranges(bounds, a, b) else {
+    let Some((axis, first, second, ranges)) = tunnel_ranges(bounds, a, b, &[], SPACING) else {
         return Vec::new();
     };
     let (from, to) = if first.start > second.start {
@@ -155,7 +155,13 @@ fn tunnel_points(bounds: &[Bounds], a: usize, b: usize, count: usize) -> Vec<[Po
     points
 }
 
-fn tunnel_ranges(bounds: &[Bounds], a: usize, b: usize) -> Option<(Axis, Span, Span, Vec<Span>)> {
+pub(super) fn tunnel_ranges(
+    bounds: &[Bounds],
+    a: usize,
+    b: usize,
+    excluded: &[bool],
+    minimum_span: f64,
+) -> Option<(Axis, Span, Span, Vec<Span>)> {
     let (axis, first, second, overlap) =
         [Axis::Horizontal, Axis::Vertical]
             .into_iter()
@@ -170,7 +176,7 @@ fn tunnel_ranges(bounds: &[Bounds], a: usize, b: usize) -> Option<(Axis, Span, S
             })?;
     let mut ranges = vec![overlap];
     for (index, other) in bounds.iter().enumerate() {
-        if index == a || index == b {
+        if index == a || index == b || excluded.get(index) == Some(&true) {
             continue;
         }
         let [along, across] = axis.axes(other);
@@ -186,7 +192,7 @@ fn tunnel_ranges(bounds: &[Bounds], a: usize, b: usize) -> Option<(Axis, Span, S
                 .into_iter()
                 .flat_map(|range| subtract_obstacle(range, across))
                 .flatten()
-                .filter(|range| range.end - range.start >= SPACING)
+                .filter(|range| range.end - range.start >= minimum_span)
                 .collect();
         }
     }

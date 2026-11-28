@@ -87,7 +87,10 @@ async function checkNativeObservatory(input, defaultCapture, candidates, selecte
 
     const winner = JSON.parse(run(rust, ['--flat-layout-default'], measured).stdout);
     assert.equal(winner.seed, selectedSeed, 'native winning seed');
-    await checkLayout(defaultCapture, winner.layout, 'default layout');
+    const expectedSvg = await checkLayout(defaultCapture, winner.layout, 'default layout');
+    const publicLayout = JSON.parse(run(rust, ['--layout'], measured).stdout);
+    assert.deepEqual(geometry(publicLayout), geometry(winner.layout), 'public default geometry');
+    assert.equal(run(ferrigura, ['tala', source]).stdout, expectedSvg, 'public default SVG');
     console.log(
       'Observatory: all three native seeds and the default winner match Go geometry and SVG.'
     );
@@ -104,6 +107,7 @@ async function checkNativeObservatory(input, defaultCapture, candidates, selecte
     const expectedSvg = run(ferrigura, ['paint', source, referencePath]).stdout;
     const actualSvg = run(ferrigura, ['paint', source, nativePath]).stdout;
     assert.equal(actualSvg, expectedSvg, `${label}: byte-identical SVG`);
+    return expectedSvg;
   }
 }
 
