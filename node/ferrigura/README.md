@@ -27,6 +27,21 @@ unique IDs when combining them in one document. SVG is not automatically JSX.
 
 By default, every diagram type is drawn in ferrigura's own look, with roomier nodes and spacing. Pass `{ compat: true }` as render options to draw Mermaid's geometry and look instead. Font and readability fixes apply in both. Options belong to each render and cannot be set in Mermaid front matter or init directives.
 
+## Layout engines
+
+Pass `{ layoutEngine: 'elk' }` to choose ELK Layered explicitly for flowcharts,
+class diagrams, state diagrams, or entity relationship diagrams. Without an
+explicit selection, Ferrigura uses the diagram’s usual layout. An explicit
+selection takes precedence over the document’s Mermaid layout setting.
+
+The official npm packages use the default build profile. Requesting
+`layoutEngine: 'tala'` requires a custom native addon compiled with Cargo’s
+`experimental-tala` feature. It supports a bounded subset of flowcharts in
+Ferrigura’s default look. A request with `compat: true`, an unavailable
+engine, or an unsupported input throws a render error. See the
+[layout-engine guide](https://ferrigura.dev/guide/layout-engines/) for the
+custom addon example and license details.
+
 ## Custom fonts
 
 Register a local file with the renderer, separate from Mermaid configuration:
