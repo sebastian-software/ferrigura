@@ -18,9 +18,12 @@ TALA. A request for an engine that cannot draw the graph returns an error.
 
 The Cargo feature `experimental-tala` is off by default. It links the
 separately licensed `ferrigura-tala` crate for native-only layout. The
-experimental subset covers flat disconnected rectangles and an isolated
-rectangle with one labeled or several unlabeled self-loops. Regular
-connections, nested subgraphs, and other shapes are outside this subset.
+experimental subset covers flat disconnected rectangles, isolated rectangular
+self-loops, bounded straight paths, and a single chain of containers
+around a rectangle, unlabeled self-loops, or a supported unlabeled pair.
+Branching layouts, multi-node cycles, and edges crossing group boundaries
+return an unsupported-graph error. The [crate README](../../crates/ferrigura-tala/README.md)
+records the current size and topology limits.
 
 ## Consequences
 

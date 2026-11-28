@@ -1,0 +1,955 @@
+[
+  {
+    "name": "Measured Mermaid arrow left to right",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "direction": null,
+          "height": 41.0,
+          "id": "Alpha",
+          "isGroup": false,
+          "label": "Alpha",
+          "labelHeight": 0.0,
+          "labelWidth": 0.0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152.0
+        },
+        {
+          "direction": null,
+          "height": 41.0,
+          "id": "Beta",
+          "isGroup": false,
+          "label": "Beta",
+          "labelHeight": 0.0,
+          "labelWidth": 0.0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152.0
+        }
+      ],
+      "edges": [
+        {
+          "id": "L_Alpha_Beta_0",
+          "label": "",
+          "labelHeight": 0.0,
+          "labelWidth": 0.0,
+          "source": "Alpha",
+          "sourceArrow": false,
+          "target": "Beta",
+          "targetArrow": true
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "Alpha", "x": 0, "y": 0, "width": 152, "height": 41 },
+        { "id": "Beta", "x": 248, "y": 0, "width": 152, "height": 41 }
+      ],
+      "edges": [
+        {
+          "id": "L_Alpha_Beta_0",
+          "points": [
+            { "x": 152, "y": 20 },
+            { "x": 248, "y": 20 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Default top to bottom",
+    "input": {
+      "direction": null,
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"A\"",
+          "labelWidth": 0.0,
+          "labelHeight": 0.0,
+          "isGroup": false
+        },
+        {
+          "id": "B",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"B\"",
+          "labelWidth": 0.0,
+          "labelHeight": 0.0,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "A",
+          "target": "B",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 0, "y": 0, "width": 152, "height": 41 },
+        { "id": "B", "x": 0, "y": 124, "width": 152, "height": 41 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 76, "y": 41 },
+            { "x": 76, "y": 124 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Empty top to bottom direction",
+    "input": {
+      "direction": "",
+      "nodes": [
+        {
+          "id": "source",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"source\"",
+          "labelWidth": 0.0,
+          "labelHeight": 0.0,
+          "isGroup": false
+        },
+        {
+          "id": "output",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"output\"",
+          "labelWidth": 0.0,
+          "labelHeight": 0.0,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "output",
+          "target": "source",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 12,
+          "labelHeight": 21
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "source", "x": 0, "y": 124, "width": 152, "height": 41 },
+        { "id": "output", "x": 0, "y": 0, "width": 152, "height": 41 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 76, "y": 41 },
+            { "x": 76, "y": 124 }
+          ],
+          "label": { "x": 88, "y": 82.5 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Top-down alias",
+    "input": {
+      "direction": "TD",
+      "nodes": [
+        {
+          "id": "main",
+          "shape": "squareRect",
+          "width": 148,
+          "height": 57,
+          "label": "Node \"main\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "end",
+          "shape": "squareRect",
+          "width": 148,
+          "height": 57,
+          "label": "Node \"end\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "main",
+          "target": "end",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 47.1,
+          "labelHeight": 11.2
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "main", "x": 0, "y": 0, "width": 148, "height": 57 },
+        { "id": "end", "x": 0, "y": 148, "width": 148, "height": 57 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 74, "y": 57 },
+            { "x": 74, "y": 148 }
+          ],
+          "label": { "x": 104, "y": 103 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Reverse authored node order",
+    "input": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "node1",
+          "shape": "squareRect",
+          "width": 190,
+          "height": 43,
+          "label": "Node \"node1\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "node2",
+          "shape": "squareRect",
+          "width": 190,
+          "height": 43,
+          "label": "Node \"node2\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "node2",
+          "target": "node1",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 1,
+          "labelHeight": 1
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "node1", "x": 0, "y": 130, "width": 190, "height": 43 },
+        { "id": "node2", "x": 0, "y": 0, "width": 190, "height": 43 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 95, "y": 43 },
+            { "x": 95, "y": 130 }
+          ],
+          "label": { "x": 101.5, "y": 86.5 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Bottom to top caption shifts x origin",
+    "input": {
+      "direction": "BT",
+      "nodes": [
+        {
+          "id": "Z",
+          "shape": "squareRect",
+          "width": 100,
+          "height": 41,
+          "label": "Node \"Z\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 100,
+          "height": 41,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "Z",
+          "target": "A",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 45.9,
+          "labelHeight": 18.8
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "Z", "x": 2, "y": 191, "width": 100, "height": 41 },
+        { "id": "A", "x": 2, "y": 0, "width": 100, "height": 41 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 52, "y": 191 },
+            { "x": 52, "y": 41 }
+          ],
+          "label": { "x": 23, "y": 116.5 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Left to right caption shifts y origin",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "Z",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"Z\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "Z",
+          "target": "A",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 45.1,
+          "labelHeight": 18.8
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 248, "y": 5, "width": 152, "height": 41 },
+        { "id": "Z", "x": 0, "y": 5, "width": 152, "height": 41 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 152, "y": 25 },
+            { "x": 248, "y": 25 }
+          ],
+          "label": { "x": 200, "y": 9.5 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Right to left caption and fractional height",
+    "input": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "n3",
+          "shape": "squareRect",
+          "width": 150,
+          "height": 56.400001525878906,
+          "label": "Node \"n3\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "n12",
+          "shape": "squareRect",
+          "width": 150,
+          "height": 56.400001525878906,
+          "label": "Node \"n12\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "n3",
+          "target": "n12",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 20,
+          "labelHeight": 38
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "n3", "x": 300, "y": 0, "width": 150, "height": 56.400001525878906 },
+        { "id": "n12", "x": 0, "y": 0, "width": 150, "height": 56.400001525878906 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 300, "y": 28 },
+            { "x": 150, "y": 28 }
+          ],
+          "label": { "x": 225, "y": 53 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Minimum measured height",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "b",
+          "shape": "squareRect",
+          "width": 198,
+          "height": 40,
+          "label": "Node \"b\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "aa",
+          "shape": "squareRect",
+          "width": 198,
+          "height": 40,
+          "label": "Node \"aa\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "b",
+          "target": "aa",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "b", "x": 0, "y": 0, "width": 198, "height": 40 },
+        { "id": "aa", "x": 300, "y": 0, "width": 198, "height": 40 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 198, "y": 20 },
+            { "x": 300, "y": 20 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Maximum height and ideal gap",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "node1",
+          "shape": "squareRect",
+          "width": 200,
+          "height": 90,
+          "label": "Node \"node1\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "node2",
+          "shape": "squareRect",
+          "width": 200,
+          "height": 90,
+          "label": "Node \"node2\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "node2",
+          "target": "node1",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 80,
+          "labelHeight": 20
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "node1", "x": 350, "y": 0, "width": 200, "height": 90 },
+        { "id": "node2", "x": 0, "y": 0, "width": 200, "height": 90 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 200, "y": 45 },
+            { "x": 350, "y": 45 }
+          ],
+          "label": { "x": 275, "y": 29 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Different identifiers and fractional width of caption",
+    "input": {
+      "direction": "BT",
+      "nodes": [
+        {
+          "id": "Z",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 52,
+          "label": "Node \"Z\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 52,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "A",
+          "target": "Z",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 24.7,
+          "labelHeight": 13.1
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "Z", "x": 0, "y": 0, "width": 152, "height": 52 },
+        { "id": "A", "x": 0, "y": 152, "width": 152, "height": 52 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 76, "y": 152 },
+            { "x": 76, "y": 52 }
+          ],
+          "label": { "x": 57.5, "y": 102 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Shallow rectangle with title offset",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 40.20000076293945,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "B",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 40.20000076293945,
+          "label": "Node \"B\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "A",
+          "target": "B",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 20,
+          "labelHeight": 38
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 0, "y": 24, "width": 152, "height": 40.20000076293945 },
+        { "id": "B", "x": 244, "y": 24, "width": 152, "height": 40.20000076293945 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 152, "y": 44 },
+            { "x": 244, "y": 44 }
+          ],
+          "label": { "x": 198, "y": 19 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Maximum cross-axis caption",
+    "input": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 200,
+          "height": 40,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "B",
+          "shape": "squareRect",
+          "width": 200,
+          "height": 40,
+          "label": "Node \"B\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "A",
+          "target": "B",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 48,
+          "labelHeight": 60
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 0, "y": 0, "width": 200, "height": 40 },
+        { "id": "B", "x": 0, "y": 120, "width": 200, "height": 40 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 100, "y": 40 },
+            { "x": 100, "y": 120 }
+          ],
+          "label": { "x": 130, "y": 80 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Bidirectional right to left arrow",
+    "input": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 157,
+          "height": 50.8,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "B",
+          "shape": "squareRect",
+          "width": 157,
+          "height": 50.8,
+          "label": "Node \"B\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "B",
+          "target": "A",
+          "sourceArrow": true,
+          "targetArrow": true,
+          "label": "Label",
+          "labelWidth": 18,
+          "labelHeight": 15
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 0, "y": 0, "width": 157, "height": 50.8 },
+        { "id": "B", "x": 231, "y": 0, "width": 157, "height": 50.8 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 231, "y": 25 },
+            { "x": 157, "y": 25 }
+          ],
+          "label": { "x": 194, "y": 38.5 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Source arrow preserves authored route order",
+    "input": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "B",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"B\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "A",
+          "target": "B",
+          "sourceArrow": true,
+          "targetArrow": false,
+          "label": "Label",
+          "labelWidth": 35,
+          "labelHeight": 22
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 248, "y": 8, "width": 152, "height": 41 },
+        { "id": "B", "x": 0, "y": 8, "width": 152, "height": 41 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 248, "y": 28 },
+            { "x": 152, "y": 28 }
+          ],
+          "label": { "x": 200.5, "y": 11 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Undirected explicit top to bottom",
+    "input": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 134.8,
+          "height": 52,
+          "label": "Node \"A\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        },
+        {
+          "id": "B",
+          "shape": "squareRect",
+          "width": 134.8,
+          "height": 52,
+          "label": "Node \"B\"",
+          "labelWidth": 16,
+          "labelHeight": 14,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "B",
+          "target": "A",
+          "sourceArrow": false,
+          "targetArrow": false,
+          "label": "Label",
+          "labelWidth": 22,
+          "labelHeight": 30
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 0, "y": 135, "width": 134.8, "height": 52 },
+        { "id": "B", "x": 0, "y": 0, "width": 134.8, "height": 52 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 67, "y": 52 },
+            { "x": 67, "y": 135 }
+          ],
+          "label": { "x": 84, "y": 94 }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Implicit direction with source arrow",
+    "input": {
+      "direction": null,
+      "nodes": [
+        {
+          "id": "A",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"A\"",
+          "labelWidth": 0.0,
+          "labelHeight": 0.0,
+          "isGroup": false
+        },
+        {
+          "id": "B",
+          "shape": "squareRect",
+          "width": 152,
+          "height": 41,
+          "label": "Node \"B\"",
+          "labelWidth": 0.0,
+          "labelHeight": 0.0,
+          "isGroup": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "B",
+          "target": "A",
+          "sourceArrow": true,
+          "targetArrow": false,
+          "label": "Label",
+          "labelWidth": 27,
+          "labelHeight": 12
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        { "id": "A", "x": 0, "y": 0, "width": 152, "height": 41 },
+        { "id": "B", "x": 0, "y": 124, "width": 152, "height": 41 }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            { "x": 76, "y": 124 },
+            { "x": 76, "y": 41 }
+          ],
+          "label": { "x": 95.5, "y": 83 }
+        }
+      ]
+    }
+  }
+]
