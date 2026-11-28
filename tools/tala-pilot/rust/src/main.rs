@@ -19,9 +19,24 @@ fn main() -> Result<(), Box<dyn Error>> {
             let graph = serde_json::from_reader(input)?;
             serde_json::to_writer(output, &ferrigura_tala::layout(&graph)?)?;
         }
+        Some("--initialize") => {
+            let graph = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &ferrigura_tala::initialize::initialize(&graph)?)?;
+        }
+        Some("--initialize-by-distance") => {
+            let graph = serde_json::from_reader(input)?;
+            let positions =
+                ferrigura_tala::stress_initialize::initialize_by_graph_distance(&graph)?;
+            serde_json::to_writer(output, &positions)?;
+        }
         Some("--simplify") => {
             let RoutedCapture { graph, mut layout } = serde_json::from_reader(input)?;
             ferrigura_tala::simplify::simplify_routes(&graph, &mut layout)?;
+            serde_json::to_writer(output, &layout)?;
+        }
+        Some("--balance") => {
+            let RoutedCapture { graph, mut layout } = serde_json::from_reader(input)?;
+            ferrigura_tala::balance::balance_routes(&graph, &mut layout)?;
             serde_json::to_writer(output, &layout)?;
         }
         None => {
@@ -29,7 +44,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             geometry.normalize()?;
             serde_json::to_writer(output, &geometry)?;
         }
-        _ => return Err("expected --layout, --simplify, or no argument".into()),
+        _ => {
+            return Err(concat!(
+                "expected --layout, --initialize, --initialize-by-distance, ",
+                "--simplify, --balance, or no argument"
+            )
+            .into());
+        }
     }
     Ok(())
 }

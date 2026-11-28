@@ -1,0 +1,1244 @@
+[
+  {
+    "name": "Three-node cycle left to right",
+    "graph": {
+      "nodes": [
+        {
+          "height": 41,
+          "id": "3655005916",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3705338773",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3688561154",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "1266951893",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3705338773",
+          "sourceArrow": false,
+          "target": "3688561154",
+          "targetArrow": true
+        },
+        {
+          "id": "1835276829",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3688561154",
+          "sourceArrow": false,
+          "target": "3655005916",
+          "targetArrow": true
+        }
+      ]
+    },
+    "before": {
+      "nodes": [
+        { "height": 41, "id": "3655005916", "width": 152, "x": 1124, "y": 1124 },
+        { "height": 41, "id": "3705338773", "width": 152, "x": 1000, "y": 1000 },
+        { "height": 41, "id": "3688561154", "width": 152, "x": 1248, "y": 1000 }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "points": [
+            { "x": 1124, "y": 1145 },
+            { "x": 1076, "y": 1145 },
+            { "x": 1076, "y": 1041 }
+          ]
+        },
+        {
+          "id": "1266951893",
+          "points": [
+            { "x": 1152, "y": 1021 },
+            { "x": 1248, "y": 1021 }
+          ]
+        },
+        {
+          "id": "1835276829",
+          "points": [
+            { "x": 1324, "y": 1041 },
+            { "x": 1324, "y": 1145 },
+            { "x": 1276, "y": 1145 }
+          ]
+        }
+      ]
+    },
+    "after": [
+      {
+        "id": "1324931844",
+        "points": [
+          { "x": 1124, "y": 1144 },
+          { "x": 1062, "y": 1144 },
+          { "x": 1062, "y": 1041 }
+        ]
+      },
+      {
+        "id": "1266951893",
+        "points": [
+          { "x": 1152, "y": 1020 },
+          { "x": 1248, "y": 1020 }
+        ]
+      },
+      {
+        "id": "1835276829",
+        "points": [
+          { "x": 1338, "y": 1041 },
+          { "x": 1338, "y": 1144 },
+          { "x": 1276, "y": 1144 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Three-node cycle top to bottom",
+    "graph": {
+      "nodes": [
+        {
+          "height": 41,
+          "id": "3655005916",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3705338773",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3688561154",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "1266951893",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3705338773",
+          "sourceArrow": false,
+          "target": "3688561154",
+          "targetArrow": true
+        },
+        {
+          "id": "1835276829",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3688561154",
+          "sourceArrow": false,
+          "target": "3655005916",
+          "targetArrow": true
+        }
+      ]
+    },
+    "before": {
+      "nodes": [
+        { "height": 41, "id": "3655005916", "width": 152, "x": 1000, "y": 1248 },
+        { "height": 41, "id": "3705338773", "width": 152, "x": 1062, "y": 1000 },
+        { "height": 41, "id": "3688561154", "width": 152, "x": 1000, "y": 1124 }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "points": [
+            { "x": 1152, "y": 1269 },
+            { "x": 1176, "y": 1269 },
+            { "x": 1176, "y": 1041 }
+          ]
+        },
+        {
+          "id": "1266951893",
+          "points": [
+            { "x": 1107, "y": 1041 },
+            { "x": 1107, "y": 1124 }
+          ]
+        },
+        {
+          "id": "1835276829",
+          "points": [
+            { "x": 1076, "y": 1165 },
+            { "x": 1076, "y": 1248 }
+          ]
+        }
+      ]
+    },
+    "after": [
+      {
+        "id": "1324931844",
+        "points": [
+          { "x": 1152, "y": 1268 },
+          { "x": 1183, "y": 1268 },
+          { "x": 1183, "y": 1041 }
+        ]
+      },
+      {
+        "id": "1266951893",
+        "points": [
+          { "x": 1107, "y": 1041 },
+          { "x": 1107, "y": 1124 }
+        ]
+      },
+      {
+        "id": "1835276829",
+        "points": [
+          { "x": 1076, "y": 1165 },
+          { "x": 1076, "y": 1248 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Three-node cycle bottom to top",
+    "graph": {
+      "nodes": [
+        {
+          "height": 41,
+          "id": "3655005916",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3705338773",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3688561154",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "1266951893",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3705338773",
+          "sourceArrow": false,
+          "target": "3688561154",
+          "targetArrow": true
+        },
+        {
+          "id": "1835276829",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3688561154",
+          "sourceArrow": false,
+          "target": "3655005916",
+          "targetArrow": true
+        }
+      ]
+    },
+    "before": {
+      "nodes": [
+        { "height": 41, "id": "3655005916", "width": 152, "x": 1124, "y": 1124 },
+        { "height": 41, "id": "3705338773", "width": 152, "x": 1062, "y": 1000 },
+        { "height": 41, "id": "3688561154", "width": 152, "x": 1000, "y": 1248 }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "points": [
+            { "x": 1169, "y": 1124 },
+            { "x": 1169, "y": 1041 }
+          ]
+        },
+        {
+          "id": "1266951893",
+          "points": [
+            { "x": 1093, "y": 1041 },
+            { "x": 1093, "y": 1248 }
+          ]
+        },
+        {
+          "id": "1835276829",
+          "points": [
+            { "x": 1152, "y": 1269 },
+            { "x": 1200, "y": 1269 },
+            { "x": 1200, "y": 1165 }
+          ]
+        }
+      ]
+    },
+    "after": [
+      {
+        "id": "1324931844",
+        "points": [
+          { "x": 1169, "y": 1124 },
+          { "x": 1169, "y": 1041 }
+        ]
+      },
+      {
+        "id": "1266951893",
+        "points": [
+          { "x": 1093, "y": 1041 },
+          { "x": 1093, "y": 1248 }
+        ]
+      },
+      {
+        "id": "1835276829",
+        "points": [
+          { "x": 1152, "y": 1268 },
+          { "x": 1214, "y": 1268 },
+          { "x": 1214, "y": 1165 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Five-node cycle with mixed node measurements",
+    "graph": {
+      "nodes": [
+        {
+          "height": 108,
+          "id": "3587895440",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 352
+        },
+        {
+          "height": 41,
+          "id": "3655005916",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 56.4,
+          "id": "3705338773",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3604673059",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 185
+        },
+        {
+          "height": 108,
+          "id": "3688561154",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 352
+        }
+      ],
+      "edges": [
+        {
+          "id": "1345254100",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3604673059",
+          "sourceArrow": false,
+          "target": "3587895440",
+          "targetArrow": true
+        },
+        {
+          "id": "1266951893",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3705338773",
+          "sourceArrow": false,
+          "target": "3688561154",
+          "targetArrow": true
+        },
+        {
+          "id": "317980514",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "3566659683",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3688561154",
+          "sourceArrow": false,
+          "target": "3604673059",
+          "targetArrow": true
+        },
+        {
+          "id": "902893941",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3587895440",
+          "sourceArrow": false,
+          "target": "3655005916",
+          "targetArrow": true
+        }
+      ]
+    },
+    "before": {
+      "nodes": [
+        { "height": 108, "id": "3587895440", "width": 352, "x": 1496, "y": 1122 },
+        { "height": 41, "id": "3655005916", "width": 152, "x": 1434, "y": 1000 },
+        { "height": 56.4, "id": "3705338773", "width": 152, "x": 1310, "y": 1116 },
+        { "height": 41, "id": "3604673059", "width": 185, "x": 1434, "y": 1310 },
+        { "height": 108, "id": "3688561154", "width": 352, "x": 1000, "y": 1248 }
+      ],
+      "edges": [
+        {
+          "id": "1345254100",
+          "points": [
+            { "x": 1558, "y": 1310 },
+            { "x": 1558, "y": 1230 }
+          ]
+        },
+        {
+          "id": "1266951893",
+          "points": [
+            { "x": 1331, "y": 1172.4 },
+            { "x": 1331, "y": 1248 }
+          ]
+        },
+        {
+          "id": "317980514",
+          "points": [
+            { "x": 1434, "y": 1021 },
+            { "x": 1386, "y": 1021 },
+            { "x": 1386, "y": 1116 }
+          ]
+        },
+        {
+          "id": "3566659683",
+          "points": [
+            { "x": 1352, "y": 1331 },
+            { "x": 1434, "y": 1331 }
+          ]
+        },
+        {
+          "id": "902893941",
+          "points": [
+            { "x": 1541, "y": 1122 },
+            { "x": 1541, "y": 1041 }
+          ]
+        }
+      ]
+    },
+    "after": [
+      {
+        "id": "1345254100",
+        "points": [
+          { "x": 1557, "y": 1310 },
+          { "x": 1557, "y": 1230 }
+        ]
+      },
+      {
+        "id": "1266951893",
+        "points": [
+          { "x": 1331, "y": 1172.4 },
+          { "x": 1331, "y": 1248 }
+        ]
+      },
+      {
+        "id": "317980514",
+        "points": [
+          { "x": 1434, "y": 1020 },
+          { "x": 1372, "y": 1020 },
+          { "x": 1372, "y": 1116 }
+        ]
+      },
+      {
+        "id": "3566659683",
+        "points": [
+          { "x": 1352, "y": 1330 },
+          { "x": 1434, "y": 1330 }
+        ]
+      },
+      {
+        "id": "902893941",
+        "points": [
+          { "x": 1541, "y": 1122 },
+          { "x": 1541, "y": 1041 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Six-node cycle with mixed node measurements",
+    "graph": {
+      "nodes": [
+        {
+          "height": 41,
+          "id": "3688561154",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3638228297",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 185
+        },
+        {
+          "height": 41,
+          "id": "3604673059",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 221
+        },
+        {
+          "height": 56.4,
+          "id": "3655005916",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 56.4,
+          "id": "3587895440",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3705338773",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 221
+        }
+      ],
+      "edges": [
+        {
+          "id": "2587268860",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3587895440",
+          "sourceArrow": false,
+          "target": "3638228297",
+          "targetArrow": true
+        },
+        {
+          "id": "2560296733",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3688561154",
+          "sourceArrow": false,
+          "target": "3604673059",
+          "targetArrow": true
+        },
+        {
+          "id": "317980514",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "125779611",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3705338773",
+          "sourceArrow": false,
+          "target": "3688561154",
+          "targetArrow": true
+        },
+        {
+          "id": "1345842480",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3604673059",
+          "sourceArrow": false,
+          "target": "3587895440",
+          "targetArrow": true
+        },
+        {
+          "id": "3033742191",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3638228297",
+          "sourceArrow": false,
+          "target": "3655005916",
+          "targetArrow": true
+        }
+      ]
+    },
+    "before": {
+      "nodes": [
+        { "height": 41, "id": "3688561154", "width": 152, "x": 1007, "y": 1178 },
+        { "height": 41, "id": "3638228297", "width": 185, "x": 1222, "y": 1124 },
+        { "height": 41, "id": "3604673059", "width": 221, "x": 1062, "y": 1000 },
+        { "height": 56.4, "id": "3655005916", "width": 152, "x": 1131, "y": 1240 },
+        { "height": 56.4, "id": "3587895440", "width": 152, "x": 1379, "y": 992 },
+        { "height": 41, "id": "3705338773", "width": 221, "x": 1000, "y": 1364 }
+      ],
+      "edges": [
+        {
+          "id": "2587268860",
+          "points": [
+            { "x": 1455, "y": 1048 },
+            { "x": 1455, "y": 1145 },
+            { "x": 1407, "y": 1145 }
+          ]
+        },
+        {
+          "id": "2560296733",
+          "points": [
+            { "x": 1111, "y": 1178 },
+            { "x": 1111, "y": 1041 }
+          ]
+        },
+        {
+          "id": "317980514",
+          "points": [
+            { "x": 1176, "y": 1296.4 },
+            { "x": 1176, "y": 1364 }
+          ]
+        },
+        {
+          "id": "125779611",
+          "points": [
+            { "x": 1069, "y": 1364 },
+            { "x": 1069, "y": 1219 }
+          ]
+        },
+        {
+          "id": "1345842480",
+          "points": [
+            { "x": 1283, "y": 1021 },
+            { "x": 1379, "y": 1021 }
+          ]
+        },
+        {
+          "id": "3033742191",
+          "points": [
+            { "x": 1253, "y": 1165 },
+            { "x": 1253, "y": 1240 }
+          ]
+        }
+      ]
+    },
+    "after": [
+      {
+        "id": "2587268860",
+        "points": [
+          { "x": 1469, "y": 1048 },
+          { "x": 1469, "y": 1144 },
+          { "x": 1407, "y": 1144 }
+        ]
+      },
+      {
+        "id": "2560296733",
+        "points": [
+          { "x": 1110, "y": 1178 },
+          { "x": 1110, "y": 1041 }
+        ]
+      },
+      {
+        "id": "317980514",
+        "points": [
+          { "x": 1176, "y": 1296.4 },
+          { "x": 1176, "y": 1364 }
+        ]
+      },
+      {
+        "id": "125779611",
+        "points": [
+          { "x": 1069, "y": 1364 },
+          { "x": 1069, "y": 1219 }
+        ]
+      },
+      {
+        "id": "1345842480",
+        "points": [
+          { "x": 1283, "y": 1020 },
+          { "x": 1379, "y": 1020 }
+        ]
+      },
+      {
+        "id": "3033742191",
+        "points": [
+          { "x": 1252, "y": 1165 },
+          { "x": 1252, "y": 1240 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Seven-node cycle right to left",
+    "graph": {
+      "nodes": [
+        {
+          "height": 41,
+          "id": "3655005916",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 185
+        },
+        {
+          "height": 41,
+          "id": "3587895440",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 108,
+          "id": "3638228297",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 352
+        },
+        {
+          "height": 41,
+          "id": "3621450678",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 185
+        },
+        {
+          "height": 41,
+          "id": "3688561154",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "3604673059",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 185
+        },
+        {
+          "height": 41,
+          "id": "3705338773",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 185
+        }
+      ],
+      "edges": [
+        {
+          "id": "2587268860",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3587895440",
+          "sourceArrow": false,
+          "target": "3638228297",
+          "targetArrow": true
+        },
+        {
+          "id": "2485881929",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3604673059",
+          "sourceArrow": false,
+          "target": "3587895440",
+          "targetArrow": true
+        },
+        {
+          "id": "193037182",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3705338773",
+          "sourceArrow": false,
+          "target": "3688561154",
+          "targetArrow": true
+        },
+        {
+          "id": "99519708",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3621450678",
+          "sourceArrow": false,
+          "target": "3655005916",
+          "targetArrow": true
+        },
+        {
+          "id": "1325520224",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "450985577",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3638228297",
+          "sourceArrow": false,
+          "target": "3621450678",
+          "targetArrow": true
+        },
+        {
+          "id": "3633225706",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3688561154",
+          "sourceArrow": false,
+          "target": "3604673059",
+          "targetArrow": true
+        }
+      ]
+    },
+    "before": {
+      "nodes": [
+        { "height": 41, "id": "3655005916", "width": 185, "x": 1229, "y": 1434 },
+        { "height": 41, "id": "3587895440", "width": 152, "x": 1138, "y": 1000 },
+        { "height": 108, "id": "3638228297", "width": 352, "x": 1000, "y": 1122 },
+        { "height": 41, "id": "3621450678", "width": 185, "x": 1105, "y": 1312 },
+        { "height": 41, "id": "3688561154", "width": 152, "x": 1386, "y": 1155 },
+        { "height": 41, "id": "3604673059", "width": 185, "x": 1353, "y": 1000 },
+        { "height": 41, "id": "3705338773", "width": 185, "x": 1353, "y": 1310 }
+      ],
+      "edges": [
+        {
+          "id": "2587268860",
+          "points": [
+            { "x": 1214, "y": 1041 },
+            { "x": 1214, "y": 1122 }
+          ]
+        },
+        {
+          "id": "2485881929",
+          "points": [
+            { "x": 1353, "y": 1021 },
+            { "x": 1290, "y": 1021 }
+          ]
+        },
+        {
+          "id": "193037182",
+          "points": [
+            { "x": 1462, "y": 1310 },
+            { "x": 1462, "y": 1196 }
+          ]
+        },
+        {
+          "id": "99519708",
+          "points": [
+            { "x": 1260, "y": 1353 },
+            { "x": 1260, "y": 1434 }
+          ]
+        },
+        {
+          "id": "1325520224",
+          "points": [
+            { "x": 1384, "y": 1434 },
+            { "x": 1384, "y": 1351 }
+          ]
+        },
+        {
+          "id": "450985577",
+          "points": [
+            { "x": 1198, "y": 1230 },
+            { "x": 1198, "y": 1312 }
+          ]
+        },
+        {
+          "id": "3633225706",
+          "points": [
+            { "x": 1462, "y": 1155 },
+            { "x": 1462, "y": 1041 }
+          ]
+        }
+      ]
+    },
+    "after": [
+      {
+        "id": "2587268860",
+        "points": [
+          { "x": 1214, "y": 1041 },
+          { "x": 1214, "y": 1122 }
+        ]
+      },
+      {
+        "id": "2485881929",
+        "points": [
+          { "x": 1353, "y": 1020 },
+          { "x": 1290, "y": 1020 }
+        ]
+      },
+      {
+        "id": "193037182",
+        "points": [
+          { "x": 1462, "y": 1310 },
+          { "x": 1462, "y": 1196 }
+        ]
+      },
+      {
+        "id": "99519708",
+        "points": [
+          { "x": 1259, "y": 1353 },
+          { "x": 1259, "y": 1434 }
+        ]
+      },
+      {
+        "id": "1325520224",
+        "points": [
+          { "x": 1383, "y": 1434 },
+          { "x": 1383, "y": 1351 }
+        ]
+      },
+      {
+        "id": "450985577",
+        "points": [
+          { "x": 1197, "y": 1230 },
+          { "x": 1197, "y": 1312 }
+        ]
+      },
+      {
+        "id": "3633225706",
+        "points": [
+          { "x": 1462, "y": 1155 },
+          { "x": 1462, "y": 1041 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Branch graph with multiple corridors",
+    "graph": {
+      "nodes": [
+        {
+          "height": 89,
+          "id": "3705338773",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 210
+        },
+        {
+          "height": 70,
+          "id": "3655005916",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 128
+        },
+        {
+          "height": 44,
+          "id": "3688561154",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 257
+        },
+        {
+          "height": 97,
+          "id": "3604673059",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "squareRect",
+          "width": 290
+        }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "2720946172",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3604673059",
+          "sourceArrow": false,
+          "target": "3705338773",
+          "targetArrow": true
+        },
+        {
+          "id": "493586156",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3655005916",
+          "sourceArrow": false,
+          "target": "3604673059",
+          "targetArrow": true
+        },
+        {
+          "id": "125779611",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3705338773",
+          "sourceArrow": false,
+          "target": "3688561154",
+          "targetArrow": true
+        },
+        {
+          "id": "2492744972",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "3688561154",
+          "sourceArrow": false,
+          "target": "3604673059",
+          "targetArrow": true
+        }
+      ]
+    },
+    "before": {
+      "nodes": [
+        { "height": 89, "id": "3705338773", "width": 210, "x": 1000, "y": 1156 },
+        { "height": 70, "id": "3655005916", "width": 128, "x": 1148, "y": 1000 },
+        { "height": 44, "id": "3688561154", "width": 257, "x": 1283, "y": 1222 },
+        { "height": 97, "id": "3604673059", "width": 290, "x": 1118, "y": 1330 }
+      ],
+      "edges": [
+        {
+          "id": "1324931844",
+          "points": [
+            { "x": 1179, "y": 1070 },
+            { "x": 1179, "y": 1156 }
+          ]
+        },
+        {
+          "id": "2720946172",
+          "points": [
+            { "x": 1164, "y": 1330 },
+            { "x": 1164, "y": 1245 }
+          ]
+        },
+        {
+          "id": "493586156",
+          "points": [
+            { "x": 1243, "y": 1070 },
+            { "x": 1243, "y": 1330 }
+          ]
+        },
+        {
+          "id": "125779611",
+          "points": [
+            { "x": 1210, "y": 1201 },
+            { "x": 1347, "y": 1201 },
+            { "x": 1347, "y": 1222 }
+          ]
+        },
+        {
+          "id": "2492744972",
+          "points": [
+            { "x": 1346, "y": 1266 },
+            { "x": 1346, "y": 1330 }
+          ]
+        }
+      ]
+    },
+    "after": [
+      {
+        "id": "1324931844",
+        "points": [
+          { "x": 1179, "y": 1070 },
+          { "x": 1179, "y": 1156 }
+        ]
+      },
+      {
+        "id": "2720946172",
+        "points": [
+          { "x": 1164, "y": 1330 },
+          { "x": 1164, "y": 1245 }
+        ]
+      },
+      {
+        "id": "493586156",
+        "points": [
+          { "x": 1243, "y": 1070 },
+          { "x": 1243, "y": 1330 }
+        ]
+      },
+      {
+        "id": "125779611",
+        "points": [
+          { "x": 1210, "y": 1189 },
+          { "x": 1411, "y": 1189 },
+          { "x": 1411, "y": 1222 }
+        ]
+      },
+      {
+        "id": "2492744972",
+        "points": [
+          { "x": 1345, "y": 1266 },
+          { "x": 1345, "y": 1330 }
+        ]
+      }
+    ]
+  }
+]

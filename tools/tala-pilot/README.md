@@ -86,6 +86,21 @@ The verifier runs each stored measured graph through both engines. It
 compares node boxes, ordered route points, and label positions. The Rust
 renderer receives only the native engine's geometry in an opt-in render.
 
+## Replay placement and routing stages
+
+The Rust crate tests replay pinned Go checkpoints for the plain sizeless
+initializer, graph-distance initializer, orthogonal route balancing and
+route simplification. These checkpoints describe isolated stages of the
+general solver. The native renderer currently accepts only the bounded
+subset documented in the [TALA crate README](../../crates/ferrigura-tala/README.md).
+
+Run the pilot binary with `--initialize` or `--initialize-by-distance` and
+an already preprocessed measured graph on stdin. The graph-distance stage
+returns JSON `null` when its input takes the ordinary initialization path.
+Pass `--balance` or `--simplify` a JSON object with `graph` and `layout`
+entries containing the measured graph and an already routed layout. With no
+argument the pilot replays terminal coordinate normalization.
+
 ## Findings
 
 - The nested library diagram goes from 10 bends with ELK to 5 with TALA.
