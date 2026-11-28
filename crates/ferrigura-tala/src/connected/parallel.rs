@@ -7,7 +7,7 @@
 // See internal/placement/stages.go (scaleBasedOnEdges) and
 // internal/routing/{coordinator,postprocess}.go (parallel route ordering and balancing).
 
-use crate::routing::SIDE_EDGE_SPACING;
+use crate::layout_graph::port_dimensions;
 use crate::{Edge, EdgeGeometry, Layout, Node, NodeGeometry};
 
 use super::{
@@ -43,10 +43,9 @@ pub(super) fn layout(
 
     // Each endpoint sees every edge on one side. Prescale reserves one more
     // spacing interval than the number of incident parallel edges.
-    let intervals = f64::from(u32::try_from(edges.len() + 1).ok()?);
-    let minimum_side = intervals * SIDE_EDGE_SPACING;
-    let width = width.max(minimum_side);
-    let height = height.max(minimum_side);
+    let edges_per_side = u32::try_from(edges.len()).ok()?;
+    let intervals = f64::from(edges_per_side + 1);
+    let (width, height) = port_dimensions(width, height, edges_per_side);
     let (body_axis, body_cross) = direction.axes(width, height);
     let distance = separation(body_axis, body_cross);
     let rail_gap = (body_cross / intervals).floor();

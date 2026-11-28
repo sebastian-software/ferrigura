@@ -1,0 +1,762 @@
+[
+  {
+    "name": "library-architecture",
+    "input": {
+      "direction": "LR",
+      "edges": [
+        {
+          "id": "L_portal_reserve_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "portal",
+          "sourceArrow": false,
+          "target": "reserve",
+          "targetArrow": true
+        },
+        {
+          "id": "L_queue_shelf_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "queue",
+          "sourceArrow": false,
+          "target": "shelf",
+          "targetArrow": true
+        },
+        {
+          "id": "L_reserve_queue_0",
+          "label": "hold request",
+          "labelHeight": 21,
+          "labelWidth": 102.953125,
+          "source": "reserve",
+          "sourceArrow": false,
+          "target": "queue",
+          "targetArrow": true
+        },
+        {
+          "id": "L_shelf_portal_0",
+          "label": "availability",
+          "labelHeight": 21,
+          "labelWidth": 90.578125,
+          "source": "shelf",
+          "sourceArrow": false,
+          "target": "portal",
+          "targetArrow": true
+        },
+        {
+          "id": "L_schedule_alert_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "schedule",
+          "sourceArrow": false,
+          "target": "alert",
+          "targetArrow": true
+        },
+        {
+          "id": "L_shelf_schedule_0",
+          "label": "branch transfer",
+          "labelHeight": 21,
+          "labelWidth": 118.96875,
+          "source": "shelf",
+          "sourceArrow": false,
+          "target": "schedule",
+          "targetArrow": true
+        },
+        {
+          "id": "L_schedule_reserve_0",
+          "label": "confirmed slot",
+          "labelHeight": 21,
+          "labelWidth": 113.703125,
+          "source": "schedule",
+          "sourceArrow": false,
+          "target": "reserve",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "direction": null,
+          "height": 0,
+          "id": "delivery",
+          "isGroup": true,
+          "label": "Delivery",
+          "labelHeight": 17,
+          "labelWidth": 48.796875,
+          "parentId": null,
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 0,
+          "id": "product",
+          "isGroup": true,
+          "label": "Library service",
+          "labelHeight": 17,
+          "labelWidth": 89.9375,
+          "parentId": null,
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 0,
+          "id": "stock",
+          "isGroup": true,
+          "label": "Branch inventory",
+          "labelHeight": 17,
+          "labelWidth": 102.765625,
+          "parentId": "product",
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 0,
+          "id": "intake",
+          "isGroup": true,
+          "label": "Reader requests",
+          "labelHeight": 17,
+          "labelWidth": 100.84375,
+          "parentId": "product",
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "portal",
+          "isGroup": false,
+          "label": "Reader portal",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "intake",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "reserve",
+          "isGroup": false,
+          "label": "Reservation API",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "intake",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "queue",
+          "isGroup": false,
+          "label": "Transfer queue",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "stock",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "shelf",
+          "isGroup": false,
+          "label": "Shelf inventory",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "stock",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "schedule",
+          "isGroup": false,
+          "label": "Delivery scheduler",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "delivery",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "alert",
+          "isGroup": false,
+          "label": "Reader notification",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "delivery",
+          "shape": "squareRect",
+          "width": 152
+        }
+      ]
+    },
+    "translated": {
+      "direction": "Right",
+      "roots": [0, 3],
+      "nodes": [
+        {
+          "id": 978690777,
+          "inputIndex": 0,
+          "absoluteId": "n64656c6976657279",
+          "parent": null,
+          "children": [1, 2],
+          "incidentEdges": [],
+          "direction": null,
+          "shape": "Square",
+          "width": 49,
+          "height": 17,
+          "label": {
+            "text": "Delivery",
+            "width": 49,
+            "height": 17
+          }
+        },
+        {
+          "id": 2187326727,
+          "inputIndex": 8,
+          "absoluteId": "n64656c6976657279.n7363686564756c65",
+          "parent": 0,
+          "children": [],
+          "incidentEdges": [4, 5, 6],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 68,
+          "label": {
+            "text": "Delivery scheduler",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 787511036,
+          "inputIndex": 9,
+          "absoluteId": "n64656c6976657279.n616c657274",
+          "parent": 0,
+          "children": [],
+          "incidentEdges": [4],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 41,
+          "label": {
+            "text": "Reader notification",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 2681950517,
+          "inputIndex": 1,
+          "absoluteId": "n70726f64756374",
+          "parent": null,
+          "children": [4, 7],
+          "incidentEdges": [],
+          "direction": null,
+          "shape": "Square",
+          "width": 90,
+          "height": 17,
+          "label": {
+            "text": "Library service",
+            "width": 90,
+            "height": 17
+          }
+        },
+        {
+          "id": 3643962079,
+          "inputIndex": 2,
+          "absoluteId": "n70726f64756374.n73746f636b",
+          "parent": 3,
+          "children": [5, 6],
+          "incidentEdges": [],
+          "direction": null,
+          "shape": "Square",
+          "width": 103,
+          "height": 17,
+          "label": {
+            "text": "Branch inventory",
+            "width": 103,
+            "height": 17
+          }
+        },
+        {
+          "id": 1003761083,
+          "inputIndex": 6,
+          "absoluteId": "n70726f64756374.n73746f636b.n7175657565",
+          "parent": 4,
+          "children": [],
+          "incidentEdges": [1, 2],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 41,
+          "label": {
+            "text": "Transfer queue",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 1043738909,
+          "inputIndex": 7,
+          "absoluteId": "n70726f64756374.n73746f636b.n7368656c66",
+          "parent": 4,
+          "children": [],
+          "incidentEdges": [1, 3, 5],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 68,
+          "label": {
+            "text": "Shelf inventory",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 4112966650,
+          "inputIndex": 3,
+          "absoluteId": "n70726f64756374.n696e74616b65",
+          "parent": 3,
+          "children": [8, 9],
+          "incidentEdges": [],
+          "direction": null,
+          "shape": "Square",
+          "width": 101,
+          "height": 17,
+          "label": {
+            "text": "Reader requests",
+            "width": 101,
+            "height": 17
+          }
+        },
+        {
+          "id": 1397417381,
+          "inputIndex": 4,
+          "absoluteId": "n70726f64756374.n696e74616b65.n706f7274616c",
+          "parent": 7,
+          "children": [],
+          "incidentEdges": [0, 3],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 41,
+          "label": {
+            "text": "Reader portal",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 1129762748,
+          "inputIndex": 5,
+          "absoluteId": "n70726f64756374.n696e74616b65.n72657365727665",
+          "parent": 7,
+          "children": [],
+          "incidentEdges": [0, 2, 6],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 68,
+          "label": {
+            "text": "Reservation API",
+            "width": 0,
+            "height": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": 3756555815,
+          "absoluteId": "n70726f64756374.n696e74616b65.(n706f7274616c -> n72657365727665)[0]",
+          "from": 8,
+          "to": 9,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 10,
+          "minHeight": 10,
+          "label": null
+        },
+        {
+          "id": 3603226058,
+          "absoluteId": "n70726f64756374.n73746f636b.(n7175657565 -> n7368656c66)[1]",
+          "from": 5,
+          "to": 6,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 10,
+          "minHeight": 10,
+          "label": null
+        },
+        {
+          "id": 992662632,
+          "absoluteId": "n70726f64756374.(n696e74616b65.n72657365727665 -> n73746f636b.n7175657565)[2]",
+          "from": 9,
+          "to": 5,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 113,
+          "minHeight": 31,
+          "label": {
+            "text": "hold request",
+            "width": 103,
+            "height": 21
+          }
+        },
+        {
+          "id": 3163498756,
+          "absoluteId": "n70726f64756374.(n73746f636b.n7368656c66 -> n696e74616b65.n706f7274616c)[3]",
+          "from": 6,
+          "to": 8,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 101,
+          "minHeight": 31,
+          "label": {
+            "text": "availability",
+            "width": 91,
+            "height": 21
+          }
+        },
+        {
+          "id": 2596137720,
+          "absoluteId": "n64656c6976657279.(n7363686564756c65 -> n616c657274)[4]",
+          "from": 1,
+          "to": 2,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 10,
+          "minHeight": 10,
+          "label": null
+        },
+        {
+          "id": 3111688284,
+          "absoluteId": "(n70726f64756374.n73746f636b.n7368656c66 -> n64656c6976657279.n7363686564756c65)[5]",
+          "from": 6,
+          "to": 1,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 129,
+          "minHeight": 31,
+          "label": {
+            "text": "branch transfer",
+            "width": 119,
+            "height": 21
+          }
+        },
+        {
+          "id": 3158127466,
+          "absoluteId": "(n64656c6976657279.n7363686564756c65 -> n70726f64756374.n696e74616b65.n72657365727665)[6]",
+          "from": 1,
+          "to": 9,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 124,
+          "minHeight": 31,
+          "label": {
+            "text": "confirmed slot",
+            "width": 114,
+            "height": 21
+          }
+        }
+      ]
+    },
+    "prescaledSizes": [
+      [49, 17],
+      [152, 68],
+      [152, 41],
+      [90, 17],
+      [103, 17],
+      [152, 41],
+      [152, 68],
+      [101, 17],
+      [152, 41],
+      [152, 68]
+    ]
+  },
+  {
+    "name": "workshop-edges",
+    "input": {
+      "direction": "LR",
+      "edges": [
+        {
+          "id": "L_sensor_panel_0",
+          "label": "reading",
+          "labelHeight": 21,
+          "labelWidth": 72.75,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "L_sensor_panel_2",
+          "label": "low battery",
+          "labelHeight": 21,
+          "labelWidth": 93.203125,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "L_panel_panel_0",
+          "label": "retry",
+          "labelHeight": 21,
+          "labelWidth": 53.984375,
+          "source": "panel",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "L_checklist_lights_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "checklist",
+          "sourceArrow": false,
+          "target": "lights",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "direction": null,
+          "height": 68,
+          "id": "sensor",
+          "isGroup": false,
+          "label": "Temperature sensor",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "panel",
+          "isGroup": false,
+          "label": "Control panel",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "checklist",
+          "isGroup": false,
+          "label": "Opening checklist",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "lights",
+          "isGroup": false,
+          "label": "Shop lights",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "clock",
+          "isGroup": false,
+          "label": "Wall clock",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        }
+      ]
+    },
+    "translated": {
+      "direction": "Right",
+      "roots": [0, 1, 2, 3, 4],
+      "nodes": [
+        {
+          "id": 866278032,
+          "inputIndex": 0,
+          "absoluteId": "n73656e736f72",
+          "parent": null,
+          "children": [],
+          "incidentEdges": [0, 1],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 68,
+          "label": {
+            "text": "Temperature sensor",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 3507090496,
+          "inputIndex": 1,
+          "absoluteId": "n70616e656c",
+          "parent": null,
+          "children": [],
+          "incidentEdges": [0, 1, 2],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 68,
+          "label": {
+            "text": "Control panel",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 429363857,
+          "inputIndex": 2,
+          "absoluteId": "n636865636b6c697374",
+          "parent": null,
+          "children": [],
+          "incidentEdges": [3],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 41,
+          "label": {
+            "text": "Opening checklist",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 4203394475,
+          "inputIndex": 3,
+          "absoluteId": "n6c6967687473",
+          "parent": null,
+          "children": [],
+          "incidentEdges": [3],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 41,
+          "label": {
+            "text": "Shop lights",
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "id": 299861918,
+          "inputIndex": 4,
+          "absoluteId": "n636c6f636b",
+          "parent": null,
+          "children": [],
+          "incidentEdges": [],
+          "direction": null,
+          "shape": "Square",
+          "width": 152,
+          "height": 41,
+          "label": {
+            "text": "Wall clock",
+            "width": 0,
+            "height": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": 626400829,
+          "absoluteId": "(n73656e736f72 -> n70616e656c)[0]",
+          "from": 0,
+          "to": 1,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 83,
+          "minHeight": 31,
+          "label": {
+            "text": "reading",
+            "width": 73,
+            "height": 21
+          }
+        },
+        {
+          "id": 3780637128,
+          "absoluteId": "(n73656e736f72 -> n70616e656c)[1]",
+          "from": 0,
+          "to": 1,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 104,
+          "minHeight": 31,
+          "label": {
+            "text": "low battery",
+            "width": 94,
+            "height": 21
+          }
+        },
+        {
+          "id": 628605419,
+          "absoluteId": "(n70616e656c -> n70616e656c)[2]",
+          "from": 1,
+          "to": 1,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 64,
+          "minHeight": 31,
+          "label": {
+            "text": "retry",
+            "width": 54,
+            "height": 21
+          }
+        },
+        {
+          "id": 24942614,
+          "absoluteId": "(n636865636b6c697374 -> n6c6967687473)[3]",
+          "from": 2,
+          "to": 3,
+          "sourceArrow": false,
+          "targetArrow": true,
+          "reversedForLayout": false,
+          "minWidth": 10,
+          "minHeight": 10,
+          "label": null
+        }
+      ]
+    },
+    "prescaledSizes": [
+      [152, 120],
+      [152, 120],
+      [152, 41],
+      [152, 41],
+      [152, 41]
+    ]
+  }
+]

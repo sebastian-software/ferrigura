@@ -4,7 +4,6 @@
 
 //! The experimental Ferrigura port of D2's TALA engine.
 
-use std::collections::HashSet;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -15,6 +14,8 @@ mod connected;
 mod hierarchy;
 #[doc(hidden)]
 pub mod initialize;
+#[doc(hidden)]
+pub mod layout_graph;
 #[doc(hidden)]
 pub mod normalize;
 #[doc(hidden)]
@@ -145,34 +146,25 @@ pub fn layout(graph: &Graph) -> Result<Layout, Error> {
         return Err(Error::InvalidGraph);
     }
 
-    let mut node_ids = HashSet::with_capacity(graph.nodes.len());
-    for node in &graph.nodes {
-        if !node.is_group && !matches!(node.shape.as_str(), "squareRect" | "rect" | "rectangle") {
-            return Err(Error::UnsupportedGraph);
-        }
-        if node.id.is_empty()
-            || !node_ids.insert(node.id.as_str())
-            || !valid_direction(node.direction.as_deref())
-            || !node.is_group && (node.width == 0.0 || node.height == 0.0)
-            || !valid_dimension(node.width)
-            || !valid_dimension(node.height)
-            || !valid_dimension(node.label_width)
-            || !valid_dimension(node.label_height)
-        {
-            return Err(Error::InvalidGraph);
-        }
+    if graph.nodes.iter().any(|node| {
+        !valid_direction(node.direction.as_deref())
+            || ![node.width, node.height, node.label_width, node.label_height]
+                .into_iter()
+                .all(valid_dimension)
+    }) || graph
+        .edges
+        .iter()
+        .any(|edge| !valid_dimension(edge.label_width) || !valid_dimension(edge.label_height))
+    {
+        return Err(Error::InvalidGraph);
     }
-    let mut edge_ids = HashSet::with_capacity(graph.edges.len());
-    for edge in &graph.edges {
-        if edge.id.is_empty()
-            || !edge_ids.insert(edge.id.as_str())
-            || !node_ids.contains(edge.source.as_str())
-            || !node_ids.contains(edge.target.as_str())
-            || !valid_dimension(edge.label_width)
-            || !valid_dimension(edge.label_height)
-        {
-            return Err(Error::InvalidGraph);
-        }
+    let translated = layout_graph::LayoutGraph::translate(graph)?;
+    if translated
+        .nodes
+        .iter()
+        .any(|node| node.shape != layout_graph::Shape::Square)
+    {
+        return Err(Error::UnsupportedGraph);
     }
 
     if graph
@@ -180,7 +172,7 @@ pub fn layout(graph: &Graph) -> Result<Layout, Error> {
         .iter()
         .any(|node| node.is_group || node.parent_id.is_some())
     {
-        let layout = hierarchy::layout(graph).ok_or(Error::UnsupportedGraph)?;
+        let layout = hierarchy::layout(graph, &translated).ok_or(Error::UnsupportedGraph)?;
         check_bounds(&layout.nodes)?;
         return Ok(layout);
     }

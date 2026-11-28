@@ -5,8 +5,7 @@
 // Ported from TALA's layoutgraph node fitting and packing container guard.
 // See NOTICE.md for the original paths and revision.
 
-use std::collections::HashMap;
-
+use crate::layout_graph::{LayoutGraph, Shape};
 use crate::{Graph, Layout, Node, NodeGeometry, connected, routing};
 
 const CONTAINER_PADDING: f64 = 60.0;
@@ -15,33 +14,28 @@ const MAX_FIXED_PADDING_LABEL_HEIGHT: f64 = 50.0;
 const MAX_LEAF_SIDE: f64 = 2000.0;
 
 /// Places the verified rectangular container layouts.
-pub(crate) fn layout(graph: &Graph) -> Option<Layout> {
+pub(crate) fn layout(graph: &Graph, translated: &LayoutGraph) -> Option<Layout> {
     if let Some(layout) = boundary::layout(graph) {
         return Some(layout);
     }
 
-    let indices: HashMap<_, _> = graph
-        .nodes
+    let roots = translated
+        .roots
         .iter()
-        .enumerate()
-        .map(|(index, node)| (node.id.as_str(), index))
-        .collect();
-    if indices.len() != graph.nodes.len() {
-        return None;
-    }
-
-    let mut roots = Vec::new();
+        .map(|&index| translated.nodes[index].input_index)
+        .collect::<Vec<_>>();
     let mut children = vec![Vec::new(); graph.nodes.len()];
-    for (index, node) in graph.nodes.iter().enumerate() {
-        if let Some(parent) = node.parent_id.as_deref() {
-            let parent_index = *indices.get(parent)?;
-            if !graph.nodes[parent_index].is_group {
-                return None;
-            }
-            children[parent_index].push(index);
-        } else {
-            roots.push(index);
+    for node in &translated.nodes {
+        if let Some(parent) = node.parent
+            && !graph.nodes[translated.nodes[parent].input_index].is_group
+        {
+            return None;
         }
+        children[node.input_index] = node
+            .children
+            .iter()
+            .map(|&index| translated.nodes[index].input_index)
+            .collect();
     }
     let mut inner_group = match roots.as_slice() {
         [first, second] if graph.edges.is_empty() => {
@@ -198,7 +192,7 @@ fn fitted_frame(group: &Node, width: f64, height: f64) -> (f64, f64) {
 
 fn is_rectangular_leaf(node: &Node) -> bool {
     !node.is_group
-        && matches!(node.shape.as_str(), "rect" | "rectangle" | "squareRect")
+        && Shape::parse(node) == Ok(Shape::Square)
         && (1.0..=MAX_LEAF_SIDE).contains(&node.width)
         && (1.0..=MAX_LEAF_SIDE).contains(&node.height)
         && (node.label.is_empty()

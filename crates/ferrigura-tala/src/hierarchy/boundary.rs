@@ -42,7 +42,8 @@ pub(super) fn layout(graph: &Graph) -> Option<Layout> {
                 || frame.label_height.ceil() > MAX_FIXED_PADDING_LABEL_HEIGHT)
         || [child, peer].into_iter().any(|node| {
             !matches!(node.direction.as_deref(), None | Some(""))
-                || !matches!(node.shape.as_str(), "rect" | "rectangle" | "squareRect")
+                || !(crate::layout_graph::Shape::parse(node)
+                    == Ok(crate::layout_graph::Shape::Square))
                 || node.width != RECTANGLE_WIDTH
                 || node.height != RECTANGLE_HEIGHT
                 || node.label_width.ceil() > node.width

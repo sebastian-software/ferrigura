@@ -123,7 +123,7 @@ fn pack_tiles(tiles: &mut [Tile]) -> bool {
 fn is_plain_tile(node: &Node) -> bool {
     !node.is_group
         && node.parent_id.is_none()
-        && matches!(node.shape.as_str(), "rect" | "rectangle" | "squareRect")
+        && crate::layout_graph::Shape::parse(node) == Ok(crate::layout_graph::Shape::Square)
         && (1.0..=MAX_TILE_SIDE).contains(&node.width)
         && (1.0..=MAX_TILE_SIDE).contains(&node.height)
         && node.label_width.ceil() <= node.width

@@ -144,6 +144,28 @@ Pass `--balance` or `--simplify` a JSON object with `graph` and `layout`
 entries containing the measured graph and an already routed layout. With no
 argument the pilot replays terminal coordinate normalization.
 
+### Adapter translation and prescale
+
+The native renderer uses the ordered adapter graph for validation and
+container topology. The Rust replay compares its stable entity IDs,
+depth-first node order, edge order, shape and label measurements, and
+layout-time edge orientation with the pinned Go adapter. The Go trace
+runs prescale on a graph clone and checks that tracing leaves the
+unmodified default layout unchanged.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-graph layout-graph
+GOFLAGS=-overlay=/tmp/ferrigura-tala-graph/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-graph
+node tools/tala-pilot/check-layout-graph.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --trace /tmp/ferrigura-tala-traced-graph \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Pass `--write` to refresh the two checked-in Rust checkpoints from the
+live trace after the comparison passes.
+
 ### Initial orthogonal visibility graph
 
 The replay includes ordered initial visibility vertices, the twelve port slots
