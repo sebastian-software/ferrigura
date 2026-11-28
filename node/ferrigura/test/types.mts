@@ -10,6 +10,10 @@ const other: string = render('pie\n"B" : 2', {}, options);
 void [svg, other];
 render('flowchart LR\n A --> B', {}, { animation: {} });
 render('flowchart LR\n A --> B', {}, { animation: { speed: 1.5, order: 'flow' } });
+new Renderer().render('flowchart LR\n A', { layoutEngine: 'elk' });
+render('flowchart LR\n A', {}, { layoutEngine: 'tala' });
+// @ts-expect-error Unsupported layout engine names must be rejected statically.
+render('flowchart LR\n A', {}, { layoutEngine: 'dagre' });
 // @ts-expect-error Unsupported animation orders must be rejected statically.
 render('flowchart LR\n A --> B', {}, { animation: { order: 'typo' } });
 // @ts-expect-error Unsupported color schemes must be rejected statically.

@@ -1,0 +1,490 @@
+[
+  {
+    "name": "target arrow and equal sides",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 100,
+      "height": 100
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 30,
+      "y": 30,
+      "width": 100,
+      "height": 100
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 30,
+          "y": 55
+        },
+        {
+          "x": 0,
+          "y": 55
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 55,
+          "y": 0
+        },
+        {
+          "x": 55,
+          "y": 30
+        }
+      ]
+    }
+  },
+  {
+    "name": "prescale fractional dimensions",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 7.5,
+      "height": 10.25
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": true,
+      "targetArrow": false,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 30,
+      "y": 30,
+      "width": 40,
+      "height": 40
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 40,
+          "y": 30
+        },
+        {
+          "x": 40,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 40
+        },
+        {
+          "x": 30,
+          "y": 40
+        }
+      ]
+    }
+  },
+  {
+    "name": "both arrows at default corner",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 152,
+      "height": 56.400001525878906
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": true,
+      "targetArrow": true,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 30,
+      "y": 30,
+      "width": 152,
+      "height": 56.400001525878906
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 30,
+          "y": 44
+        },
+        {
+          "x": 0,
+          "y": 44
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 68,
+          "y": 0
+        },
+        {
+          "x": 68,
+          "y": 30
+        }
+      ]
+    }
+  },
+  {
+    "name": "no arrows",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 152,
+      "height": 41
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": false,
+      "targetArrow": false,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 30,
+      "y": 30,
+      "width": 152,
+      "height": 41
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 30,
+          "y": 40
+        },
+        {
+          "x": 0,
+          "y": 40
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 68,
+          "y": 0
+        },
+        {
+          "x": 68,
+          "y": 30
+        }
+      ]
+    }
+  },
+  {
+    "name": "label over horizontal segment",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 100,
+      "height": 50
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "label",
+      "labelWidth": 40,
+      "labelHeight": 20
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 44,
+      "y": 56,
+      "width": 100,
+      "height": 50
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 44,
+          "y": 69
+        },
+        {
+          "x": 14,
+          "y": 69
+        },
+        {
+          "x": 14,
+          "y": 26
+        },
+        {
+          "x": 69,
+          "y": 26
+        },
+        {
+          "x": 69,
+          "y": 56
+        }
+      ],
+      "label": {
+        "x": 20,
+        "y": 10
+      }
+    }
+  },
+  {
+    "name": "label beside vertical segment",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 40,
+      "height": 40
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": false,
+      "targetArrow": false,
+      "label": "label",
+      "labelWidth": 40,
+      "labelHeight": 20
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 76,
+      "y": 40,
+      "width": 40,
+      "height": 40
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 76,
+          "y": 50
+        },
+        {
+          "x": 46,
+          "y": 50
+        },
+        {
+          "x": 46,
+          "y": 10
+        },
+        {
+          "x": 86,
+          "y": 10
+        },
+        {
+          "x": 86,
+          "y": 40
+        }
+      ],
+      "label": {
+        "x": 20,
+        "y": 10
+      }
+    }
+  },
+  {
+    "name": "route midpoint at corner",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 56,
+      "height": 56
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": true,
+      "targetArrow": false,
+      "label": "label",
+      "labelWidth": 15.4,
+      "labelHeight": 21.1
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 52,
+      "y": 41,
+      "width": 56,
+      "height": 56
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 66,
+          "y": 41
+        },
+        {
+          "x": 66,
+          "y": 11
+        },
+        {
+          "x": 22,
+          "y": 11
+        },
+        {
+          "x": 22,
+          "y": 55
+        },
+        {
+          "x": 52,
+          "y": 55
+        }
+      ],
+      "label": {
+        "x": 22,
+        "y": -6
+      }
+    }
+  },
+  {
+    "name": "wide rectangle with fractional label",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 301,
+      "height": 120
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": true,
+      "targetArrow": false,
+      "label": "label",
+      "labelWidth": 78.34,
+      "labelHeight": 22.3
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 47,
+      "y": 59,
+      "width": 301,
+      "height": 120
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 122,
+          "y": 59
+        },
+        {
+          "x": 122,
+          "y": 29
+        },
+        {
+          "x": 17,
+          "y": 29
+        },
+        {
+          "x": 17,
+          "y": 89
+        },
+        {
+          "x": 47,
+          "y": 89
+        }
+      ],
+      "label": {
+        "x": 39.5,
+        "y": 11.5
+      }
+    }
+  },
+  {
+    "name": "larger height than width",
+    "node": {
+      "id": "node",
+      "x": 0,
+      "y": 0,
+      "width": 132.4,
+      "height": 216.5
+    },
+    "edge": {
+      "id": "loop",
+      "source": "node",
+      "target": "node",
+      "sourceArrow": true,
+      "targetArrow": true,
+      "label": "long label",
+      "labelWidth": 109.5,
+      "labelHeight": 31.5
+    },
+    "expected_node": {
+      "id": "node",
+      "x": 146,
+      "y": 35,
+      "width": 132.4,
+      "height": 216.5
+    },
+    "expected_edge": {
+      "id": "loop",
+      "points": [
+        {
+          "x": 146,
+          "y": 89
+        },
+        {
+          "x": 116,
+          "y": 89
+        },
+        {
+          "x": 116,
+          "y": 5
+        },
+        {
+          "x": 179,
+          "y": 5
+        },
+        {
+          "x": 179,
+          "y": 35
+        }
+      ],
+      "label": {
+        "x": 55,
+        "y": 15
+      }
+    }
+  }
+]

@@ -232,6 +232,7 @@ dependencies = [
  "ferrigura-model",
  "ferrigura-path",
  "ferrigura-syntax",
+ "ferrigura-tala",
  "ferrigura-text",
  "ferroni",
  "memchr",
@@ -249,6 +250,14 @@ dependencies = [
  "logos",
  "serde_json",
  "url",
+]
+
+[[package]]
+name = "ferrigura-tala"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

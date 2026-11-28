@@ -4,10 +4,9 @@ version = 4
 
 [[package]]
 name = "ferrigura-tala"
-version = "0.0.0"
+version = "0.10.0"
 dependencies = [
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -92,6 +91,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tala-pilot-tool"
+version = "0.0.0"
+dependencies = [
+ "ferrigura-tala",
+ "serde_json",
 ]
 
 [[package]]

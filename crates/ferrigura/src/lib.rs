@@ -45,6 +45,16 @@ pub enum ColorScheme {
     Auto,
 }
 
+/// An explicit choice of layout engine for a render.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum LayoutEngine {
+    /// ELK Layered for the diagram types that use it.
+    Elk,
+    /// The native experimental TALA path for supported flowcharts.
+    Tala,
+}
+
 /// The options of a render that are not Mermaid configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RenderOptions {
@@ -195,7 +205,27 @@ impl Renderer {
     /// Returns the errors of [`render_with`].
     pub fn render_with(&self, text: &str, options: &RenderOptions) -> Result<String, RenderError> {
         ferrigura_text::with_subset_cache(&self.subset_cache, || {
-            self.render_with_cache(text, options)
+            self.render_with_cache(text, options, None)
+        })
+    }
+
+    /// Renders with the requested engine. This option takes precedence over a diagram's layout
+    /// configuration. Use [`Self::render_with`] to keep normal engine selection.
+    ///
+    /// TALA requires the `experimental-tala` Cargo feature and accepts supported flowcharts in
+    /// Ferrigura's default look. The selected engine is never substituted on failure.
+    ///
+    /// # Errors
+    /// Returns the usual render errors and an option error if the engine is unavailable or the
+    /// diagram type or render mode does not support it.
+    pub fn render_with_engine(
+        &self,
+        text: &str,
+        options: &RenderOptions,
+        engine: LayoutEngine,
+    ) -> Result<String, RenderError> {
+        ferrigura_text::with_subset_cache(&self.subset_cache, || {
+            self.render_with_cache(text, options, Some(engine))
         })
     }
 
@@ -203,6 +233,7 @@ impl Renderer {
         &self,
         text: &str,
         options: &RenderOptions,
+        engine: Option<LayoutEngine>,
     ) -> Result<String, RenderError> {
         let max_edges = self.limits(text)?;
         let (source, kind) = ferrigura_syntax::prepare_and_detect(text).map_err(|error| {
@@ -210,6 +241,9 @@ impl Renderer {
                 .map_or(RenderError::Parse(error), unsupported)
         })?;
         let plugin = self.plugin(kind)?;
+        if let Some(engine) = engine {
+            validate_layout_engine(kind, options, engine)?;
+        }
         if options.animation.is_some()
             && !matches!(
                 kind,
@@ -225,6 +259,12 @@ impl Renderer {
             ));
         }
         let prepared = self.prepare(text, source, options, plugin, max_edges)?;
+        #[cfg(feature = "experimental-tala")]
+        if engine == Some(LayoutEngine::Tala) {
+            return with_flowchart(&prepared, |input| {
+                flowchart::render_with_tala(input, options.animation)
+            });
+        }
         plugin.render(&prepared, options)
     }
 
@@ -824,6 +864,34 @@ pub fn render_with(
         .with_all()
         .shared()
         .render_with(text, options)
+}
+
+fn validate_layout_engine(
+    kind: DiagramType,
+    options: &RenderOptions,
+    engine: LayoutEngine,
+) -> Result<(), RenderError> {
+    let reason = match engine {
+        LayoutEngine::Elk
+            if !matches!(
+                kind,
+                DiagramType::Flowchart | DiagramType::Class | DiagramType::State | DiagramType::Er
+            ) =>
+        {
+            "ELK is not available for this diagram type"
+        }
+        LayoutEngine::Tala if !cfg!(feature = "experimental-tala") => {
+            "TALA is unavailable in this build; enable the experimental-tala feature"
+        }
+        LayoutEngine::Tala if kind != DiagramType::Flowchart => {
+            "experimental TALA is only available for flowcharts"
+        }
+        LayoutEngine::Tala if options.compat => {
+            "experimental TALA cannot be used with compatibility mode"
+        }
+        _ => return Ok(()),
+    };
+    Err(RenderError::Options(reason.to_owned()))
 }
 
 /// The view of a diagram type, its configuration in the diagram's scope and typed, the tokens of its
@@ -1549,7 +1617,7 @@ mod subset_cache_tests {
         ];
         let expected: Vec<_> = diagrams
             .iter()
-            .map(|text| renderer.render_with_cache(text, &options).unwrap())
+            .map(|text| renderer.render_with_cache(text, &options, None).unwrap())
             .collect();
         std::thread::scope(|scope| {
             for _ in 0..4 {

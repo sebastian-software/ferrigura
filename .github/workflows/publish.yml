@@ -83,6 +83,7 @@ jobs:
             ferrigura-model
             ferrigura-text
             ferrigura-elk
+            ferrigura-tala
             ferrigura-path
             ferrigura-cose
             ferrigura-syntax

@@ -75,6 +75,7 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
       - run: cargo test --workspace --no-fail-fast
+      - run: cargo test --locked -p ferrigura --features experimental-tala --test layout_engine
       # Exercise the acos interval test with x86 fused instructions as well as the baseline above.
       - run: RUSTFLAGS="-C target-feature=+fma" cargo test --release -p ferrigura-jsmath acos_fast_matches_fixed_point
       # The addon crate with one diagram type: its features stay compiling (decision 0020).

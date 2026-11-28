@@ -42,6 +42,7 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 | [0023](./0023-the-default-rendering.md)           | The default rendering draws every type in ferrigura's own look with its own measures, through the same layout engines |
 | [0024](./0024-a-fixed-list-of-diagram-types.md)   | ferrigura draws a fixed list of ten diagram types, each one completely, and names any other type in its error         |
 | [0025](./0025-tala-pilot.md)                      | The TALA pilot compares measured flowcharts with ELK and keeps the Rust port in an isolated MPL-2.0 crate             |
+| [0026](./0026-experimental-tala-selection.md)     | TALA is an explicit experimental layout choice with its own build feature and supported graph subset                  |
 
 ## Verification
 

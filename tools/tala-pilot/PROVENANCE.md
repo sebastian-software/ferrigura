@@ -10,7 +10,7 @@ layout implementation, copyright notice, and license used for the port.
 ## Source map
 
 - `d2layouts/d2talalayout/internal/placement/stages.go` defines `Normalize`.
-  Its unpinned branch is translated in `rust/src/lib.rs` under MPL-2.0.
+  Its unpinned branch is translated in `crates/ferrigura-tala/src/normalize.rs` under MPL-2.0.
   Node top-left coordinates participate directly in the minimum. Route
   points and edge-label top-left coordinates are floored. The stage
   subtracts the minimum from node positions and route points.
@@ -59,4 +59,4 @@ executable forms, larger works, and preservation of notices. A native
 artifact containing the port includes the MPL notice and points to the
 exact Ferrigura source for that artifact, including the covered modifications.
 The D2 pin alone identifies upstream provenance.
-[Rust notice](./rust/NOTICE.md) · [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/)
+[Rust notice](../../crates/ferrigura-tala/NOTICE.md) · [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/)

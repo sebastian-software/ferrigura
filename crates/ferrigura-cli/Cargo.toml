@@ -19,6 +19,9 @@ path = "src/main.rs"
 # The library `ferrigura` has the same name and its documentation is the one that matters.
 doc = false
 
+[features]
+experimental-tala = ["ferrigura/experimental-tala"]
+
 [dependencies]
 ferrigura = { path = "../..", version = "0.10.0" }
 ferrigura-model = { path = "../ferrigura-model", version = "0.10.0" }

@@ -38,6 +38,8 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
+      --layout-engine <ENGINE>
+                          `elk` or experimental `tala` (requires a TALA-enabled build)
       --compat            Draw Mermaid's geometry and look instead of ferrigura's own
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
@@ -163,6 +165,18 @@ The SVG contains CSS and masks without JavaScript. Reduced motion shows the
 complete diagram. Without animation options, output remains unchanged.
 
 By default, every diagram type is drawn in ferrigura's own look ([flowchart](../../docs/diagrams/flowchart.md#default-look), [state diagram](../../docs/diagrams/state.md#default-look), [class diagram](../../docs/diagrams/class.md#default-look), [ER diagram](../../docs/diagrams/er.md#default-look), [mindmap](../../docs/diagrams/mindmap.md#default-look), [pie](../../docs/diagrams/pie.md#default-look), [XY chart](../../docs/diagrams/xychart.md#default-look), [quadrant chart](../../docs/diagrams/quadrant.md#default-look), [gantt](../../docs/diagrams/gantt.md#default-look), [sequence diagram](../../docs/diagrams/sequence.md#default-look)): hairline outlines, color by a node's role, one calm palette for a series, rounded corners and soft shadows, with roomier nodes and spacing. `--compat` draws Mermaid's geometry and look for every type instead. Font and readability fixes apply in both.
+
+`--layout-engine elk` selects ELK Layered for diagram types that use it. Experimental
+`--layout-engine tala` requires a source build of the CLI with the
+`experimental-tala` Cargo feature and supports a limited flowchart subset.
+`--compat` and unsupported diagrams return a render error with TALA selected.
+
+For a source build with TALA, run from the repository root:
+
+```sh
+printf 'flowchart LR\n A[Input]\n' | \
+  cargo run -p ferrigura-cli --features experimental-tala -- --layout-engine tala
+```
 
 - Several inputs are rendered through one renderer, so the configuration is resolved once. They are rendered in the order given.
 - Rendering stops at the first input that fails. The SVGs of the inputs before it are already written.

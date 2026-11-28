@@ -229,6 +229,39 @@ fn apply(
     Ok(())
 }
 
+#[cfg(feature = "experimental-tala")]
+pub(super) fn apply_native(
+    measured: &mut Measured,
+    layout: ferrigura_tala::Layout,
+    config: &Config<'_>,
+) -> Result<(), RenderError> {
+    let nodes = layout
+        .nodes
+        .into_iter()
+        .map(|node| Node {
+            id: node.id,
+            x: node.x,
+            y: node.y,
+            width: node.width,
+            height: node.height,
+        })
+        .collect();
+    let position = |point: ferrigura_tala::Point| Position {
+        x: point.x,
+        y: point.y,
+    };
+    let edges = layout
+        .edges
+        .into_iter()
+        .map(|edge| Edge {
+            id: edge.id,
+            points: edge.points.into_iter().map(position).collect(),
+            label: edge.label.map(position),
+        })
+        .collect();
+    apply(measured, Geometry { nodes, edges }, config)
+}
+
 fn missing(kind: &str, id: &str) -> RenderError {
     RenderError::Layout(format!("pilot geometry is missing {kind} {id:?}"))
 }

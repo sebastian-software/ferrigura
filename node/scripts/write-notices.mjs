@@ -5,7 +5,9 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '../..');
 const files = [];
 for (const crate of await readdir(path.join(root, 'crates'), { withFileTypes: true })) {
-  if (!crate.isDirectory()) continue;
+  // The published addon uses the default feature set. The experimental TALA crate
+  // is distributed separately, with its own notice, until native packages opt in.
+  if (!crate.isDirectory() || crate.name === 'ferrigura-tala') continue;
   for (const name of await readdir(path.join(root, 'crates', crate.name))) {
     if (name === 'NOTICE.md' || name.startsWith('LICENSE'))
       files.push(`crates/${crate.name}/${name}`);

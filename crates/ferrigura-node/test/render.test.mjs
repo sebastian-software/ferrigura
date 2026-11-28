@@ -32,6 +32,14 @@ void test('the default rendering and compat are chosen per render', () => {
   assert.equal(renderer.render(text, { compat: true }), compatible);
 });
 
+void test('TALA selection in the default addon reports the required Cargo feature', () => {
+  const flow = 'flowchart LR\n A[Input]\n';
+  assert.throws(
+    () => render(flow, undefined, { layoutEngine: 'tala' }),
+    /enable the experimental-tala feature/
+  );
+});
+
 void test('renders a pie to an SVG document with a derived id', () => {
   const svg = render(PIE);
   assert.match(svg, /^<svg /);

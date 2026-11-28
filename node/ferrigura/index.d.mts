@@ -11,6 +11,8 @@ export type Animation = {
 export type RenderOptions = {
   /** True draws Mermaid's geometry and look. False (default) draws ferrigura's own look and measures for every type. */
   compat?: boolean;
+  /** Explicit layout selection. Experimental TALA needs a TALA-enabled build. */
+  layoutEngine?: 'elk' | 'tala';
   /** An empty object enables draw animation with the defaults. Omit to keep static output. */
   animation?: Animation;
   /** SVG namespace; starts with an ASCII letter and contains letters, digits, - or _. */

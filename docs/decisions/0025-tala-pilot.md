@@ -19,9 +19,9 @@ the same input. The whole-diagram comparison independently measures whether
 TALA is useful on these diagrams. Geometry differences between TALA and ELK
 are expected in this comparison.
 
-The Rust slice lives in an unpublished MPL-2.0 crate under
-`tools/tala-pilot/rust/`. Ferrigura's measurements, adapters, and SVG paint
-code continue under MIT in separate files. ELK retains its EPL-2.0 notices.
+The Rust slice lives in the MPL-2.0 crate `crates/ferrigura-tala/`. The
+pilot's executable adapter is under `tools/tala-pilot/rust/`. Ferrigura's
+measurements, adapters, and SVG paint code remain MIT in separate files. ELK retains its EPL-2.0 notices.
 The public renderer's engine selection and the pinned Mermaid comparison
 continue using the existing path.
 
