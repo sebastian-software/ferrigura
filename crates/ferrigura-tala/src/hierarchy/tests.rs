@@ -59,3 +59,35 @@ fn rejects_topology_and_labels_outside_the_container_slice() {
     graph.edges[0].label = String::from("label clearance affects this route");
     assert_eq!(crate::layout(&graph), Err(Error::UnsupportedGraph));
 }
+
+fn boundary_fixtures() -> Vec<Fixture> {
+    serde_json::from_str(include_str!("boundary-fixtures.json"))
+        .expect("pinned Go boundary fixtures")
+}
+
+#[test]
+fn crosses_one_container_boundary_and_attaches_to_its_frame() {
+    for Fixture {
+        name,
+        graph,
+        expected,
+    } in boundary_fixtures()
+    {
+        assert_eq!(crate::layout(&graph), Ok(expected), "{name}");
+    }
+}
+
+#[test]
+fn rejects_unported_cross_boundary_geometry() {
+    let mut graph = boundary_fixtures().remove(0).graph;
+    graph.direction = None;
+    assert_eq!(crate::layout(&graph), Err(Error::UnsupportedGraph));
+
+    graph.direction = Some(String::from("TB"));
+    graph.nodes[0].direction = Some(String::from("LR"));
+    assert_eq!(crate::layout(&graph), Err(Error::UnsupportedGraph));
+
+    graph.nodes[0].direction = None;
+    graph.nodes[1].width += 1.0;
+    assert_eq!(crate::layout(&graph), Err(Error::UnsupportedGraph));
+}

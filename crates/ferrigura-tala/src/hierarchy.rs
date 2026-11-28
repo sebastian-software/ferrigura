@@ -16,6 +16,10 @@ const MAX_LEAF_SIDE: f64 = 2000.0;
 
 /// Places a single chain of rectangular containers around one component.
 pub(crate) fn layout(graph: &Graph) -> Option<Layout> {
+    if let Some(layout) = boundary::layout(graph) {
+        return Some(layout);
+    }
+
     let indices: HashMap<_, _> = graph
         .nodes
         .iter()
@@ -181,6 +185,8 @@ fn is_rectangular_leaf(node: &Node) -> bool {
         && (node.label.is_empty()
             || (node.label_width.ceil() <= node.width && node.label_height.ceil() <= node.height))
 }
+
+mod boundary;
 
 #[cfg(test)]
 mod tests;

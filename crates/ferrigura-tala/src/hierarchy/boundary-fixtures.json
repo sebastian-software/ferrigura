@@ -1,0 +1,472 @@
+[
+  {
+    "name": "top-down edge crosses a container boundary",
+    "graph": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "frame",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 86,
+          "labelHeight": 19.2
+        },
+        {
+          "id": "inside",
+          "parentId": "frame",
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Inside",
+          "labelWidth": 44,
+          "labelHeight": 15
+        },
+        {
+          "id": "outside",
+          "parentId": null,
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Outside",
+          "labelWidth": 43.5,
+          "labelHeight": 16
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "source": "inside",
+          "target": "outside",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "frame",
+          "x": 0,
+          "y": 0,
+          "width": 272,
+          "height": 161
+        },
+        {
+          "id": "inside",
+          "x": 60,
+          "y": 60,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "outside",
+          "x": 60,
+          "y": 248,
+          "width": 152,
+          "height": 41
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "points": [
+            {
+              "x": 136,
+              "y": 101
+            },
+            {
+              "x": 136,
+              "y": 248
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "bottom-up edge enters a container",
+    "graph": {
+      "direction": "BT",
+      "nodes": [
+        {
+          "id": "outside",
+          "parentId": null,
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Outside",
+          "labelWidth": 43.5,
+          "labelHeight": 16
+        },
+        {
+          "id": "frame",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 86,
+          "labelHeight": 19.2
+        },
+        {
+          "id": "inside",
+          "parentId": "frame",
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Inside",
+          "labelWidth": 44,
+          "labelHeight": 15
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "source": "outside",
+          "target": "inside",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "outside",
+          "x": 60,
+          "y": 248,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "frame",
+          "x": 0,
+          "y": 0,
+          "width": 272,
+          "height": 161
+        },
+        {
+          "id": "inside",
+          "x": 60,
+          "y": 60,
+          "width": 152,
+          "height": 41
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "points": [
+            {
+              "x": 136,
+              "y": 248
+            },
+            {
+              "x": 136,
+              "y": 101
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "left-to-right source-arrow crosses a container boundary",
+    "graph": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "outside",
+          "parentId": null,
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Outside",
+          "labelWidth": 43.5,
+          "labelHeight": 16
+        },
+        {
+          "id": "inside",
+          "parentId": "frame",
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Inside",
+          "labelWidth": 44,
+          "labelHeight": 15
+        },
+        {
+          "id": "frame",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 86,
+          "labelHeight": 19.2
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "source": "inside",
+          "target": "outside",
+          "sourceArrow": true,
+          "targetArrow": false,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "outside",
+          "x": 0,
+          "y": 60,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "inside",
+          "x": 308,
+          "y": 60,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "frame",
+          "x": 248,
+          "y": 0,
+          "width": 272,
+          "height": 161
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "points": [
+            {
+              "x": 308,
+              "y": 80
+            },
+            {
+              "x": 152,
+              "y": 80
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "right-to-left edge attaches to a container boundary",
+    "graph": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "inside",
+          "parentId": "frame",
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Inside",
+          "labelWidth": 44,
+          "labelHeight": 15
+        },
+        {
+          "id": "outside",
+          "parentId": null,
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Outside",
+          "labelWidth": 43.5,
+          "labelHeight": 16
+        },
+        {
+          "id": "frame",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 86,
+          "labelHeight": 19.2
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "source": "frame",
+          "target": "outside",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "inside",
+          "x": 308,
+          "y": 60,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "outside",
+          "x": 0,
+          "y": 60,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "frame",
+          "x": 248,
+          "y": 0,
+          "width": 272,
+          "height": 161
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "points": [
+            {
+              "x": 248,
+              "y": 80
+            },
+            {
+              "x": 152,
+              "y": 80
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "top-down edge targets the border of an untitled container",
+    "graph": {
+      "direction": "TD",
+      "nodes": [
+        {
+          "id": "frame",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "outside",
+          "parentId": null,
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Outside",
+          "labelWidth": 43.5,
+          "labelHeight": 16
+        },
+        {
+          "id": "inside",
+          "parentId": "frame",
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Inside",
+          "labelWidth": 44,
+          "labelHeight": 15
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "source": "outside",
+          "target": "frame",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "frame",
+          "x": 0,
+          "y": 124,
+          "width": 272,
+          "height": 161
+        },
+        {
+          "id": "outside",
+          "x": 60,
+          "y": 0,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "inside",
+          "x": 60,
+          "y": 184,
+          "width": 152,
+          "height": 41
+        }
+      ],
+      "edges": [
+        {
+          "id": "link",
+          "points": [
+            {
+              "x": 136,
+              "y": 41
+            },
+            {
+              "x": 136,
+              "y": 124
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  }
+]
