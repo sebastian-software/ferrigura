@@ -7,15 +7,15 @@
 // d2talalayout/{patch,result_validate}.go, d2target/d2target.go,
 // lib/label/label.go and lib/geo/{math,point,route,vector}.go.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use crate::{EdgeGeometry, Error, Point};
+use crate::{EdgeGeometry, Error, Layout, NodeGeometry, Point};
 
 const MAX_RESULT_COORDINATE: f64 = 1_000_000_000.0;
 const LABEL_PADDING: f64 = 5.0;
 const RENDER_STROKE_WIDTH: f64 = 2.0;
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Anchor {
     InsideMiddleLeft,
@@ -33,7 +33,7 @@ pub enum Anchor {
 }
 
 impl Anchor {
-    fn mirrored(self) -> Self {
+    pub(crate) fn mirrored(self) -> Self {
         match self {
             Self::InsideMiddleLeft => Self::InsideMiddleRight,
             Self::InsideMiddleRight => Self::InsideMiddleLeft,
@@ -67,7 +67,7 @@ impl Anchor {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct RoutedLabel {
     pub anchor: Anchor,
     pub percentage: f64,
@@ -217,6 +217,17 @@ impl RoutedEdge {
 /// Returns an error when a route or its caption is invalid or degenerate.
 pub fn project(edges: Vec<RoutedEdge>) -> Result<Vec<EdgeGeometry>, Error> {
     edges.into_iter().map(RoutedEdge::into_geometry).collect()
+}
+
+/// Normalizes finished boxes and routes, then applies their authored traversal and label anchors.
+/// # Errors
+/// Returns an error if a route or its caption cannot be projected into Ferrigura geometry.
+pub fn finalize(mut nodes: Vec<NodeGeometry>, mut edges: Vec<RoutedEdge>) -> Result<Layout, Error> {
+    crate::normalize::normalize_routed(&mut nodes, &mut edges)?;
+    Ok(Layout {
+        nodes,
+        edges: project(edges)?,
+    })
 }
 
 #[cfg(test)]

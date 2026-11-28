@@ -1,0 +1,92 @@
+func tracePilotEdgeLabel(edge *layoutgraph.Edge, graph *layoutgraph.Graph, ancestors, others, placed, shared []*layoutgraph.Node, alternatives *edgeLabelAlternatives, best edgeLabelPlacement) {
+	if os.Getenv("TALA_PILOT_TRACE_EDGE_LABEL") != "1" || best.box == nil {
+		return
+	}
+	type point struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+	}
+	type box struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+		Width float64 `json:"width"`
+		Height float64 `json:"height"`
+	}
+	type obstacle struct {
+		Body box `json:"body"`
+		IsContainer bool `json:"isContainer"`
+	}
+	type candidate struct {
+		Anchor string `json:"anchor"`
+		Percentage float64 `json:"percentage"`
+		Body box `json:"body"`
+		Score float64 `json:"score"`
+		Conflicts int `json:"conflicts"`
+		Blocker *int `json:"blocker"`
+	}
+	boxOf := func(n *layoutgraph.Node) box {
+		return box{n.TopLeft.X, n.TopLeft.Y, n.Width, n.Height}
+	}
+	boxesOf := func(nodes []*layoutgraph.Node) []box {
+		out := make([]box, 0, len(nodes))
+		for _, node := range nodes {
+			out = append(out, boxOf(node))
+		}
+		return out
+	}
+	obstaclesOf := func(nodes []*layoutgraph.Node) []obstacle {
+		out := make([]obstacle, 0, len(nodes))
+		for _, node := range nodes {
+			out = append(out, obstacle{boxOf(node), node.IsContainer()})
+		}
+		return out
+	}
+	project := func(placement edgeLabelPlacement) candidate {
+		var blocker *int
+		for index, node := range placed {
+			if node == placement.blocker {
+				blocker = new(index)
+				break
+			}
+		}
+		return candidate{placement.position.String(), placement.percentage, boxOf(placement.box), placement.score, placement.conflicts, blocker}
+	}
+	var route int
+	routes := make([][]point, 0, len(graph.Edges))
+	for i, e := range graph.Edges {
+		if e == edge {
+			route = i
+		}
+		path := make([]point, 0, len(e.Points))
+		for _, p := range e.Points {
+			path = append(path, point{p.X, p.Y})
+		}
+		routes = append(routes, path)
+	}
+	var hint *string
+	if edge.Label.Position != label.Unset {
+		hint = new(edge.Label.Position.String())
+	}
+	var repair *int
+	choices := make([]candidate, 0)
+	if alternatives != nil {
+		repair = new(alternatives.conflicts)
+		for _, option := range alternatives.choices {
+			choices = append(choices, project(option))
+		}
+	}
+	input := map[string]any{
+		"route": route, "routes": routes, "hint": hint,
+		"percentage": edge.LabelPercentage, "width": edge.Label.Width, "height": edge.Label.Height,
+		"ancestors": obstaclesOf(ancestors), "others": obstaclesOf(others),
+		"labels": boxesOf(placed), "shared": boxesOf(shared), "repairConflicts": repair,
+	}
+	expected := map[string]any{"best": project(best), "choices": choices}
+	data, err := json.Marshal(map[string]any{
+		"input": input, "expected": expected, "cluster": edge.IsClusterEdge(),
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintln(os.Stderr, "TALA_PILOT_EDGE_LABEL " + string(data))
+}

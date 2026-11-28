@@ -5,7 +5,8 @@
 use serde::Deserialize;
 
 use super::*;
-use crate::NodeGeometry;
+use crate::{NodeGeometry, Point};
+use sized_candidates::{SizedCandidates, SizedEdgeCosts};
 
 const OCCUPIED: [Cell; 5] = [(1, 0), (0, 1), (1, 2), (2, 1), (0, 0)];
 
@@ -61,6 +62,7 @@ struct InitializerFixture {
 #[serde(rename_all = "camelCase")]
 struct ObservatoryFixture {
     edge_labels: Vec<EdgeLabel>,
+    obstacle_order: Vec<usize>,
     seeds: Vec<ExpectedPlacement>,
 }
 
@@ -80,6 +82,15 @@ struct ExpectedPlacement {
     first_pass: Grid,
     full_phase: Grid,
     sized_transition: Vec<NodeGeometry>,
+    first_sized_candidates: SizedCandidates,
+    first_sized_edge_costs: SizedEdgeCosts,
+    first_sized_move: Point,
+    first_sized_pass: Vec<NodeGeometry>,
+    first_sized_compaction: Vec<NodeGeometry>,
+    sized_phase: Vec<NodeGeometry>,
+    directed_component: Vec<NodeGeometry>,
+    placed_component: Vec<NodeGeometry>,
+    routing_bodies: Vec<NodeGeometry>,
 }
 
 #[test]
@@ -100,6 +111,7 @@ fn seeded_observatory_placement_matches_the_go_stages() {
         edge.label_width = label.label_width;
         edge.label_height = label.label_height;
     }
+    let order = &fixture.obstacle_order;
     for expected in fixture.seeds {
         let seed = expected.seed;
         assert_eq!(
@@ -117,5 +129,69 @@ fn seeded_observatory_placement_matches_the_go_stages() {
             Ok(expected.sized_transition),
             "sized transition, seed {seed}"
         );
+        assert_eq!(
+            first_sized_candidates(&graph, seed, order),
+            Ok(expected.first_sized_candidates),
+            "first sized candidates, seed {seed}"
+        );
+        let scores = first_sized_edge_costs(&graph, seed, order).unwrap();
+        let expected_scores = expected.first_sized_edge_costs;
+        assert_eq!(scores.node, expected_scores.node);
+        assert_eq!(scores.symmetry, expected_scores.symmetry);
+        assert_cost_equal(scores.turn_cost, expected_scores.turn_cost);
+        assert_eq!(scores.edge_costs.len(), expected_scores.edge_costs.len());
+        for (actual, expected) in scores
+            .edge_costs
+            .into_iter()
+            .zip(expected_scores.edge_costs)
+        {
+            match (actual, expected) {
+                (Some(actual), Some(expected)) => assert_cost_equal(actual, expected),
+                (None, None) => {}
+                _ => panic!("candidate accessibility changed, seed {seed}"),
+            }
+        }
+        assert_eq!(
+            first_sized_move(&graph, seed, order),
+            Ok(expected.first_sized_move),
+            "first sized move, seed {seed}"
+        );
+        assert_eq!(
+            first_sized_pass(&graph, seed, order),
+            Ok(expected.first_sized_pass),
+            "first sized pass, seed {seed}"
+        );
+        assert_eq!(
+            first_sized_compaction(&graph, seed, order),
+            Ok(expected.first_sized_compaction),
+            "first sized compaction, seed {seed}"
+        );
+        let mut bodies = optimize_sized_phase(&graph, seed, order).unwrap();
+        assert_eq!(bodies, expected.sized_phase, "sized phase, seed {seed}");
+        direct_flat_component(&graph, &mut bodies).unwrap();
+        assert_eq!(
+            bodies, expected.directed_component,
+            "directed component, seed {seed}"
+        );
+        let placed = place_flat_component(&graph, seed, order).unwrap();
+        assert_eq!(
+            placed, expected.placed_component,
+            "placed component, seed {seed}"
+        );
+        assert_eq!(
+            refine_flat_component(&graph, &placed, order),
+            Ok(expected.routing_bodies),
+            "refined routing bodies, seed {seed}"
+        );
     }
+}
+
+fn assert_cost_equal(actual: f64, expected: f64) {
+    // Go and Rust can round the last bits of an otherwise equivalent score
+    // differently. Placement compares scores at 0.0001.
+    let tolerance = 4.0 * f64::EPSILON * actual.abs().max(expected.abs()).max(1.0);
+    assert!(
+        (actual - expected).abs() <= tolerance,
+        "{actual} vs {expected}"
+    );
 }

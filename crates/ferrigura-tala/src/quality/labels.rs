@@ -83,7 +83,7 @@ pub(super) fn score(graph: &PositionedGraph, work: &mut Work<'_>) -> Result<f64,
         }
     }
 
-    let shared = shared_segment_boxes(&graph.edges, work)?;
+    let shared = shared_segment_boxes(graph.edges.iter().map(|edge| edge.points.as_slice()), work)?;
     for (index, edge) in graph.edges.iter().enumerate() {
         work.step()?;
         if let Some(label) = edge.label
@@ -207,14 +207,14 @@ fn node_overlap_area(
     Ok(area)
 }
 
-fn overlaps(first: Box, second: Box, padding: f64) -> bool {
+pub(crate) fn overlaps(first: Box, second: Box, padding: f64) -> bool {
     first.x < second.right() + padding
         && second.x < first.right() + padding
         && first.y < second.bottom() + padding
         && second.y < first.bottom() + padding
 }
 
-fn covers(outer: Box, inner: Box) -> bool {
+pub(crate) fn covers(outer: Box, inner: Box) -> bool {
     inner.x >= outer.x
         && inner.y >= outer.y
         && inner.right() <= outer.right()

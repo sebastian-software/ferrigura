@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use crate::Point;
+use crate::{Error, Point};
 
 use super::{Box, EvaluationError, LABEL_PADDING, PositionedEdge, Work};
 
@@ -57,7 +57,7 @@ fn equal_signs(a: f64, b: f64) -> bool {
     a > 0.0 && b > 0.0 || a == 0.0 && b == 0.0 || a < 0.0 && b < 0.0
 }
 
-pub(super) fn box_crosses_line(bounds: Box, first: Point, second: Point, padding: f64) -> bool {
+pub(crate) fn box_crosses_line(bounds: Box, first: Point, second: Point, padding: f64) -> bool {
     let left = bounds.x - padding;
     let right = bounds.right() + padding;
     let top = bounds.y - padding;
@@ -107,16 +107,16 @@ struct Span {
 
 type Groups = HashMap<u64, (f64, Vec<Span>)>;
 
-pub(super) fn shared_segment_boxes(
-    edges: &[PositionedEdge],
+pub(super) fn shared_segment_boxes<'a>(
+    paths: impl IntoIterator<Item = &'a [Point]>,
     work: &mut Work<'_>,
 ) -> Result<Vec<Box>, EvaluationError> {
     work.step()?;
     let mut vertical = Groups::new();
     let mut horizontal = Groups::new();
-    for edge in edges {
+    for path in paths {
         work.step()?;
-        for pair in edge.points.windows(2) {
+        for pair in path.windows(2) {
             work.step()?;
             if pair[0].x == pair[1].x {
                 add_span(&mut vertical, pair[0].x, pair[0].y, pair[1].y);
@@ -183,6 +183,11 @@ pub(super) fn shared_segment_boxes(
         work.step()?;
     }
     Ok(boxes)
+}
+
+pub(crate) fn shared_obstacles(paths: &[Vec<Point>]) -> Result<Vec<Box>, Error> {
+    let mut work = Work::new(None, super::EVALUATION_LIMIT).map_err(|_| Error::WorkLimit)?;
+    shared_segment_boxes(paths.iter().map(Vec::as_slice), &mut work).map_err(|_| Error::WorkLimit)
 }
 
 fn add_span(groups: &mut Groups, axis: f64, one: f64, two: f64) {

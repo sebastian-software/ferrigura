@@ -15,10 +15,25 @@ const modes = {
   ],
   'layout-graph': ['seedgraph.go', 'seedgraph-overlay.go', traceLayoutGraph],
   'route-output': ['patch.go', 'patch-overlay.go', traceRouteOutput],
+  'hierarchy-preprocess': [
+    'internal/engine/pipeline.go',
+    'hierarchy-preprocess-overlay.go',
+    traceHierarchyPreprocess,
+  ],
+  'placement-bodies': [
+    'internal/engine/pipeline.go',
+    'placement-bodies-overlay.go',
+    tracePlacementBodies,
+  ],
+  'edge-label-placement': [
+    'internal/labeling/placement.go',
+    'edge-label-placement-overlay.go',
+    traceEdgeLabelPlacement,
+  ],
 };
 assert(
   sourceRoot && output && (Object.hasOwn(modes, mode) || mode === 'candidate-score'),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|candidate-score]'
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|edge-label-placement|placement-bodies|hierarchy-preprocess|candidate-score]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
@@ -40,7 +55,15 @@ const instrumented = instrument(original);
 await mkdir(dest, { recursive: true });
 await writeFile(target, instrumented + '\n' + helper);
 execFileSync('gofmt', ['-w', target]);
-await writeFile(join(dest, 'overlay.json'), JSON.stringify({ Replace: { [source]: target } }));
+const replace = { [source]: target };
+if (mode === 'sizeless-placement') {
+  const optimizer = join(root, 'd2layouts/d2talalayout/internal/placement/sized_optimizer.go');
+  const tracedOptimizer = join(dest, 'sized-optimizer-overlay.go');
+  await writeFile(tracedOptimizer, traceSizedOptimizer(await readFile(optimizer, 'utf8')));
+  execFileSync('gofmt', ['-w', tracedOptimizer]);
+  replace[optimizer] = tracedOptimizer;
+}
+await writeFile(join(dest, 'overlay.json'), JSON.stringify({ Replace: replace }));
 
 function replaceOnce(source, match, replacement) {
   assert.equal(source.split(match).length, 2, `Go trace anchor changed: ${match.trim()}`);
@@ -56,6 +79,16 @@ function traceNormalization(source) {
     '\ttracePilotNormalization("before", p.graph)\n' +
       '\tif err := runPilotNormalization(ctx, p.graph); err != nil { return err }\n' +
       '\ttracePilotNormalization("after", p.graph)\n'
+  );
+}
+
+function tracePlacementBodies(source) {
+  const imports = '\t"encoding/json"\n';
+  const run = '\t\tif err := stage.run(p, ctx); err != nil {\n\t\t\treturn err\n\t\t}\n';
+  return replaceOnce(
+    replaceOnce(source, imports, imports + '\t"encoding/hex"\n\t"os"\n'),
+    run,
+    run + '\t\ttracePilotPlacementBodies(p, stage.name, stageIndex)\n'
   );
 }
 
@@ -106,6 +139,17 @@ function traceRouteOutput(source) {
   );
 }
 
+function traceEdgeLabelPlacement(source) {
+  const imports = '\t"fmt"\n';
+  const boundary = '\treturn best, guard.check()\n';
+  return replaceOnce(
+    replaceOnce(source, imports, imports + '\t"encoding/json"\n\t"os"\n'),
+    boundary,
+    '\ttracePilotEdgeLabel(edge, g, ancestors, nonAncestors, placedFakeNodes, sharedSegmentFakeNodes, alternatives, best)\n' +
+      boundary
+  );
+}
+
 function traceSizelessPlacement(source) {
   const imports = '\t"math/rand"\n';
   const optimize =
@@ -118,24 +162,115 @@ function traceSizelessPlacement(source) {
   const withImports = replaceOnce(
     source,
     imports,
-    imports + '\t"encoding/hex"\n\t"encoding/json"\n\t"os"\n'
+    imports +
+      '\t"encoding/hex"\n\t"encoding/json"\n\t"os"\n' +
+      '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/limits"\n' +
+      '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/placementcost"\n'
   );
   const withFirstPass = replaceOnce(
     withImports,
     optimize,
-    optimize + '\t\tif i == 0 { tracePilotSizelessPlacement("firstPass", seed, subgraph) }\n'
+    optimize + '\t\tif i == 0 { tracePilotSizelessPlacement("firstPass", seed, subgraph, nil) }\n'
   );
   const withFullPhase = replaceOnce(
     withFirstPass,
     transition,
-    '\ttracePilotSizelessPlacement("fullPhase", seed, subgraph)\n' + transition
+    '\ttracePilotSizelessPlacement("fullPhase", seed, subgraph, nil)\n' + transition
   );
   const aligned =
     '\tif err := validateGridAlignment(subgraph); err != nil {\n' + '\t\treturn err\n\t}\n';
-  return replaceOnce(
+  const withTransition = replaceOnce(
     withFullPhase,
     aligned,
-    aligned + '\ttracePilotSizelessPlacement("sizedTransition", seed, subgraph)\n'
+    aligned + '\ttracePilotSizelessPlacement("sizedTransition", seed, subgraph, nil)\n'
+  );
+  const validatePlaced = '\t\tif err := validatePlacedNodes(root, subgraph.Nodes); err != nil {\n';
+  const withDirection = replaceOnce(
+    withTransition,
+    validatePlaced,
+    '\t\ttracePilotSizelessPlacement("directedComponent", []int64{randomSeed}, subgraph, nil)\n' +
+      validatePlaced
+  );
+  const combined =
+    '\tif err := orientSourceInterior(ctx, combined, root, ancestorObstacles); err != nil {\n\t\treturn err\n\t}\n';
+  const withCombined = replaceOnce(
+    withDirection,
+    combined,
+    combined +
+      '\ttracePilotSizelessPlacement("placedComponent", []int64{randomSeed}, combined, nil)\n'
+  );
+  const withSeed = replaceOnce(
+    withCombined,
+    '\tdefer sized.release()\n',
+    '\tsized.pilotSeed = seed\n\tdefer sized.release()\n'
+  );
+  const sizedCompaction =
+    '\t\tif (i % compactionIteration) == 0 {\n' +
+    '\t\t\t// These stages only move nodes and set herd fences:';
+  const withFirstSizedPass = replaceOnce(
+    withSeed,
+    sizedCompaction,
+    '\t\tif i == firstSized { tracePilotSizelessPlacement("firstSizedPass", seed, subgraph, nil) }\n' +
+      '\t\ttracePilotSizedIteration("pass", i, seed, subgraph)\n' +
+      sizedCompaction
+  );
+  const afterCompaction =
+    '\t\t\tproximity.SyncHerdFences(subgraph)\n' + '\t\t\tsized.endExternalChanges()\n';
+  const withFirstCompaction = replaceOnce(
+    withFirstSizedPass,
+    afterCompaction,
+    afterCompaction +
+      '\t\t\ttracePilotSizedIteration("compaction", i, seed, subgraph)\n' +
+      '\t\t\tif i - firstSized < compactionIteration { tracePilotSizelessPlacement("firstSizedCompaction", seed, subgraph, nil) }\n'
+  );
+  const settlingPasses =
+    '\tfor i := 0; i < 10 && !idle; i++ {\n' +
+    '\t\tchanged, err := sized.optimize(ctx, 0.0)\n' +
+    '\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n' +
+    '\t\tif !changed {\n\t\t\tbreak\n\t\t}\n\t}\n';
+  const tracedSettling = settlingPasses.replace(
+    '\t\tif !changed {',
+    '\t\ttracePilotSizedIteration("settlingPass", i, seed, subgraph)\n\t\tif !changed {'
+  );
+  return replaceOnce(
+    withFirstCompaction,
+    settlingPasses,
+    tracedSettling + '\ttracePilotSizelessPlacement("sizedPhase", seed, subgraph, nil)\n'
+  );
+}
+
+function traceSizedOptimizer(source) {
+  const fields = 'type sizedOptimizer struct {\n';
+  const shuffled =
+    '\t\tif err := limits.Shuffle(points, optim.randGenerator, guard); err != nil {\n' +
+    '\t\t\treturn false, err\n\t\t}\n';
+  const tracedCandidates = replaceOnce(
+    replaceOnce(source, fields, fields + '\tpilotSeed []int64\n'),
+    shuffled,
+    shuffled +
+      '\t\tif optim.pilotSeed != nil {\n' +
+      '\t\t\ttracePilotFirstSizedCandidates(ctx, optim, node, medianPoint, d, points)\n' +
+      '\t\t}\n'
+  );
+  const moved = '\t\toptim.recordMove(node, moved)\n';
+  return replaceOnce(
+    tracedCandidates,
+    moved,
+    moved +
+      '\t\tif optim.pilotSeed != nil && err == nil {\n' +
+      '\t\t\ttracePilotSizelessPlacement("firstSizedMove", optim.pilotSeed, optim.g, map[string]float64{"x": node.TopLeft.X, "y": node.TopLeft.Y})\n' +
+      '\t\t\toptim.pilotSeed = nil\n' +
+      '\t\t}\n'
+  );
+}
+
+function traceHierarchyPreprocess(source) {
+  const imports = '\t"math/rand"\n';
+  const run = '\t\tif err := stage.run(p, ctx); err != nil {\n\t\t\treturn err\n\t\t}\n';
+  return replaceOnce(
+    replaceOnce(source, imports, imports + '\t"os"\n\t"slices"\n'),
+    run,
+    run + '\t\ttracePilotHierarchyPreprocess(stage.name, p)\n'
   );
 }
 
@@ -144,9 +279,16 @@ async function traceCandidateScores(tala) {
   const target = join(dest, 'candidate-score-overlay.go');
   const qualitySource = join(tala, 'internal/quality/scoring.go');
   const qualityTarget = join(dest, 'quality-overlay.go');
+  const testsSource = join(tala, 'result_test.go');
+  const testsTarget = join(dest, 'quality-tests-overlay.go');
   const original = await readFile(source, 'utf8');
   const quality = await readFile(qualitySource, 'utf8');
   const helper = await readFile(new URL('trace-candidate-score.go.txt', import.meta.url), 'utf8');
+  const tests = await readFile(testsSource, 'utf8');
+  const testsHelper = await readFile(
+    new URL('trace-candidate-quality-tests.go.txt', import.meta.url),
+    'utf8'
+  );
   const instrumentation = replaceOnce(
     replaceOnce(
       replaceOnce(
@@ -175,9 +317,26 @@ async function traceCandidateScores(tala) {
       '\t_, _, work, err := evaluateWithAreaLimit(ctx, graph, maxEvaluationWorkUnits)\n' +
       '\treturn work, err\n}\n'
   );
-  execFileSync('gofmt', ['-w', target, qualityTarget]);
+  await writeFile(
+    testsTarget,
+    replaceOnce(
+      tests,
+      '\t"errors"\n',
+      '\t"errors"\n\t"fmt"\n\t"os"\n\t"path/filepath"\n' +
+        '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/quality"\n'
+    ) +
+      '\n' +
+      testsHelper
+  );
+  execFileSync('gofmt', ['-w', target, qualityTarget, testsTarget]);
   await writeFile(
     join(dest, 'overlay.json'),
-    JSON.stringify({ Replace: { [source]: target, [qualitySource]: qualityTarget } })
+    JSON.stringify({
+      Replace: {
+        [source]: target,
+        [qualitySource]: qualityTarget,
+        [testsSource]: testsTarget,
+      },
+    })
   );
 }

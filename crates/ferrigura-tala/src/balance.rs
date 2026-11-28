@@ -468,6 +468,25 @@ mod tests {
         }
     }
 
+    #[test]
+    fn balances_the_pinned_go_observatory_routes() {
+        let mut case: Case =
+            serde_json::from_str(include_str!("balance/observatory.json")).unwrap();
+        let original_nodes = case.before.nodes.clone();
+        assert_eq!(
+            case.before
+                .edges
+                .iter()
+                .zip(&case.after)
+                .filter(|(before, after)| before != after)
+                .count(),
+            8
+        );
+        balance_routes(&case.graph, &mut case.before).unwrap();
+        assert_eq!(case.before.nodes, original_nodes, "{}", case.name);
+        assert_eq!(case.before.edges, case.after, "{}", case.name);
+    }
+
     fn reversal_case() -> Case {
         serde_json::from_str(include_str!("balance/reversal.json")).unwrap()
     }

@@ -54,9 +54,12 @@ jobs:
           node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-sizeless" sizeless-placement
           GOFLAGS="-overlay=$RUNNER_TEMP/tala-sizeless/overlay.json" \
             tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-sizeless-reference"
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-bodies" placement-bodies
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-bodies/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-bodies-reference"
           node tools/tala-pilot/check-sizeless-placement.mjs \
             "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-sizeless-reference" \
-            tools/tala-pilot/rust/target/debug/ferrigura-tala
+            tools/tala-pilot/rust/target/debug/ferrigura-tala "$RUNNER_TEMP/tala-bodies-reference"
       - name: Compare authored edge routes and label centers with Go
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |
@@ -85,6 +88,57 @@ jobs:
           node tools/tala-pilot/check-candidate-scores.mjs \
             --reference "$RUNNER_TEMP/tala-reference" \
             --traced "$RUNNER_TEMP/tala-score-reference" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare final normalization and its SVG with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-normalization"
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-normalization/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-normalization-reference"
+          node tools/tala-pilot/check-normalization.mjs \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala \
+            --reference "$RUNNER_TEMP/tala-normalization-reference" \
+            --ferrigura target/debug/examples/tala_pilot \
+            --measured tools/tala-pilot/captures \
+            --captures "$RUNNER_TEMP/tala-normalization.json"
+      - name: Compare Observatory paths, labels, and SVG for seed 1
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-raw-routes.mjs .tala-reference "$RUNNER_TEMP/tala-raw-routes"
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-raw-routes/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-raw-routes-reference"
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-observatory-label" edge-label-placement
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-observatory-label/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-observatory-label-reference"
+          node tools/tala-pilot/check-raw-routes.mjs \
+            "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-raw-routes-reference" \
+            tools/tala-pilot/rust/target/debug/ferrigura-tala "$RUNNER_TEMP/tala-observatory-label-reference" \
+            target/debug/examples/tala_pilot
+      - name: Compare ordinary edge label placement with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-edge-label" edge-label-placement
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-edge-label/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-edge-label-reference"
+          node tools/tala-pilot/check-edge-label-placement.mjs \
+            "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-edge-label-reference" \
+            tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare tree preprocessing and hierarchy scope with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-hierarchy" hierarchy-preprocess
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-hierarchy/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-hierarchy-reference"
+          node tools/tala-pilot/check-hierarchy-preprocess.mjs \
+            --reference "$RUNNER_TEMP/tala-reference" \
+            --trace "$RUNNER_TEMP/tala-hierarchy-reference" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare scores on the upstream completed-layout corpus
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-upstream-score" candidate-score
+          node tools/tala-pilot/check-upstream-quality.mjs \
+            --d2 .tala-reference --overlay "$RUNNER_TEMP/tala-upstream-score/overlay.json" \
             --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Require a passing Rust counterpart for every upstream correctness test
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}

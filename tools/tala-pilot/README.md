@@ -64,10 +64,11 @@ node tools/tala-pilot/check-normalization.mjs \
   --captures /tmp/ferrigura-tala-preview/normalization.json
 ```
 
-The overlay leaves the D2 checkout untouched. It runs the Rust executable
-in place of Go's normalization and then resumes the pinned Go layout. The
-test compares final JSON and the resulting SVG byte for byte. The executable
-and Go are development tools.
+The overlay leaves the D2 checkout untouched. It passes the original route
+points and label placements to the Rust normalizer, which computes the origin
+using the solver's label stroke width. The overlay resumes the pinned Go layout
+with the resulting coordinates. The test compares the final JSON and SVG
+byte for byte. The executable and Go are development tools.
 
 ## Replay native layout fixtures
 
@@ -166,17 +167,44 @@ node tools/tala-pilot/check-layout-graph.mjs \
 Pass `--write` to refresh the two checked-in Rust checkpoints from the
 live trace after the comparison passes.
 
+### Tree preprocessing and hierarchy scope projection
+
+The hierarchy projection reads the canonical measured graph. It checks
+container eligibility, identifies the ordered scopes visited during hierarchy
+discovery and temporarily binds edges to the nearest child of each scope.
+The original endpoints remain available for restoring the routed graph.
+Library Architecture exercises five nested scopes and cross-frame endpoints.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-hierarchy hierarchy-preprocess
+GOFLAGS=-overlay=/tmp/ferrigura-tala-hierarchy/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-hierarchy
+node tools/tala-pilot/check-hierarchy-preprocess.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --trace /tmp/ferrigura-tala-traced-hierarchy \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+The comparison checks the measured projection, tree preprocessing and the
+actual hierarchy input for every seed. The tree checkpoint preserves the
+detached branch and its connectors in Publishing Flow, and the order in
+which Workshop Edges restores a non-branching tree. Pass `--write` to update
+the stored checkpoints after the live comparison passes.
+
 ### Seeded sizeless placement
 
 The Rust stage initializes a flat rectangular component, then optimizes
 its positions using Go-compatible shuffles and jitter and alternating
 compactions. The Observatory check compares every ordered grid location
 with Go after the first pass and the complete sizeless phase for all
-three default seeds. The check also compares the node boxes before
-sized optimization, after compaction accounts for node sizes and
-measured edge captions. It repeats the sized transition from Ferrigura's
-measured input, including native translation, prescale, and the component's
-breadth-first placement order. The trace preserves the final Go layout.
+three default seeds. The check also compares the complete size-aware
+optimizer, directional mirroring and the component's packed origin.
+It runs the same native stages from Ferrigura's measured input. The
+optimizer visits the split component in breadth-first order while its
+obstruction scan follows the authored sibling order. Every checked
+coordinate and candidate order matches exactly. Internal edge costs
+allow floating-point rounding far below Go's score comparison threshold.
+The trace preserves the final Go layout.
 
 ```sh
 node tools/tala-pilot/trace-overlay.mjs \
@@ -188,6 +216,11 @@ node tools/tala-pilot/check-sizeless-placement.mjs \
   /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-sizeless-reference \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
+
+To compare the boxes through the first routing pass, build the
+`placement-bodies` overlay the same way and pass its Go reference as the
+fourth argument. It observes axis alignment, symmetry, equidistance,
+and the final unpinned placement offset before routing.
 
 ### Authored routes and edge labels
 
@@ -232,6 +265,49 @@ node tools/tala-pilot/check-ovg-seed.mjs \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
 
+### Raw orthogonal routes
+
+The Observatory check starts from Ferrigura's measured input and verifies
+the finished node boxes, routing identities, and source-ordered edges
+against Go. It compares the order, strategy, visibility vertices, and
+cost of all three routing flavors for seed 1, then the selected flavor,
+materialized port and turn coordinates, and the balanced paths.
+
+```sh
+node tools/tala-pilot/trace-raw-routes.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-raw-routes
+GOFLAGS=-overlay=/tmp/ferrigura-tala-raw-routes/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-routes
+node tools/tala-pilot/check-raw-routes.mjs \
+  /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-traced-routes \
+  tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Pass the label-traced Go binary from the next section and
+`target/debug/examples/tala_pilot` as the fourth and fifth arguments to
+verify the complete fixed-seed result. The checker places labels on the
+native balanced paths, normalizes the layout, and checks the final node
+boxes, routes, label centers, and the SVG painted by Ferrigura. This run
+uses seed 1 and checks the assembled stages through the test runner. The
+public default multi-seed renderer has its own comparison.
+
+### Ordinary edge label placement
+
+The trace passes already routed geometry, node obstacles, and previously
+placed label boxes to the native edge label search. It compares each chosen
+anchor and fraction, label geometry, exact conflicts, score, and every
+alternative collected during a repair search.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-labels edge-label-placement
+GOFLAGS=-overlay=/tmp/ferrigura-tala-labels/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-labels
+node tools/tala-pilot/check-edge-label-placement.mjs \
+  /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-traced-labels \
+  tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Pass `--write-fixture` to refresh the checked-in Library repair search.
+
 ### Completed candidate scoring and seed selection
 
 The candidate-score trace observes each completed ordinary Go attempt before
@@ -252,7 +328,19 @@ node tools/tala-pilot/check-candidate-scores.mjs \
 ```
 
 Pass `--write-fixtures crates/ferrigura-tala/src/quality/go-candidates.json`
-to regenerate the cases shared with the Rust test suite.
+to regenerate the Ferrigura cases shared with the Rust test suite. Then
+check the independently pinned D2 completed layouts and their calibrated
+work bound through the same scorer:
+
+```sh
+node tools/tala-pilot/check-upstream-quality.mjs \
+  --d2 /tmp/ferrigura-tala-d2 \
+  --overlay /tmp/ferrigura-tala-score/overlay.json \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Use `--write-fixtures` on that command to regenerate the upstream score
+records after verifying them against Rust.
 
 ## Findings
 

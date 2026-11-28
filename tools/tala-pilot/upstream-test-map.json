@@ -32,6 +32,42 @@
   "adapter_test.go#TestNormalizeSeeds": [
     "seed_selection::tests::normalize_seeds_in_first_seen_order"
   ],
+  "candidate_test.go#TestOptionalSeedCandidateCancellationPropagates": [
+    "seed_selection::refinement::tests::optional_seed_candidate_cancellation_propagates"
+  ],
+  "candidate_test.go#TestOptionalSeedCandidatePreservesValidIncumbent": [
+    "seed_selection::refinement::tests::optional_seed_candidate_preserves_valid_incumbent"
+  ],
+  "internal/placement/centered_neighbors_test.go#TestBalanceSymmetryUsesExactPeerCenterline": [
+    "sizeless::refinement::tests::symmetry_uses_the_exact_peer_centerline"
+  ],
+  "internal/placement/centered_neighbors_test.go#TestEquidistanceDoesNotReportAlreadyCenteredNodeAsMoved": [
+    "sizeless::refinement::tests::equidistance_leaves_already_centered_nodes_in_place"
+  ],
+  "internal/placement/extracted_kernels_test.go#TestCompareDirectionCountsIsReflexiveAndPreservesTies": [
+    "sizeless::direct::tests::direction_count_comparison_is_reflexive_and_stable"
+  ],
+  "internal/placement/extracted_kernels_test.go#TestDirectionTransforms": [
+    "sizeless::direct::tests::direction_transforms_follow_primary_and_secondary_votes"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestBestSwapCandidate": [
+    "sizeless::sized_candidates::tests::best_swap_candidate_respects_adjacent_spacing"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestFindClosestUnoccupiedDistanceNoConnections": [
+    "sizeless::sized_candidates::tests::finds_the_closest_unoccupied_distance_without_connections"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestIterPlacementsAroundPoint": [
+    "sizeless::sized_candidates::tests::visits_placements_touching_the_offset_point"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestMedianPoint": [
+    "sizeless::sized_candidates::tests::median_point_uses_the_neighbors_measured_centers"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestSizedFindClosestUnoccupiedDistance": [
+    "sizeless::sized_candidates::tests::finds_the_closest_unoccupied_distance_with_connected_spacing"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestSizedOptimizerGetPlacementPoints": [
+    "sizeless::sized_candidates::tests::sized_placement_candidates_land_on_the_grid"
+  ],
   "internal/placement/sizeless_optimizer_test.go#TestFindClosestUnoccupiedDistance": [
     "sizeless::tests::finds_closest_unoccupied_distance"
   ],
@@ -40,6 +76,24 @@
   ],
   "internal/placement/sizeless_optimizer_test.go#TestSwapCandidates": [
     "sizeless::tests::finds_optimizable_swaps_in_go_order"
+  ],
+  "internal/placement/transpose_test.go#TestTransposeRejectsDiagonalSecondNeighbor": [
+    "sizeless::sized_candidates::tests::transpose_rejects_the_second_neighbor_when_diagonal"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowBranchesRewardAngularRoomForFanInAndFanOut": [
+    "sizeless::sized_cost::tests::flow_branches_reward_angular_room_for_fan_in_and_fan_out"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowContinuityNeverPairsANeighborWithItself": [
+    "sizeless::sized_cost::tests::flow_never_pairs_a_neighbor_with_itself"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowContinuityParallelEdgesDoNotReweightBranches": [
+    "sizeless::sized_cost::tests::flow_parallel_edges_do_not_reweight_branches"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowContinuityReciprocalPairHasBothRoles": [
+    "sizeless::sized_cost::tests::flow_reciprocal_pair_has_both_roles"
+  ],
+  "internal/placementcost/symmetry_test.go#TestAxisScore": [
+    "sizeless::refinement::tests::axis_score_matches_the_go_alignment_cases"
   ],
   "internal/quality/scoring_test.go#TestEvaluateCanceledBeforeWork": [
     "quality::tests::evaluate_canceled_before_work"
@@ -55,6 +109,12 @@
   ],
   "internal/quality/scoring_test.go#TestEvaluateWorkLimitChargesEdgesWithoutCompleteRoutes": [
     "quality::tests::evaluate_work_limit_charges_edges_without_complete_routes"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluateWorkLimitCoversLayoutCorpus": [
+    "quality::tests::evaluate_work_limit_covers_layout_corpus"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluateWorkLimitCoversScoringKernels": [
+    "quality::tests::evaluate_work_limit_covers_scoring_kernels"
   ],
   "internal/quality/scoring_test.go#TestEvaluateWorkLimitIsExact": [
     "quality::tests::evaluate_work_limit_is_exact"
@@ -104,9 +164,53 @@
   "internal/routing/edge_simplify_safety_test.go#TestSimplifyChecksObstacleContainingNewBend": [
     "simplify::tests::rejects_an_obstacle_that_contains_the_new_bend"
   ],
+  "internal/routing/ovg_crossing_index_test.go#TestCrossingIndexMatchesRouteSegments": [
+    "ovg_seed::grid::tests::crossing_index_matches_route_segments"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestAddRoute": [
+    "ovg_seed::flat_search::history::tests::add_route_preserves_order_at_points_and_deduplicates_indexed_segments"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesPreservesClusterTies": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_preserves_cluster_ties"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesPreservesDistanceTies": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_preserves_distance_ties"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesPreservesNaNDistanceTie": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_preserves_nan_distance_tie"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesTopDownLeftRight": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_top_down_left_right"
+  ],
   "internal/routing/ovg_test.go#TestTunnelKeepsExistingPortDirections": [
     "ovg_seed::tunnels::tests::tunnel_keeps_existing_port_directions"
   ],
+  "internal/routing/priority_queue_heap_test.go#TestPriorityQueueMatchesSwapHeap": [
+    "ovg_seed::priority_queue::tests::priority_queue_matches_swap_heap"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueue": [
+    "ovg_seed::priority_queue::tests::priority_queue"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueDecrease": [
+    "ovg_seed::priority_queue::tests::priority_queue_decrease"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueDecreasePreservesOrder": [
+    "ovg_seed::priority_queue::tests::priority_queue_decrease_preserves_order"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueEqualPriorityOrder": [
+    "ovg_seed::priority_queue::tests::priority_queue_equal_priority_order"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueGuardFailureDoesNotMutate": [
+    "ovg_seed::priority_queue::tests::priority_queue_guard_failure_does_not_mutate"
+  ],
+  "internal/routing/route_test.go#TestRouteOpposingColinear": [
+    "ovg_seed::flat_search::history::tests::route_opposing_colinear"
+  ],
+  "internal/routing/slingshot_test.go#TestFillPath": ["ovg_seed::slingshot::tests::fill_path"],
+  "internal/routing/slingshot_test.go#TestPreferLaunchingVertically": [
+    "ovg_seed::slingshot::tests::prefer_launching_vertically"
+  ],
+  "internal/routing/slingshot_test.go#TestSlingshot": ["ovg_seed::flat_search::tests::slingshot"],
   "internal/routing/tunnel_test.go#TestTunnelMultiple": [
     "ovg_seed::tunnels::tests::tunnel_multiple"
   ],
@@ -114,7 +218,43 @@
     "ovg_seed::tunnels::tests::tunnel_obscured"
   ],
   "internal/routing/tunnel_test.go#TestTunnelSimple": ["ovg_seed::tunnels::tests::tunnel_simple"],
+  "internal/routing/turns_test.go#TestIdealTurnAxesOwnsRouteTurnPolicy": [
+    "ovg_seed::search::tests::ideal_turn_axes_owns_route_turn_policy"
+  ],
+  "internal/trees/domain_test.go#TestExtractDirectedPair": [
+    "layout_graph::tree_preprocess::tests::extract_directed_pair"
+  ],
+  "internal/trees/domain_test.go#TestExtractLineGraph": [
+    "layout_graph::tree_preprocess::tests::extract_line_graph"
+  ],
+  "refinement_test.go#TestOptionalSeedRefinementCallerCancellationAlwaysPropagates": [
+    "seed_selection::refinement::tests::optional_seed_refinement_caller_cancellation_always_propagates"
+  ],
+  "refinement_test.go#TestOptionalSeedRefinementFailurePreservesCompleteSelectedResult": [
+    "seed_selection::refinement::tests::optional_seed_refinement_failure_preserves_complete_selected_result"
+  ],
+  "refinement_test.go#TestOptionalSeedRefinementKeepsSelectedPlacementDespiteHigherScore": [
+    "seed_selection::refinement::tests::optional_seed_refinement_keeps_selected_placement_despite_higher_score"
+  ],
+  "result_test.go#TestEvaluateSeedCancellationPrecedesValidation": [
+    "seed_selection::completed::tests::evaluate_seed_cancellation_precedes_validation"
+  ],
+  "result_test.go#TestEvaluateSeedRejectsChangedImmutableGeometryMetadata": [
+    "seed_selection::completed::metadata::tests::rejects_changed_immutable_geometry_metadata"
+  ],
+  "result_test.go#TestEvaluateSeedRejectsChangedTopology": [
+    "seed_selection::completed::tests::evaluate_seed_rejects_changed_topology"
+  ],
+  "result_test.go#TestEvaluateSeedRejectsInvalidCompletedGraphs": [
+    "seed_selection::completed::tests::evaluate_seed_rejects_invalid_completed_graphs"
+  ],
   "result_test.go#TestScoreCompare": ["seed_selection::tests::score_compare"],
+  "result_test.go#TestSeedMetadataValidationRejectsCanceledContext": [
+    "seed_selection::completed::metadata::tests::seed_metadata_validation_rejects_canceled_context"
+  ],
+  "result_test.go#TestValidateLayoutResultMetadataDoesNotValidateOutputConstraints": [
+    "seed_selection::completed::metadata::tests::validate_layout_result_metadata_does_not_validate_output_constraints"
+  ],
   "seed_selection_test.go#TestSeedSelectionAcrossCompletionOrders": [
     "seed_selection::tests::seed_selection_across_completion_orders"
   ]

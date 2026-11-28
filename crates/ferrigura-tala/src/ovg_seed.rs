@@ -15,7 +15,17 @@ use crate::{Error, NodeGeometry, Point};
 
 mod boundary;
 mod edge_points;
+#[doc(hidden)]
+pub mod flat_search;
+#[doc(hidden)]
+pub mod grid;
 mod links;
+#[doc(hidden)]
+pub mod priority_queue;
+#[doc(hidden)]
+pub mod search;
+#[doc(hidden)]
+pub mod slingshot;
 mod tunnels;
 
 const MIN_PORT_CLEARANCE: f64 = 20.0;

@@ -19,7 +19,9 @@ const MAX_MEASUREMENT: f64 = 1_000_000.0;
 const FIRST_SPILL_ID: i64 = 1 << 32;
 const LABEL_PADDING: f64 = 5.0;
 
+pub(crate) mod hierarchy_preprocess;
 mod prescale;
+pub(crate) mod tree_preprocess;
 pub(crate) use prescale::port_dimensions;
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
@@ -311,6 +313,34 @@ pub fn checkpoint(graph: &Graph, prescale: bool) -> Result<impl Serialize, Error
         graph.prescale();
     }
     Ok(graph)
+}
+
+/// Captures hierarchy candidates and projected scopes from measured workspace
+/// topology before any sequence or tree rewrite.
+///
+/// # Errors
+/// Returns the same errors as measured input translation.
+pub fn hierarchy_preprocess_checkpoint(graph: &Graph) -> Result<impl Serialize, Error> {
+    let graph = LayoutGraph::translate(graph)?;
+    Ok(graph.hierarchy_preprocess())
+}
+
+/// Captures active placement order and the detached trees after preprocessing.
+/// # Errors
+/// Returns measured translation, graph invariant or work-limit errors.
+pub fn tree_preprocess_checkpoint(graph: &Graph) -> Result<impl Serialize, Error> {
+    #[derive(Serialize)]
+    struct Checkpoint {
+        tree: tree_preprocess::Capture,
+        hierarchy: hierarchy_preprocess::HierarchyPreprocess,
+    }
+
+    let graph = LayoutGraph::translate(graph)?;
+    let trees = graph.tree_preprocess()?;
+    Ok(Checkpoint {
+        tree: trees.capture(&graph),
+        hierarchy: graph.hierarchy_for(&trees),
+    })
 }
 
 struct Topology<'a> {

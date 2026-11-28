@@ -1,11 +1,12 @@
-func tracePilotSizelessPlacement(stage string, seed []int64, g *layoutgraph.Graph) {
+func tracePilotSizelessPlacement(stage string, seed []int64, g *layoutgraph.Graph, stageValue any) {
 	if os.Getenv("TALA_PILOT_TRACE_SIZELESS") != "1" || len(seed) != 1 || len(g.Nodes) == 0 {
 		return
 	}
 	ids := make(map[*layoutgraph.Node]string, len(g.Nodes))
+	indices := make(map[*layoutgraph.Node]int, len(g.Nodes))
 	nodes := make([]map[string]any, 0, len(g.Nodes))
 	positions := make([]map[string]any, 0, len(g.Nodes))
-	for _, n := range g.Nodes {
+	for index, n := range g.Nodes {
 		if n.ShapeType() != "Square" || n.IsContainer() || n.Cluster != nil || n.FixedTopLeft != nil ||
 			len(n.Nears) != 0 || len(g.CommonUncleSiblings[n]) != 0 || g.NodeToTree[n] != nil {
 			return
@@ -20,12 +21,13 @@ func tracePilotSizelessPlacement(stage string, seed []int64, g *layoutgraph.Grap
 		}
 		id := string(decoded)
 		ids[n] = id
+		indices[n] = index
 		nodes = append(nodes, map[string]any{
 			"id": id, "width": n.Width, "height": n.Height, "shape": "rect",
 			"isGroup": false, "label": "", "labelWidth": 0, "labelHeight": 0,
 		})
 		position := map[string]any{"id": id, "x": n.TopLeft.X, "y": n.TopLeft.Y}
-		if stage == "sizedTransition" {
+		if stage == "sizedTransition" || stage == "firstSizedPass" || stage == "firstSizedCompaction" || stage == "sizedPhase" || stage == "directedComponent" || stage == "placedComponent" {
 			position["width"] = n.Width
 			position["height"] = n.Height
 		}
@@ -53,15 +55,101 @@ func tracePilotSizelessPlacement(stage string, seed []int64, g *layoutgraph.Grap
 		geo.Right: "LR", geo.Left: "RL", geo.Bottom: "TB", geo.Top: "BT",
 	}[g.Direction(g.Nodes[0].Container)]
 	var expected any = map[string]any{"cellSize": g.CellSize, "nodes": positions}
-	if stage == "sizedTransition" {
+	if stage == "sizedTransition" || stage == "firstSizedPass" || stage == "firstSizedCompaction" || stage == "sizedPhase" || stage == "directedComponent" || stage == "placedComponent" {
 		expected = positions
 	}
+	if stageValue != nil {
+		expected = stageValue
+	}
+	obstacleOrder := make([]int, 0, len(g.Nodes))
+	for _, sibling := range g.Containers[g.Nodes[0].Container] {
+		if index, ok := indices[sibling]; ok && sibling.Graph == g {
+			obstacleOrder = append(obstacleOrder, index)
+		}
+	}
 	trace := map[string]any{
-		"stage": stage, "seed": seed[0],
+		"stage": stage, "seed": seed[0], "obstacleOrder": obstacleOrder,
 		"graph": map[string]any{"direction": direction, "nodes": nodes, "edges": edges},
 		"expected": expected,
 	}
 	if data, err := json.Marshal(trace); err == nil {
 		fmt.Fprintf(os.Stderr, "TALA_PILOT_SIZELESS %s\n", data)
+	}
+}
+
+func tracePilotFirstSizedCandidates(ctx context.Context, optim *sizedOptimizer, node *layoutgraph.Node, median *geo.Point, distance float64, points []geo.Point) {
+	seed, g := optim.pilotSeed, optim.g
+	if os.Getenv("TALA_PILOT_TRACE_SIZELESS") != "1" {
+		return
+	}
+	internalID := node.DebugID()
+	if len(internalID) < 2 || internalID[0] != 'n' {
+		return
+	}
+	decoded, err := hex.DecodeString(internalID[1:])
+	if err != nil {
+		return
+	}
+	position := func(p geo.Point) map[string]float64 {
+		return map[string]float64{"x": p.X, "y": p.Y}
+	}
+	candidates := make([]map[string]float64, len(points))
+	for i, p := range points {
+		candidates[i] = position(p)
+	}
+	tracePilotSizelessPlacement("firstSizedCandidates", seed, g, map[string]any{
+		"node": string(decoded), "median": position(*median), "distance": distance, "points": candidates,
+	})
+	tracePilotFirstSizedEdgeCosts(ctx, optim, node, string(decoded), points)
+}
+
+func tracePilotFirstSizedEdgeCosts(ctx context.Context, optim *sizedOptimizer, node *layoutgraph.Node, id string, points []geo.Point) {
+	guard, err := limits.NewOptimizationWorkGuard(ctx, "PilotSizedCosts", limits.MaxOptimizationWorkUnits)
+	if err != nil {
+		return
+	}
+	scores := make([]*float64, len(points))
+	symmetries := make([]*float64, len(points))
+	original := node.TopLeft
+	defer func() { node.TopLeft = original }()
+	for i, point := range points {
+		canMove, err := optim.indexedCanMove(node, &point, guard)
+		if err != nil {
+			return
+		}
+		if !canMove {
+			continue
+		}
+		node.TopLeft = &point
+		cost, err := placementcost.NodeEdgeLength(ctx, node, placementcost.EdgeLengthOptions{
+			IncludeNodeSizes: true, PenalizeDirection: true, EdgeAbductions: optim.edgeAbductions,
+		})
+		if err != nil {
+			return
+		}
+		symmetry, err := placementcost.NodeSymmetry(ctx, node, optim.edgeAbductions)
+		node.TopLeft = original
+		if err != nil {
+			return
+		}
+		scores[i] = &cost
+		symmetries[i] = &symmetry
+	}
+	tracePilotSizelessPlacement("firstSizedEdgeCosts", optim.pilotSeed, optim.g, map[string]any{
+		"node": id, "turnCost": optim.g.TurnCost(), "edgeCosts": scores, "symmetry": symmetries,
+	})
+}
+
+func tracePilotSizedIteration(step string, iteration int, seed []int64, g *layoutgraph.Graph) {
+	if os.Getenv("TALA_PILOT_TRACE_SIZED_ITERATIONS") != "1" || len(seed) != 1 {
+		return
+	}
+	positions := make([][2]float64, len(g.Nodes))
+	for i, node := range g.Nodes {
+		positions[i] = [2]float64{node.TopLeft.X, node.TopLeft.Y}
+	}
+	value := map[string]any{"step": step, "iteration": iteration, "positions": positions}
+	if data, err := json.Marshal(map[string]any{"seed": seed[0], "value": value}); err == nil {
+		fmt.Fprintf(os.Stderr, "TALA_PILOT_SIZED_ITERATION %s\n", data)
 	}
 }

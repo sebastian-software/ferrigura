@@ -224,3 +224,59 @@ fn scores_and_selects_completed_go_candidates_without_changing_geometry() {
         }
     }
 }
+
+#[derive(Deserialize)]
+struct CorpusCase {
+    fixture: String,
+    graph: PositionedGraph,
+    score: LayoutScore,
+    work: u64,
+}
+
+fn completed_corpus() -> impl Iterator<Item = CorpusCase> {
+    include_str!("go-completed-corpus.jsonl")
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+}
+
+#[test]
+fn evaluate_work_limit_covers_scoring_kernels() {
+    let kernel = completed_corpus()
+        .find(|case| case.fixture == "work-cover-scoring-kernels")
+        .unwrap();
+    let expected = Evaluation {
+        score: kernel.score,
+        work: kernel.work,
+    };
+    assert!(kernel.work >= 100);
+    assert_eq!(
+        test_evaluation(&kernel.graph, kernel.work),
+        (Ok(expected), kernel.work)
+    );
+    assert_eq!(
+        test_evaluation(&kernel.graph, kernel.work - 1),
+        (Err(EvaluationError::WorkLimit), kernel.work)
+    );
+}
+
+#[test]
+fn evaluate_work_limit_covers_layout_corpus() {
+    let mut count = 0;
+    let mut peak = 0;
+    for case in completed_corpus().filter(|case| case.fixture != "work-cover-scoring-kernels") {
+        let evaluated = evaluate(&case.graph, None).unwrap();
+        assert_eq!(
+            evaluated,
+            Evaluation {
+                score: case.score,
+                work: case.work,
+            },
+            "{}",
+            case.fixture
+        );
+        peak = peak.max(evaluated.work);
+        count += 1;
+    }
+    assert_eq!(count, 34);
+    assert!((50_000..=75_000).contains(&peak));
+}

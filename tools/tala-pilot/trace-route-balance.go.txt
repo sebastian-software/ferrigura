@@ -1,0 +1,26 @@
+// Observe edge geometry at the exact balance call boundary.
+func tracePilotBalance(stage string, graph *layoutgraph.Graph) {
+    if os.Getenv("TALA_PILOT_TRACE_RAW_ROUTES") != "1" {
+        return
+    }
+    type route struct {
+        Edge int `json:"edge"`
+        Points [][2]float64 `json:"points"`
+    }
+    routes := make([]route, 0, len(graph.Edges))
+    for i, edge := range graph.Edges {
+        points := make([][2]float64, len(edge.Points))
+        for j, point := range edge.Points {
+            points[j] = [2]float64{point.X, point.Y}
+        }
+        routes = append(routes, route{i, points})
+    }
+    data, err := json.Marshal(struct {
+        Stage string `json:"stage"`
+        Routes []route `json:"routes"`
+    }{stage, routes})
+    if err != nil {
+        panic(err)
+    }
+    fmt.Fprintln(os.Stderr, "TALA_PILOT_ROUTE_BALANCE " + string(data))
+}
