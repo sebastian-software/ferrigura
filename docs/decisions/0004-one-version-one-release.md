@@ -22,7 +22,7 @@ The crates are built and tested as one workspace, and the npm packages wrap the 
 - Every dependency between the crates has `version` beside its `path`, which release-please raises with the crates.
 - Each published crate has an `include` list (its sources, README, license and notice files, and what its build reads), and builds from its own package: no build script or `include_*!` reaches outside the crate.
 - release-please opens its pull requests with the organization's `RELEASE_PLEASE_TOKEN`, since a pull request opened with `GITHUB_TOKEN` does not start CI.
-- Trusted Publishing cannot create a crate or an npm package. A new crate is published once by hand with `tools/release/publish-crates.sh <tag>`, which publishes the same list in the same order as the workflow; a manual run of `publish.yml` with a release's tag retries a failed publish.
+- Trusted Publishing cannot create a crate or an npm package. The release workflow uses the organization token for `ferrigura-tala` until Trusted Publishing has been configured for that crate and `TALA_TRUSTED_PUBLISHING` is `true`. The token applies only to that crate. For a manual first publication, `tools/release/publish-crates.sh <tag>` publishes the same list in the same order as the workflow. A manual run of `publish.yml` with a release's tag retries a failed publish.
 
 ## Related
 

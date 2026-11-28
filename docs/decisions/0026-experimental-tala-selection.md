@@ -29,8 +29,8 @@ connections, nested subgraphs, and other shapes are outside this subset.
 - The default CLI and npm binaries keep their existing dependency and
   notice sets. The TALA source package includes its MPL-2.0 notice.
   Anyone distributing a feature-enabled binary provides the matching
-  covered Rust source and notice. Follow the first-publication process in
-  decision 0004 before the release workflow can publish the new crate.
+  covered Rust source and notice. Decision 0004 describes the release workflow
+  for the new crate and its transition to Trusted Publishing.
 - The Go reference runs in the development harness. Runtime dispatch,
   layout and SVG rendering all run in Rust.
 
