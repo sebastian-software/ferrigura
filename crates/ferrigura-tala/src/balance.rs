@@ -456,3 +456,7 @@ mod tests {
         assert_eq!(case.before.edges, original, "{}", case.name);
     }
 }
+
+#[cfg(test)]
+#[path = "balance/upstream_tests.rs"]
+mod upstream_tests;
