@@ -124,7 +124,7 @@ fn axis_aligned(a: Point, b: Point) -> bool {
     a.x == b.x || a.y == b.y
 }
 
-fn non_shared_crossing(first: &[Point], second: &[Point]) -> bool {
+pub(crate) fn non_shared_crossing(first: &[Point], second: &[Point]) -> bool {
     let (a, b, c, d) = (first[0], first[1], second[0], second[1]);
     !equal_signs(orientation(a, b, c), orientation(a, b, d))
         && !equal_signs(orientation(c, d, a), orientation(c, d, b))

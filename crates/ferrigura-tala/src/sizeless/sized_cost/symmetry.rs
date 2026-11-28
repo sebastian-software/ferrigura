@@ -116,6 +116,11 @@ impl EdgeCost {
         Ok(score / f64::from(count))
     }
 
+    pub(in super::super) fn global_symmetry_credit(&self, node: usize, symmetry: f64) -> f64 {
+        let count = u32::try_from(self.adjacency[node].len()).expect("validated edge count");
+        symmetry * self.cell_size * f64::from(count)
+    }
+
     pub(in super::super) fn symmetry_cost(&self, node: usize) -> f64 {
         let count = u32::try_from(self.adjacency[node].len()).expect("validated edge count");
         self.cell_size * f64::from(count)

@@ -13,6 +13,7 @@ use crate::{EdgeGeometry, Error, Layout, NodeGeometry, Point};
 
 const MAX_RESULT_COORDINATE: f64 = 1_000_000_000.0;
 const LABEL_PADDING: f64 = 5.0;
+pub(crate) const LAYOUT_STROKE_WIDTH: f64 = 3.0;
 const RENDER_STROKE_WIDTH: f64 = 2.0;
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]

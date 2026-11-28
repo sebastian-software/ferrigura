@@ -57,7 +57,7 @@ fn route_opposing_colinear() {
         let b = Point { x: x2, y: y2 };
         for ((from, to), expected) in [(a, b), (b, a)].into_iter().zip(expected) {
             assert_eq!(
-                route.opposes(&graph, Segment { from, to }, &mut work),
+                route.opposes(&graph, &[], Segment { from, to }, &mut work),
                 Ok(expected)
             );
         }

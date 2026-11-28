@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use super::{PhaseState, compaction::Axis, run};
+use super::{PhaseState, compaction::Axis, order_ranks, run};
 use crate::{Error, Graph, NodeGeometry, Point, valid_dimension};
 
 const NODE_GAP: f64 = 20.0;
@@ -21,22 +21,32 @@ const TRANSITION_FACTOR: f64 = 3.0;
 ///
 /// # Errors
 /// Returns an error for unsupported component topology or invalid measurements.
-pub fn transition_to_sized(graph: &Graph, seed: i64) -> Result<Vec<NodeGeometry>, Error> {
-    let state = prepared_transition(graph, seed)?;
+pub fn transition_to_sized(
+    graph: &Graph,
+    seed: i64,
+    entity_order: &[usize],
+) -> Result<Vec<NodeGeometry>, Error> {
+    let state = prepared_transition(graph, seed, entity_order)?;
     Ok(state.nodes)
 }
 
 pub(super) struct Transition {
     pub(super) nodes: Vec<NodeGeometry>,
+    pub(super) ranks: Vec<usize>,
     pub(super) gaps: Vec<Vec<Spacing>>,
     pub(super) phase: PhaseState,
 }
 
-pub(super) fn prepared_transition(graph: &Graph, seed: i64) -> Result<Transition, Error> {
+pub(super) fn prepared_transition(
+    graph: &Graph,
+    seed: i64,
+    entity_order: &[usize],
+) -> Result<Transition, Error> {
     if graph.edges.iter().any(|edge| edge.source == edge.target) {
         return Err(Error::UnsupportedGraph);
     }
-    let phase = run(graph, seed, false)?;
+    let ranks = order_ranks(graph.nodes.len(), entity_order)?;
+    let phase = run(graph, seed, false, &ranks)?;
     let grid = &phase.grid;
     let gaps = edge_gaps(graph)?;
     let mut nodes = graph
@@ -52,7 +62,7 @@ pub(super) fn prepared_transition(graph: &Graph, seed: i64) -> Result<Transition
         })
         .collect::<Vec<_>>();
     for axis in [Axis::Horizontal, Axis::Vertical] {
-        transition_axis(&mut nodes, &gaps, axis, grid.cell_size);
+        transition_axis(&mut nodes, &gaps, axis, grid.cell_size, &ranks);
     }
     for node in &mut nodes {
         for coordinate in [&mut node.x, &mut node.y] {
@@ -61,7 +71,12 @@ pub(super) fn prepared_transition(graph: &Graph, seed: i64) -> Result<Transition
             }
         }
     }
-    Ok(Transition { nodes, gaps, phase })
+    Ok(Transition {
+        nodes,
+        gaps,
+        phase,
+        ranks,
+    })
 }
 
 #[derive(Clone, Copy, Default)]
@@ -111,29 +126,48 @@ pub(super) fn edge_gaps(graph: &Graph) -> Result<Vec<Vec<Spacing>>, Error> {
     Ok(gaps)
 }
 
-fn transition_axis(nodes: &mut [NodeGeometry], gaps: &[Vec<Spacing>], axis: Axis, cell: f64) {
+fn transition_axis(
+    nodes: &mut [NodeGeometry],
+    gaps: &[Vec<Spacing>],
+    axis: Axis,
+    cell: f64,
+    ranks: &[usize],
+) {
     let predecessors = visibility_predecessors(nodes, gaps, axis);
     inflate_axis(
         nodes,
         gaps,
         &predecessors,
-        axis,
-        cell,
-        TRANSITION_FACTOR,
-        true,
+        ranks,
+        Inflation {
+            axis,
+            cell,
+            factor: TRANSITION_FACTOR,
+            transition: true,
+        },
     );
+}
+
+pub(super) struct Inflation {
+    pub(super) axis: Axis,
+    pub(super) cell: f64,
+    pub(super) factor: f64,
+    pub(super) transition: bool,
 }
 
 pub(super) fn inflate_axis(
     nodes: &mut [NodeGeometry],
     gaps: &[Vec<Spacing>],
     predecessors: &[Vec<usize>],
-    axis: Axis,
-    cell: f64,
-    factor: f64,
-    transition: bool,
+    ranks: &[usize],
+    Inflation {
+        axis,
+        cell,
+        factor,
+        transition,
+    }: Inflation,
 ) {
-    for target in ordered_along_axis(nodes, axis) {
+    for target in ordered_along_axis(nodes, axis, ranks) {
         let Some(anchor) = nearest_predecessor(nodes, predecessors, axis, target) else {
             continue;
         };
@@ -151,12 +185,16 @@ pub(super) fn inflate_axis(
     }
 }
 
-pub(super) fn ordered_along_axis(nodes: &[NodeGeometry], axis: Axis) -> Vec<usize> {
+pub(super) fn ordered_along_axis(
+    nodes: &[NodeGeometry],
+    axis: Axis,
+    ranks: &[usize],
+) -> Vec<usize> {
     let mut order: Vec<_> = (0..nodes.len()).collect();
     order.sort_unstable_by(|&a, &b| {
         start(axis, &nodes[a])
             .total_cmp(&start(axis, &nodes[b]))
-            .then(a.cmp(&b))
+            .then(ranks[a].cmp(&ranks[b]))
     });
     order
 }

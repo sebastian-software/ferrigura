@@ -4,7 +4,7 @@ func tracePilotHierarchyPreprocess(stage string, p *pipeline) {
 		return
 	}
 	switch stage {
-	case "Prescale", "PreprocessSequences", "Preprocess", "PreprocessTrees", "PreprocessHierarchies":
+	case "Prescale", "PreprocessSequences", "Preprocess", "PreprocessTrees", "PreprocessHierarchies", "PreprocessClusters":
 	default:
 		return
 	}
@@ -35,6 +35,7 @@ func tracePilotHierarchyPreprocess(stage string, p *pipeline) {
 		Candidates []layoutgraph.EntityID `json:"candidates"`
 		Scopes []pilotHierarchyScope `json:"scopes,omitempty"`
 		TreeState *pilotTrees `json:"treeState,omitempty"`
+		LeafClusters *pilotLeafClusters `json:"leafClusters,omitempty"`
 	}
 	g := p.graph
 	value := record{Stage: stage, Seed: p.seed, Nodes: []nodeRecord{}, Edges: []edgeRecord{}, Candidates: []layoutgraph.EntityID{}}
@@ -76,11 +77,73 @@ func tracePilotHierarchyPreprocess(stage string, p *pipeline) {
 	if stage == "PreprocessTrees" {
 		value.TreeState = tracePilotTreeState(g)
 	}
+	if stage == "PreprocessClusters" {
+		value.LeafClusters = tracePilotLeafClusters(g)
+	}
 	data, err := json.Marshal(value)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Fprintf(os.Stderr, "tala-hierarchy-preprocess %s\n", data)
+}
+
+type pilotClusterEdge struct {
+	ID layoutgraph.EntityID `json:"id"`
+	From *layoutgraph.EntityID `json:"from"`
+	To *layoutgraph.EntityID `json:"to"`
+}
+
+type pilotLeafCluster struct {
+	Container *layoutgraph.EntityID `json:"container"`
+	Nodes []layoutgraph.EntityID `json:"nodes"`
+	FixedSize bool `json:"fixedSize"`
+	Geometry pilotVesselGeometry `json:"geometry"`
+	Edges []pilotClusterEdge `json:"edges"`
+}
+
+type pilotVesselGeometry struct {
+	Arrangement layoutgraph.ClusterArrangement `json:"arrangement"`
+	Padding float64 `json:"padding"`
+	Width float64 `json:"width"`
+	Height float64 `json:"height"`
+	MemberSizes [][2]float64 `json:"memberSizes"`
+}
+
+type pilotLeafClusters struct {
+	Clusters []pilotLeafCluster `json:"clusters"`
+}
+
+func tracePilotLeafClusters(g *layoutgraph.Graph) *pilotLeafClusters {
+	endpoint := func(node *layoutgraph.Node) *layoutgraph.EntityID {
+		if node == nil || node.IsClusterVessel() {
+			return nil
+		}
+		return &node.ID
+	}
+	value := &pilotLeafClusters{Clusters: []pilotLeafCluster{}}
+	for _, node := range g.Nodes {
+		cluster := g.Clusters[node]
+		if cluster == nil {
+			continue
+		}
+		out := pilotLeafCluster{Container: endpoint(cluster.Container), Nodes: []layoutgraph.EntityID{}, FixedSize: cluster.FixedSize, Edges: []pilotClusterEdge{}}
+		out.Geometry = pilotVesselGeometry{cluster.Arrangement, cluster.Padding, node.Width, node.Height, [][2]float64{}}
+		for _, member := range cluster.Nodes {
+			out.Nodes = append(out.Nodes, member.ID)
+			out.Geometry.MemberSizes = append(out.Geometry.MemberSizes, [2]float64{member.Width, member.Height})
+		}
+		membership := map[*layoutgraph.Edge]struct{}{}
+		for _, abduction := range cluster.EdgeAbductions {
+			membership[abduction.Edge] = struct{}{}
+		}
+		for _, edge := range g.Edges {
+			if _, member := membership[edge]; member {
+				out.Edges = append(out.Edges, pilotClusterEdge{edge.ID, endpoint(edge.From), endpoint(edge.To)})
+			}
+		}
+		value.Clusters = append(value.Clusters, out)
+	}
+	return value
 }
 
 type pilotOrderedTreeContainer struct {

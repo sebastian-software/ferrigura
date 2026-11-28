@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 #[doc(hidden)]
 pub mod balance;
 mod connected;
+#[doc(hidden)]
+pub mod flat;
 mod go_rand;
 mod hierarchy;
 #[doc(hidden)]
@@ -211,7 +213,12 @@ pub fn layout(graph: &Graph) -> Result<Layout, Error> {
         });
     }
     if !graph.edges.is_empty() {
-        return connected::layout(graph).ok_or(Error::UnsupportedGraph);
+        if let Some(layout) = connected::layout(graph) {
+            return Ok(layout);
+        }
+        let layout = flat::production_layout(graph, translated)?;
+        check_bounds(&layout.nodes)?;
+        return Ok(layout);
     }
     let nodes = placement::place(graph).ok_or(Error::UnsupportedGraph)?;
     check_bounds(&nodes)?;

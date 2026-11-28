@@ -1,0 +1,157 @@
+{
+  "nodes": [
+    {
+      "id": "book0",
+      "shape": "rect",
+      "isGroup": false,
+      "width": 112,
+      "height": 73,
+      "label": "Notebook 0",
+      "labelWidth": 55,
+      "labelHeight": 18
+    },
+    {
+      "id": "book1",
+      "shape": "rect",
+      "isGroup": false,
+      "width": 98,
+      "height": 71,
+      "label": "Notebook 1",
+      "labelWidth": 55,
+      "labelHeight": 18
+    },
+    {
+      "id": "book2",
+      "shape": "rect",
+      "isGroup": false,
+      "width": 104,
+      "height": 72,
+      "label": "Notebook 2",
+      "labelWidth": 55,
+      "labelHeight": 18
+    },
+    {
+      "id": "book3",
+      "shape": "rect",
+      "isGroup": false,
+      "width": 93,
+      "height": 44,
+      "label": "Notebook 3",
+      "labelWidth": 55,
+      "labelHeight": 18
+    },
+    {
+      "id": "book4",
+      "shape": "rect",
+      "isGroup": false,
+      "width": 157,
+      "height": 76,
+      "label": "Notebook 4",
+      "labelWidth": 55,
+      "labelHeight": 18
+    },
+    {
+      "id": "book5",
+      "shape": "rect",
+      "isGroup": false,
+      "width": 98,
+      "height": 38,
+      "label": "Notebook 5",
+      "labelWidth": 55,
+      "labelHeight": 18
+    },
+    {
+      "id": "book6",
+      "shape": "rect",
+      "isGroup": false,
+      "width": 84,
+      "height": 64,
+      "label": "Notebook 6",
+      "labelWidth": 55,
+      "labelHeight": 18
+    }
+  ],
+  "edges": [
+    {
+      "id": "connection-0",
+      "source": "book0",
+      "target": "book1",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    {
+      "id": "connection-1",
+      "source": "book1",
+      "target": "book2",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "page 1",
+      "labelWidth": 57,
+      "labelHeight": 18
+    },
+    {
+      "id": "connection-2",
+      "source": "book2",
+      "target": "book3",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    {
+      "id": "connection-3",
+      "source": "book3",
+      "target": "book4",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "page 3",
+      "labelWidth": 23,
+      "labelHeight": 18
+    },
+    {
+      "id": "connection-4",
+      "source": "book4",
+      "target": "book5",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    {
+      "id": "connection-5",
+      "source": "book5",
+      "target": "book6",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "page 5",
+      "labelWidth": 75,
+      "labelHeight": 18
+    },
+    {
+      "id": "connection-6",
+      "source": "book6",
+      "target": "book0",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "",
+      "labelWidth": 0,
+      "labelHeight": 0
+    },
+    {
+      "id": "connection-7",
+      "source": "book5",
+      "target": "book3",
+      "sourceArrow": false,
+      "targetArrow": true,
+      "label": "page 7",
+      "labelWidth": 36,
+      "labelHeight": 18
+    }
+  ],
+  "direction": ""
+}

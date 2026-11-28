@@ -171,6 +171,8 @@ fn matches_every_pinned_go_raw_observatory_route() {
                     slingshot += 1;
                     "slingshot"
                 }
+                RouteStrategy::Quick => "quick",
+                RouteStrategy::Fallback => "line",
                 RouteStrategy::Weighted => {
                     weighted += 1;
                     "search"
@@ -240,12 +242,28 @@ fn matches_every_pinned_go_raw_observatory_route() {
             &[[1400.0, 1159.0], [1572.0, 1159.0], [1572.0, 1186.0]],
         ),
     ];
-    assert_eq!(selected.routes.len(), expected.len());
-    for (route, (owners, vertices)) in selected.routes.into_iter().zip(expected) {
+    let before = search.route_points_in_input_order(&selected).unwrap();
+    let mut after = before.clone();
+    swap_ports(&nodes, &[None; 7], &edges, &mut after, &mut work).unwrap();
+    assert_eq!(
+        after, before,
+        "Go leaves all Observatory routes unchanged at port swaps"
+    );
+    search
+        .straight_edges_fallback(&edges, &mut after, &mut work)
+        .unwrap();
+    assert_eq!(
+        after, before,
+        "Go leaves all Observatory routes unchanged at straight fallback"
+    );
+    let materialized = search
+        .materialize_selected_routes(&selected, &edges, &mut work)
+        .unwrap();
+    assert_eq!(materialized.len(), expected.len());
+    for (route, (owners, vertices)) in materialized.into_iter().zip(expected) {
         assert_eq!(&edges[route.edge].owners, owners);
-        let points: Vec<_> = search
-            .route_points(&route.route)
-            .unwrap()
+        let points: Vec<_> = route
+            .points
             .into_iter()
             .map(|point| [point.x, point.y])
             .collect();

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 const [reference, tracedReference, rust, bodyReference] = process.argv
   .slice(2)
@@ -17,7 +18,9 @@ const input = await readFile(
   'utf8'
 );
 const measuredGraph = JSON.parse(input);
-const { edgeLabels, obstacleOrder, seeds } = await readFixture('sizeless/observatory.json');
+const { edgeLabels, obstacleOrder, entityOrder, seeds } = await readFixture(
+  'sizeless/observatory.json'
+);
 const initialization = await readFixture('initialize/fixtures.json');
 const { graph } = initialization.find(({ name }) => name === 'Cyclic observatory services');
 assert.equal(edgeLabels.length, graph.edges.length);
@@ -72,7 +75,7 @@ for (const {
     ['directedComponent', '--direct-flat-component', directedComponent],
     ['placedComponent', '--place-flat-component', placedComponent],
   ];
-  const request = JSON.stringify({ graph, seed, obstacleOrder });
+  const request = JSON.stringify({ graph, seed, obstacleOrder, entityOrder });
   for (const [stage, command, expected] of stages) {
     const capture = captures.find((item) => item.seed === seed && item.stage === stage);
     assert(capture, `Missing Go trace for ${stage}, seed ${seed}`);
@@ -81,6 +84,11 @@ for (const {
       capture.obstacleOrder,
       obstacleOrder,
       `${stage}, seed ${seed}: Go obstruction order changed`
+    );
+    assert.deepEqual(
+      capture.entityOrder,
+      entityOrder,
+      `${stage}, seed ${seed}: Go numeric entity order changed`
     );
     const compare = stage === 'firstSizedEdgeCosts' ? assertScoresEqual : assert.deepEqual;
     compare(capture.expected, expected, `${stage}, seed ${seed}: saved Go geometry changed`);
@@ -125,6 +133,17 @@ console.log(
   `Matched ${captures.length} seeded placement stages and ${iterations.length} sized-optimizer snapshots with pinned Go. The measured input matches ${seeds.length * 5} times.`
 );
 
+const islandInput = await readFile(
+  new URL('placement-islands.measured.json', import.meta.url),
+  'utf8'
+);
+checkIslandJoins(islandInput);
+const entityOrderInput = await readFile(
+  new URL('placement-entity-order.measured.json', import.meta.url),
+  'utf8'
+);
+checkEntityOrder(entityOrderInput);
+
 function traceEntries(output, prefix) {
   return output
     .split('\n')
@@ -133,7 +152,93 @@ function traceEntries(output, prefix) {
 }
 
 if (bodyReference) {
-  console.log(`Matched ${seeds.length * 5} post-placement body refinements with pinned Go.`);
+  console.log(`Matched ${seeds.length * 9} post-placement body refinements with pinned Go.`);
+}
+
+function checkIslandJoins(measured) {
+  const graphOptions = { ...options, input: measured };
+  const plain = execFileSync(reference, ['--default'], graphOptions);
+  const run = spawnSync(tracedReference, ['--default'], {
+    ...graphOptions,
+    env: {
+      ...process.env,
+      TALA_PILOT_TRACE_SIZELESS: '1',
+      TALA_PILOT_TRACE_SIZED_ITERATIONS: '1',
+      TALA_PILOT_TRACE_SIZED_ISLAND_JOIN: '1',
+    },
+  });
+  assert.ifError(run.error);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout, plain, 'Island tracing changed the final pinned Go layout');
+
+  const prepared = traceEntries(run.stderr, 'TALA_PILOT_SIZELESS ').filter(
+    ({ stage }) => stage === 'firstSizedCompaction'
+  );
+  assert.deepEqual(
+    prepared.map(({ seed }) => seed).sort(),
+    [1, 2, 3],
+    'Expected one prepared placement component per seed'
+  );
+
+  const history = traceEntries(run.stderr, 'TALA_PILOT_SIZED_ITERATION ');
+  let movingJoins = 0;
+  let compared = 0;
+  for (const { seed, graph, obstacleOrder, entityOrder } of prepared) {
+    const seedHistory = history.filter((entry) => entry.seed === seed).map((entry) => entry.value);
+    const before = seedHistory.filter(({ step }) => step === 'beforeIslandJoin');
+    const finished = seedHistory.filter(({ step }) => step === 'compaction');
+    assert(before.length > 0);
+    assert.equal(before.length, finished.length);
+    for (const [index, capture] of before.entries()) {
+      assert.equal(capture.iteration, finished[index].iteration);
+      if (JSON.stringify(capture.positions) !== JSON.stringify(finished[index].positions)) {
+        movingJoins++;
+      }
+    }
+    const expected = seedHistory.filter(({ step }) => step !== 'beforeIslandJoin');
+    const actual = execFileSync(rust, ['--sized-phase-snapshots'], {
+      ...options,
+      input: JSON.stringify({ graph, seed, obstacleOrder, entityOrder }),
+    });
+    assert.deepEqual(JSON.parse(actual), expected, `Island fixture, seed ${seed}`);
+    compared += expected.length;
+  }
+  assert(movingJoins > 0, 'The pinned fixture must exercise actual island movement');
+  console.log(`Matched ${compared} island fixture snapshots with ${movingJoins} moving joins.`);
+}
+
+function checkEntityOrder(measured) {
+  const graphOptions = { ...options, input: measured };
+  const plain = execFileSync(reference, ['--default'], graphOptions);
+  const run = spawnSync(tracedReference, ['--default'], {
+    ...graphOptions,
+    env: {
+      ...process.env,
+      TALA_PILOT_TRACE_SIZELESS: '1',
+    },
+  });
+  assert.ifError(run.error);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout, plain, 'Entity order tracing changed the final pinned Go layout');
+  const captures = traceEntries(run.stderr, 'TALA_PILOT_SIZELESS ').filter(
+    ({ stage }) => stage === 'fullPhase'
+  );
+  assert.equal(captures.length, 3, 'Expected three sizeless results');
+  let orderMatters = false;
+  for (const { graph, seed, obstacleOrder, entityOrder, expected } of captures) {
+    const native = (order) =>
+      JSON.parse(
+        execFileSync(rust, ['--sizeless-phase'], {
+          ...options,
+          input: JSON.stringify({ graph, seed, entityOrder: order }),
+        })
+      );
+    assert.notDeepEqual(entityOrder, obstacleOrder);
+    assert.deepEqual(native(entityOrder), expected, `Entity order fixture, seed ${seed}`);
+    orderMatters ||= !isDeepStrictEqual(native(obstacleOrder), expected);
+  }
+  assert(orderMatters, 'The pinned fixture must distinguish numeric entity and authored order');
+  console.log('Matched all three sizeless runs on the numeric entity-order fixture.');
 }
 
 function collectBodyStages() {
@@ -153,7 +258,7 @@ function checkBodyStages(seed, request, placed, routingBodies) {
   );
   const byAuthoredOrder = (nodes) => obstacleOrder.map((index) => nodes[index]);
   assert.deepEqual(history.get(7), byAuthoredOrder(placed), `NodePlacement, seed ${seed}`);
-  for (const index of [8, 9, 11, 12, 13, 14, 18, 19, 21, 22, 23, 24]) {
+  for (const index of [13, 14, 18, 19, 21, 22, 23, 24]) {
     assert(history.has(index), `Missing Go stage ${index}, seed ${seed}`);
     assert.deepEqual(
       history.get(index),
@@ -162,7 +267,11 @@ function checkBodyStages(seed, request, placed, routingBodies) {
     );
   }
   const stages = new Map([
+    [8, 'swapStuff'],
+    [9, 'transpose'],
     [10, 'alignAxes'],
+    [11, 'gapNormalization'],
+    [12, 'postGapAlignAxes'],
     [15, 'balanceSymmetry'],
     [16, 'equidistance'],
     [17, 'finalAlignAxes'],

@@ -13,11 +13,13 @@ use serde::Serialize;
 use super::compaction::Axis;
 use super::sized_cost::{Bounds, EdgeCost};
 use super::transition::{Spacing, edge_gaps, end, overlaps_at, start};
-use super::{MAX_OPTIMIZATION_WORK, Work};
+use super::{MAX_OPTIMIZATION_WORK, PlacementOrder, Work, order_ranks};
 use crate::{Error, Graph, MAX_EDGES, MAX_NODES, NodeGeometry, Point, valid_dimension};
 
 mod axis;
 mod equidistance;
+mod gap;
+mod swap;
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +38,11 @@ pub struct RefinementSnapshot {
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 enum Stage {
+    SwapStuff,
+    Transpose,
     AlignAxes,
+    GapNormalization,
+    PostGapAlignAxes,
     BalanceSymmetry,
     Equidistance,
     FinalAlignAxes,
@@ -44,18 +50,17 @@ enum Stage {
 }
 
 /// Runs rectangular alignment, symmetry, and equidistance, then adds routing
-/// padding. Feed it the body placement for one component that has finished
-/// swap, transpose, and gap normalization. The order indexes authored siblings
-/// into the prepared node order.
+/// padding after global swap, transpose, and gap reduction. The order
+/// indexes authored siblings into the prepared node order.
 ///
 /// # Errors
 /// Returns an error for invalid bodies or exhausted refinement work.
 pub fn refine_flat_component(
     graph: &Graph,
     bodies: &[NodeGeometry],
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Vec<NodeGeometry>, Error> {
-    refine(graph, bodies, obstacle_order, |_, _| {})
+    refine(graph, bodies, order, |_, _| {})
 }
 
 /// Records each geometric refinement stage and the routing padding.
@@ -65,10 +70,10 @@ pub fn refine_flat_component(
 pub fn refinement_snapshots(
     graph: &Graph,
     bodies: &[NodeGeometry],
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Vec<RefinementSnapshot>, Error> {
     let mut snapshots = Vec::new();
-    refine(graph, bodies, obstacle_order, |stage, nodes| {
+    refine(graph, bodies, order, |stage, nodes| {
         snapshots.push(RefinementSnapshot {
             stage,
             nodes: nodes.to_vec(),
@@ -80,13 +85,25 @@ pub fn refinement_snapshots(
 fn refine(
     graph: &Graph,
     bodies: &[NodeGeometry],
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
     mut observe: impl FnMut(Stage, &[NodeGeometry]),
 ) -> Result<Vec<NodeGeometry>, Error> {
-    let mut pass = Refinement::new(graph, bodies, obstacle_order)?;
+    let mut pass = Refinement::new(graph, bodies, order)?;
     let mut work = Work(MAX_OPTIMIZATION_WORK);
+    pass.swap_stuff(graph, &mut work)?;
+    observe(Stage::SwapStuff, &pass.nodes);
+    pass.transpose_all(&mut work)?;
+    observe(Stage::Transpose, &pass.nodes);
     pass.align(&mut work)?;
     observe(Stage::AlignAxes, &pass.nodes);
+    let normalize_gaps_accepted = pass.normalize_gaps(&mut work)?;
+    observe(Stage::GapNormalization, &pass.nodes);
+    pass.refresh_turn_cost(graph)?;
+    if normalize_gaps_accepted {
+        pass.align(&mut work)?;
+    }
+    observe(Stage::PostGapAlignAxes, &pass.nodes);
+
     pass.balance_symmetry(&mut work)?;
     observe(Stage::BalanceSymmetry, &pass.nodes);
     let moved = pass.equidistance(&mut work)?;
@@ -106,6 +123,7 @@ fn refine(
 struct Refinement<'a> {
     nodes: Vec<NodeGeometry>,
     order: &'a [usize],
+    ranks: Vec<usize>,
     edges: Vec<[usize; 2]>,
     adjacency: Vec<Vec<usize>>,
     gaps: Vec<Vec<Spacing>>,
@@ -117,7 +135,7 @@ impl<'a> Refinement<'a> {
     fn new(
         graph: &Graph,
         bodies: &[NodeGeometry],
-        obstacle_order: &'a [usize],
+        order: PlacementOrder<'a>,
     ) -> Result<Self, Error> {
         if graph.edges.len() > MAX_EDGES || graph.nodes.len() > MAX_NODES {
             return Err(Error::WorkLimit);
@@ -166,12 +184,13 @@ impl<'a> Refinement<'a> {
         }
         let gaps = edge_gaps(graph)?;
         let cell = cell_size(bodies);
-        let mut scorer = EdgeCost::new(graph, bodies, cell, obstacle_order)?;
+        let mut scorer = EdgeCost::new(graph, bodies, cell, order.obstacles)?;
         scorer.restore_full_turn_cost();
         let crossing_cost = CROSSING_COST_WEIGHT * (scorer.turn_cost() / TURN_PENALTY_MULTIPLIER);
         Ok(Self {
             nodes: bodies.to_vec(),
-            order: obstacle_order,
+            order: order.obstacles,
+            ranks: order_ranks(bodies.len(), order.entities)?,
             edges,
             adjacency,
             gaps,
@@ -180,10 +199,28 @@ impl<'a> Refinement<'a> {
         })
     }
 
+    fn refresh_turn_cost(&mut self, graph: &Graph) -> Result<(), Error> {
+        self.scorer = EdgeCost::new(graph, &self.nodes, cell_size(&self.nodes), self.order)?;
+        self.scorer.restore_full_turn_cost();
+        Ok(())
+    }
+
     fn score(&self, work: &mut Work) -> Result<f64, Error> {
+        self.score_with_direction(work, true)
+    }
+
+    fn score_with_direction(
+        &self,
+        work: &mut Work,
+        penalize_direction: bool,
+    ) -> Result<f64, Error> {
         let mut total = 0.0;
         for &node in self.order {
-            total += self.scorer.score(node, &self.nodes, work)?;
+            let edge =
+                self.scorer
+                    .score_with_direction(node, &self.nodes, work, penalize_direction)?;
+            let symmetry = self.scorer.symmetry(node, &self.nodes, work)?;
+            total += edge - self.scorer.global_symmetry_credit(node, symmetry);
         }
         let crossings = self.crossings(work)?;
         Ok(total + self.crossing_cost * f64::from(crossings))
@@ -258,7 +295,7 @@ impl<'a> Refinement<'a> {
         for &a in moving {
             for b in 0..self.nodes.len() {
                 work.add(1)?;
-                if a == b || moving.contains(&b) {
+                if a == b {
                     continue;
                 }
                 let previous = &before[a];
@@ -314,7 +351,7 @@ impl<'a> Refinement<'a> {
     }
 }
 
-fn cell_size(nodes: &[NodeGeometry]) -> f64 {
+pub(super) fn cell_size(nodes: &[NodeGeometry]) -> f64 {
     let mut shortest = f64::INFINITY;
     let mut longest = f64::NEG_INFINITY;
     for n in nodes {

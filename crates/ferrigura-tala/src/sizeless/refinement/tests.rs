@@ -72,7 +72,15 @@ fn symmetry_uses_the_exact_peer_centerline() {
             }
         });
         let (graph, bodies, order) = graph_with_bodies(&positions, &[(0, 1), (0, 2), (0, 3)]);
-        let mut stage = Refinement::new(&graph, &bodies, &order).unwrap();
+        let mut stage = Refinement::new(
+            &graph,
+            &bodies,
+            PlacementOrder {
+                obstacles: &order,
+                entities: &order,
+            },
+        )
+        .unwrap();
         assert!(stage.axis_score(&[1, 2, 3]) > 1.0);
         stage
             .balance_symmetry(&mut Work(MAX_OPTIMIZATION_WORK))
@@ -92,7 +100,15 @@ fn equidistance_leaves_already_centered_nodes_in_place() {
         ],
         &[(0, 1), (1, 2)],
     );
-    let mut stage = Refinement::new(&graph, &bodies, &order).unwrap();
+    let mut stage = Refinement::new(
+        &graph,
+        &bodies,
+        PlacementOrder {
+            obstacles: &order,
+            entities: &order,
+        },
+    )
+    .unwrap();
     assert_eq!(
         stage.equidistance(&mut Work(MAX_OPTIMIZATION_WORK)),
         Ok(false)
@@ -110,7 +126,15 @@ fn axis_score_matches_the_go_alignment_cases() {
         ],
         &[],
     );
-    let mut stage = Refinement::new(&graph, &bodies, &order).unwrap();
+    let mut stage = Refinement::new(
+        &graph,
+        &bodies,
+        PlacementOrder {
+            obstacles: &order,
+            entities: &order,
+        },
+    )
+    .unwrap();
     assert_eq!(stage.axis_score(&[0, 1]), 1.0);
     assert_eq!(stage.axis_score(&[0, 1, 2]), 1.0);
     stage.nodes[2].x = 70.0;
@@ -124,4 +148,29 @@ fn axis_score_matches_the_go_alignment_cases() {
     stage.nodes[1].x = 30.0;
     stage.nodes[2].x = 30.0;
     assert_eq!(stage.axis_score(&[0, 1, 2]), (0.66 + 0.66) / 2.0);
+}
+
+#[test]
+fn normalization_commits_a_smaller_gap_without_replacing_the_position() {
+    let (graph, bodies, order) = graph_with_bodies(
+        &[(0.0, 0.0, 10.0, 10.0), (1000.0, 0.0, 10.0, 10.0)],
+        &[(0, 1)],
+    );
+    let mut stage = Refinement::new(
+        &graph,
+        &bodies,
+        PlacementOrder {
+            obstacles: &order,
+            entities: &order,
+        },
+    )
+    .unwrap();
+    let position = std::ptr::addr_of!(stage.nodes[1].x);
+    assert_eq!(
+        stage.normalize_gaps(&mut Work(MAX_OPTIMIZATION_WORK)),
+        Ok(true)
+    );
+    assert_eq!(std::ptr::addr_of!(stage.nodes[1].x), position);
+    assert_eq!(stage.nodes[1].x, 160.0);
+    assert_eq!(cell_size(&stage.nodes), 10.0);
 }

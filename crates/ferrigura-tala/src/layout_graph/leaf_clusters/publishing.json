@@ -1,0 +1,41 @@
+{
+  "clusters": [
+    {
+      "container": null,
+      "nodes": [1787533460, 596663671],
+      "fixedSize": false,
+      "geometry": {
+        "arrangement": "Column",
+        "padding": 20,
+        "width": 152,
+        "height": 102,
+        "memberSizes": [
+          [152, 41],
+          [152, 41]
+        ]
+      },
+      "edges": [
+        {
+          "id": 3170741675,
+          "from": 3195223476,
+          "to": null
+        },
+        {
+          "id": 1748380383,
+          "from": null,
+          "to": 1834051269
+        },
+        {
+          "id": 978026452,
+          "from": 3195223476,
+          "to": null
+        },
+        {
+          "id": 614185942,
+          "from": null,
+          "to": 1834051269
+        }
+      ]
+    }
+  ]
+}

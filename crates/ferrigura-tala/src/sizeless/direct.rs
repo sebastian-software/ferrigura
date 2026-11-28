@@ -10,7 +10,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use super::sized_cost::{Bounds, opposite};
-use super::{optimize_sized_phase, preferred_direction};
+use super::{PlacementOrder, optimize_sized_phase, preferred_direction};
 use crate::{Error, Graph, MAX_EDGES, MAX_NODES, NodeGeometry, valid_dimension};
 
 const RIGHT: i32 = 2;
@@ -32,9 +32,9 @@ struct Vote {
 pub fn place_flat_component(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Vec<NodeGeometry>, Error> {
-    let mut bodies = optimize_sized_phase(graph, seed, obstacle_order)?;
+    let mut bodies = optimize_sized_phase(graph, seed, order)?;
     direct_flat_component(graph, &mut bodies)?;
     let min_x = bodies
         .iter()

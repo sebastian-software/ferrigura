@@ -67,8 +67,15 @@ func tracePilotSizelessPlacement(stage string, seed []int64, g *layoutgraph.Grap
 			obstacleOrder = append(obstacleOrder, index)
 		}
 	}
+	entityOrder := make([]int, len(g.Nodes))
+	for index := range g.Nodes {
+		entityOrder[index] = index
+	}
+	slices.SortFunc(entityOrder, func(a, b int) int {
+		return cmp.Compare(g.Nodes[a].ID, g.Nodes[b].ID)
+	})
 	trace := map[string]any{
-		"stage": stage, "seed": seed[0], "obstacleOrder": obstacleOrder,
+		"stage": stage, "seed": seed[0], "obstacleOrder": obstacleOrder, "entityOrder": entityOrder,
 		"graph": map[string]any{"direction": direction, "nodes": nodes, "edges": edges},
 		"expected": expected,
 	}

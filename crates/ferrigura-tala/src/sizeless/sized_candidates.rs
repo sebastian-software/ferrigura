@@ -11,12 +11,15 @@ use serde::{Deserialize, Serialize};
 
 use super::sized_cost::EdgeCost;
 use super::transition::{Spacing, Transition, oriented_gap, prepared_transition};
-use super::{MAX_OPTIMIZATION_WORK, MAX_SEARCH_DISTANCE, Work, placement_adjacency};
+use super::{
+    MAX_OPTIMIZATION_WORK, MAX_SEARCH_DISTANCE, PlacementOrder, Work, placement_adjacency,
+};
 use crate::go_rand::GoRand;
 use crate::{Error, Graph, NodeGeometry, Point};
 
 mod adjustments;
 mod compaction;
+mod join;
 
 pub use compaction::{first_sized_compaction, optimize_sized_phase, sized_phase_snapshots};
 
@@ -42,9 +45,9 @@ pub struct SizedCandidates {
 pub fn first_sized_candidates(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<SizedCandidates, Error> {
-    let mut optimizer = SizedOptimizer::new(graph, seed, obstacle_order)?;
+    let mut optimizer = SizedOptimizer::new(graph, seed, order)?;
     let mut work = Work(MAX_OPTIMIZATION_WORK);
     let node = optimizer.first_node(&mut work)?;
     optimizer.candidates(node, optimizer.state.phase.temperature, &mut work)
@@ -67,9 +70,9 @@ pub struct SizedEdgeCosts {
 pub fn first_sized_edge_costs(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<SizedEdgeCosts, Error> {
-    Ok(first_sized_evaluation(graph, seed, obstacle_order)?.0)
+    Ok(first_sized_evaluation(graph, seed, order)?.0)
 }
 
 /// Returns the location selected by the first sized move.
@@ -79,9 +82,9 @@ pub fn first_sized_edge_costs(
 pub fn first_sized_move(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Point, Error> {
-    let point = first_sized_evaluation(graph, seed, obstacle_order)?.1;
+    let point = first_sized_evaluation(graph, seed, order)?.1;
     Ok(Point {
         x: point.x + 0.0,
         y: point.y + 0.0,
@@ -91,9 +94,9 @@ pub fn first_sized_move(
 fn first_sized_evaluation(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<(SizedEdgeCosts, Point), Error> {
-    let mut optimizer = SizedOptimizer::new(graph, seed, obstacle_order)?;
+    let mut optimizer = SizedOptimizer::new(graph, seed, order)?;
     let mut work = Work(MAX_OPTIMIZATION_WORK);
     let node = optimizer.first_node(&mut work)?;
     let candidates = optimizer.candidates(node, optimizer.state.phase.temperature, &mut work)?;
@@ -120,9 +123,9 @@ fn first_sized_evaluation(
 pub fn first_sized_pass(
     graph: &Graph,
     seed: i64,
-    obstacle_order: &[usize],
+    order: PlacementOrder<'_>,
 ) -> Result<Vec<NodeGeometry>, Error> {
-    let mut optimizer = SizedOptimizer::new(graph, seed, obstacle_order)?;
+    let mut optimizer = SizedOptimizer::new(graph, seed, order)?;
     optimizer.pass(optimizer.state.phase.temperature)?;
     Ok(optimizer.state.nodes)
 }
@@ -135,11 +138,11 @@ struct SizedOptimizer {
 }
 
 impl SizedOptimizer {
-    fn new(graph: &Graph, seed: i64, obstacle_order: &[usize]) -> Result<Self, Error> {
-        let state = prepared_transition(graph, seed)?;
+    fn new(graph: &Graph, seed: i64, order: PlacementOrder<'_>) -> Result<Self, Error> {
+        let state = prepared_transition(graph, seed, order.entities)?;
         let cell = state.phase.grid.cell_size;
         let adjacency = placement_adjacency(graph)?;
-        let scorer = EdgeCost::new(graph, &state.nodes, cell, obstacle_order)?;
+        let scorer = EdgeCost::new(graph, &state.nodes, cell, order.obstacles)?;
         Ok(Self {
             state,
             adjacency,

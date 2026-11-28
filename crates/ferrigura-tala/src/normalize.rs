@@ -8,10 +8,8 @@
 use serde::{Deserialize, Serialize};
 
 pub use crate::Point;
-use crate::route_output::{RoutedEdge, RoutedLabel};
+use crate::route_output::{LAYOUT_STROKE_WIDTH, RoutedEdge, RoutedLabel};
 use crate::{Error, NodeGeometry};
-
-const LAYOUT_STROKE_WIDTH: f64 = 3.0;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Node {

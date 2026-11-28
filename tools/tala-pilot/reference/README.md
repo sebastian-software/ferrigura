@@ -1,6 +1,6 @@
 # TALA Go reference bridge
 
-The bridge passes Ferrigura's measured flowchart to D2's public TALA layout API as an in-memory graph. It uses one fixed seed (`1`) and one worker. It does not parse D2 source or render D2 SVGs.
+The bridge passes Ferrigura's measured flowchart to D2's public TALA layout API as an in-memory graph. By default the bridge uses seed `1` and one worker. Pass `--seed N` to request a fixed seed or `--default` to run D2's default seed selection. It does not parse D2 source or render D2 SVGs.
 
 ## Build and verify
 

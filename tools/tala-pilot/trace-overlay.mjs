@@ -163,7 +163,7 @@ function traceSizelessPlacement(source) {
     source,
     imports,
     imports +
-      '\t"encoding/hex"\n\t"encoding/json"\n\t"os"\n' +
+      '\t"cmp"\n\t"encoding/hex"\n\t"encoding/json"\n\t"os"\n' +
       '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/limits"\n' +
       '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/placementcost"\n'
   );
@@ -214,10 +214,19 @@ function traceSizelessPlacement(source) {
       '\t\ttracePilotSizedIteration("pass", i, seed, subgraph)\n' +
       sizedCompaction
   );
+  const joinIslands =
+    '\t\t\tif err := grouping.JoinDistancedClusters(ctx, subgraph); err != nil {\n' +
+    '\t\t\t\treturn err\n\t\t\t}\n';
+  const withIslandJoin = replaceOnce(
+    withFirstSizedPass,
+    joinIslands,
+    '\t\t\tif os.Getenv("TALA_PILOT_TRACE_SIZED_ISLAND_JOIN") == "1" { tracePilotSizedIteration("beforeIslandJoin", i, seed, subgraph) }\n' +
+      joinIslands
+  );
   const afterCompaction =
     '\t\t\tproximity.SyncHerdFences(subgraph)\n' + '\t\t\tsized.endExternalChanges()\n';
   const withFirstCompaction = replaceOnce(
-    withFirstSizedPass,
+    withIslandJoin,
     afterCompaction,
     afterCompaction +
       '\t\t\ttracePilotSizedIteration("compaction", i, seed, subgraph)\n' +

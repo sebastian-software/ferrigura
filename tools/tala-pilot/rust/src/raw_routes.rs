@@ -47,7 +47,7 @@ pub(super) struct RawRoutingOutput {
     flavors: Vec<RawFlavor>,
     selected: SelectedFlavor,
     before_balance: Vec<SelectedPath>,
-    balanced: Vec<SelectedPath>,
+    balanced: Option<Vec<SelectedPath>>,
 }
 
 #[derive(Serialize)]
@@ -77,7 +77,10 @@ struct SelectedPath {
     points: Vec<[f64; 2]>,
 }
 
-pub(super) fn trace_raw_routes(capture: RawRouteInput) -> Result<RawRoutingOutput, Box<dyn Error>> {
+pub(super) fn trace_raw_routes(
+    capture: RawRouteInput,
+    include_balance: bool,
+) -> Result<RawRoutingOutput, Box<dyn Error>> {
     let RawRouteInput {
         nodes,
         node_ids,
@@ -131,22 +134,24 @@ pub(super) fn trace_raw_routes(capture: RawRouteInput) -> Result<RawRoutingOutpu
             .ok_or("ordinary native routing did not resolve the requested flavor")?;
         let routes = routed
             .routes
-            .into_iter()
-            .map(|route| RawPath {
-                edge: route.edge,
-                strategy: match route.strategy {
-                    RouteStrategy::Slingshot => "slingshot",
-                    RouteStrategy::Weighted => "search",
-                },
-                cost: route.route.cost,
-                points: route
-                    .route
-                    .vertices
-                    .into_iter()
-                    .map(|index| point(graph.vertices[index].point))
-                    .collect(),
+            .iter()
+            .map(|route| {
+                Ok(RawPath {
+                    edge: route.edge,
+                    strategy: match route.strategy {
+                        RouteStrategy::Slingshot => "slingshot",
+                        RouteStrategy::Quick | RouteStrategy::Weighted => "search",
+                        RouteStrategy::Fallback => "line",
+                    },
+                    cost: route.route.cost,
+                    points: search
+                        .raw_route_points(&routed, &route.route)?
+                        .into_iter()
+                        .map(point)
+                        .collect(),
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>, ferrigura_tala::Error>>()?;
         flavors.push(RawFlavor {
             flavor: flavor_name(flavor),
             cost: routed.cost,
@@ -165,21 +170,19 @@ pub(super) fn trace_raw_routes(capture: RawRouteInput) -> Result<RawRoutingOutpu
             points: points.iter().copied().map(point).collect(),
         })
         .collect();
-    let balanced = balance_raw_routes(&nodes, &edges, raw_points)?;
     let routes = selected
         .routes
-        .into_iter()
-        .map(|route| {
-            Ok(SelectedPath {
-                edge: route.edge,
-                points: search
-                    .route_points(&route.route)?
-                    .into_iter()
-                    .map(point)
-                    .collect(),
-            })
+        .iter()
+        .map(|route| SelectedPath {
+            edge: route.edge,
+            points: raw_points[route.edge].iter().copied().map(point).collect(),
         })
-        .collect::<Result<Vec<_>, ferrigura_tala::Error>>()?;
+        .collect();
+    let balanced = if include_balance {
+        Some(balance_raw_routes(&nodes, &edges, raw_points)?)
+    } else {
+        None
+    };
     Ok(RawRoutingOutput {
         flavors,
         selected: SelectedFlavor {

@@ -200,8 +200,9 @@ with Go after the first pass and the complete sizeless phase for all
 three default seeds. The check also compares the complete size-aware
 optimizer, directional mirroring and the component's packed origin.
 It runs the same native stages from Ferrigura's measured input. The
-optimizer visits the split component in breadth-first order while its
-obstruction scan follows the authored sibling order. Every checked
+optimizer visits the split component in breadth-first order. The obstruction
+scan follows authored sibling order and geometric compaction breaks ties by
+numeric D2 entity ID. Every checked
 coordinate and candidate order matches exactly. Internal edge costs
 allow floating-point rounding far below Go's score comparison threshold.
 The trace preserves the final Go layout.
@@ -289,6 +290,11 @@ native balanced paths, normalizes the layout, and checks the final node
 boxes, routes, label centers, and the SVG painted by Ferrigura. This run
 uses seed 1 and checks the assembled stages through the test runner. The
 public default multi-seed renderer has its own comparison.
+
+The generated [raw routing matrix](./check-raw-route-matrix.mjs) checks all
+three flavors across 128 positioned inputs. The candidate score check
+compares all three complete native Observatory candidates and then draws the
+default winner through the public Ferrigura renderer.
 
 ### Ordinary edge label placement
 

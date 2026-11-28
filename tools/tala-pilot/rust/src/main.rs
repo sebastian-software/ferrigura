@@ -4,6 +4,7 @@ use std::io;
 use ferrigura_tala::normalize::Geometry;
 use ferrigura_tala::quality::{Evaluation, PositionedGraph, evaluate};
 use ferrigura_tala::seed_selection::{Scored, SeedPlan};
+use ferrigura_tala::sizeless::PlacementOrder;
 use ferrigura_tala::{Graph, Layout};
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +35,17 @@ struct PlacementCapture {
     seed: i64,
     #[serde(default)]
     obstacle_order: Vec<usize>,
+    #[serde(default)]
+    entity_order: Vec<usize>,
+}
+
+impl PlacementCapture {
+    fn order(&self) -> PlacementOrder<'_> {
+        PlacementOrder {
+            obstacles: &self.obstacle_order,
+            entities: &self.entity_order,
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -86,9 +98,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             )?;
             serde_json::to_writer(output, &graph)?;
         }
-        Some("--raw-routes") => {
+        Some(mode @ ("--raw-routes" | "--raw-route-flavors")) => {
             let capture = serde_json::from_reader(input)?;
-            serde_json::to_writer(output, &raw_routes::trace_raw_routes(capture)?)?;
+            serde_json::to_writer(
+                output,
+                &raw_routes::trace_raw_routes(capture, mode == "--raw-routes")?,
+            )?;
         }
         Some("--layout") => {
             let graph = serde_json::from_reader(input)?;
@@ -102,6 +117,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some("--tree-preprocess") => {
             let graph = serde_json::from_reader(input)?;
             let stage = ferrigura_tala::layout_graph::tree_preprocess_checkpoint(&graph)?;
+            serde_json::to_writer(output, &stage)?;
+        }
+        Some("--leaf-clusters") => {
+            let graph = serde_json::from_reader(input)?;
+            let stage = ferrigura_tala::layout_graph::leaf_cluster_checkpoint(&graph)?;
             serde_json::to_writer(output, &stage)?;
         }
         Some("--initialize") => {
@@ -120,102 +140,121 @@ fn main() -> Result<(), Box<dyn Error>> {
             serde_json::to_writer(output, &result)?;
         }
         Some("--sizeless-phase") => {
-            let PlacementCapture { graph, seed, .. } = serde_json::from_reader(input)?;
-            let result = ferrigura_tala::sizeless::optimize_phase(&graph, seed)?;
+            let PlacementCapture {
+                graph,
+                seed,
+                entity_order,
+                ..
+            } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::optimize_phase(&graph, seed, &entity_order)?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--sized-transition") => {
-            let PlacementCapture { graph, seed, .. } = serde_json::from_reader(input)?;
-            let result = ferrigura_tala::sizeless::transition_to_sized(&graph, seed)?;
+            let PlacementCapture {
+                graph,
+                seed,
+                entity_order,
+                ..
+            } = serde_json::from_reader(input)?;
+            let result =
+                ferrigura_tala::sizeless::transition_to_sized(&graph, seed, &entity_order)?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--first-sized-candidates") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result =
-                ferrigura_tala::sizeless::first_sized_candidates(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_candidates(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--first-sized-edge-costs") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result =
-                ferrigura_tala::sizeless::first_sized_edge_costs(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_edge_costs(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--first-sized-move") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result = ferrigura_tala::sizeless::first_sized_move(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_move(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--first-sized-pass") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result = ferrigura_tala::sizeless::first_sized_pass(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_pass(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--first-sized-compaction") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result =
-                ferrigura_tala::sizeless::first_sized_compaction(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_compaction(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--sized-phase") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result =
-                ferrigura_tala::sizeless::optimize_sized_phase(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::optimize_sized_phase(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--sized-phase-snapshots") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result =
-                ferrigura_tala::sizeless::sized_phase_snapshots(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::sized_phase_snapshots(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--place-flat-component") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let result =
-                ferrigura_tala::sizeless::place_flat_component(&graph, seed, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::place_flat_component(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
+        Some("--flat-layout") => {
+            let PlacementCapture { graph, seed, .. } = serde_json::from_reader(input)?;
+            serde_json::to_writer(
+                output,
+                &ferrigura_tala::flat::layout_for_seed(&graph, seed)?,
+            )?;
+        }
+        Some("--flat-layout-default") => {
+            let graph = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &ferrigura_tala::flat::default_layout(&graph)?)?;
+        }
+        Some("--flat-routes") => {
+            let PlacementCapture { graph, seed, .. } = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &ferrigura_tala::flat::route_for_seed(&graph, seed)?)?;
+        }
         Some("--direct-flat-component") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let mut bodies =
-                ferrigura_tala::sizeless::optimize_sized_phase(&graph, seed, &obstacle_order)?;
-            ferrigura_tala::sizeless::direct_flat_component(&graph, &mut bodies)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let mut bodies = ferrigura_tala::sizeless::optimize_sized_phase(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
+            ferrigura_tala::sizeless::direct_flat_component(&request.graph, &mut bodies)?;
             serde_json::to_writer(output, &bodies)?;
         }
         Some(
@@ -244,15 +283,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             serde_json::to_writer(output, &stage(&graph, seed)?)?;
         }
         Some("--flat-refinement-snapshots") => {
-            let PlacementCapture {
-                graph,
-                seed,
-                obstacle_order,
-            } = serde_json::from_reader(input)?;
-            let bodies =
-                ferrigura_tala::sizeless::place_flat_component(&graph, seed, &obstacle_order)?;
-            let result =
-                ferrigura_tala::sizeless::refinement_snapshots(&graph, &bodies, &obstacle_order)?;
+            let request: PlacementCapture = serde_json::from_reader(input)?;
+            let bodies = ferrigura_tala::sizeless::place_flat_component(
+                &request.graph,
+                request.seed,
+                request.order(),
+            )?;
+            let result = ferrigura_tala::sizeless::refinement_snapshots(
+                &request.graph,
+                &bodies,
+                request.order(),
+            )?;
             serde_json::to_writer(output, &result)?;
         }
         Some("--ovg-seed") => {
@@ -325,7 +366,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {
             return Err(concat!(
-                "expected --layout, --translate, --prescale, --hierarchy-preprocess, --tree-preprocess, --initialize, --initialize-by-distance, ",
+                "expected --layout, --translate, --prescale, --hierarchy-preprocess, --tree-preprocess, --leaf-clusters, --initialize, --initialize-by-distance, ",
                 "--sizeless-first-pass, --sizeless-phase, --sized-transition, --measured-sized-transition, ",
                 "--first-sized-candidates, --first-sized-edge-costs, --first-sized-move, --first-sized-pass, ",
                 "--measured-first-sized-pass, --measured-sized-phase, ",
@@ -333,7 +374,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "--direct-flat-component, --place-flat-component, --measured-flat-placement, ",
                 "--flat-refinement-snapshots, --measured-flat-refinement, --ovg-seed, ",
                 "--ovg-edge-points, --ovg-boundary-points, --ovg-tunnels, --ovg-links, ",
-                "--candidate-score, --route-output, --raw-routes, --edge-label-placement, ",
+                "--candidate-score, --route-output, --raw-routes, --raw-route-flavors, --flat-routes, --flat-layout, --flat-layout-default, --edge-label-placement, ",
                 "--shared-label-obstacles, --finalize-routes, --simplify, --balance, or no argument"
             )
             .into());

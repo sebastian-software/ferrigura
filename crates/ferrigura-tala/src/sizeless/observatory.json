@@ -56,6 +56,7 @@
     }
   ],
   "obstacleOrder": [0, 1, 4, 5, 2, 6, 3],
+  "entityOrder": [6, 1, 2, 4, 3, 0, 5],
   "seeds": [
     {
       "seed": 1,
