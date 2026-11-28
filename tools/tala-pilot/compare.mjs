@@ -19,6 +19,8 @@ const cases = [
     'TALA grows the parallel edges’ endpoint nodes. The fixture also has a self-loop and disconnected components.',
   ],
   ['native-loop', 'Retry queue', 'An isolated rectangle with a labeled self-loop'],
+  ['native-boundary', 'Job service', 'An unlabeled route crosses one container boundary'],
+  ['native-parallel', 'Sensor to panel', 'Two parallel routes with equal-height captions'],
   [
     'service-mesh',
     'Service mesh',

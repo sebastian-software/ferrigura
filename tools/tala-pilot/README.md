@@ -13,7 +13,7 @@ unpinned graphs.
 ## Replay offline
 
 Run from the repository root. The saved measurements and Go outputs in
-`captures/` cover six original Mermaid flowcharts. When replaying SVGs,
+`captures/` cover eight original Mermaid flowcharts. When replaying SVGs,
 the comparison checks that the current Ferrigura measurements still match
 the captures. The Rust check compares ordered IDs and every node position and
 route point with the Go result at the normalization boundary.
@@ -103,8 +103,9 @@ The stage and SVG comparisons support continuing the port for grouped
 Mermaid flowcharts. The next scope is placement, packing, and orthogonal
 routing at the same measured boundary. The grouped and cyclic samples
 describe the behavior of the pinned Go engine.
-The labeled self-loop is the native Rust control and is verified against Go
-by the homepage generator.
+The homepage generator verifies three native Rust controls against their Go
+replays: the labeled self-loop, an edge across a container boundary, and a
+pair of labeled parallel edges.
 
 ## Benchmark a release build
 
@@ -125,4 +126,4 @@ TALA support failures are recorded with their diagnostics in the JSON.
 
 The [recorded result](./benchmark-results.json) identifies the versions,
 hardware, seed and build profile, plus median, p95 and memory for each case.
-It uses the instrumented source based on the named Ferrigura revision.
+It records the source revision used for the measured build.

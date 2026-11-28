@@ -1,0 +1,53 @@
+{
+  "direction": "LR",
+  "edges": [
+    {
+      "id": "L_Worker_Queue_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "Worker",
+      "sourceArrow": false,
+      "target": "Queue",
+      "targetArrow": true
+    }
+  ],
+  "nodes": [
+    {
+      "direction": null,
+      "height": 0.0,
+      "id": "Service",
+      "isGroup": true,
+      "label": "Job service",
+      "labelHeight": 17.0,
+      "labelWidth": 70.59375,
+      "parentId": null,
+      "shape": "rect",
+      "width": 0.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "Worker",
+      "isGroup": false,
+      "label": "Worker",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": "Service",
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "Queue",
+      "isGroup": false,
+      "label": "Queue",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    }
+  ]
+}

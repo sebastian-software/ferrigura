@@ -14,6 +14,10 @@ const cases = (await readdir(report))
   .map((name) => name.slice(0, -inputSuffix.length))
   .sort();
 assert(cases.length > 0, 'No measured fixtures found');
+const parallelEndpoints = new Map([
+  ['workshop-edges', ['sensor', 'panel']],
+  ['native-parallel', ['Sensor', 'Panel']],
+]);
 
 const epsilon = 1e-6;
 const near = (a, b) => Math.abs(a - b) <= epsilon;
@@ -47,12 +51,9 @@ for (const id of cases) {
     const name = `${id} node ${inputNode.id}`;
     assert([goNode.x, goNode.y, goNode.width, goNode.height].every(Number.isFinite), name);
     if (!inputNode.isGroup) {
-      // TALA's prescale reserves (two parallel edges + one) × 40 px at
-      // both Workshop endpoints, leaving the existing 152 px width intact.
-      const expectedHeight =
-        id === 'workshop-edges' && ['sensor', 'panel'].includes(inputNode.id)
-          ? 120
-          : inputNode.height;
+      // These horizontal pairs reserve (two edges + one) × 40 px at both TALA endpoints.
+      const resized = parallelEndpoints.get(id)?.includes(inputNode.id);
+      const expectedHeight = resized ? 120 : inputNode.height;
       assert(
         near(goNode.width, inputNode.width) && near(goNode.height, expectedHeight),
         `${name} unexpected TALA leaf dimensions`

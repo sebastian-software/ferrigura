@@ -50,8 +50,10 @@ function LayoutPair({ sample }: { sample: Sample }) {
       <MonoCaption>
         {sample.title}. {sample.nodes} {sample.nodes === 1 ? 'node' : 'nodes'}, {sample.edges}{' '}
         {sample.edges === 1 ? 'edge' : 'edges'}
-        {sample.groups === 0 ? '' : `, ${sample.groups} groups`}. Ferrigura paints both SVGs from
-        the same Mermaid source.
+        {sample.groups === 0
+          ? ''
+          : `, ${sample.groups} ${sample.groups === 1 ? 'group' : 'groups'}`}
+        . Ferrigura paints both SVGs from the same Mermaid source.
       </MonoCaption>
     </figure>
   );
