@@ -935,6 +935,33 @@ fn an_edge_meets_a_group_in_the_middle_of_its_side() {
     }
 }
 
+#[test]
+fn a_chain_through_a_group_stays_on_one_axis() {
+    // The group's own layout places the way on inside before the layout around it: the node
+    // outside stands on the line of the port the chain crosses, and the edge runs straight through
+    // the frame instead of turning beside the edge out of the group.
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "flowchart TD\n  A --> B\n  subgraph S\n    B --> C\n  end\n  C --> D\n  S --> E\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    for edge in ["L_A_B_0", "L_B_C_0", "L_C_D_0"] {
+        assert!(runs_straight_down(&svg, edge), "{edge} bends");
+    }
+    assert!(!runs_straight_down(&svg, "L_S_E_0"));
+    // The same in a state diagram, through a composite state.
+    let text = "stateDiagram-v2\n  A --> S1\n  state Comp {\n    S1 --> S2\n  }\n  S2 --> B\n  Comp --> C\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    for edge in ["edge0", "edge1", "edge2"] {
+        assert!(runs_straight_down(&svg, edge), "{edge} bends");
+    }
+    // Edges out of a group's nodes next to an edge out of the group itself: the ports they cross
+    // stay where the group's layout put them, and each edge runs straight on.
+    let text = "flowchart TD\n  P1 --> G\n  subgraph G\n    P2\n    P3\n  end\n  P2 --> P4\n  P3 --> P6\n  G --> P5\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    for edge in ["L_P2_P4_0", "L_P3_P6_0"] {
+        assert!(runs_straight_down(&svg, edge), "{edge} bends");
+    }
+}
+
 /// Two concurrency regions, each with two labeled transitions between the same two states.
 const REGIONS: &str = "stateDiagram-v2\n  [*] --> Active\n  state Active {\n    [*] --> NumLockOff\n    NumLockOff --> NumLockOn : EvNumLockPressed\n    NumLockOn --> NumLockOff : EvNumLockPressed\n    --\n    [*] --> CapsLockOff\n    CapsLockOff --> CapsLockOn : EvCapsLockPressed\n    CapsLockOn --> CapsLockOff : EvCapsLockPressed\n  }\n  Active --> [*]\n";
 

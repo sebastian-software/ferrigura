@@ -8,7 +8,9 @@
 //!
 //! 1. **Axes.** An edge is an axis edge when it is in the middle of the edges of its side at both
 //!    of its nodes: the edge of a chain, the middle edge of a fan. Where a side has an even number
-//!    of edges, the one of the middle two that is more of a main edge is in the middle.
+//!    of edges, the one of the middle two that is more of a main edge is in the middle. The port
+//!    of a group that an edge crosses counts as the middle of its side: the group's own layout,
+//!    done before, has put the way on inside, so a chain that crosses the frame stays one axis.
 //! 2. **Bundles.** A side with an even number of edges has no port in its middle. Where it has an
 //!    axis edge, its bundle moves by half the distance between two ports, so that the axis edge
 //!    leaves from the middle of the node.
@@ -545,7 +547,9 @@ fn middle_twins(layers: &Layers, ports: &[usize]) -> Option<Vec<usize>> {
     }
 }
 
-/// Whether each edge is in the middle of its side at both of its nodes.
+/// Whether each edge is in the middle of its side at both of its nodes. A port that an edge
+/// crosses into its group is in the middle: it stands for the side of the node inside that the
+/// group's layout placed the way on to, so a chain that crosses the frame stays one axis.
 fn axis_edges(
     layers: &Layers,
     chosen: &BTreeSet<usize>,
@@ -559,6 +563,11 @@ fn axis_edges(
             for port in middle_ports(layers, &ports, chosen, moved) {
                 middle[port] = true;
             }
+        }
+    }
+    for (index, port) in layers.ports.iter().enumerate() {
+        if port.inside {
+            middle[index] = true;
         }
     }
     layers
@@ -652,7 +661,8 @@ fn straighten_bundles(layers: &mut Layers, bundled: &BTreeSet<(usize, Side)>) {
 
 /// Moves the bundle of a side so that the port of its axis edge is in the middle of the side: by
 /// half the distance between two ports where their number is even, and by a whole one where the
-/// axis edge is beside the middle of an odd number.
+/// axis edge is beside the middle of an odd number. A side with a port that an edge crosses into
+/// its group stays, as the group's layout placed the way on.
 fn center_axis_ports(layers: &mut Layers, axis: &[bool], moved: &mut BTreeSet<(usize, Side)>) {
     for node in 0..layers.nodes.len() {
         if layers.nodes[node].kind != Kind::Node {
@@ -660,7 +670,10 @@ fn center_axis_ports(layers: &mut Layers, axis: &[bool], moved: &mut BTreeSet<(u
         }
         for side in [Side::Before, Side::After] {
             let ports = side_ports(layers, node, side);
-            if ports.is_empty() || moved.contains(&(node, side)) {
+            if ports.is_empty()
+                || moved.contains(&(node, side))
+                || ports.iter().any(|&port| layers.ports[port].inside)
+            {
                 continue;
             }
             let on_axis: Vec<usize> = ports
