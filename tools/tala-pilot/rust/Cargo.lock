@@ -98,6 +98,7 @@ name = "tala-pilot-tool"
 version = "0.0.0"
 dependencies = [
  "ferrigura-tala",
+ "serde",
  "serde_json",
 ]
 

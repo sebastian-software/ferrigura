@@ -66,8 +66,8 @@ fn tala_uses_native_placement_and_routing_without_falling_back() {
     assert!(root.descendants().any(|node| node.text() == Some("retry")));
 
     for source in [
-        "flowchart LR\nA --> B",
-        "flowchart LR\nsubgraph System\nA[Worker]\nend",
+        "flowchart LR\nA --> B\nA --> C",
+        "flowchart LR\nsubgraph System\nA[Worker]\nend\nA --> B[Queue]",
     ] {
         let error = renderer
             .render_with_engine(source, &options, LayoutEngine::Tala)
@@ -99,5 +99,37 @@ fn tala_uses_native_placement_and_routing_without_falling_back() {
             .render_with_engine(source, &options, LayoutEngine::Tala)
             .unwrap_err();
         assert!(error.to_string().contains(expected));
+    }
+}
+
+#[cfg(feature = "experimental-tala")]
+#[test]
+fn tala_draws_connected_paths_and_bounded_nested_subgraphs() {
+    let renderer = renderer();
+    let options = RenderOptions::default();
+    for (text, labels) in [
+        (
+            "flowchart LR\nA[Alpha] -->|ok| B[Beta]",
+            &["Alpha", "Beta", "ok"][..],
+        ),
+        (
+            "flowchart LR\nAlpha -->|Ready| Beta --> Gamma --> Delta",
+            &["Alpha", "Beta", "Gamma", "Delta", "Ready"][..],
+        ),
+        (
+            "flowchart TB\nsubgraph Outer\nsubgraph Inner\nA[Worker]\nend\nend",
+            &["Outer", "Inner", "Worker"][..],
+        ),
+    ] {
+        let svg = renderer
+            .render_with_engine(text, &options, LayoutEngine::Tala)
+            .unwrap_or_else(|error| panic!("{text}: {error}"));
+        let xml = roxmltree::Document::parse(&svg).unwrap();
+        for label in labels {
+            assert!(
+                xml.descendants().any(|node| node.text() == Some(label)),
+                "{label}"
+            );
+        }
     }
 }

@@ -1,0 +1,816 @@
+[
+  {
+    "name": "container with a measured fractional child",
+    "graph": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 34,
+          "labelHeight": 14
+        },
+        {
+          "id": "child",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 152.5,
+          "height": 56.4,
+          "isGroup": false,
+          "label": "Center",
+          "labelWidth": 65.2,
+          "labelHeight": 20
+        }
+      ],
+      "edges": []
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 273,
+          "height": 176
+        },
+        {
+          "id": "child",
+          "x": 60,
+          "y": 60,
+          "width": 152.5,
+          "height": 56.4
+        }
+      ],
+      "edges": []
+    }
+  },
+  {
+    "name": "nested groups in nonhierarchical source order",
+    "graph": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "leaf",
+          "parentId": "inner",
+          "shape": "rect",
+          "width": 185,
+          "height": 71.8,
+          "isGroup": false,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 94.6,
+          "labelHeight": 14
+        },
+        {
+          "id": "inner",
+          "parentId": "middle",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 211.2,
+          "labelHeight": 50
+        },
+        {
+          "id": "middle",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ],
+      "edges": []
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "leaf",
+          "x": 180,
+          "y": 180,
+          "width": 185,
+          "height": 71.8
+        },
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 545,
+          "height": 432
+        },
+        {
+          "id": "inner",
+          "x": 120,
+          "y": 120,
+          "width": 305,
+          "height": 192
+        },
+        {
+          "id": "middle",
+          "x": 60,
+          "y": 60,
+          "width": 425,
+          "height": 312
+        }
+      ],
+      "edges": []
+    }
+  },
+  {
+    "name": "wide title with right-side extension",
+    "graph": {
+      "direction": "BT",
+      "nodes": [
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 511.2,
+          "labelHeight": 19.2
+        },
+        {
+          "id": "child",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 10,
+          "height": 8,
+          "isGroup": false,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ],
+      "edges": []
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 532,
+          "height": 128
+        },
+        {
+          "id": "child",
+          "x": 60,
+          "y": 60,
+          "width": 10,
+          "height": 8
+        }
+      ],
+      "edges": []
+    }
+  },
+  {
+    "name": "unlabeled frame with stale title measurement",
+    "graph": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "",
+          "labelWidth": 999,
+          "labelHeight": 350
+        },
+        {
+          "id": "child",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 12.25,
+          "height": 11.5,
+          "isGroup": false,
+          "label": "",
+          "labelWidth": 83,
+          "labelHeight": 0
+        }
+      ],
+      "edges": []
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 132,
+          "height": 132
+        },
+        {
+          "id": "child",
+          "x": 60,
+          "y": 60,
+          "width": 12.25,
+          "height": 11.5
+        }
+      ],
+      "edges": []
+    }
+  },
+  {
+    "name": "initial group dimensions replaced by fitted bounds",
+    "graph": {
+      "direction": "TD",
+      "nodes": [
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 300,
+          "height": 250,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 32,
+          "labelHeight": 5
+        },
+        {
+          "id": "child",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 25,
+          "height": 35,
+          "isGroup": false,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ],
+      "edges": []
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 145,
+          "height": 155
+        },
+        {
+          "id": "child",
+          "x": 60,
+          "y": 60,
+          "width": 25,
+          "height": 35
+        }
+      ],
+      "edges": []
+    }
+  },
+  {
+    "name": "self-loop reserves the outer routing gutters",
+    "graph": {
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 34,
+          "labelHeight": 14
+        },
+        {
+          "id": "leaf",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 185.2,
+          "height": 70.1,
+          "isGroup": false,
+          "label": "Loop",
+          "labelWidth": 52,
+          "labelHeight": 22
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "leaf",
+          "target": "leaf",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 335,
+          "height": 220
+        },
+        {
+          "id": "leaf",
+          "x": 90,
+          "y": 90,
+          "width": 185.2,
+          "height": 70.1
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            {
+              "x": 90,
+              "y": 108
+            },
+            {
+              "x": 60,
+              "y": 108
+            },
+            {
+              "x": 60,
+              "y": 60
+            },
+            {
+              "x": 136,
+              "y": 60
+            },
+            {
+              "x": 136,
+              "y": 90
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "nested self-loops with all arrow classes",
+    "graph": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "leaf",
+          "parentId": "inner",
+          "shape": "rect",
+          "width": 144.1,
+          "height": 67.8,
+          "isGroup": false,
+          "label": "Loop",
+          "labelWidth": 90,
+          "labelHeight": 18
+        },
+        {
+          "id": "inner",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 34,
+          "labelHeight": 14
+        },
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 273.1,
+          "labelHeight": 50
+        }
+      ],
+      "edges": [
+        {
+          "id": "forward",
+          "source": "leaf",
+          "target": "leaf",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "both",
+          "source": "leaf",
+          "target": "leaf",
+          "sourceArrow": true,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "neither",
+          "source": "leaf",
+          "target": "leaf",
+          "sourceArrow": false,
+          "targetArrow": false,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        },
+        {
+          "id": "reverse",
+          "source": "leaf",
+          "target": "leaf",
+          "sourceArrow": true,
+          "targetArrow": false,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "leaf",
+          "x": 180,
+          "y": 180,
+          "width": 144.1,
+          "height": 67.8
+        },
+        {
+          "id": "inner",
+          "x": 60,
+          "y": 60,
+          "width": 354,
+          "height": 278
+        },
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 474,
+          "height": 398
+        }
+      ],
+      "edges": [
+        {
+          "id": "forward",
+          "points": [
+            {
+              "x": 180,
+              "y": 197
+            },
+            {
+              "x": 150,
+              "y": 197
+            },
+            {
+              "x": 150,
+              "y": 150
+            },
+            {
+              "x": 216,
+              "y": 150
+            },
+            {
+              "x": 216,
+              "y": 180
+            }
+          ],
+          "label": null
+        },
+        {
+          "id": "both",
+          "points": [
+            {
+              "x": 288,
+              "y": 180
+            },
+            {
+              "x": 288,
+              "y": 150
+            },
+            {
+              "x": 354,
+              "y": 150
+            },
+            {
+              "x": 354,
+              "y": 197
+            },
+            {
+              "x": 324,
+              "y": 197
+            }
+          ],
+          "label": null
+        },
+        {
+          "id": "neither",
+          "points": [
+            {
+              "x": 216,
+              "y": 248
+            },
+            {
+              "x": 216,
+              "y": 278
+            },
+            {
+              "x": 150,
+              "y": 278
+            },
+            {
+              "x": 150,
+              "y": 231
+            },
+            {
+              "x": 180,
+              "y": 231
+            }
+          ],
+          "label": null
+        },
+        {
+          "id": "reverse",
+          "points": [
+            {
+              "x": 216,
+              "y": 180
+            },
+            {
+              "x": 216,
+              "y": 120
+            },
+            {
+              "x": 120,
+              "y": 120
+            },
+            {
+              "x": 120,
+              "y": 197
+            },
+            {
+              "x": 180,
+              "y": 197
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "directed pair uses implicit innermost direction",
+    "graph": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "sink",
+          "parentId": "inner",
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Sink",
+          "labelWidth": 25,
+          "labelHeight": 14
+        },
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 128,
+          "labelHeight": 15,
+          "direction": "LR"
+        },
+        {
+          "id": "inner",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 90,
+          "labelHeight": 23
+        },
+        {
+          "id": "source",
+          "parentId": "inner",
+          "shape": "rect",
+          "width": 152,
+          "height": 41,
+          "isGroup": false,
+          "label": "Source",
+          "labelWidth": 52,
+          "labelHeight": 23
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "source",
+          "target": "sink",
+          "sourceArrow": false,
+          "targetArrow": true,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "sink",
+          "x": 120,
+          "y": 244,
+          "width": 152,
+          "height": 41
+        },
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 392,
+          "height": 405
+        },
+        {
+          "id": "inner",
+          "x": 60,
+          "y": 60,
+          "width": 272,
+          "height": 285
+        },
+        {
+          "id": "source",
+          "x": 120,
+          "y": 120,
+          "width": 152,
+          "height": 41
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            {
+              "x": 196,
+              "y": 161
+            },
+            {
+              "x": 196,
+              "y": 244
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "pair uses explicit innermost direction",
+    "graph": {
+      "direction": "BT",
+      "nodes": [
+        {
+          "id": "inner",
+          "parentId": "outer",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 85.2,
+          "labelHeight": 49.4,
+          "direction": "LR"
+        },
+        {
+          "id": "sink",
+          "parentId": "inner",
+          "shape": "rect",
+          "width": 178,
+          "height": 75.6,
+          "isGroup": false,
+          "label": "Sink",
+          "labelWidth": 21,
+          "labelHeight": 19
+        },
+        {
+          "id": "outer",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 345,
+          "labelHeight": 48
+        },
+        {
+          "id": "source",
+          "parentId": "inner",
+          "shape": "rect",
+          "width": 178,
+          "height": 75.6,
+          "isGroup": false,
+          "label": "Source",
+          "labelWidth": 68,
+          "labelHeight": 20
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "source": "source",
+          "target": "sink",
+          "sourceArrow": true,
+          "targetArrow": false,
+          "label": "",
+          "labelWidth": 0,
+          "labelHeight": 0
+        }
+      ]
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "inner",
+          "x": 60,
+          "y": 60,
+          "width": 626,
+          "height": 196
+        },
+        {
+          "id": "sink",
+          "x": 120,
+          "y": 120,
+          "width": 178,
+          "height": 75.6
+        },
+        {
+          "id": "outer",
+          "x": 0,
+          "y": 0,
+          "width": 746,
+          "height": 316
+        },
+        {
+          "id": "source",
+          "x": 448,
+          "y": 120,
+          "width": 178,
+          "height": 75.6
+        }
+      ],
+      "edges": [
+        {
+          "id": "e",
+          "points": [
+            {
+              "x": 448,
+              "y": 157
+            },
+            {
+              "x": 298,
+              "y": 157
+            }
+          ],
+          "label": null
+        }
+      ]
+    }
+  }
+]
