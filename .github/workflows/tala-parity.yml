@@ -39,7 +39,17 @@ jobs:
           tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-reference"
           cargo build --locked --features experimental-tala --example tala_pilot
           cargo build --locked --manifest-path tools/tala-pilot/rust/Cargo.toml
+      - name: Compare the ordered adapter graph and prescale with Go
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-layout-graph" layout-graph
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-layout-graph/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-layout-graph-reference"
+          node tools/tala-pilot/check-layout-graph.mjs \
+            --reference "$RUNNER_TEMP/tala-reference" \
+            --trace "$RUNNER_TEMP/tala-layout-graph-reference" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Require a passing Rust counterpart for every upstream correctness test
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |
           node tools/tala-pilot/check-upstream-tests.mjs \
             --d2 .tala-reference --json --verify --require-complete > "$RUNNER_TEMP/tala-tests.json"

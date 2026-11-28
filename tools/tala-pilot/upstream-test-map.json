@@ -1,4 +1,19 @@
 {
+  "adapter_test.go#TestAllocateD2EntityIDsPreservesUnsignedSingletonHash": [
+    "layout_graph::tests::preserves_the_unsigned_singleton_hash"
+  ],
+  "adapter_test.go#TestAllocateD2EntityIDsRejectsDuplicateIdentity": [
+    "layout_graph::tests::rejects_duplicate_identity"
+  ],
+  "adapter_test.go#TestAllocateD2EntityIDsResolvesCollisionsDeterministically": [
+    "layout_graph::tests::resolves_collisions_deterministically"
+  ],
+  "adapter_test.go#TestAllocateD2EntityIDsSpillsReservedZeroHash": [
+    "layout_graph::tests::spills_the_reserved_zero_hash"
+  ],
+  "adapter_test.go#TestCollectD2ObjectVisitsPreservesDFSOrder": [
+    "layout_graph::tests::preserves_d2_object_visit_order"
+  ],
   "internal/routing/balance_order_test.go#TestBalanceEdgeSegmentsStillUncrossesDifferentRanges": [
     "balance::tests::balance_edge_segments_still_uncrosses_different_ranges"
   ],

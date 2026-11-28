@@ -101,7 +101,7 @@ func direction(value string) (string, error) {
 
 func shape(value string) (string, error) {
 	switch value {
-	case "", "rect", "rounded", "rectangle", "square", "squareRect", "round-rect":
+	case "", "rect", "rounded", "rectangle", "square", "squareRect", "round-rect", "roundedRect":
 		return d2target.ShapeRectangle, nil
 	case "diam", "diamond", "question":
 		return d2target.ShapeDiamond, nil

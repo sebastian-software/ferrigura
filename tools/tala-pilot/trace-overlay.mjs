@@ -5,9 +5,14 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 const [sourceRoot, output, mode = 'normalization'] = process.argv.slice(2);
+const modes = {
+  normalization: ['internal/engine/pipeline.go', 'pipeline-overlay.go', traceNormalization],
+  'ovg-seed': ['internal/routing/ovg.go', 'ovg-overlay.go', traceOvgSeed],
+  'layout-graph': ['seedgraph.go', 'seedgraph-overlay.go', traceLayoutGraph],
+};
 assert(
-  sourceRoot && output && ['normalization', 'ovg-seed'].includes(mode),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed]'
+  sourceRoot && output && Object.hasOwn(modes, mode),
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
@@ -15,12 +20,12 @@ const dest = resolve(output);
 const actual = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 assert.equal(actual, pin, 'D2 checkout must be at the pilot pin');
 
-const internal = join(root, 'd2layouts/d2talalayout/internal');
-const source = join(internal, mode === 'ovg-seed' ? 'routing/ovg.go' : 'engine/pipeline.go');
-const target = join(dest, mode === 'ovg-seed' ? 'ovg-overlay.go' : 'pipeline-overlay.go');
+const [relativeSource, child, instrument] = modes[mode];
+const source = join(root, 'd2layouts/d2talalayout', relativeSource);
+const target = join(dest, child);
 const original = await readFile(source, 'utf8');
 const helper = await readFile(new URL(`trace-${mode}.go.txt`, import.meta.url), 'utf8');
-const instrumented = mode === 'ovg-seed' ? traceOvgSeed(original) : traceNormalization(original);
+const instrumented = instrument(original);
 await mkdir(dest, { recursive: true });
 await writeFile(target, instrumented + '\n' + helper);
 execFileSync('gofmt', ['-w', target]);
@@ -52,5 +57,21 @@ function traceOvgSeed(source) {
     replaceOnce(source, imports, imports + '\t"os"\n'),
     intersections,
     intersections + '\ttracePilotOVGSeed(ovg, g, len(hierarchyOVGs) == 0)\n'
+  );
+}
+
+function traceLayoutGraph(source) {
+  const imports = '\t"fmt"\n';
+  const graphReady = '\tinternal.MarkSharedInput()\n';
+  return replaceOnce(
+    replaceOnce(
+      source,
+      imports,
+      imports +
+        '\t"encoding/json"\n\t"os"\n' +
+        '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/placement"\n'
+    ),
+    graphReady,
+    graphReady + '\ttracePilotLayoutGraph(ctx, graph, internal)\n'
   );
 }

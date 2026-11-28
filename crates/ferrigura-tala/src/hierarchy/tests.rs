@@ -4,7 +4,6 @@
 
 use serde::Deserialize;
 
-use super::layout;
 use crate::{Error, Graph, Layout};
 
 #[derive(Deserialize)]
@@ -39,14 +38,14 @@ fn rejects_topology_and_labels_outside_the_container_slice() {
 
     graph.nodes[0].label_height = 14.0;
     graph.nodes[0].parent_id = Some(String::from("outer"));
-    assert!(layout(&graph).is_none());
+    assert_eq!(crate::layout(&graph), Err(Error::InvalidGraph));
 
     graph.nodes[0].parent_id = None;
     graph.nodes[1].parent_id = Some(String::from("missing"));
-    assert!(layout(&graph).is_none());
+    assert_eq!(crate::layout(&graph), Err(Error::InvalidGraph));
 
     graph.nodes[1].parent_id = None;
-    assert!(layout(&graph).is_none());
+    assert_eq!(crate::layout(&graph), Err(Error::UnsupportedGraph));
 
     let mut graph = fixtures
         .into_iter()

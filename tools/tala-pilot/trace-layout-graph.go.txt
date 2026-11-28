@@ -1,0 +1,131 @@
+// Observe the translated adapter state and Prescale on an independent clone.
+type pilotGraphLabel struct {
+    Text string `json:"text"`
+    Width float64 `json:"width"`
+    Height float64 `json:"height"`
+}
+
+type pilotGraphNode struct {
+    ID int64 `json:"id"`
+    InputIndex int `json:"inputIndex"`
+    AbsoluteID string `json:"absoluteId"`
+    Parent *int `json:"parent"`
+    Children []int `json:"children"`
+    IncidentEdges []int `json:"incidentEdges"`
+    Direction *string `json:"direction"`
+    Shape string `json:"shape"`
+    Width float64 `json:"width"`
+    Height float64 `json:"height"`
+    Label *pilotGraphLabel `json:"label"`
+}
+
+type pilotGraphEdge struct {
+    ID int64 `json:"id"`
+    AbsoluteID string `json:"absoluteId"`
+    From int `json:"from"`
+    To int `json:"to"`
+    SourceArrow bool `json:"sourceArrow"`
+    TargetArrow bool `json:"targetArrow"`
+    ReversedForLayout bool `json:"reversedForLayout"`
+    MinWidth int `json:"minWidth"`
+    MinHeight int `json:"minHeight"`
+    Label *pilotGraphLabel `json:"label"`
+}
+
+type pilotLayoutGraph struct {
+    Direction *string `json:"direction"`
+    Roots []int `json:"roots"`
+    Nodes []pilotGraphNode `json:"nodes"`
+    Edges []pilotGraphEdge `json:"edges"`
+}
+
+func pilotTranslateLabel(label *layoutgraph.Label) *pilotGraphLabel {
+    if label == nil {
+        return nil
+    }
+    return &pilotGraphLabel{label.Text, label.Width, label.Height}
+}
+
+func capturePilotLayoutGraph(raw *d2graph.Graph, graph *layoutgraph.Graph) pilotLayoutGraph {
+    inputIndices := make(map[string]int, len(raw.Objects))
+    for i, obj := range raw.Objects {
+        inputIndices[obj.AbsID()] = i
+    }
+    indices := make(map[*layoutgraph.Node]int, len(graph.Nodes))
+    for i, node := range graph.Nodes {
+        indices[node] = i
+    }
+    edgeIndices := make(map[*layoutgraph.Edge]int, len(graph.Edges))
+    for i, edge := range graph.Edges {
+        edgeIndices[edge] = i
+    }
+    directionFor := func(n *layoutgraph.Node) *string {
+        if direction, ok := graph.Directions[n]; ok {
+            return new(direction.ToString())
+        }
+        return nil
+    }
+    nodeSlots := func(nodes []*layoutgraph.Node) []int {
+        slots := make([]int, 0, len(nodes))
+        for _, node := range nodes {
+            slots = append(slots, indices[node])
+        }
+        return slots
+    }
+    capture := pilotLayoutGraph{
+        Direction: directionFor(nil),
+        Roots: nodeSlots(graph.Containers[nil]),
+        Nodes: make([]pilotGraphNode, 0, len(graph.Nodes)),
+        Edges: make([]pilotGraphEdge, 0, len(graph.Edges)),
+    }
+    for _, node := range graph.Nodes {
+        var parent *int
+        if node.Container != nil {
+            parent = new(indices[node.Container])
+        }
+        inputIndex, ok := inputIndices[*node.D2ID]
+        if !ok {
+            panic("TALA pilot node lacks a measured input binding")
+        }
+        incident := make([]int, 0, len(node.Edges))
+        for _, edge := range node.Edges {
+            incident = append(incident, edgeIndices[edge])
+        }
+        capture.Nodes = append(capture.Nodes, pilotGraphNode{
+            ID: node.ID, InputIndex: inputIndex, AbsoluteID: *node.D2ID,
+            Parent: parent, Children: nodeSlots(graph.Containers[node]), IncidentEdges: incident,
+            Direction: directionFor(node), Shape: node.ShapeType(), Width: node.Width, Height: node.Height,
+            Label: pilotTranslateLabel(node.Label),
+        })
+    }
+    for _, edge := range graph.Edges {
+        capture.Edges = append(capture.Edges, pilotGraphEdge{
+            ID: edge.ID, AbsoluteID: *edge.D2ID, From: indices[edge.From], To: indices[edge.To],
+            SourceArrow: edge.SourceArrowhead != layoutgraph.NoArrowhead,
+            TargetArrow: edge.TargetArrowhead != layoutgraph.NoArrowhead,
+            ReversedForLayout: edge.ReversedForLayout, MinWidth: edge.MinWidth, MinHeight: edge.MinHeight,
+            Label: pilotTranslateLabel(edge.Label),
+        })
+    }
+    return capture
+}
+
+func tracePilotLayoutGraph(ctx context.Context, raw *d2graph.Graph, graph *layoutgraph.Graph) {
+    if os.Getenv("TALA_PILOT_TRACE_LAYOUT_GRAPH") != "1" {
+        return
+    }
+    copy, err := layoutgraph.Clone(ctx, graph)
+    if err != nil {
+        panic(err)
+    }
+    placement.Prescale(copy)
+    records := struct {
+        Translated pilotLayoutGraph `json:"translated"`
+        Prescaled pilotLayoutGraph `json:"prescaled"`
+    }{capturePilotLayoutGraph(raw, graph), capturePilotLayoutGraph(raw, copy)}
+    encoded, err := json.Marshal(records)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Fprintf(os.Stderr, "TALA_PILOT_LAYOUT_GRAPH %s\n", encoded)
+}

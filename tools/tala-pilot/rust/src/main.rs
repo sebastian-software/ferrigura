@@ -14,7 +14,16 @@ struct RoutedCapture {
 fn main() -> Result<(), Box<dyn Error>> {
     let input = io::stdin().lock();
     let output = io::stdout().lock();
-    match std::env::args().nth(1).as_deref() {
+    let command = std::env::args().nth(1);
+    match command.as_deref() {
+        Some("--translate" | "--prescale") => {
+            let input_graph = serde_json::from_reader(input)?;
+            let graph = ferrigura_tala::layout_graph::checkpoint(
+                &input_graph,
+                command.as_deref() == Some("--prescale"),
+            )?;
+            serde_json::to_writer(output, &graph)?;
+        }
         Some("--layout") => {
             let graph = serde_json::from_reader(input)?;
             serde_json::to_writer(output, &ferrigura_tala::layout(&graph)?)?;
@@ -51,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {
             return Err(concat!(
-                "expected --layout, --initialize, --initialize-by-distance, ",
+                "expected --layout, --translate, --prescale, --initialize, --initialize-by-distance, ",
                 "--ovg-seed, --simplify, --balance, or no argument"
             )
             .into());

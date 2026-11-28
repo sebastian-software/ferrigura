@@ -112,6 +112,7 @@ fn tala_draws_connected_paths_and_bounded_nested_subgraphs() {
             "flowchart LR\nA[Alpha] -->|ok| B[Beta]",
             &["Alpha", "Beta", "ok"][..],
         ),
+        ("flowchart LR\nA(Alpha) --> B(Beta)", &["Alpha", "Beta"][..]),
         (
             "flowchart LR\nAlpha -->|Ready| Beta --> Gamma --> Delta",
             &["Alpha", "Beta", "Gamma", "Delta", "Ready"][..],
