@@ -41,6 +41,10 @@ pub struct MindmapSection<'a> {
     pub mindmap: &'a MindmapDiagramConfig,
     /// The sections that the unified renderer reads.
     pub unified: Section<'a>,
+    /// The tone of the design mode's look, when the render draws in it: its colors, outlines and
+    /// edge widths (`docs/decisions/0023-design-mode.md`). It is the look only; the layout reads
+    /// `unified`.
+    pub look: Option<crate::design::Tone>,
 }
 
 /// Renders the diagram to an SVG document.
@@ -135,7 +139,10 @@ pub fn render_with_animation(
         &font_family,
         &format!("{}px", number(font_size)),
         &families,
-        &style::own_rules(input.id, input.theme.light, &input.globals.look),
+        &match input.section.look {
+            Some(_) => style::design_rules(input.id, input.theme),
+            None => style::own_rules(input.id, input.theme.light, &input.globals.look),
+        },
     );
 
     // `setupViewPortForSVG` (`mindmapRenderer.ts` 110-115): the class, the size and the viewBox from

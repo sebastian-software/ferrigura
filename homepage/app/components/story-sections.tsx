@@ -132,8 +132,9 @@ function DesignScope() {
         arrowhead. Only an interface and an enumeration carry color.
       </p>
       <p>
-        The design mode draws flowcharts, state diagrams and class diagrams; another diagram type
-        reports an error when the mode is asked for. It is an option of each render, like{' '}
+        The design mode draws flowcharts, state diagrams and class diagrams, and gives mindmaps and
+        the pie, XY, quadrant and gantt charts its colors and one calm palette for their series;
+        another diagram type reports an error when the mode is asked for. It is an option of each render, like{' '}
         <code>compat</code>, and the two exclude each other. Your theme variables and class
         definitions keep the last word.{' '}
         <Link to="/architecture/decisions/0023-design-mode/">How the design mode decides</Link>

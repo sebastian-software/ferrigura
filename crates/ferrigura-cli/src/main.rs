@@ -61,8 +61,8 @@ Options:
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
       --compat           Use Mermaid geometry instead of optimized routing and participant boxes
-      --design           Draw flowcharts, state, class and ER diagrams in the design mode:
-                          ferrigura's own look and spacing
+      --design           Draw flowcharts, state, class and ER diagrams, mindmaps, and pie,
+                          XY, quadrant and gantt charts in the design mode: ferrigura's own look
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
                           Positive multiplier of 700 SVG units/s on average; enables animation

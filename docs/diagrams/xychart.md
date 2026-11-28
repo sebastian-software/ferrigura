@@ -2,6 +2,21 @@
 
 The xychart draws lines and bars over a band or a linear x-axis and a linear y-axis. It starts with `xychart` or `xychart-beta`, optionally followed by `horizontal` or `vertical`. ferrigura parses it with a hand-written scanner and recursive-descent grammar in `ferrigura-syntax/src/xychart/`, and draws it with the type's own renderer in `ferrigura-render/src/xychart/`: a port of Mermaid's chart builder, which lays the chart out with its own arithmetic. The unified renderer and the layout engines are not involved.
 
+## Design mode
+
+The design mode draws an XY chart in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. It changes no layout: the colors are the mode's theme variables (the `xyChart` group), laid under the user's `themeVariables`; a user's `xyChart` group is merged into the mode's key by key, so a title color of the user's keeps the mode's palette.
+
+| Element             | Design mode                                                                                                                                                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bars, lines         | The mode's series palette, in the order of the plots (`plotColorPalette`). The parser reads a palette only from the text's own configuration, as the reference does; in the mode, a text without one takes the palette of the theme the render draws with, so a site's `plotColorPalette` applies too |
+| Background          | The mode's `background`                                                                                                                                                                                                                                                                               |
+| Title, legend       | The text color                                                                                                                                                                                                                                                                                        |
+| Axis titles, labels | The muted `titleColor`                                                                                                                                                                                                                                                                                |
+| Axis lines, ticks   | The node outline's gray                                                                                                                                                                                                                                                                               |
+| Data labels         | The series' text color inside a bar, the text color beside it (`showDataLabelOutsideBar`), unless the theme sets `dataLabelColor`                                                                                                                                                                     |
+
+The chart's colors are presentation attributes, so `colorScheme: auto` draws the light set, as the default does.
+
 ## Draw animation
 
 The optional [draw animation](../animation.md) render option draws one element
