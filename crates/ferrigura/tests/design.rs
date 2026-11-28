@@ -1274,6 +1274,44 @@ fn a_composite_state_holds_the_notes_of_its_states() {
     );
 }
 
+#[test]
+fn a_note_keeps_room_on_its_own_side_only() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let plain = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n    --\n    [*] --> Count\n    Count --> Report\n  }\n  Work --> [*]\n";
+    let gap = |svg: &str| {
+        let mut frames = region_frames(svg);
+        assert_eq!(frames.len(), 2);
+        frames.sort_by(|a, b| a.0.total_cmp(&b.0));
+        frames[1].0 - (frames[0].0 + frames[0].2)
+    };
+    let without = gap(&renderer.render_with(plain, &design(None)).unwrap());
+    // A note right of `Load` keeps no room on the left of `Load`: the regions stand as close as
+    // without it, whichever side of its region's neighbor it is on.
+    for side in ["right", "left"] {
+        let noted = plain.replace(
+            "    Load --> Save\n",
+            &format!("    Load --> Save\n    note {side} of Load : Reads the input file\n"),
+        );
+        let svg = renderer.render_with(&noted, &design(None)).unwrap();
+        assert_eq!(gap(&svg), without, "{side}");
+        let (note, load) = (note_box(&svg, "Load"), state_box(&svg, "Load"));
+        if side == "right" {
+            assert!(note.0 > load.0 + load.2, "{note:?}");
+        } else {
+            assert!(note.0 + note.2 < load.0, "{note:?}");
+        }
+    }
+    // The same holds for a self-loop.
+    let looped = plain.replace(
+        "    Load --> Save\n",
+        "    Load --> Save\n    Load --> Load : retry\n",
+    );
+    assert_eq!(
+        gap(&renderer.render_with(&looped, &design(None)).unwrap()),
+        without
+    );
+}
+
 /// A class diagram with an interface, an abstract class, an enumeration, a class without members,
 /// an inheritance tree, a composition with cardinalities and a dependency.
 const CLASSES: &str = "classDiagram\n  class Shape {\n    <<interface>>\n    +area() double\n  }\n  class Polygon {\n    <<abstract>>\n    #List~Point~ vertices\n    +area()* double\n    +count()$ int\n  }\n  class Kind {\n    <<enumeration>>\n    PLAIN\n    FANCY\n  }\n  class Square\n  Shape <|.. Polygon\n  Polygon <|-- Square\n  Polygon <|-- Triangle\n  Polygon \"1\" *-- \"3..*\" Point : corners\n  Polygon ..> Kind\n";

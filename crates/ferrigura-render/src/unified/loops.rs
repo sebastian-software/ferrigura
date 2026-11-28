@@ -6,21 +6,20 @@
 //! side of the hook, where it floats away from the line. In the design mode the loops do not take
 //! part in the layout:
 //!
-//! 1. **Out.** Before the layout, the loops leave the layout data. Their node takes their room
-//!    instead: its box grows along its layer by the room of a loop and its label on both sides, so
-//!    that the node stays in the middle of its box, where ELK and the placement put its other
-//!    edges, and along the flow where the label or the cardinalities need more than the node's
-//!    size.
-//! 2. **Back.** After ELK's layout, before the result is applied, the node takes its own size in
-//!    the middle of its box, the ends of its other edges move along their last part onto its
-//!    outline, and each loop goes into the room beside it: out of the side [`PORT_PITCH`] apart
+//! 1. **Out.** Before the layout, the loops leave the layout data. Their node keeps their room
+//!    instead, on the loop's side only: the box of a loop with its label and its cardinalities
+//!    goes to ELK as a label of the node at the loop's place, which the node's margins hold
+//!    (`Node::beside`). The node keeps its own size, and ELK and the placement put its other
+//!    edges on its own sides.
+//! 2. **Back.** After ELK's layout, before the result is applied, each loop goes into the room
+//!    beside its node: out of the side [`PORT_PITCH`] apart
 //!    around the middle, [`LOOP_REACH`] out and back, with its label [`LOOP_LABEL_GAP`] beside
 //!    it, centered on the loop. The result is applied as ELK's own route would be, so the ends
 //!    are clipped at the outline of the node's shape and leave room for their markers.
 //! 3. **Check.** Once applied, a loop, its label or a cardinality that touches a node, an edge, a
 //!    label or a frame, or that the node's groups do not hold, makes the diagram be laid out again
 //!    with that node's loops on the sides of the other direction, and then with its loops left to
-//!    ELK. The same holds where an end of another edge does not leave the node's box straight.
+//!    ELK.
 //!
 //! In a layout from top to bottom (or back), the edges meet a node at the top and the bottom, so
 //! the first loop stands on the right and a second one on the left, each with its label on its far
@@ -39,7 +38,7 @@ use crate::unified::elk_build::ElkState;
 use crate::unified::elk_geometry::find_common_ancestor;
 use crate::unified::geom::{BBox, Point};
 use crate::unified::room::{
-    absolute_boxes, contains, crosses, ends_onto_outlines, find_mut, grown, overlaps,
+    absolute_boxes, clear_beside, contains, crosses, find_mut, grown, overlaps,
 };
 
 /// The least distance between a loop, its label or a cardinality and anything else.
@@ -56,14 +55,11 @@ const MIN_PITCH: f64 = 8.0;
 /// of the widest marker and the gap of `terminal::place_beside_ends`.
 const TERMINAL_ROOM: f64 = 12.0;
 
-/// A node whose box another step of the design mode has grown already, for something that stands
-/// beside it: a state with its notes. Its loops take the sides that are left.
+/// A node beside which another step of the design mode keeps room for something of its own: a
+/// state with its notes. Its loops take the sides that are left.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Reserved {
     pub(crate) id: String,
-    /// The node's own size.
-    pub(crate) width: f64,
-    pub(crate) height: f64,
     /// Whether the side before the node along its layer is taken: the left, or the top in a
     /// layout from left to right.
     pub(crate) before: bool,
@@ -184,6 +180,19 @@ impl Loop {
         }
     }
 
+    /// The room of the loop, its label and its cardinalities beside a node of the given size, from
+    /// the node's top left corner: out of its side, and along the side as far on both sides of
+    /// the middle.
+    fn room_box(&self, width: f64, height: f64) -> BBox {
+        let (reach, half) = self.room();
+        match self.side {
+            Side::Right => BBox::new(width, height / 2.0 - half, reach, 2.0 * half),
+            Side::Left => BBox::new(-reach, height / 2.0 - half, reach, 2.0 * half),
+            Side::Top => BBox::new(width / 2.0 - half, -reach, 2.0 * half, reach),
+            Side::Bottom => BBox::new(width / 2.0 - half, height, 2.0 * half, reach),
+        }
+    }
+
     /// The route of the loop beside the node's own box: out of the side, along it and back in.
     fn route(&self, real: BBox) -> [Point; 4] {
         let (middle, out, along) = (self.side.middle(real), self.side.out(), self.side.along());
@@ -234,28 +243,6 @@ struct Host {
     /// Whether its layer runs along x: a layout from top to bottom or back.
     across: bool,
     loops: Vec<Loop>,
-}
-
-impl Host {
-    /// The size of the node's box in the layout: its own size, with the room of its loops on both
-    /// sides along its layer, and along the flow as much as the loops need.
-    fn room(&self) -> (f64, f64) {
-        let (mut reach, mut half) = (0.0_f64, 0.0_f64);
-        for entry in &self.loops {
-            let (out, along) = entry.room();
-            reach = reach.max(out);
-            half = half.max(along);
-        }
-        // The box grows by whole units on each side, so that the middle of its side, where ELK and
-        // the placement put the ports on whole units, is where it is for the node alone.
-        let reach = reach.ceil();
-        let grow = |size: f64| size + 2.0 * (half - size / 2.0).max(0.0).ceil();
-        if self.across {
-            (self.width + 2.0 * reach, grow(self.height))
-        } else {
-            (grow(self.width), self.height + 2.0 * reach)
-        }
-    }
 }
 
 /// The loops taken out of the layout data, and what puts them back.
@@ -327,8 +314,8 @@ fn outside(room: BBox, node: BBox, side: Side) -> BBox {
     )
 }
 
-/// Takes the loops that can stand beside their node out of the layout data and grows their nodes
-/// by their room. `None` where no loop can: then the data is unchanged. The nodes of `turned` take
+/// Takes the loops that can stand beside their node out of the layout data and keeps their room
+/// beside their nodes. `None` where no loop can: then the data is unchanged. The nodes of `turned` take
 /// the sides of the other direction: the edges of a node in a group with a direction of its own
 /// may meet it in the direction of the group's parent. The nodes of `kept_hosts`
 /// keep their loops where ELK puts them; the nodes of `reserved` keep their sides taken.
@@ -361,12 +348,8 @@ pub(crate) fn take_out(
         };
         let taken = reserved.iter().find(|entry| entry.id == node.id);
         let (Some(width), Some(height)) = (
-            taken
-                .map_or(node.width, |entry| Some(entry.width))
-                .filter(|width| *width > 0.0),
-            taken
-                .map_or(node.height, |entry| Some(entry.height))
-                .filter(|height| *height > 0.0),
+            node.width.filter(|width| *width > 0.0),
+            node.height.filter(|height| *height > 0.0),
         ) else {
             unusable.insert(node.id.as_str());
             continue;
@@ -429,10 +412,10 @@ pub(crate) fn take_out(
         let Some(node) = data.nodes.iter_mut().find(|node| node.id == host.id) else {
             continue;
         };
-        // A box grown for something else beside the node holds the loops' room as well.
-        let (width, height) = host.room();
-        node.width = Some(node.width.unwrap_or(0.0).max(width));
-        node.height = Some(node.height.unwrap_or(0.0).max(height));
+        node.beside.extend(host.loops.iter().map(|entry| {
+            let room = entry.room_box(host.width, host.height);
+            (room.x, room.y, room.width, room.height)
+        }));
     }
     let moved: HashSet<String> = hosts
         .iter()
@@ -453,10 +436,9 @@ pub(crate) fn take_out(
 }
 
 impl Loops {
-    /// Puts the loops back into ELK's result and into the layout data: each node takes its own
-    /// size in the middle of its box, the ends of its other edges move onto its outline, and its
-    /// loops stand beside it with their labels. Where an end of another edge does not leave a
-    /// node's box straight from a side, the result is that node's id.
+    /// Puts the loops back into ELK's result and into the layout data: the loops of each node
+    /// stand beside it with their labels. Where ELK's result lacks a node, the result is that
+    /// node's id.
     pub(crate) fn put_back(
         &self,
         graph: &mut JsonNode,
@@ -466,21 +448,14 @@ impl Loops {
         let mut boxes: HashMap<String, (BBox, String)> = HashMap::new();
         absolute_boxes(graph, Point::default(), &mut boxes);
 
-        // The node's box in the layout and its own box in the middle of it.
-        let mut own: HashMap<&str, (BBox, BBox)> = HashMap::new();
+        // The node's box in the layout.
+        let mut own: HashMap<&str, BBox> = HashMap::new();
         for host in &self.hosts {
             let Some((laid, _)) = boxes.get(&host.id) else {
                 return Err(host.id.clone());
             };
-            let real = BBox::new(
-                laid.x + (laid.width - host.width) / 2.0,
-                laid.y + (laid.height - host.height) / 2.0,
-                host.width,
-                host.height,
-            );
-            own.insert(host.id.as_str(), (*laid, real));
+            own.insert(host.id.as_str(), *laid);
         }
-        ends_onto_outlines(graph, &boxes, &own, &state.parent_by_id)?;
 
         for (position, edge) in &self.edges {
             data.edges
@@ -488,17 +463,11 @@ impl Loops {
         }
         for host in &self.hosts {
             if let Some(node) = data.nodes.iter_mut().find(|node| node.id == host.id) {
-                node.width = Some(host.width);
-                node.height = Some(host.height);
+                node.beside.clear();
             }
-            let (_, real) = own[host.id.as_str()];
+            let real = own[host.id.as_str()];
             if let Some(node) = find_mut(graph, &host.id) {
-                node.x =
-                    Some(node.x.unwrap_or(0.0) + (node.width.unwrap_or(0.0) - real.width) / 2.0);
-                node.y =
-                    Some(node.y.unwrap_or(0.0) + (node.height.unwrap_or(0.0) - real.height) / 2.0);
-                node.width = Some(real.width);
-                node.height = Some(real.height);
+                clear_beside(node);
             }
             // The sections of a loop are relative to its node's parent, as ELK gives them.
             let offset = find_common_ancestor(&host.id, &host.id, &state.parent_by_id)
@@ -705,21 +674,29 @@ mod tests {
     }
 
     #[test]
-    fn a_node_takes_the_room_of_its_loop_on_both_sides_of_its_layer() {
-        let host = Host {
-            id: "a".to_owned(),
-            width: 120.0,
-            height: 44.0,
-            across: true,
-            loops: vec![looped(Side::Right, Some((40.0, 24.0)))],
-        };
-        // 32 for the loop, 4 of gap, the chip of 40 and its margin of 6.
-        assert_eq!(host.room(), (120.0 + 2.0 * 82.0, 44.0));
-        let tall = Host {
-            loops: vec![looped(Side::Right, Some((40.0, 60.0)))],
-            ..host
-        };
-        assert_eq!(tall.room(), (284.0, 60.0));
+    fn a_node_keeps_the_room_of_its_loop_on_the_loops_side_only() {
+        // 32 for the loop, 4 of gap, the chip of 40 and its margin of 6; along the side the ends
+        // 20 apart with 4 of room each, or the chip's height.
+        let right = looped(Side::Right, Some((40.0, 24.0)));
+        assert_eq!(
+            right.room_box(120.0, 44.0),
+            BBox::new(120.0, 8.0, 82.0, 28.0)
+        );
+        let tall = looped(Side::Right, Some((40.0, 60.0)));
+        assert_eq!(
+            tall.room_box(120.0, 44.0),
+            BBox::new(120.0, -8.0, 82.0, 60.0)
+        );
+        let left = looped(Side::Left, None);
+        assert_eq!(
+            left.room_box(120.0, 44.0),
+            BBox::new(-32.0, 8.0, 32.0, 28.0)
+        );
+        let top = looped(Side::Top, None);
+        assert_eq!(
+            top.room_box(120.0, 44.0),
+            BBox::new(46.0, -32.0, 28.0, 32.0)
+        );
     }
 
     fn node(id: &str, width: f64, height: f64) -> Node {
@@ -741,7 +718,7 @@ mod tests {
     }
 
     #[test]
-    fn the_loops_leave_the_layout_and_their_node_takes_their_room() {
+    fn the_loops_leave_the_layout_and_their_node_keeps_their_room() {
         let mut data = LayoutData {
             nodes: vec![node("a", 120.0, 44.0), node("b", 120.0, 44.0)],
             edges: vec![edge("l", "a", "a"), edge("e", "a", "b")],
@@ -752,7 +729,8 @@ mod tests {
             .expect("a loop beside its node");
         assert_eq!(data.edges.len(), 1);
         assert_eq!(data.edges[0].id, "e");
-        assert_eq!(data.nodes[0].width, Some(120.0 + 2.0 * 32.0));
+        assert_eq!(data.nodes[0].width, Some(120.0));
+        assert_eq!(data.nodes[0].beside, [(120.0, 8.0, 32.0, 28.0)]);
         assert_eq!(loops.edges.len(), 1);
         assert_eq!(loops.hosts[0].loops[0].side, Side::Right);
     }
@@ -785,18 +763,18 @@ mod tests {
     }
 
     #[test]
-    fn a_loop_takes_the_side_a_note_leaves_free_in_the_box_the_note_grew() {
-        // The note's step grew the state from 120 by 100 on both sides.
+    fn a_loop_takes_the_side_a_note_leaves_free() {
+        // The note's step keeps the room of a note of 68 on the right.
+        let mut a = node("a", 120.0, 44.0);
+        a.beside.push((152.0, 0.0, 68.0, 44.0));
         let mut data = LayoutData {
-            nodes: vec![node("a", 320.0, 44.0)],
+            nodes: vec![a],
             edges: vec![edge("l", "a", "a")],
             direction: "TB".to_owned(),
             ..LayoutData::default()
         };
         let reserved = [Reserved {
             id: "a".to_owned(),
-            width: 120.0,
-            height: 44.0,
             before: false,
             after: true,
         }];
@@ -804,8 +782,11 @@ mod tests {
             take_out(&mut data, &HashSet::new(), &HashSet::new(), &reserved).expect("a loop");
         assert_eq!(loops.hosts[0].loops[0].side, Side::Left);
         assert_eq!(loops.hosts[0].width, 120.0);
-        // The larger room of the two holds both.
-        assert_eq!(data.nodes[0].width, Some(320.0));
+        // Both rooms stand beside the state.
+        assert_eq!(
+            data.nodes[0].beside,
+            [(152.0, 0.0, 68.0, 44.0), (-32.0, 8.0, 32.0, 28.0)]
+        );
     }
 
     #[test]

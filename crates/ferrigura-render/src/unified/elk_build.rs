@@ -947,6 +947,7 @@ fn add_vertices(
             label_data: label_data_of(node, section),
             width: node.width.unwrap_or(0.0),
             height: node.height.unwrap_or(0.0),
+            labels: node.beside.iter().map(|&room| beside_label(room)).collect(),
             ..Work::default()
         });
         index.insert(node.id.clone(), position);
@@ -957,6 +958,26 @@ fn add_vertices(
         }
     }
     added
+}
+
+/// The text of a label that only keeps room beside its node ([`beside_label`]).
+pub(crate) const BESIDE_TEXT: &str = " ";
+
+/// A label that keeps room beside its node for the design mode (`Node::beside`): a box at a fixed
+/// place from the node's top left corner, which ELK neither moves nor places inside the node, and
+/// which the node's margins hold. Its text is not drawn; ELK leaves out a label without one.
+fn beside_label((x, y, width, height): (f64, f64, f64, f64)) -> JsonLabel {
+    let mut options = LayoutOptions::new();
+    set(&mut options, "nodeLabels.placement", text("[]"));
+    JsonLabel {
+        text: Some(BESIDE_TEXT.to_owned()),
+        x: Some(x),
+        y: Some(y),
+        width: Some(width),
+        height: Some(height),
+        layout_options: Some(options),
+        ..JsonLabel::default()
+    }
 }
 
 /// The root edges of the graph, one per layout-data edge, with their label (`addEdgesToElkGraph`).
@@ -1034,12 +1055,15 @@ fn configure_subgraph_nodes(
             decide_container_algorithm(arena[position].raw_algorithm.as_ref(), warnings);
         let work = &mut arena[position];
         work.container_algorithm = container;
-        work.labels = vec![JsonLabel {
-            text: Some(work.label.clone()),
-            width: Some(work.label_data.width),
-            height: Some(work.label_data.height),
-            ..JsonLabel::default()
-        }];
+        work.labels.insert(
+            0,
+            JsonLabel {
+                text: Some(work.label.clone()),
+                width: Some(work.label_data.width),
+                height: Some(work.label_data.height),
+                ..JsonLabel::default()
+            },
+        );
         let options = build_subgraph_layout_options(
             &SubgraphNode {
                 dir: work.dir.as_deref(),
