@@ -137,6 +137,8 @@ struct Loop {
     /// The largest size of a cardinality at its start and at its end.
     start_terminal: Option<(f64, f64)>,
     end_terminal: Option<(f64, f64)>,
+    /// How far it stands out: [`LOOP_REACH`], or an ER relation's room for its markers.
+    reach: f64,
 }
 
 impl Loop {
@@ -154,7 +156,7 @@ impl Loop {
             .flatten();
         match self.side {
             Side::Right | Side::Left => {
-                let reach = LOOP_REACH
+                let reach = self.reach
                     + self
                         .chip
                         .map_or(0.0, |(width, _)| LOOP_LABEL_GAP + width + CHIP_MARGIN);
@@ -168,10 +170,10 @@ impl Loop {
                 let reach = terminals
                     .clone()
                     .map(|(_, height)| LOOP_LABEL_GAP + height)
-                    .fold(LOOP_REACH, f64::max)
+                    .fold(self.reach, f64::max)
                     .max(
                         self.chip
-                            .map_or(0.0, |(_, height)| LOOP_REACH / 2.0 + height / 2.0),
+                            .map_or(0.0, |(_, height)| self.reach / 2.0 + height / 2.0),
                     );
                 let half = terminals
                     .map(|(width, _)| self.pitch / 2.0 + TERMINAL_ROOM + width)
@@ -196,8 +198,8 @@ impl Loop {
         let half = self.pitch / 2.0;
         [
             at(-half, 0.0),
-            at(-half, LOOP_REACH),
-            at(half, LOOP_REACH),
+            at(-half, self.reach),
+            at(half, self.reach),
             at(half, 0.0),
         ]
     }
@@ -209,7 +211,7 @@ impl Loop {
         let out = self.side.out();
         match self.side {
             Side::Right | Side::Left => {
-                let distance = LOOP_REACH + LOOP_LABEL_GAP + chip_width / 2.0;
+                let distance = self.reach + LOOP_LABEL_GAP + chip_width / 2.0;
                 Point::new(middle.x + out.x * distance, middle.y)
             }
             Side::Top | Side::Bottom => Point::new(
@@ -218,7 +220,7 @@ impl Loop {
                     + self.label_shift()
                     + LOOP_LABEL_GAP
                     + chip_width / 2.0,
-                middle.y + out.y * LOOP_REACH / 2.0,
+                middle.y + out.y * self.reach / 2.0,
             ),
         }
     }
@@ -353,6 +355,12 @@ pub(crate) fn take_out(
         .map(|(position, node)| (node.id.as_str(), position))
         .collect();
 
+    // An ER relation's cardinality markers stand on the straight parts of its loop.
+    let reach = if data.diagram_type == super::markers::ER {
+        crate::er::MARKER_ROOM
+    } else {
+        LOOP_REACH
+    };
     let mut hosts: Vec<Host> = Vec::new();
     let mut unusable: HashSet<&str> = HashSet::new();
     for edge in data.edges.iter().filter(|edge| edge.start == edge.end) {
@@ -415,6 +423,7 @@ pub(crate) fn take_out(
             chip: chip_of(edge),
             start_terminal: terminal_at(edge, true),
             end_terminal: terminal_at(edge, false),
+            reach,
         });
     }
     hosts.retain(|host| {
@@ -660,6 +669,7 @@ mod tests {
             chip,
             start_terminal: None,
             end_terminal: None,
+            reach: LOOP_REACH,
         }
     }
 

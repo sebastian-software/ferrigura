@@ -1,5 +1,6 @@
 //! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look and measures for a
-//! flowchart, a state diagram and a class diagram, laid out by the engine of the default rendering.
+//! flowchart, a state diagram, a class diagram and an ER diagram, laid out by the engine of the default
+//! rendering.
 
 use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
 
@@ -786,11 +787,11 @@ fn the_mode_excludes_compat_and_other_diagram_types() {
         Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
     }
-    for other in [
-        "pie\n \"a\" : 1\n",
-        "sequenceDiagram\n  A->>B: hi\n",
-        "erDiagram\n  A ||--o{ B : has\n",
-    ] {
+    match renderer.render_with(ENTITIES, &both) {
+        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
+        other => panic!("expected an option error, got {other:?}"),
+    }
+    for other in ["pie\n \"a\" : 1\n", "sequenceDiagram\n  A->>B: hi\n"] {
         match renderer.render_with(other, &design(None)) {
             Err(Error::Options(message)) => assert!(message.contains("design mode"), "{message}"),
             result => panic!("expected an option error, got {result:?}"),
@@ -1723,4 +1724,154 @@ fn two_labeled_relations_between_two_classes_are_one_unit_beside_another_edge() 
     assert!((x("Team") - x("User")).abs() <= 20.0);
     assert!((x("Profile") - x("User")).abs() > 40.0);
     assert!(!runs_straight_down(&svg, "id_User_Profile_3"));
+}
+
+/// An ER diagram with every cardinality, an identifying and a non-identifying relation, a
+/// relation of an entity to itself, attributes with keys, comments and a generic type, and an
+/// entity without attributes.
+const ENTITIES: &str = "erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  CUSTOMER }|..|{ ADDRESS : uses\n  ORDER ||--|{ LINE : contains\n  CUSTOMER |o..o| CUSTOMER : refers\n  CUSTOMER {\n    string name PK \"the full name\"\n    string email UK\n    list~string~ tags\n  }\n  ORDER {\n    int id PK\n    string customer FK\n  }\n";
+
+/// The part of an SVG that draws the entity with the given name, up to the next node.
+fn entity(svg: &str, name: &str) -> String {
+    let start = svg
+        .find(&format!("id=\"d-entity-{name}-"))
+        .expect("the entity");
+    let rest = &svg[start..];
+    let end = rest[1..]
+        .find("<g class=\"node ")
+        .map_or(rest.len(), |end| end + 1);
+    rest[..end].to_owned()
+}
+
+/// The x of the first text group of the given class in an entity.
+fn column_x(entity: &str, class: &str) -> f64 {
+    let group = &entity[entity
+        .find(&format!(
+            "<g class=\"label {class}\" transform=\"translate("
+        ))
+        .expect("the column")..];
+    let rest = &group[group.find('(').unwrap() + 1..];
+    rest[..rest.find(',').unwrap()].parse().unwrap()
+}
+
+#[test]
+fn an_er_diagram_draws_in_the_design_mode() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(ENTITIES, &design(None)).unwrap();
+    let plain = renderer.render_with(ENTITIES, &default(None)).unwrap();
+    assert!(svg.contains("class=\"erDiagram\""));
+    // Every entity is neutral: no role and no palette slot.
+    assert!(!svg.contains("data-role="));
+    assert!(!svg.contains("data-color-id"));
+    // The mode's markers under the reference's ids, and the soft shadow.
+    for id in [
+        "d_er-onlyOneStart",
+        "d_er-zeroOrOneEnd",
+        "d_er-oneOrMoreEnd",
+        "d_er-zeroOrMoreEnd",
+    ] {
+        assert!(svg.contains(&format!("<marker id=\"{id}\"")), "{id}");
+    }
+    assert!(svg.contains("class=\"design-line\""));
+    assert!(svg.contains("class=\"design-ring\""));
+    assert!(!plain.contains("design-line"));
+    assert!(svg.contains("stdDeviation=\"1.5\""));
+    // The box: round corners, the name in bold, a hairline under it and faint ones between the
+    // rows; an entity without attributes is its name alone.
+    let customer = entity(&svg, "CUSTOMER");
+    assert!(customer.contains("rx=\"8\""));
+    assert!(customer.contains("font-weight=\"bold\" x=\"-"));
+    assert_eq!(customer.matches("<line class=\"divider\"").count(), 1);
+    assert_eq!(customer.matches("<line class=\"row-divider\"").count(), 2);
+    let line = entity(&svg, "LINE");
+    assert!(!line.contains("<line "));
+    assert!(!plain.contains("class=\"outline\""));
+    let sheet = style_sheet(&svg);
+    for rule in [
+        "#d .edge-thickness-normal,#d .relationshipLine{stroke-width:1.5px;}",
+        "#d .node line.divider{stroke:var(--nodeBorder);stroke-width:1px;}",
+        "#d .attribute-type text,#d .attribute-keys text,#d .attribute-comment text{fill:var(--titleColor);}",
+        "#d .marker.er .design-ring{fill:var(--background);",
+        "--background:#FFFFFF;",
+    ] {
+        assert!(sheet.contains(rule), "{rule}");
+    }
+}
+
+#[test]
+fn an_attribute_row_has_its_name_type_keys_and_comment_in_columns() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(ENTITIES, &design(None)).unwrap();
+    let customer = entity(&svg, "CUSTOMER");
+    let name = column_x(&customer, "attribute-name");
+    let kind = column_x(&customer, "attribute-type");
+    let keys = column_x(&customer, "attribute-keys");
+    let comment = column_x(&customer, "attribute-comment");
+    assert!(name < kind && kind < keys && keys < comment);
+    // The columns start on one line in every row.
+    assert_eq!(
+        customer
+            .matches(&format!(
+                "<g class=\"label attribute-type\" transform=\"translate({kind}, "
+            ))
+            .count(),
+        3
+    );
+    // A generic type shows its angle brackets; the keys are as written.
+    assert!(customer.contains(">list&lt;string&gt;</tspan>"));
+    assert!(customer.contains(">PK</tspan>"));
+    // A column that no attribute fills takes no room.
+    assert!(!entity(&svg, "ORDER").contains("attribute-comment"));
+}
+
+#[test]
+fn a_relation_is_dashed_unless_identifying_and_its_markers_stand_on_straight_ends() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(ENTITIES, &design(None)).unwrap();
+    assert!(
+        style_sheet(&svg).contains("#d .edge-pattern-dashed{stroke-dasharray:5 4 !important;}")
+    );
+    for id in [
+        "id_entity-CUSTOMER-0_entity-ORDER-1_0",
+        "id_entity-CUSTOMER-0_entity-ADDRESS-2_1",
+        "id_entity-ORDER-1_entity-LINE-3_2",
+    ] {
+        let points = route(&svg, id);
+        let length = |a: (f64, f64), b: (f64, f64)| (a.0 - b.0).hypot(a.1 - b.1);
+        let (first, last) = (
+            length(points[0], points[1]),
+            length(points[points.len() - 2], points[points.len() - 1]),
+        );
+        // A crow's foot with its ring is 24 long; the turn after it takes the corner's radius.
+        assert!(first >= 34.0 && last >= 34.0, "{id}: {first} {last}");
+    }
+    // The relation of an entity to itself stands beside it.
+    let refers = route(&svg, "id_entity-CUSTOMER-0_entity-CUSTOMER-0_3");
+    assert_eq!(refers.len(), 4, "{refers:?}");
+}
+
+#[test]
+fn the_er_diagrams_dark_set_and_user_styles_apply() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let dark = renderer
+        .render_with(ENTITIES, &design(Some(ColorScheme::Dark)))
+        .unwrap();
+    let sheet = style_sheet(&dark);
+    assert!(sheet.contains("--mainBkg:#1D212A;"));
+    assert!(sheet.contains("--background:#12141A;"));
+    let auto = renderer
+        .render_with(ENTITIES, &design(Some(ColorScheme::Auto)))
+        .unwrap();
+    assert!(style_sheet(&auto).contains("--background:light-dark(#FFFFFF,#12141A);"));
+    // The user's variables win, and an entity's own style is written on its outline.
+    let config = Value::from(serde_json::json!({
+        "themeVariables": { "lineColor": "#ff0000" }
+    }));
+    let styled = format!("{ENTITIES}  style ORDER fill:#f96,stroke:#333\n");
+    let svg = Renderer::new(&config)
+        .render_with(&styled, &design(None))
+        .unwrap();
+    assert!(style_sheet(&svg).contains("--lineColor:#ff0000;"));
+    assert!(entity(&svg, "ORDER").contains("class=\"outline\""));
+    assert!(entity(&svg, "ORDER").contains("fill:#f96 !important"));
 }

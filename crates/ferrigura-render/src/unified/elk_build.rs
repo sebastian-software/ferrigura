@@ -142,6 +142,10 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         paddings_of(&graph, &shapes, &mut kept);
         crate::flowchart::policy::relax(&mut graph, place);
         pad_untitled_groups(&mut graph, &shapes, &kept);
+        // An ER relation's cardinality marker needs a straight end before its line turns.
+        if data.diagram_type == super::markers::ER {
+            crate::er::give_markers_room(&mut graph);
+        }
         state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }
     ElkInput { graph, state }

@@ -23,6 +23,7 @@ mod containers;
 mod cylinder;
 mod decorated;
 mod er_box;
+mod er_design;
 mod icon;
 mod intersect;
 mod person;
@@ -501,6 +502,10 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::IconCircle => icon::icon_circle(input),
         Kind::ImageSquare => icon::image_square(input)?,
         // The entity draws its own labels and their group box, so it returns its output whole.
+        // The design mode draws its own entity box, neutral and without a palette slot.
+        Kind::ErBox if input.config.section.design.is_some() => {
+            return er_design::er_box(input);
+        }
         Kind::ErBox => return er_box::er_box(input),
         Kind::Composite => composite::composite(input),
         Kind::ClassBox => {
