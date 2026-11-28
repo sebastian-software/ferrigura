@@ -67,6 +67,18 @@ pub const PORT_MARGIN: f64 = 24.0;
 /// The base value of the layout's spacings at the root, where the reference has 40.
 pub const ROOT_SPACING: f64 = 48.0;
 
+/// The room of a right-angle turn of an edge along each of its two parts: a corner on
+/// [`EDGE_RADIUS`] starts and ends `EDGE_RADIUS / sin 45°` from the bend, and takes at most half
+/// of a part, so a part needs twice that for the full radius.
+pub const TURN_ROOM: f64 = 2.0 * EDGE_RADIUS * std::f64::consts::SQRT_2;
+
+/// The distance between a layer and the first or last turn of the edges between two layers, in
+/// every graph: at least the room of a right-angle turn ([`TURN_ROOM`], 28.3), so that every
+/// corner next to a node turns on [`EDGE_RADIUS`] as the others do. The base value would give 24.
+/// It is the distance the reference gives a group, and the reach within which the layout's glue
+/// straightens a step next to a node (`elk_straighten`), which a larger one would leave.
+pub const LAYER_TURN_SPACING: f64 = 30.0;
+
 /// The padding of a group around its members at the left, the right and the bottom, where the
 /// reference has 24.
 pub const GROUP_SIDE_PADDING: f64 = 32.0;

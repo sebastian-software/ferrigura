@@ -22,7 +22,7 @@ use crate::unified::shapes;
 /// The room a route needs for one turn: the corner of the design mode cuts
 /// `EDGE_RADIUS / sin 45°` of each part at a right angle, and takes at most half of a part
 /// (`unified::path::rounded_corner`), so a part of twice the cut turns on the full radius.
-const TURN_ROOM: f64 = 2.0 * crate::design::EDGE_RADIUS * std::f64::consts::SQRT_2;
+const TURN_ROOM: f64 = crate::design::TURN_ROOM;
 
 /// The least length of the part from the side tip to the turn. It is shorter than
 /// [`TURN_ROOM`]: two branches to nodes in a row beside a decision as wide as a node have about

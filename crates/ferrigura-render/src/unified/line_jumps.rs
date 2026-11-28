@@ -6,7 +6,10 @@
 //! style, which the reference recomputes from the new length.
 
 use super::geom::Point;
-use super::path::{RoundedCorner, apply_marker_offsets, d3_number, path_length, rounded_corner};
+use super::path::{
+    RoundedCorner, apply_marker_offsets, d3_number, path_length, pulled_back, rounded_corner,
+    rounded_corner_from_ends,
+};
 
 /// The radius of a hop, `JUMP_RADIUS` in `elk/lineHops.ts`.
 pub const JUMP_RADIUS: f64 = 6.0;
@@ -56,6 +59,10 @@ pub struct EdgeGeom {
     pub style: String,
     /// The radius of the edge's rounded corners: the reference's, or the design mode's.
     pub corner_radius: f64,
+    /// Whether the corners next to the ends count those parts before the marker offsets
+    /// ([`generate_rounded_path_from_ends`](super::path::generate_rounded_path_from_ends)), as the
+    /// design mode draws its edges.
+    pub from_ends: bool,
 }
 
 /// A place where two edges cross, with the edge that gives way (`jump_edge`) and the one it hops
@@ -353,6 +360,11 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
         return String::new();
     }
     let points = offset_points(edge);
+    let pulled = if edge.from_ends {
+        pulled_back(&edge.points, &points)
+    } else {
+        (0.0, 0.0)
+    };
     let rounded = edge.curve.as_deref() == Some("rounded");
     let segs = segments(&points);
 
@@ -384,8 +396,7 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
         let mut consumed = 0.0;
         if rounded
             && i > 0
-            && let Some(corner) =
-                rounded_corner(points[i - 1], points[i], points[i + 1], edge.corner_radius)
+            && let Some(corner) = rounded_corner_from_ends(&points, i, edge.corner_radius, pulled)
         {
             consumed = corner.cut_len;
         }
@@ -393,7 +404,7 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
         let mut stop = seg_len;
         let mut upcoming: Option<RoundedCorner> = None;
         if rounded && i + 1 < segs.len() {
-            upcoming = rounded_corner(points[i], points[i + 1], points[i + 2], edge.corner_radius);
+            upcoming = rounded_corner_from_ends(&points, i + 1, edge.corner_radius, pulled);
             if let Some(corner) = upcoming {
                 stop = seg_len - corner.cut_len;
             }
@@ -694,6 +705,7 @@ mod tests {
             arrow_type_end: "none".to_owned(),
             style: String::new(),
             corner_radius: crate::unified::path::ROUNDED_RADIUS,
+            from_ends: false,
         }
     }
 

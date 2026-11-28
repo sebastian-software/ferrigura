@@ -353,6 +353,65 @@ fn the_mode_sets_a_diagram_with_more_room() {
     assert!((roomy_height - (height + (44.0 - 24.0) + (32.0 - 24.0))).abs() < 1e-6);
 }
 
+/// How far each rounded corner of the drawn edges of an SVG starts before its bend: the distance
+/// from the end of the straight part to the control point of the quadratic, in document order.
+fn corner_cuts(svg: &str) -> Vec<f64> {
+    let mut cuts = Vec::new();
+    for (at, _) in svg.match_indices("<path d=\"M") {
+        let rest = &svg[at + "<path d=\"".len()..];
+        let tag = &rest[..rest.find('>').expect("the tag's end")];
+        if !tag.contains("data-edge=\"true\"") {
+            continue;
+        }
+        let d = &rest[..rest.find('"').expect("the path's end")];
+        let mut last = (0.0, 0.0);
+        let mut commands = d
+            .char_indices()
+            .filter(|(_, c)| c.is_ascii_alphabetic())
+            .peekable();
+        while let Some((start, command)) = commands.next() {
+            let end = commands.peek().map_or(d.len(), |(next, _)| *next);
+            let values: Vec<f64> = d[start + 1..end]
+                .split([',', ' '])
+                .filter(|part| !part.is_empty())
+                .map(|part| part.parse().expect("a number"))
+                .collect();
+            match command {
+                'M' | 'L' => last = (values[0], values[1]),
+                'Q' => {
+                    cuts.push((values[0] - last.0).hypot(values[1] - last.1));
+                    last = (values[2], values[3]);
+                }
+                _ => {}
+            }
+        }
+    }
+    cuts
+}
+
+#[test]
+fn every_corner_with_room_for_it_turns_on_the_full_radius() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // A right angle on the radius 10 starts 10 √2 before its bend and takes at most half of each
+    // part. The layers stand 30 from the turns of the edges between them, and a part next to a
+    // node counts from the node, before its arrowhead, so every corner of a fan has its radius,
+    // at the root and in a group, from top to bottom and from left to right.
+    let full = 10.0 * std::f64::consts::SQRT_2;
+    for text in [
+        "flowchart TD\n  A[Order] --> B[Pack] & C[Ship] & D[Bill]\n",
+        "flowchart LR\n  A[Order] --> B[Pack] & C[Ship] & D[Bill]\n  B --> E[Done]\n  C --> E\n",
+        "flowchart TD\n  subgraph Work\n    A[Order] --> B[Pack] & C[Ship]\n  end\n",
+        "stateDiagram-v2\n  Idle --> Running\n  Idle --> Paused\n  Idle --> Stopped\n",
+    ] {
+        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let cuts = corner_cuts(&designed);
+        assert!(!cuts.is_empty(), "{text}");
+        for cut in cuts {
+            assert!((cut - full).abs() < 1e-6, "{text}: a corner of {cut}");
+        }
+    }
+}
+
 #[test]
 fn the_arrowheads_are_the_modes_own() {
     let renderer = Renderer::new(&Value::empty_object());
@@ -1424,10 +1483,11 @@ fn the_children_of_a_class_share_one_triangle() {
     let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
     let square = route(&svg, "id_Polygon_Square_2");
     let triangle = route(&svg, "id_Polygon_Triangle_3");
-    // Both start at one point of the parent's side, the triangle's tip, near its middle.
+    // Both start at one point of the parent's side, the triangle's tip, near its middle: the
+    // composition meets the middle, so the tip stands in the middle of its children's ends.
     assert_eq!(square[0], triangle[0]);
     let (x, _) = class_middle(&svg, "Polygon");
-    assert!((square[0].0 - x).abs() <= 10.0, "{square:?} {x}");
+    assert!((square[0].0 - x).abs() <= 20.5, "{square:?} {x}");
     let plain = renderer.render_with(CLASSES, &default(None)).unwrap();
     assert_ne!(
         route(&plain, "id_Polygon_Square_2")[0],
@@ -2259,4 +2319,40 @@ fn a_mindmap_keeps_a_layout_its_configuration_names() {
     assert!(mindmap_center(&svg, 2).0 > root.0);
     let elk = "---\nconfig:\n  layout: elk\n---\nmindmap\n  root\n    a\n    b\n";
     assert!(renderer.render_with(elk, &design(None)).is_ok());
+}
+
+#[test]
+fn siblings_stand_in_one_layer_whether_or_not_their_edges_carry_labels() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // ELK gives a label a layer of its own: the part whose relation carries a label stood a layer
+    // below the other.
+    let cars = "classDiagram\n  Car \"1\" *-- \"4\" Wheel\n  Car \"1\" *-- \"1\" Engine : has\n";
+    let designed = renderer.render_with(cars, &design(None)).unwrap();
+    let (wheel, engine) = (
+        class_middle(&designed, "Wheel"),
+        class_middle(&designed, "Engine"),
+    );
+    assert!((wheel.1 - engine.1).abs() < 1e-6, "{wheel:?} {engine:?}");
+    assert!(class_middle(&designed, "Car").1 < wheel.1);
+    let plain = renderer.render_with(cars, &default(None)).unwrap();
+    assert!(class_middle(&plain, "Wheel").1 < class_middle(&plain, "Engine").1);
+
+    // The children of a node, and the parents of a node alike.
+    let children = "flowchart TD\n  A[Order] --> B[Pack]\n  A -->|paid| C[Ship]\n";
+    let parents = "flowchart TD\n  A[Order] --> C[Ship]\n  B[Refund] -->|approved| C\n";
+    for (text, one, other) in [(children, "B", "C"), (parents, "A", "B")] {
+        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let (one, other) = (node_middle(&designed, one), node_middle(&designed, other));
+        assert!((one.1 - other.1).abs() < 1e-6, "{text}: {one:?} {other:?}");
+    }
+
+    // A child that leads to the other is no sibling: it stays in the layer after its parent.
+    let chain = "flowchart TD\n  A[Order] -->|paid| B[Ship]\n  A --> C[Pack]\n  C --> B\n";
+    let designed = renderer.render_with(chain, &design(None)).unwrap();
+    let unlabeled = renderer
+        .render_with(&chain.replace("|paid| ", ""), &design(None))
+        .unwrap();
+    let gap = |svg: &str| node_middle(svg, "C").1 - node_middle(svg, "A").1;
+    assert!((gap(&designed) - gap(&unlabeled)).abs() < 1e-6);
+    assert!(node_middle(&designed, "C").1 < node_middle(&designed, "B").1);
 }
