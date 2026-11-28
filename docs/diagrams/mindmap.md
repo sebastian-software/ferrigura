@@ -16,7 +16,7 @@ The [design mode](../decisions/0023-design-mode.md) (`design: true`, `--design`)
 
 The layout is deterministic ([0018](../decisions/0018-deterministic-output.md)): it reads the measured sizes and the edges, draws no random numbers and runs no engine. A `layout` in the configuration that names the tidy tree or ELK is the user's choice and stays; cose-bilkent, and every name that falls back to it, takes the mode's layout. The tidy tree is not its base: it alternates the root's children between the sides, so the order of the text zigzags, it packs subtrees by their contours, so the room between siblings varies, and it keeps the reference's quirks. The default and `compat` keep cose-bilkent (`ferrigura-cose`), which draws the reference's layout.
 
-## Design mode
+### The look
 
 The design mode draws a mindmap in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. Its look is paint: the colors come from the mode's theme variables (`cScale<i>`, `cScalePeer<i>`, `cScaleLabel<i>`, `git0`, `gitBranchLabel0`), laid under the user's `themeVariables`, which win key by key.
 
