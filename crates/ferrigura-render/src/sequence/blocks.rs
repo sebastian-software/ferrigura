@@ -17,6 +17,16 @@ use crate::common::Element;
 use crate::common::draw::{RectData, draw_rect, get_note_rect};
 use crate::svg::number;
 
+/// One side of a block's frame in the reference's drawing, or a section's divider.
+fn frame_line(x1: f64, y1: f64, x2: f64, y2: f64) -> Element {
+    Element::new("line")
+        .with("x1", number(x1))
+        .with("y1", number(y1))
+        .with("x2", number(x2))
+        .with("y2", number(y2))
+        .with("class", "loopLine")
+}
+
 /// What an item does with its block once its title is wrapped (`addLoopFn`).
 pub enum BlockAction {
     /// Opens a block with the title (`newLoop`); a `rect` has a fill and no title.
@@ -116,6 +126,9 @@ impl Renderer<'_> {
         label: &str,
         end_id: &str,
     ) -> Result<(), RenderError> {
+        if self.design.is_some() {
+            return self.draw_frame(block, label, end_id);
+        }
         let box_margin = self.conf.box_margin;
         let box_text_margin = self.conf.box_text_margin;
         let font = self.conf.message_font.clone();
@@ -127,43 +140,15 @@ impl Renderer<'_> {
         let mut group = Element::new("g")
             .with("data-et", "control-structure")
             .with("data-id", format!("i{end_id}"));
-        let frame = |x1: f64, y1: f64, x2: f64, y2: f64| {
-            Element::new("line")
-                .with("x1", number(x1))
-                .with("y1", number(y1))
-                .with("x2", number(x2))
-                .with("y2", number(y2))
-                .with("class", "loopLine")
-        };
-        let design = self.design.is_some();
-        let mut outline = None;
-        if design {
-            // One rounded outline, colored by the frame's role, drawn above the tag.
-            if let Some(role) = super::design::frame_role(label) {
-                group.set("data-role", role);
-            }
-            outline = Some(
-                Element::new("rect")
-                    .with("x", number(startx))
-                    .with("y", number(starty))
-                    .with("width", number(stopx - startx))
-                    .with("height", number(stopy - starty))
-                    .with("rx", number(super::design::FRAME_RADIUS))
-                    .with("class", "loopLine"),
-            );
-        } else {
-            group.push_child(frame(startx, starty, stopx, starty));
-            group.push_child(frame(stopx, starty, stopx, stopy));
-            group.push_child(frame(startx, stopy, stopx, stopy));
-            group.push_child(frame(startx, starty, startx, stopy));
-        }
-        let dash = if design {
-            "stroke-dasharray: 4, 4;"
-        } else {
-            "stroke-dasharray: 3, 3;"
-        };
+        group.push_child(frame_line(startx, starty, stopx, starty));
+        group.push_child(frame_line(stopx, starty, stopx, stopy));
+        group.push_child(frame_line(startx, stopy, stopx, stopy));
+        group.push_child(frame_line(startx, starty, startx, stopy));
         for section in &block.sections {
-            group.push_child(frame(startx, section.y, stopx, section.y).with("style", dash));
+            group.push_child(
+                frame_line(startx, section.y, stopx, section.y)
+                    .with("style", "stroke-dasharray: 3, 3;"),
+            );
         }
 
         // The label box: a polygon with its corner cut, then the label in it.
@@ -192,37 +177,11 @@ impl Renderer<'_> {
             number(label_x),
             number(label_y + label_height),
         );
-        if design {
-            // The tag fills the frame's corner, so its outer edges are the frame's, and turns
-            // softly at its own inner corner.
-            let radius = super::design::FRAME_RADIUS;
-            let inner = 4.0;
-            let (right, bottom) = (label_x + label_width, label_y + label_height);
-            let d = format!(
-                "M {},{} V {} A {r},{r} 0 0 1 {},{} H {} V {} A {inner},{inner} 0 0 1 {},{} Z",
-                number(label_x),
-                number(bottom),
-                number(label_y + radius),
-                number(label_x + radius),
-                number(label_y),
-                number(right),
-                number(bottom - inner),
-                number(right - inner),
-                number(bottom),
-                r = number(radius),
-                inner = number(inner),
-            );
-            group.push_child(Element::new("path").with("d", d).with("class", "labelBox"));
-        } else {
-            group.push_child(
-                Element::new("polygon")
-                    .with("points", points)
-                    .with("class", "labelBox"),
-            );
-        }
-        if let Some(outline) = outline {
-            group.push_child(outline);
-        }
+        group.push_child(
+            Element::new("polygon")
+                .with("points", points)
+                .with("class", "labelBox"),
+        );
         let label_text = TextData {
             text: label,
             x: label_x,
@@ -289,6 +248,130 @@ impl Renderer<'_> {
         Ok(())
     }
 
+    /// A block's frame in the design mode (`docs/diagrams/sequence.md#design-mode`): one rounded
+    /// outline colored by the frame's role, sections divided by a dashed hairline, the keyword in a
+    /// tag that fills the frame's corner, and the title beside the tag, at the left, in the tag's
+    /// row. A section's title starts below its divider at the title's column. The titles interrupt
+    /// the lifelines behind them.
+    fn draw_frame(
+        &mut self,
+        block: &mut Block,
+        label: &str,
+        end_id: &str,
+    ) -> Result<(), RenderError> {
+        use super::design::{FRAME_RADIUS, Gap, TAG_HEIGHT, TAG_SIDE_ROOM, TITLE_GAP};
+        let font = self.conf.message_font.clone();
+        let startx = block.extent.startx.unwrap_or(f64::NAN);
+        let stopx = block.extent.stopx.unwrap_or(f64::NAN);
+        let starty = block.extent.starty.unwrap_or(f64::NAN);
+        let stopy = block.extent.stopy.unwrap_or(f64::NAN);
+
+        let mut group = Element::new("g")
+            .with("data-et", "control-structure")
+            .with("data-id", format!("i{end_id}"));
+        if let Some(role) = super::design::frame_role(label) {
+            group.set("data-role", role);
+        }
+        for section in &block.sections {
+            group.push_child(
+                frame_line(startx, section.y, stopx, section.y)
+                    .with("style", "stroke-dasharray: 4, 4;"),
+            );
+        }
+
+        // The tag fills the frame's corner, so its outer edges are the frame's, and turns softly
+        // at its own inner corner. The outline is drawn over it.
+        let keyword = super::text::dimensions(&mut self.memo, label, &font)?;
+        let tag_width = keyword.width + 2.0 * TAG_SIDE_ROOM;
+        let (right, bottom) = (startx + tag_width, starty + TAG_HEIGHT);
+        let inner = 4.0;
+        let d = format!(
+            "M {},{} V {} A {r},{r} 0 0 1 {},{} H {} V {} A {inner},{inner} 0 0 1 {},{} Z",
+            number(startx),
+            number(bottom),
+            number(starty + FRAME_RADIUS),
+            number(startx + FRAME_RADIUS),
+            number(starty),
+            number(right),
+            number(bottom - inner),
+            number(right - inner),
+            number(bottom),
+            r = number(FRAME_RADIUS),
+            inner = number(inner),
+        );
+        group.push_child(Element::new("path").with("d", d).with("class", "labelBox"));
+        group.push_child(
+            Element::new("rect")
+                .with("x", number(startx))
+                .with("y", number(starty))
+                .with("width", number(stopx - startx))
+                .with("height", number(stopy - starty))
+                .with("rx", number(FRAME_RADIUS))
+                .with("class", "loopLine"),
+        );
+
+        // The texts stand on the middle of the tag's row: a line's baseline is a little below
+        // the middle, at the font's x-height.
+        let baseline = |row_top: f64| row_top + TAG_HEIGHT / 2.0 + 0.35 * font.size;
+        let mut texts: Vec<(String, f64, f64, &'static str, &'static str)> = vec![(
+            label.to_owned(),
+            startx + tag_width / 2.0,
+            baseline(starty),
+            "middle",
+            "labelText",
+        )];
+        let column = right + TITLE_GAP;
+        let title = block.title.clone().unwrap_or_default();
+        if !title.is_empty() {
+            texts.push((title, column, baseline(starty), "start", "loopText"));
+        }
+        for (index, section_title) in block.section_titles.clone().iter().enumerate() {
+            let Some(section) = block.sections.get(index) else {
+                continue;
+            };
+            if !section_title.is_empty() {
+                texts.push((
+                    section_title.clone(),
+                    column,
+                    baseline(section.y),
+                    "start",
+                    "sectionTitle",
+                ));
+            }
+        }
+        let line = super::text::line_height(&font)?;
+        for (index, (content, x, y, anchor, class)) in texts.into_iter().enumerate() {
+            let data = TextData {
+                text: &content,
+                x,
+                y,
+                width: None,
+                anchor: Some(anchor),
+                valign: None,
+                text_margin: Some(0.0),
+                dy: None,
+                class,
+                tspan: class == "loopText",
+                font: &font,
+            };
+            for element in draw_text(&data)? {
+                group.push_child(element);
+            }
+            if index > 0 {
+                let size = super::text::dimensions(&mut self.memo, &content, &font)?;
+                self.gaps.push(Gap::around(
+                    x,
+                    y - 0.35 * font.size - line / 2.0,
+                    size.width,
+                    size.height,
+                ));
+            }
+        }
+        block.height = js_round(stopy - starty);
+        self.append(group);
+        Ok(())
+    }
+
     /// `adjustLoopHeightForWrap` (`:916-934`): a block's title is wrapped to the block's width,
     /// the row is moved down by the pre-margin, the title's height is reserved, and the block is
     /// opened or a section is added with the title.
@@ -311,9 +394,15 @@ impl Renderer<'_> {
             && let Some(&loop_width) = loop_widths.get(&id)
         {
             let font = self.conf.message_font.clone();
+            // The design mode's title stands beside its tag, without the reference's brackets.
+            let bracketed = if self.design.is_some() {
+                text.clone()
+            } else {
+                format!("[{text}]")
+            };
             let wrapped = super::text::wrap(
                 &mut self.memo,
-                &format!("[{text}]"),
+                &bracketed,
                 loop_width - 2.0 * padding,
                 &font,
             )?;

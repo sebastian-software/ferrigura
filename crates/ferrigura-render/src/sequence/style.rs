@@ -41,19 +41,13 @@ fn color_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 16] {
 }
 
 /// Appends the declarations of the tokens of one set of variables, as custom properties. In the
-/// design mode the page's background, which the halo of a label takes, and the mode's own
-/// properties (the role colors and the flood of the shadow) follow.
+/// design mode the mode's own properties (the role colors and the flood of the shadow) follow.
 fn write_declarations(css: &mut String, tokens: &ThemeTokens, design: Option<Tone>) {
     for (name, token) in color_tokens(tokens) {
         let value = token.text().unwrap_or_else(|| "none".to_owned());
         let _ = write!(css, "--{name}:{value};");
     }
     if let Some(tone) = design {
-        let value = tokens
-            .background
-            .text()
-            .unwrap_or_else(|| "none".to_owned());
-        let _ = write!(css, "--background:{value};");
         css.push_str(crate::design::declarations(tone));
     }
 }
@@ -142,15 +136,14 @@ pub fn style_sheet(
 }
 
 /// The rules of the design mode (`docs/diagrams/sequence.md#design-mode`), after the reference's,
-/// which they override: hairline outlines, square flat notes, quiet frames, a halo that lets a
-/// label interrupt the lifelines behind it, and the colors of the roles.
+/// which they override: hairline outlines, square flat notes, quiet frames, and the colors of the
+/// roles.
 fn write_design_rules(css: &mut String, id: &str) {
     let _ = write!(
         css,
         "{id} .actor{{stroke-width:{node};}}\
 {id} .actor-line{{stroke-width:1px;}}\
 {id} .messageLine0,{id} .messageLine1{{stroke-width:{edge};}}\
-{id} .messageText,{id} .loopText,{id} .loopText>tspan,{id} .sectionTitle,{id} .sectionTitle>tspan{{stroke:var(--background);stroke-width:6px;stroke-linejoin:round;paint-order:stroke;}}\
 {id} .loopLine{{stroke-width:{node};stroke-dasharray:none;stroke:var(--labelBoxBorderColor);fill:none;}}\
 {id} .labelBox{{stroke:none;fill:var(--labelBoxBkgColor);filter:none;}}\
 {id} .note{{stroke-width:1px;filter:none;}}\
@@ -158,6 +151,7 @@ fn write_design_rules(css: &mut String, id: &str) {
 {id} g rect.rect{{filter:none;stroke:var(--labelBoxBorderColor);stroke-width:1px;}}\
 {id} [id$=\"-crosshead\"] path{{stroke-width:{edge};stroke-linecap:round;}}\
 {id} [id$=\"-sequencenumber\"]{{fill:var(--signalColor);}}\
+{id} .centralConnection circle{{fill:var(--signalColor);stroke:none;}}\
 {id} .actor-man line,{id} .actor-man circle,{id} .actor-man path{{stroke:var(--actorBorder);stroke-width:{node};stroke-linecap:round;}}\
 {id} .actor-man circle{{fill:var(--actorBkg);}}\
 {id} [data-role=\"actor\"] line,{id} [data-role=\"actor\"] circle{{stroke:var(--terminalBorder);stroke-width:{edge};}}\

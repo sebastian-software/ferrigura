@@ -74,6 +74,8 @@ pub(super) struct Renderer<'a> {
     pub(super) actor_cnt: i64,
     /// Whether the sequence numbers are shown (`db.sequenceNumbersEnabled`).
     pub(super) sequence_numbers: bool,
+    /// The boxes of the labels that interrupt the lifelines in the design mode.
+    pub(super) gaps: Vec<design::Gap>,
     /// The children of the root that `lower()` moved to the front, in the order they were moved.
     front: Vec<Element>,
     /// The other children of the root, in order.
@@ -105,7 +107,7 @@ impl<'a> Renderer<'a> {
     ) -> Result<Self, RenderError> {
         let mut conf = Conf::new(input.section, input.globals);
         if design.is_some() {
-            design::measures(&mut conf, input.section);
+            design::measures(&mut conf);
         }
         for font in [
             &mut conf.actor_font,
@@ -121,6 +123,7 @@ impl<'a> Renderer<'a> {
             conf,
             compact_participants: false,
             design,
+            gaps: Vec::new(),
             memo: TextMemo::new(),
             layout: Layout::new(input.diagram),
             bounds: Bounds::default(),
@@ -358,6 +361,7 @@ impl<'a> Renderer<'a> {
             self.draw_rect_background(block);
         }
         self.fix_lifeline_heights();
+        self.mask_lifelines();
 
         for box_index in self.bounds.boxes.clone() {
             let (x, y, width) = {
@@ -533,6 +537,51 @@ impl<'a> Renderer<'a> {
                 }
             });
         }
+    }
+
+    /// The design mode's gaps in the lifelines: a mask, white with a black box for each label, on
+    /// every lifeline, so that a label interrupts a lifeline that crosses it whatever stands behind
+    /// it (`docs/diagrams/sequence.md#design-mode`).
+    fn mask_lifelines(&mut self) {
+        if self.design.is_none() || self.gaps.is_empty() {
+            return;
+        }
+        let id = format!("{}-label-gaps", self.id);
+        let mut mask = Element::new("mask")
+            .with("id", id.clone())
+            .with("maskUnits", "userSpaceOnUse")
+            .with("x", "-100000")
+            .with("y", "-100000")
+            .with("width", "200000")
+            .with("height", "200000")
+            .child(
+                Element::new("rect")
+                    .with("x", "-100000")
+                    .with("y", "-100000")
+                    .with("width", "200000")
+                    .with("height", "200000")
+                    .with("fill", "white"),
+            );
+        for gap in &self.gaps {
+            mask.push_child(
+                Element::new("rect")
+                    .with("x", number(gap.x))
+                    .with("y", number(gap.y))
+                    .with("width", number(gap.width))
+                    .with("height", number(gap.height))
+                    .with("rx", "4")
+                    .with("fill", "black"),
+            );
+        }
+        let reference = format!("url(#{id})");
+        for element in self.front.iter_mut().chain(self.back.iter_mut()) {
+            element.visit_mut(&mut |node| {
+                if node.get("data-et") == Some("life-line") {
+                    node.set("mask", reference.clone());
+                }
+            });
+        }
+        self.append(Element::new("defs").child(mask));
     }
 
     /// The root element: its size and view box, its accessibility texts, its style, the empty group

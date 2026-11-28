@@ -4,23 +4,35 @@ A sequence diagram draws participants as columns and the messages between them a
 
 ## Design mode
 
-The design mode draws a sequence diagram in ferrigura's own look ([0023](../decisions/0023-design-mode.md)): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. It is drawn by the renderer of the default rendering, with the compact participant boxes; the mode changes its paint and its measures (`crates/ferrigura-render/src/sequence/design.rs`).
+The design mode draws a sequence diagram in ferrigura's own look ([0023](../decisions/0023-design-mode.md)): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. It is drawn by the renderer of the default rendering, with its compact participant boxes and the neo geometry whatever `look` says; the mode changes its paint and its measures (`crates/ferrigura-render/src/sequence/design.rs`).
 
-| Element                 | Design mode                                                                                                                                    |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Participant             | `actorBkg` box with a 1.25 px `actorBorder` outline, corner radius 8, the soft shadow; the name semibold (600) unless `actorFontWeight` is set |
-| Actor                   | Role `actor`: the figure's lines in the accent of the flowchart's `terminal`, 1.5 px                                                           |
-| Database                | Role `data`: the cylinder in the `data` tint and outline, as the flowchart's cylinder                                                          |
-| Other glyphs            | Neutral: `actorBorder` lines on `actorBkg`                                                                                                     |
-| Lifeline                | 1 px in `actorLineColor`                                                                                                                       |
-| Message                 | 1.5 px in `signalColor`, dashed for a dotted arrow; the mode's slim, notched arrowhead with its tip where the reference's is                   |
-| Message text            | `signalTextColor`, with a halo of the background, so that a lifeline behind it stops at the text                                               |
-| Frame                   | One rounded outline (radius 8, 1.25 px, `labelBoxBorderColor`); sections divided by a dashed hairline; the keyword in a tag in the corner      |
-| `alt`, `opt`            | Role `decision`: the outline, the tag and its keyword in the decision's colors                                                                 |
-| Activation              | `activationBkgColor` bar with a 1.25 px `activationBorderColor` outline, corner radius 2                                                       |
-| Note                    | Flat paper: `noteBkgColor`, a 1 px `noteBorderColor` outline, square corners, no shadow                                                        |
-| Box around participants | The user's color as a tint at 16 % opacity, a hairline outline, corner radius 12                                                               |
-| `rect` background       | The user's color, corner radius 8, no shadow                                                                                                   |
+| Element                 | Design mode                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Participant             | `actorBkg` box with a 1.25 px `actorBorder` outline, corner radius 8, the soft shadow; the name at weight 600 unless `actorFontWeight` sets another |
+| Actor                   | Role `actor`: the figure's lines in the accent of the flowchart's `terminal`, 1.5 px                                                                |
+| Database                | Role `data`: the cylinder in the `data` tint and outline, as the flowchart's cylinder                                                               |
+| Other glyphs            | Neutral: `actorBorder` lines on `actorBkg`                                                                                                          |
+| Lifeline                | 1 px in `actorLineColor`                                                                                                                            |
+| Message                 | 1.5 px in `signalColor`, dashed for a dotted arrow; the mode's slim, notched arrowhead with its tip where the reference's is                        |
+| Message text            | `signalTextColor`; a lifeline behind it stops at its box                                                                                            |
+| Frame                   | One rounded outline (radius 8, 1.25 px, `labelBoxBorderColor`); sections divided by a dashed hairline; the keyword in a tag in the corner           |
+| `alt`, `opt`            | Role `decision`: the outline, the tag and its keyword in the decision's colors                                                                      |
+| Activation              | `activationBkgColor` bar with a 1.25 px `activationBorderColor` outline, corner radius 2                                                            |
+| Note                    | Flat paper: `noteBkgColor`, a 1 px `noteBorderColor` outline, square corners, no shadow                                                             |
+| Box around participants | The user's color as a tint at 16 % opacity, a hairline outline, corner radius 12                                                                    |
+| `rect` background       | The user's color, corner radius 8, no shadow                                                                                                        |
+
+### Layout
+
+The mode keeps the renderer's single pass and changes what it is given, so that the columns and rows keep an even, calm rhythm and widen only where a label needs room. The reference sets every column at least 150 wide with 50 between, so short names stand far apart, and its row of participants is as high as a glyph's band even where no participant has a glyph.
+
+- **A participant's box fits its name**: 16 at the sides, 12 above and below, at least 96 wide. A queue's column is 24 wider for the end of its cylinder; a wrapped name keeps the 150 of the configuration's `width`.
+- **The row of participants is as high as its tallest participant needs**: a box, or a glyph's band (the glyph's 44, 6, the name and 6) where an actor, a boundary, a control, an entity, a database, a queue or a collections stands in it. The boxes stand on the row's bottom, where the lifelines start; at the bottom of the diagram they hang from the lifelines' end.
+- **The columns share one pitch**: the widest participant's box and 40, at least 150 between two lifelines. Two neighbors stand farther apart only where a message or a note between them needs it: the label's width, 10 at each side, and 40, so that 30 are left to each lifeline. The 40 is the configuration's `actorMargin` in the mode; a configured value other than the reference's 50 stays.
+- **The rows keep the reference's rhythm**, which is already even: a message of one line takes a row of 50, each line more its line height; a note its text and 10 around it, 10 below the row before; a frame opens 10 below the row before with a row of 35 for its tag and title, a section 15 below its last message with a row of 30, and a frame closes 10 below its last message, so that nested frames step in by 10.
+- **A frame's title stands beside its tag**: the tag is the keyword with 10 at each side, 26 high, in the frame's corner; the title starts 10 after it, its middle on the tag's middle, without the reference's brackets, and a section's title starts below its divider at the same column. The reference centers the titles over the frame, where the lifelines cross them.
+- **A label interrupts the lifelines behind it.** The lifelines are masked in the box of every message's text and frame title, 4 around the text with a corner radius of 4, so the label needs no background and reads on a box's tint or a `rect`'s color.
+- **Activations keep the reference's measures**: 10 wide, a nested one 5 to the right of the one it is in, from the message that opens it to the one that closes it.
 
 The mode lays values for the sequence's own tokens under the user's `themeVariables`, in the light and the dark set: `actorBkg`, `actorBorder`, `actorTextColor`, `actorLineColor`, `signalColor`, `signalTextColor`, `labelBoxBkgColor`, `labelBoxBorderColor`, `labelTextColor`, `loopTextColor`, `activationBkgColor`, `activationBorderColor` and `sequenceNumberColor`; `noteBkgColor`, `noteBorderColor` and `noteTextColor` are the state diagram's. A user's value for any of them wins. The palette themes' colors per participant are not used. Both sets are held to the contrast ratios of the other types.
 

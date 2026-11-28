@@ -49,16 +49,20 @@ A class diagram goes through the same pipeline and engine, so the measures, the 
 - **A cardinality stands beside its end**, 4 off the outline, beside the marker and 4 clear of it, on the side away from the middle of the class's side, so that the cardinalities of two edges into one side stand outside the pair. Where that place is taken it takes the other side of its line, then steps outward along its segment. The reference's passes for the cardinalities do not run in the mode.
 - **A namespace is the flowchart's group**, and a note is the state diagram's flat paper.
 
-A sequence diagram has no layout engine: the renderer's own pass places its parts, as the reference's does. The mode gives it the look of the others ([sequence diagram](../diagrams/sequence.md#design-mode)):
+A sequence diagram has no layout engine: the renderer's own pass places its parts, as the reference's does. The mode gives it the look of the others and its own measures ([sequence diagram](../diagrams/sequence.md#design-mode)):
 
 - **Colors are the sequence's own theme variables**, laid under the user's as the others are: `actorBkg`, `actorBorder`, `actorTextColor`, `actorLineColor`, `signalColor`, `signalTextColor`, `labelBoxBkgColor`, `labelBoxBorderColor`, `labelTextColor`, `loopTextColor`, `activationBkgColor`, `activationBorderColor` and `sequenceNumberColor`, in the light and the dark set and held to the same contrast ratios. The palette themes' colors per participant are not used: a color per column says nothing.
 - **Color follows a part's role.** An `actor` is a person: its figure takes the accent of the flowchart's `terminal` in its line. A `database` is a store: its cylinder takes the `data` tint and outline. A frame that chooses, `alt` and `opt`, takes the `decision` outline and tag. An activation is a quiet cool bar. Other participants and frames are neutral.
 - **Outlines are hairlines.** A participant box, a frame, an activation and a note have a 1.25 px outline, a message 1.5 px, a lifeline 1 px. A participant box has a corner radius of 8 and the soft shadow, a frame 8, a box around participants and a `rect` background 12, an activation 2.
 - **A note is flat paper**, as the state diagram's: square corners, a hairline, no shadow.
 - **A frame is one rounded outline.** Its sections are divided by a dashed hairline. Its keyword stands in a tag that fills the frame's corner, without the reference's cut corner and shadow.
-- **A label interrupts the lines behind it.** A message's text and a frame's titles carry a halo of the background, so a lifeline that crosses them stops at the text.
-- **A participant's name is semibold**, measured and drawn at 600, unless the configuration gives `actorFontWeight`.
+- **A label interrupts the lifelines behind it.** The lifelines are masked in the box of each message's text and frame title, 4 around the text, as an edge is masked under its label, so the label needs no background on a box's tint or a `rect`'s color.
+- **A participant's name is semibold**, measured and drawn at 600, unless the configuration gives another `actorFontWeight`.
 - **The arrowhead** is the flowchart's, slim and notched, with its tip where the reference's is. A box around participants keeps the user's color as a tint at 16 % opacity, so that the messages read on it.
+- **A participant's box fits its name**, with 16 at its sides and 12 above and below, at least 96 wide, where the reference's columns are at least 150 wide. The row of participants is as high as its tallest participant needs, so a diagram of boxes has no glyph's band above them. The mode draws the neo geometry whatever `look` says.
+- **The columns share one pitch**, the widest box and 40, at least 150, and two neighbors stand farther apart only where a label between them needs it: its width, the wrap padding and 40, so 30 are left to each lifeline. The reference sets 50 for both (`actorMargin`); a configured value other than that stays.
+- **The rows keep the reference's rhythm**, which is already even (50 for a message of one line, 35 for a frame's title row, 30 for a section's), and activations keep its measures (10 wide, a nested one 5 to the right).
+- **A frame's title stands beside its tag**, 10 after it, its middle on the tag's middle, without brackets; a section's title at the same column below its divider. The reference centers them over the frame, where the lifelines cross them.
 
 `design` and `compat` exclude each other; the combination returns an option error. The design mode builds on the optimized default and is free to depart from the reference's geometry.
 
@@ -80,8 +84,8 @@ Weighed and not chosen: changing the default look, which breaks the comparison w
 
 ## Consequences
 
-- The reference has no counterpart to this mode, and its geometry is not compared with the reference's. The engine that lays it out is: the default and the compatibility rendering run the same code against the reference. The mode's own tests cover the flat decision and the side exits of its branches, the place of a note beside its state, the place of a self-loop and its label, the room a node gives its edges, the group's padding and title, the class box's compartments, the direction of a class relation, the shared triangle, the place of a cardinality, the roles, both color schemes, the contrast ratios and the precedence of the user's styles.
-- A diagram in the mode is larger than in the default rendering.
+- The reference has no counterpart to this mode, and its geometry is not compared with the reference's. The engine that lays it out is: the default and the compatibility rendering run the same code against the reference. The mode's own tests cover the flat decision and the side exits of its branches, the place of a note beside its state, the place of a self-loop and its label, the room a node gives its edges, the group's padding and title, the class box's compartments, the direction of a class relation, the shared triangle, the place of a cardinality, a sequence's participant boxes, pitch, frame titles and gaps in the lifelines, the roles, both color schemes, the contrast ratios and the precedence of the user's styles.
+- A graph in the mode is larger than in the default rendering; a sequence diagram with short names is narrower, as its columns fit their boxes.
 - A diagram type gains the mode in its style sheet and shapes; the option error lists nothing and names no types, so adding a type changes no message.
 - Roles are read from the shape and the diagram type alone, a class's from its first annotation, a sequence participant's from its type and a frame's from its keyword. A diagram that uses one of those shapes for every node is colored throughout.
 
