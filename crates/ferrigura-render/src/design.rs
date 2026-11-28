@@ -405,6 +405,13 @@ mod tests {
             }
             let ratio = contrast(of("clusterBorder"), of("background"));
             assert!(ratio >= 3.0, "{tone:?}: clusterBorder is {ratio:.2}");
+            // The divider under an entity's or a class's name is a line on the box's ground; an
+            // ER relation's marker stands on the page, its ring filled with the page's ground.
+            let ratio = contrast(of("nodeBorder"), of("mainBkg"));
+            assert!(
+                ratio >= 3.0,
+                "{tone:?}: nodeBorder on mainBkg is {ratio:.2}"
+            );
         }
     }
 

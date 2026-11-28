@@ -525,6 +525,101 @@ pub fn coloured_marker_for(
     definition_xml(&id, diagram_type, definition, Some(colour))
 }
 
+/// The cardinality markers of an ER diagram in the design mode (`docs/decisions/0023-design-mode.md`),
+/// under the ids of [`er_markers`], so that the edges keep their references. An ER relation meets
+/// the entity's outline with no offset, so each marker is drawn in user space back along its line
+/// from the outline: a bar for one, a ring for zero, and a crow's foot for many, whose three prongs
+/// meet the outline, the middle one on the line, so that the foot is whole on a dashed line. The style
+/// sheet gives the bars, the foot and the ring the edge's weight and color, and fills the ring with
+/// the page's ground, so that the line does not run through it.
+#[must_use]
+pub fn design_er_markers(svg_id: &str) -> String {
+    let mut out = String::new();
+    for kind in [
+        Kind::OnlyOne,
+        Kind::ZeroOrOne,
+        Kind::OneOrMore,
+        Kind::ZeroOrMore,
+    ] {
+        for start in [true, false] {
+            // A start marker's x axis points away from its entity, an end marker's into it.
+            let sign = if start { 1.0 } else { -1.0 };
+            let x = |distance: f64| number(sign * distance);
+            let bar = |distance: f64| {
+                format!(
+                    "M {x},-{half} L {x},{half}",
+                    x = x(distance),
+                    half = number(DESIGN_ER_BAR_HALF),
+                )
+            };
+            let foot = format!(
+                "M {apex},0 L {outline},-{half} M {apex},0 L {outline},0 M {apex},0 L {outline},{half}",
+                apex = x(DESIGN_ER_FOOT_LENGTH),
+                outline = x(0.0),
+                half = number(DESIGN_ER_FOOT_HALF),
+            );
+            let ring = |distance: f64| {
+                format!(
+                    "<circle class=\"design-ring\" cx=\"{}\" cy=\"0\" r=\"{}\"/>",
+                    x(distance + DESIGN_ER_RING_RADIUS),
+                    number(DESIGN_ER_RING_RADIUS),
+                )
+            };
+            let line = |d: String| format!("<path class=\"design-line\" d=\"{d}\"/>");
+            let children = match kind {
+                Kind::OnlyOne => line(format!(
+                    "{} {}",
+                    bar(DESIGN_ER_NEAR),
+                    bar(DESIGN_ER_NEAR + DESIGN_ER_BAR_GAP)
+                )),
+                Kind::ZeroOrOne => format!(
+                    "{}{}",
+                    line(bar(DESIGN_ER_NEAR)),
+                    ring(DESIGN_ER_NEAR + DESIGN_ER_BAR_GAP)
+                ),
+                Kind::OneOrMore => line(format!(
+                    "{foot} {}",
+                    bar(DESIGN_ER_FOOT_LENGTH + DESIGN_ER_BAR_GAP)
+                )),
+                _ => format!(
+                    "{}{}",
+                    line(foot.clone()),
+                    ring(DESIGN_ER_FOOT_LENGTH + DESIGN_ER_RING_GAP)
+                ),
+            };
+            let position = if start { "Start" } else { "End" };
+            out.push_str(&format!(
+                "<defs><marker id=\"{}\" class=\"marker {name} {ER}\" viewBox=\"-32 -10 64 20\" refX=\"0\" refY=\"0\" markerWidth=\"64\" markerHeight=\"20\" orient=\"auto\" markerUnits=\"userSpaceOnUse\">{children}</marker></defs>",
+                escape(&format!("{svg_id}_{ER}-{}{position}", kind.name())),
+                name = kind.name(),
+            ));
+        }
+    }
+    out
+}
+
+/// How far from the outline the nearest bar of a design mode's ER marker stands.
+const DESIGN_ER_NEAR: f64 = 8.0;
+
+/// The distance between two parts of a design mode's ER marker: two bars, a bar and a ring, or
+/// a crow's foot and its bar.
+const DESIGN_ER_BAR_GAP: f64 = 6.0;
+
+/// Half the length of a bar of a design mode's ER marker.
+const DESIGN_ER_BAR_HALF: f64 = 6.0;
+
+/// How far from the outline the prongs of a design mode's crow's foot meet on the line.
+const DESIGN_ER_FOOT_LENGTH: f64 = 12.0;
+
+/// How far from the line the outer prongs of a design mode's crow's foot meet the outline.
+const DESIGN_ER_FOOT_HALF: f64 = 7.0;
+
+/// The radius of the ring of a design mode's ER marker.
+const DESIGN_ER_RING_RADIUS: f64 = 4.5;
+
+/// The distance between the point of a crow's foot and its ring.
+const DESIGN_ER_RING_GAP: f64 = 3.0;
+
 /// One child of an ER marker: a path, or a circle with its center and radius.
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum ErChild {

@@ -172,7 +172,8 @@ fn read_er(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::
 
 fn render_er(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<String, RenderError> {
     let id = prepared.id.as_str();
-    let section = Section::of(&prepared.view.config);
+    let mut section = Section::of(&prepared.view.config);
+    section.design = prepared.design;
     er_render::render(&Context {
         fonts: prepared.fonts,
         diagram: &er::parse_prepared(&prepared.source)?,
