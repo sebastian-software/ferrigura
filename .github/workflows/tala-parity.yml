@@ -98,6 +98,15 @@ jobs:
             --ferrigura target/debug/examples/tala_pilot \
             --measured tools/tala-pilot/captures \
             --captures "$RUNNER_TEMP/tala-normalization.json"
+      - name: Compare ordinary edge label placement with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-edge-label" edge-label-placement
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-edge-label/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-edge-label-reference"
+          node tools/tala-pilot/check-edge-label-placement.mjs \
+            "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-edge-label-reference" \
+            tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Require a passing Rust counterpart for every upstream correctness test
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

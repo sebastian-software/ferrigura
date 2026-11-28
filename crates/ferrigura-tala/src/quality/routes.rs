@@ -57,7 +57,7 @@ fn equal_signs(a: f64, b: f64) -> bool {
     a > 0.0 && b > 0.0 || a == 0.0 && b == 0.0 || a < 0.0 && b < 0.0
 }
 
-pub(super) fn box_crosses_line(bounds: Box, first: Point, second: Point, padding: f64) -> bool {
+pub(crate) fn box_crosses_line(bounds: Box, first: Point, second: Point, padding: f64) -> bool {
     let left = bounds.x - padding;
     let right = bounds.right() + padding;
     let top = bounds.y - padding;

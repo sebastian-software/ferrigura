@@ -15,10 +15,15 @@ const modes = {
   ],
   'layout-graph': ['seedgraph.go', 'seedgraph-overlay.go', traceLayoutGraph],
   'route-output': ['patch.go', 'patch-overlay.go', traceRouteOutput],
+  'edge-label-placement': [
+    'internal/labeling/placement.go',
+    'edge-label-placement-overlay.go',
+    traceEdgeLabelPlacement,
+  ],
 };
 assert(
   sourceRoot && output && (Object.hasOwn(modes, mode) || mode === 'candidate-score'),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|candidate-score]'
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|edge-label-placement|candidate-score]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
@@ -111,6 +116,17 @@ function traceRouteOutput(source) {
     replaceOnce(source, imports, imports + '\t"encoding/json"\n\t"os"\n'),
     append,
     '\t\ttracePilotRouteOutput(edge, resultEdge)\n' + append
+  );
+}
+
+function traceEdgeLabelPlacement(source) {
+  const imports = '\t"fmt"\n';
+  const boundary = '\treturn best, guard.check()\n';
+  return replaceOnce(
+    replaceOnce(source, imports, imports + '\t"encoding/json"\n\t"os"\n'),
+    boundary,
+    '\ttracePilotEdgeLabel(edge, g, ancestors, nonAncestors, placedFakeNodes, sharedSegmentFakeNodes, alternatives, best)\n' +
+      boundary
   );
 }
 

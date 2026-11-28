@@ -235,6 +235,24 @@ node tools/tala-pilot/check-ovg-seed.mjs \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
 
+### Ordinary edge label placement
+
+The trace passes already routed geometry, node obstacles, and previously
+placed label boxes to the native edge label search. It compares each chosen
+anchor and fraction, label geometry, exact conflicts, score, and every
+alternative collected during a repair search.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-labels edge-label-placement
+GOFLAGS=-overlay=/tmp/ferrigura-tala-labels/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-labels
+node tools/tala-pilot/check-edge-label-placement.mjs \
+  /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-traced-labels \
+  tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Pass `--write-fixture` to refresh the checked-in Library repair search.
+
 ### Completed candidate scoring and seed selection
 
 The candidate-score trace observes each completed ordinary Go attempt before

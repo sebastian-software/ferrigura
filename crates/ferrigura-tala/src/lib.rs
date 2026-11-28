@@ -16,6 +16,8 @@ mod hierarchy;
 #[doc(hidden)]
 pub mod initialize;
 #[doc(hidden)]
+pub mod labeling;
+#[doc(hidden)]
 pub mod layout_graph;
 #[doc(hidden)]
 pub mod normalize;

@@ -55,6 +55,23 @@ impl GoRand {
         u32::try_from(self.int63() >> 31).expect("top 32 bits of a 63-bit value")
     }
 
+    #[cfg(test)]
+    pub(crate) fn int31n(&mut self, upper: usize) -> usize {
+        const INT31_RANGE: u32 = 1 << 31;
+        let upper = u32::try_from(upper).expect("31-bit bound");
+        assert!((1..INT31_RANGE).contains(&upper));
+        let max = INT31_RANGE - 1 - INT31_RANGE % upper;
+        loop {
+            let draw = self.uint32() >> 1;
+            if upper.is_power_of_two() {
+                return (draw & (upper - 1)) as usize;
+            }
+            if draw <= max {
+                return (draw % upper) as usize;
+            }
+        }
+    }
+
     pub(crate) fn float64(&mut self) -> f64 {
         loop {
             // Converting to f64 first preserves Go's rounding. A value near

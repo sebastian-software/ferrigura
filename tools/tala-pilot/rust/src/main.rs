@@ -170,6 +170,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             let edges = serde_json::from_reader(input)?;
             serde_json::to_writer(output, &ferrigura_tala::route_output::project(edges)?)?;
         }
+        Some("--edge-label-placement") => {
+            let scenarios: Vec<_> = serde_json::from_reader(input)?;
+            let selections = scenarios
+                .iter()
+                .map(ferrigura_tala::labeling::select)
+                .collect::<Result<Vec<_>, _>>()?;
+            serde_json::to_writer(output, &selections)?;
+        }
         Some("--simplify") => {
             let RoutedCapture { graph, mut layout } = serde_json::from_reader(input)?;
             ferrigura_tala::simplify::simplify_routes(&graph, &mut layout)?;
@@ -192,7 +200,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "--first-sized-candidates, --first-sized-edge-costs, --first-sized-move, --first-sized-pass, ",
                 "--measured-first-sized-pass, --ovg-seed, ",
                 "--ovg-edge-points, --ovg-boundary-points, --ovg-tunnels, --ovg-links, ",
-                "--candidate-score, --route-output, --simplify, --balance, or no argument"
+                "--candidate-score, --route-output, --edge-label-placement, --simplify, --balance, or no argument"
             )
             .into());
         }

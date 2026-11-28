@@ -137,9 +137,41 @@
   "internal/routing/edge_simplify_safety_test.go#TestSimplifyChecksObstacleContainingNewBend": [
     "simplify::tests::rejects_an_obstacle_that_contains_the_new_bend"
   ],
+  "internal/routing/ovg_crossing_index_test.go#TestCrossingIndexMatchesRouteSegments": [
+    "ovg_seed::grid::tests::crossing_index_matches_route_segments"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestAddRoute": [
+    "ovg_seed::flat_search::history::tests::add_route_preserves_order_at_points_and_deduplicates_indexed_segments"
+  ],
   "internal/routing/ovg_test.go#TestTunnelKeepsExistingPortDirections": [
     "ovg_seed::tunnels::tests::tunnel_keeps_existing_port_directions"
   ],
+  "internal/routing/priority_queue_heap_test.go#TestPriorityQueueMatchesSwapHeap": [
+    "ovg_seed::priority_queue::tests::priority_queue_matches_swap_heap"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueue": [
+    "ovg_seed::priority_queue::tests::priority_queue"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueDecrease": [
+    "ovg_seed::priority_queue::tests::priority_queue_decrease"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueDecreasePreservesOrder": [
+    "ovg_seed::priority_queue::tests::priority_queue_decrease_preserves_order"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueEqualPriorityOrder": [
+    "ovg_seed::priority_queue::tests::priority_queue_equal_priority_order"
+  ],
+  "internal/routing/priority_queue_test.go#TestPriorityQueueGuardFailureDoesNotMutate": [
+    "ovg_seed::priority_queue::tests::priority_queue_guard_failure_does_not_mutate"
+  ],
+  "internal/routing/route_test.go#TestRouteOpposingColinear": [
+    "ovg_seed::flat_search::history::tests::route_opposing_colinear"
+  ],
+  "internal/routing/slingshot_test.go#TestFillPath": ["ovg_seed::slingshot::tests::fill_path"],
+  "internal/routing/slingshot_test.go#TestPreferLaunchingVertically": [
+    "ovg_seed::slingshot::tests::prefer_launching_vertically"
+  ],
+  "internal/routing/slingshot_test.go#TestSlingshot": ["ovg_seed::flat_search::tests::slingshot"],
   "internal/routing/tunnel_test.go#TestTunnelMultiple": [
     "ovg_seed::tunnels::tests::tunnel_multiple"
   ],
@@ -147,6 +179,9 @@
     "ovg_seed::tunnels::tests::tunnel_obscured"
   ],
   "internal/routing/tunnel_test.go#TestTunnelSimple": ["ovg_seed::tunnels::tests::tunnel_simple"],
+  "internal/routing/turns_test.go#TestIdealTurnAxesOwnsRouteTurnPolicy": [
+    "ovg_seed::search::tests::ideal_turn_axes_owns_route_turn_policy"
+  ],
   "result_test.go#TestScoreCompare": ["seed_selection::tests::score_compare"],
   "seed_selection_test.go#TestSeedSelectionAcrossCompletionOrders": [
     "seed_selection::tests::seed_selection_across_completion_orders"

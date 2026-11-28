@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use crate::Point;
 use crate::seed_selection::LayoutScore;
 
-mod labels;
-mod routes;
+pub(crate) mod labels;
+pub(crate) mod routes;
 
 const EVALUATION_LIMIT: u64 = 50_000_000;
 const MAX_NODES: usize = 10_000;
@@ -40,7 +40,7 @@ impl PositionedGraph {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Box {
     pub x: f64,
     pub y: f64,
@@ -49,15 +49,15 @@ pub struct Box {
 }
 
 impl Box {
-    const fn right(self) -> f64 {
+    pub(crate) const fn right(self) -> f64 {
         self.x + self.width
     }
 
-    const fn bottom(self) -> f64 {
+    pub(crate) const fn bottom(self) -> f64 {
         self.y + self.height
     }
 
-    fn valid(self) -> bool {
+    pub(crate) fn valid(self) -> bool {
         [
             self.x,
             self.y,

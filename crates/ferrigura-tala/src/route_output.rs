@@ -33,7 +33,7 @@ pub enum Anchor {
 }
 
 impl Anchor {
-    fn mirrored(self) -> Self {
+    pub(crate) fn mirrored(self) -> Self {
         match self {
             Self::InsideMiddleLeft => Self::InsideMiddleRight,
             Self::InsideMiddleRight => Self::InsideMiddleLeft,
