@@ -1,0 +1,342 @@
+[
+  {
+    "expected": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "control",
+          "x": 7,
+          "y": 7
+        },
+        {
+          "id": "antenna",
+          "x": 8,
+          "y": 7
+        },
+        {
+          "id": "quality",
+          "x": 6,
+          "y": 7
+        },
+        {
+          "id": "calendar",
+          "x": 7,
+          "y": 6
+        },
+        {
+          "id": "sampler",
+          "x": 9,
+          "y": 7
+        },
+        {
+          "id": "store",
+          "x": 7,
+          "y": 8
+        },
+        {
+          "id": "archive",
+          "x": 8,
+          "y": 8
+        }
+      ]
+    },
+    "graph": {
+      "direction": "LR",
+      "edges": [
+        {
+          "id": "e0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "control",
+          "sourceArrow": false,
+          "target": "antenna",
+          "targetArrow": true
+        },
+        {
+          "id": "e1",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "antenna",
+          "sourceArrow": false,
+          "target": "sampler",
+          "targetArrow": true
+        },
+        {
+          "id": "e2",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "sampler",
+          "sourceArrow": false,
+          "target": "store",
+          "targetArrow": true
+        },
+        {
+          "id": "e3",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "store",
+          "sourceArrow": false,
+          "target": "quality",
+          "targetArrow": true
+        },
+        {
+          "id": "e4",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "quality",
+          "sourceArrow": false,
+          "target": "control",
+          "targetArrow": true
+        },
+        {
+          "id": "e5",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "store",
+          "sourceArrow": false,
+          "target": "archive",
+          "targetArrow": true
+        },
+        {
+          "id": "e6",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "quality",
+          "sourceArrow": false,
+          "target": "archive",
+          "targetArrow": true
+        },
+        {
+          "id": "e7",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "control",
+          "sourceArrow": false,
+          "target": "calendar",
+          "targetArrow": true
+        },
+        {
+          "id": "e8",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "calendar",
+          "sourceArrow": false,
+          "target": "antenna",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "height": 68,
+          "id": "control",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 68,
+          "id": "antenna",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 68,
+          "id": "quality",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "calendar",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 41,
+          "id": "sampler",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 68,
+          "id": "store",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 68,
+          "id": "archive",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        }
+      ]
+    },
+    "name": "Cyclic observatory services"
+  },
+  {
+    "expected": {
+      "cellSize": 152,
+      "nodes": [
+        {
+          "id": "sensor",
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "panel",
+          "x": 3,
+          "y": 2
+        }
+      ]
+    },
+    "graph": {
+      "direction": "LR",
+      "edges": [
+        {
+          "id": "e0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "e1",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "e2",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "panel",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "height": 120,
+          "id": "sensor",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 120,
+          "id": "panel",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        }
+      ]
+    },
+    "name": "Workshop sensor with parallel arrows"
+  },
+  {
+    "expected": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "product/intake/portal",
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "product/intake/reserve",
+          "x": 3,
+          "y": 2
+        }
+      ]
+    },
+    "graph": {
+      "direction": "",
+      "edges": [
+        {
+          "id": "e0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "product/intake/portal",
+          "sourceArrow": false,
+          "target": "product/intake/reserve",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "height": 41,
+          "id": "product/intake/portal",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        },
+        {
+          "height": 68,
+          "id": "product/intake/reserve",
+          "isGroup": false,
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "shape": "rect",
+          "width": 152
+        }
+      ]
+    },
+    "name": "Library intake inside its preprocessed container"
+  }
+]

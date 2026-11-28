@@ -1,0 +1,346 @@
+{
+  "name": "Route ordering reversal needs crossing evaluation",
+  "graph": {
+    "nodes": [
+      {
+        "height": 120,
+        "id": "3688561154",
+        "isGroup": false,
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "shape": "squareRect",
+        "width": 214
+      },
+      {
+        "height": 143,
+        "id": "3621450678",
+        "isGroup": false,
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "shape": "squareRect",
+        "width": 149
+      },
+      {
+        "height": 90,
+        "id": "3604673059",
+        "isGroup": false,
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "shape": "squareRect",
+        "width": 176
+      },
+      {
+        "height": 60,
+        "id": "3638228297",
+        "isGroup": false,
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "shape": "squareRect",
+        "width": 264
+      },
+      {
+        "height": 120,
+        "id": "3705338773",
+        "isGroup": false,
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "shape": "squareRect",
+        "width": 171
+      },
+      {
+        "height": 89,
+        "id": "3587895440",
+        "isGroup": false,
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "shape": "squareRect",
+        "width": 281
+      },
+      {
+        "height": 137,
+        "id": "3655005916",
+        "isGroup": false,
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "shape": "squareRect",
+        "width": 221
+      }
+    ],
+    "edges": [
+      {
+        "id": "1553109785",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3688561154",
+        "sourceArrow": false,
+        "target": "3621450678",
+        "targetArrow": true
+      },
+      {
+        "id": "2560296733",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3688561154",
+        "sourceArrow": false,
+        "target": "3604673059",
+        "targetArrow": true
+      },
+      {
+        "id": "848630504",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3688561154",
+        "sourceArrow": false,
+        "target": "3705338773",
+        "targetArrow": true
+      },
+      {
+        "id": "1457936907",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3638228297",
+        "sourceArrow": false,
+        "target": "3621450678",
+        "targetArrow": true
+      },
+      {
+        "id": "2587960408",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3587895440",
+        "sourceArrow": false,
+        "target": "3638228297",
+        "targetArrow": true
+      },
+      {
+        "id": "2706014648",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3621450678",
+        "sourceArrow": false,
+        "target": "3688561154",
+        "targetArrow": true
+      },
+      {
+        "id": "2486426382",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3604673059",
+        "sourceArrow": false,
+        "target": "3587895440",
+        "targetArrow": true
+      },
+      {
+        "id": "1198708584",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3705338773",
+        "sourceArrow": false,
+        "target": "3688561154",
+        "targetArrow": true
+      },
+      {
+        "id": "2186940134",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3705338773",
+        "sourceArrow": false,
+        "target": "3638228297",
+        "targetArrow": true
+      },
+      {
+        "id": "251311323",
+        "label": "",
+        "labelHeight": 0,
+        "labelWidth": 0,
+        "source": "3655005916",
+        "sourceArrow": false,
+        "target": "3705338773",
+        "targetArrow": true
+      }
+    ]
+  },
+  "before": {
+    "nodes": [
+      { "height": 120, "id": "3688561154", "width": 214, "x": 1147, "y": 1287 },
+      { "height": 143, "id": "3621450678", "width": 149, "x": 1057, "y": 1084 },
+      { "height": 90, "id": "3604673059", "width": 176, "x": 1327, "y": 1498 },
+      { "height": 60, "id": "3638228297", "width": 264, "x": 1000, "y": 1437 },
+      { "height": 120, "id": "3705338773", "width": 171, "x": 1327, "y": 1107 },
+      { "height": 89, "id": "3587895440", "width": 281, "x": 1094, "y": 1678 },
+      { "height": 137, "id": "3655005916", "width": 221, "x": 1595, "y": 1000 }
+    ],
+    "edges": [
+      {
+        "id": "1553109785",
+        "points": [
+          { "x": 1177, "y": 1287 },
+          { "x": 1177, "y": 1227 }
+        ]
+      },
+      {
+        "id": "2560296733",
+        "points": [
+          { "x": 1361, "y": 1347 },
+          { "x": 1415, "y": 1347 },
+          { "x": 1415, "y": 1498 }
+        ]
+      },
+      {
+        "id": "848630504",
+        "points": [
+          { "x": 1361, "y": 1347 },
+          { "x": 1413, "y": 1347 },
+          { "x": 1413, "y": 1227 }
+        ]
+      },
+      {
+        "id": "1457936907",
+        "points": [
+          { "x": 1132, "y": 1437 },
+          { "x": 1132, "y": 1227 }
+        ]
+      },
+      {
+        "id": "2587960408",
+        "points": [
+          { "x": 1179, "y": 1678 },
+          { "x": 1179, "y": 1497 }
+        ]
+      },
+      {
+        "id": "2706014648",
+        "points": [
+          { "x": 1206, "y": 1156 },
+          { "x": 1254, "y": 1156 },
+          { "x": 1254, "y": 1287 }
+        ]
+      },
+      {
+        "id": "2486426382",
+        "points": [
+          { "x": 1351, "y": 1588 },
+          { "x": 1351, "y": 1678 }
+        ]
+      },
+      {
+        "id": "1198708584",
+        "points": [
+          { "x": 1327, "y": 1167 },
+          { "x": 1254, "y": 1167 },
+          { "x": 1254, "y": 1287 }
+        ]
+      },
+      {
+        "id": "2186940134",
+        "points": [
+          { "x": 1370, "y": 1227 },
+          { "x": 1370, "y": 1452 },
+          { "x": 1264, "y": 1452 }
+        ]
+      },
+      {
+        "id": "251311323",
+        "points": [
+          { "x": 1595, "y": 1069 },
+          { "x": 1413, "y": 1069 },
+          { "x": 1413, "y": 1107 }
+        ]
+      }
+    ]
+  },
+  "after": [
+    {
+      "id": "1553109785",
+      "points": [
+        { "x": 1176, "y": 1287 },
+        { "x": 1176, "y": 1227 }
+      ]
+    },
+    {
+      "id": "2560296733",
+      "points": [
+        { "x": 1361, "y": 1347 },
+        { "x": 1428, "y": 1347 },
+        { "x": 1428, "y": 1498 }
+      ]
+    },
+    {
+      "id": "848630504",
+      "points": [
+        { "x": 1361, "y": 1347 },
+        { "x": 1451, "y": 1347 },
+        { "x": 1451, "y": 1227 }
+      ]
+    },
+    {
+      "id": "1457936907",
+      "points": [
+        { "x": 1102, "y": 1437 },
+        { "x": 1102, "y": 1227 }
+      ]
+    },
+    {
+      "id": "2587960408",
+      "points": [
+        { "x": 1179, "y": 1678 },
+        { "x": 1179, "y": 1497 }
+      ]
+    },
+    {
+      "id": "2706014648",
+      "points": [
+        { "x": 1206, "y": 1125 },
+        { "x": 1266, "y": 1125 },
+        { "x": 1266, "y": 1287 }
+      ]
+    },
+    {
+      "id": "2486426382",
+      "points": [
+        { "x": 1351, "y": 1588 },
+        { "x": 1351, "y": 1678 }
+      ]
+    },
+    {
+      "id": "1198708584",
+      "points": [
+        { "x": 1327, "y": 1167 },
+        { "x": 1266, "y": 1167 },
+        { "x": 1266, "y": 1287 }
+      ]
+    },
+    {
+      "id": "2186940134",
+      "points": [
+        { "x": 1406, "y": 1227 },
+        { "x": 1406, "y": 1467 },
+        { "x": 1264, "y": 1467 }
+      ]
+    },
+    {
+      "id": "251311323",
+      "points": [
+        { "x": 1595, "y": 1053 },
+        { "x": 1412, "y": 1053 },
+        { "x": 1412, "y": 1107 }
+      ]
+    }
+  ]
+}

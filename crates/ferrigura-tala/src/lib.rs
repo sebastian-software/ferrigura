@@ -9,14 +9,20 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+#[doc(hidden)]
+pub mod balance;
 mod connected;
 mod hierarchy;
+#[doc(hidden)]
+pub mod initialize;
 #[doc(hidden)]
 pub mod normalize;
 mod placement;
 mod routing;
 #[doc(hidden)]
 pub mod simplify;
+#[doc(hidden)]
+pub mod stress_initialize;
 
 /// Input measured by the renderer. Positions in the output share one absolute coordinate system.
 #[derive(Debug, Deserialize)]
