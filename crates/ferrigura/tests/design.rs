@@ -786,11 +786,7 @@ fn the_mode_excludes_compat_and_other_diagram_types() {
         Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
     }
-    for other in [
-        "pie\n \"a\" : 1\n",
-        "sequenceDiagram\n  A->>B: hi\n",
-        "erDiagram\n  A ||--o{ B : has\n",
-    ] {
+    for other in ["pie\n \"a\" : 1\n", "erDiagram\n  A ||--o{ B : has\n"] {
         match renderer.render_with(other, &design(None)) {
             Err(Error::Options(message)) => assert!(message.contains("design mode"), "{message}"),
             result => panic!("expected an option error, got {result:?}"),
@@ -1723,4 +1719,71 @@ fn two_labeled_relations_between_two_classes_are_one_unit_beside_another_edge() 
     assert!((x("Team") - x("User")).abs() <= 20.0);
     assert!((x("Profile") - x("User")).abs() > 40.0);
     assert!(!runs_straight_down(&svg, "id_User_Profile_3"));
+}
+
+/// A sequence diagram with an actor, a database, a participant, an activation, a note and the
+/// frames `alt` and `loop`.
+const SEQUENCE: &str = "sequenceDiagram\n  actor User\n  participant Web\n  participant Store@{ \"type\": \"database\" }\n  User->>+Web: Sign in\n  Web->>Store: Find user\n  Store-->>Web: User\n  Note right of Store: Hashed\n  alt Valid password\n    Web-->>User: Welcome\n  else Wrong password\n    Web--xUser: Denied\n  end\n  loop Every minute\n    Web->>Web: Refresh\n  end\n  deactivate Web\n";
+
+#[test]
+fn a_sequence_diagram_draws_in_the_design_mode() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(SEQUENCE, &design(None)).unwrap();
+    for role in ["actor", "data", "decision"] {
+        assert!(svg.contains(&format!("data-role=\"{role}\"")), "{role}");
+    }
+    // The frame of `loop` stays neutral.
+    let drawing = &svg[svg.find("</style>").unwrap()..];
+    assert_eq!(drawing.matches("data-role=\"decision\"").count(), 1);
+    // The mode's own arrowhead, round participant boxes and one rounded outline per frame.
+    assert!(svg.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
+    assert!(svg.contains("class=\"actor actor-top\""));
+    assert!(svg.contains(" rx=\"8\""));
+    assert!(svg.contains("<rect x=") && svg.contains("class=\"loopLine\""));
+    // No palette: the colors are the style sheet's, not inline per participant.
+    assert!(!svg.contains("style=\"stroke: "));
+    assert!(!svg.contains("style=\"fill: #"));
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--activationBkgColor:#E8EDFC;"));
+    assert!(sheet.contains("--decisionBorder:#B7791F;"));
+    assert!(sheet.contains("stroke-width:1.25px"));
+    assert!(sheet.contains("paint-order:stroke"));
+
+    let plain = renderer.render_with(SEQUENCE, &default(None)).unwrap();
+    assert!(!plain.contains("data-role"));
+    assert!(!plain.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
+}
+
+#[test]
+fn the_sequence_diagrams_dark_set_and_user_variables_apply() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer
+        .render_with(SEQUENCE, &design(Some(ColorScheme::Dark)))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--actorBkg:#1D212A;"));
+    assert!(sheet.contains("--terminalBorder:#4263EB;"));
+    let both = renderer
+        .render_with(SEQUENCE, &design(Some(ColorScheme::Auto)))
+        .unwrap();
+    assert!(style_sheet(&both).contains("light-dark("));
+
+    let config = Value::from(serde_json::json!({
+        "themeVariables": { "actorBkg": "#ffeedd", "signalColor": "#ff0000" }
+    }));
+    let svg = Renderer::new(&config)
+        .render_with(SEQUENCE, &design(None))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--actorBkg:#ffeedd;"));
+    assert!(sheet.contains("--signalColor:#ff0000;"));
+
+    let both = RenderOptions {
+        compat: true,
+        ..design(None)
+    };
+    match renderer.render_with(SEQUENCE, &both) {
+        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
+        other => panic!("expected an option error, got {other:?}"),
+    }
 }

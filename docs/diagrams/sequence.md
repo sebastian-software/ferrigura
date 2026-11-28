@@ -2,6 +2,28 @@
 
 A sequence diagram draws participants as columns and the messages between them as arrows from top to bottom, with notes, `loop`, `alt`, `opt`, `par`, `critical`, `break` and `rect` blocks, activations, boxes around participants, and sequence numbers. It starts with the keyword `sequenceDiagram`. ferrigura parses it with a hand-written parser that ports the Jison grammar `sequenceDiagram.jison` and the DB `sequenceDb.ts` (`crates/ferrigura-syntax/src/sequence/`), and draws it with a renderer of its own (`crates/ferrigura-render/src/sequence/`). There is no layout engine: one pass over the messages places everything, as `sequenceRenderer.ts` does.
 
+## Design mode
+
+The design mode draws a sequence diagram in ferrigura's own look ([0023](../decisions/0023-design-mode.md)): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. It is drawn by the renderer of the default rendering, with the compact participant boxes; the mode changes its paint and its measures (`crates/ferrigura-render/src/sequence/design.rs`).
+
+| Element                 | Design mode                                                                                                                                    |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Participant             | `actorBkg` box with a 1.25 px `actorBorder` outline, corner radius 8, the soft shadow; the name semibold (600) unless `actorFontWeight` is set |
+| Actor                   | Role `actor`: the figure's lines in the accent of the flowchart's `terminal`, 1.5 px                                                           |
+| Database                | Role `data`: the cylinder in the `data` tint and outline, as the flowchart's cylinder                                                          |
+| Other glyphs            | Neutral: `actorBorder` lines on `actorBkg`                                                                                                     |
+| Lifeline                | 1 px in `actorLineColor`                                                                                                                       |
+| Message                 | 1.5 px in `signalColor`, dashed for a dotted arrow; the mode's slim, notched arrowhead with its tip where the reference's is                   |
+| Message text            | `signalTextColor`, with a halo of the background, so that a lifeline behind it stops at the text                                               |
+| Frame                   | One rounded outline (radius 8, 1.25 px, `labelBoxBorderColor`); sections divided by a dashed hairline; the keyword in a tag in the corner      |
+| `alt`, `opt`            | Role `decision`: the outline, the tag and its keyword in the decision's colors                                                                 |
+| Activation              | `activationBkgColor` bar with a 1.25 px `activationBorderColor` outline, corner radius 2                                                       |
+| Note                    | Flat paper: `noteBkgColor`, a 1 px `noteBorderColor` outline, square corners, no shadow                                                        |
+| Box around participants | The user's color as a tint at 16 % opacity, a hairline outline, corner radius 12                                                               |
+| `rect` background       | The user's color, corner radius 8, no shadow                                                                                                   |
+
+The mode lays values for the sequence's own tokens under the user's `themeVariables`, in the light and the dark set: `actorBkg`, `actorBorder`, `actorTextColor`, `actorLineColor`, `signalColor`, `signalTextColor`, `labelBoxBkgColor`, `labelBoxBorderColor`, `labelTextColor`, `loopTextColor`, `activationBkgColor`, `activationBorderColor` and `sequenceNumberColor`; `noteBkgColor`, `noteBorderColor` and `noteTextColor` are the state diagram's. A user's value for any of them wins. The palette themes' colors per participant are not used. Both sets are held to the contrast ratios of the other types.
+
 ## Model
 
 `SequenceDiagram` (`crates/ferrigura-model/src/sequence.rs`), version 2, is the DB's state after parsing. Field names are the DB's, in camelCase; a field the DB leaves `undefined` is `null`.

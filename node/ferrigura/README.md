@@ -25,7 +25,7 @@ resolves configuration once; reuse `renderer.render(text, options?)` for many
 blocks. Both return SVG synchronously and throw on engine errors. Give diagrams
 unique IDs when combining them in one document. SVG is not automatically JSX.
 
-The default `compat: false` enables optimized flowchart routing and compact sequence participant boxes. Pass `{ compat: true }` as render options to preserve Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes. Pass `{ design: true }` to draw flowcharts, state diagrams and class diagrams in the design mode: ferrigura's own look, with roomier nodes and spacing. It cannot be combined with `compat`. Options belong to each render and cannot be set in Mermaid front matter or init directives.
+The default `compat: false` enables optimized flowchart routing and compact sequence participant boxes. Pass `{ compat: true }` as render options to preserve Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes. Pass `{ design: true }` to draw flowcharts, state diagrams, class diagrams and sequence diagrams in the design mode: ferrigura's own look, with roomier nodes and spacing. It cannot be combined with `compat`. Options belong to each render and cannot be set in Mermaid front matter or init directives.
 
 ## Custom fonts
 

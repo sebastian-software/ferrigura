@@ -139,6 +139,20 @@ pub fn theme_variables(tone: Tone) -> Value {
             ("noteBkgColor", "#F6F7F9"),
             ("noteBorderColor", "#7C8698"),
             ("noteTextColor", "#3D4555"),
+            // The sequence diagram's own tokens, which its rules read.
+            ("actorBkg", "#FFFFFF"),
+            ("actorBorder", "#7C8698"),
+            ("actorTextColor", "#1A1F2B"),
+            ("actorLineColor", "#7C8698"),
+            ("signalColor", "#5B6577"),
+            ("signalTextColor", "#1A1F2B"),
+            ("labelBoxBkgColor", "#F2F4F8"),
+            ("labelBoxBorderColor", "#7C8698"),
+            ("labelTextColor", "#4A5364"),
+            ("loopTextColor", "#4A5364"),
+            ("activationBkgColor", "#E8EDFC"),
+            ("activationBorderColor", "#6B83D3"),
+            ("sequenceNumberColor", "#FFFFFF"),
         ],
         Tone::Dark => &[
             ("background", "#12141A"),
@@ -163,6 +177,20 @@ pub fn theme_variables(tone: Tone) -> Value {
             ("noteBkgColor", "#191C24"),
             ("noteBorderColor", "#667085"),
             ("noteTextColor", "#B4BCCB"),
+            // The sequence diagram's own tokens, which its rules read.
+            ("actorBkg", "#1D212A"),
+            ("actorBorder", "#667085"),
+            ("actorTextColor", "#E7E9EE"),
+            ("actorLineColor", "#5E677A"),
+            ("signalColor", "#8E98AA"),
+            ("signalTextColor", "#E7E9EE"),
+            ("labelBoxBkgColor", "#1D212A"),
+            ("labelBoxBorderColor", "#5E677A"),
+            ("labelTextColor", "#A3ACBC"),
+            ("loopTextColor", "#A3ACBC"),
+            ("activationBkgColor", "#1E2638"),
+            ("activationBorderColor", "#5D74C4"),
+            ("sequenceNumberColor", "#12141A"),
         ],
     };
     let mut object = Value::empty_object();
@@ -352,7 +380,9 @@ mod tests {
         // connections apart (1.4.11). A line is checked on the page and inside a group: a
         // subgraph, a composite state and a concurrency region. A class box's annotation and
         // visibility marks and a cardinality are muted text, on a class's ground and on the page.
-        const TEXT: [(&str, &str); 19] = [
+        // A sequence diagram's messages and frame titles stand on the page, its names in their
+        // boxes, a frame's keyword in its tag, and its numbers on the line's color.
+        const TEXT: [(&str, &str); 26] = [
             ("textColor", "background"),
             ("nodeTextColor", "mainBkg"),
             ("titleColor", "clusterBkg"),
@@ -372,8 +402,15 @@ mod tests {
             ("titleColor", "background"),
             ("titleColor", "interfaceBkg"),
             ("titleColor", "enumerationBkg"),
+            ("actorTextColor", "actorBkg"),
+            ("signalTextColor", "background"),
+            ("loopTextColor", "background"),
+            ("labelTextColor", "labelBoxBkgColor"),
+            ("decisionText", "decisionBkg"),
+            ("sequenceNumberColor", "signalColor"),
+            ("noteTextColor", "noteBkgColor"),
         ];
-        const LINES: [&str; 10] = [
+        const LINES: [&str; 15] = [
             "lineColor",
             "arrowheadColor",
             "nodeBorder",
@@ -384,6 +421,11 @@ mod tests {
             "noteBorderColor",
             "interfaceBorder",
             "enumerationBorder",
+            "actorBorder",
+            "actorLineColor",
+            "signalColor",
+            "labelBoxBorderColor",
+            "activationBorderColor",
         ];
         for tone in [Tone::Light, Tone::Dark] {
             let colours = colours(tone);

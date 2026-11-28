@@ -9,7 +9,7 @@
 # Each changed file is rendered under the test's three configurations and four color schemes, with
 # the base's renderer and with the working tree's, into target/snapshots/{base,head}/<file>/
 # <configuration>-<scheme>.svg, and the renders that differ are listed. A file of a type the design mode
-# draws, a flowchart, a state or a class diagram, also has its design renders, named
+# draws, a flowchart, a state diagram, a class diagram or a sequence, also has its design renders, named
 # design-<configuration>-<scheme>.svg. Compare them side by side, or check the new output
 # against the reference with `pnpm -C tools/port port:geometry <type> --filter <file>`.
 set -euo pipefail
@@ -68,7 +68,7 @@ while IFS= read -r file; do
   count=$((count + 1))
   moved=""
   # The design renders exist for a type the design mode draws on either side. The number of columns
-  # does not tell: a state diagram's line and a sequence's both have two hashes.
+  # does not tell: a flowchart's line and a sequence's both have three hashes.
   modes=(default)
   if draws_design "$base_bin" "$work/base/$file" || draws_design "$head_bin" "$file"; then
     modes+=(design)

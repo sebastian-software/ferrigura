@@ -25,7 +25,7 @@ The mode has its own look and its own measures. The look is paint: colors, outli
 - **A word stays whole in a label.** A label wraps between words as the default does, but a word that does not fit the wrapping width on a line of its own is not broken inside: the line stays one line wider than the wrapping width, and its node grows as wide as the word needs, with the node's usual padding. This holds for the labels of nodes and states, edge labels and Markdown group titles (a plain group title never wraps); a class box does not wrap its rows. A word is what stands between spaces: no break point is added at a hyphen, a slash or a camel-case boundary. A word wider than 4 times the wrapping width, such as a pasted URL, is still broken as the default breaks it, so that one label cannot blow a diagram up (`WHOLE_WORD_LIMIT` in `design.rs`). The default and `compat` break the word, as the reference does.
 - **A `classDef` or `style` of the diagram keeps the last word.** The mode's rules come before the class rules.
 
-Flowcharts, state diagrams and class diagrams support the mode. Another diagram type returns an option error when the mode is requested, as an unsupported draw animation does ([0021](./0021-optional-svg-draw-animation.md)).
+Flowcharts, state diagrams, class diagrams and sequence diagrams support the mode. Another diagram type returns an option error when the mode is requested, as an unsupported draw animation does ([0021](./0021-optional-svg-draw-animation.md)).
 
 A state diagram goes through the flowchart's pipeline and engine, so the measures, the placement, the edges and the labels are the flowchart's. What only a state diagram has is decided for it:
 
@@ -48,6 +48,17 @@ A class diagram goes through the same pipeline and engine, so the measures, the 
 - **The children of a class share one triangle.** After the layout, the generalizations that meet one side of a class with the same line pattern are merged: each route runs on to the line of the turn nearest the class, along it to the middle of the side, or to the line of a child that stands straight below, and into the class. A side where another edge meets the class near its middle, a route that is not orthogonal, a relation with a label and an end with a cardinality keep their own routes. The step is the renderer's own and runs on the applied layout, not in the ELK port.
 - **A cardinality stands beside its end**, 4 off the outline, beside the marker and 4 clear of it, on the side away from the middle of the class's side, so that the cardinalities of two edges into one side stand outside the pair. Where that place is taken it takes the other side of its line, then steps outward along its segment. The reference's passes for the cardinalities do not run in the mode.
 - **A namespace is the flowchart's group**, and a note is the state diagram's flat paper.
+
+A sequence diagram has no layout engine: the renderer's own pass places its parts, as the reference's does. The mode gives it the look of the others ([sequence diagram](../diagrams/sequence.md#design-mode)):
+
+- **Colors are the sequence's own theme variables**, laid under the user's as the others are: `actorBkg`, `actorBorder`, `actorTextColor`, `actorLineColor`, `signalColor`, `signalTextColor`, `labelBoxBkgColor`, `labelBoxBorderColor`, `labelTextColor`, `loopTextColor`, `activationBkgColor`, `activationBorderColor` and `sequenceNumberColor`, in the light and the dark set and held to the same contrast ratios. The palette themes' colors per participant are not used: a color per column says nothing.
+- **Color follows a part's role.** An `actor` is a person: its figure takes the accent of the flowchart's `terminal` in its line. A `database` is a store: its cylinder takes the `data` tint and outline. A frame that chooses, `alt` and `opt`, takes the `decision` outline and tag. An activation is a quiet cool bar. Other participants and frames are neutral.
+- **Outlines are hairlines.** A participant box, a frame, an activation and a note have a 1.25 px outline, a message 1.5 px, a lifeline 1 px. A participant box has a corner radius of 8 and the soft shadow, a frame 8, a box around participants and a `rect` background 12, an activation 2.
+- **A note is flat paper**, as the state diagram's: square corners, a hairline, no shadow.
+- **A frame is one rounded outline.** Its sections are divided by a dashed hairline. Its keyword stands in a tag that fills the frame's corner, without the reference's cut corner and shadow.
+- **A label interrupts the lines behind it.** A message's text and a frame's titles carry a halo of the background, so a lifeline that crosses them stops at the text.
+- **A participant's name is semibold**, measured and drawn at 600, unless the configuration gives `actorFontWeight`.
+- **The arrowhead** is the flowchart's, slim and notched, with its tip where the reference's is. A box around participants keeps the user's color as a tint at 16 % opacity, so that the messages read on it.
 
 `design` and `compat` exclude each other; the combination returns an option error. The design mode builds on the optimized default and is free to depart from the reference's geometry.
 
@@ -72,8 +83,8 @@ Weighed and not chosen: changing the default look, which breaks the comparison w
 - The reference has no counterpart to this mode, and its geometry is not compared with the reference's. The engine that lays it out is: the default and the compatibility rendering run the same code against the reference. The mode's own tests cover the flat decision and the side exits of its branches, the place of a note beside its state, the place of a self-loop and its label, the room a node gives its edges, the group's padding and title, the class box's compartments, the direction of a class relation, the shared triangle, the place of a cardinality, the roles, both color schemes, the contrast ratios and the precedence of the user's styles.
 - A diagram in the mode is larger than in the default rendering.
 - A diagram type gains the mode in its style sheet and shapes; the option error lists nothing and names no types, so adding a type changes no message.
-- Roles are read from the shape and the diagram type alone, and a class's from its first annotation. A diagram that uses one of those shapes for every node is colored throughout.
+- Roles are read from the shape and the diagram type alone, a class's from its first annotation, a sequence participant's from its type and a frame's from its keyword. A diagram that uses one of those shapes for every node is colored throughout.
 
 ## Related
 
-[0011](./0011-themes-as-css-variables.md), [0012](./0012-layout-engines-ported-exactly.md), [0017](./0017-reproduce-the-reference.md), [0019](./0019-adaptive-flowchart-mode.md), [0021](./0021-optional-svg-draw-animation.md), [flowchart](../diagrams/flowchart.md#design-mode), [state diagram](../diagrams/state.md#design-mode), [class diagram](../diagrams/class.md#design-mode).
+[0011](./0011-themes-as-css-variables.md), [0012](./0012-layout-engines-ported-exactly.md), [0017](./0017-reproduce-the-reference.md), [0019](./0019-adaptive-flowchart-mode.md), [0021](./0021-optional-svg-draw-animation.md), [flowchart](../diagrams/flowchart.md#design-mode), [state diagram](../diagrams/state.md#design-mode), [class diagram](../diagrams/class.md#design-mode), [sequence diagram](../diagrams/sequence.md#design-mode).

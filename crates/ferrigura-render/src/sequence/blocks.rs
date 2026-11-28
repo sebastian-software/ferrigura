@@ -135,14 +135,35 @@ impl Renderer<'_> {
                 .with("y2", number(y2))
                 .with("class", "loopLine")
         };
-        group.push_child(frame(startx, starty, stopx, starty));
-        group.push_child(frame(stopx, starty, stopx, stopy));
-        group.push_child(frame(startx, stopy, stopx, stopy));
-        group.push_child(frame(startx, starty, startx, stopy));
-        for section in &block.sections {
-            group.push_child(
-                frame(startx, section.y, stopx, section.y).with("style", "stroke-dasharray: 3, 3;"),
+        let design = self.design.is_some();
+        let mut outline = None;
+        if design {
+            // One rounded outline, colored by the frame's role, drawn above the tag.
+            if let Some(role) = super::design::frame_role(label) {
+                group.set("data-role", role);
+            }
+            outline = Some(
+                Element::new("rect")
+                    .with("x", number(startx))
+                    .with("y", number(starty))
+                    .with("width", number(stopx - startx))
+                    .with("height", number(stopy - starty))
+                    .with("rx", number(super::design::FRAME_RADIUS))
+                    .with("class", "loopLine"),
             );
+        } else {
+            group.push_child(frame(startx, starty, stopx, starty));
+            group.push_child(frame(stopx, starty, stopx, stopy));
+            group.push_child(frame(startx, stopy, stopx, stopy));
+            group.push_child(frame(startx, starty, startx, stopy));
+        }
+        let dash = if design {
+            "stroke-dasharray: 4, 4;"
+        } else {
+            "stroke-dasharray: 3, 3;"
+        };
+        for section in &block.sections {
+            group.push_child(frame(startx, section.y, stopx, section.y).with("style", dash));
         }
 
         // The label box: a polygon with its corner cut, then the label in it.
@@ -171,11 +192,37 @@ impl Renderer<'_> {
             number(label_x),
             number(label_y + label_height),
         );
-        group.push_child(
-            Element::new("polygon")
-                .with("points", points)
-                .with("class", "labelBox"),
-        );
+        if design {
+            // The tag fills the frame's corner, so its outer edges are the frame's, and turns
+            // softly at its own inner corner.
+            let radius = super::design::FRAME_RADIUS;
+            let inner = 4.0;
+            let (right, bottom) = (label_x + label_width, label_y + label_height);
+            let d = format!(
+                "M {},{} V {} A {r},{r} 0 0 1 {},{} H {} V {} A {inner},{inner} 0 0 1 {},{} Z",
+                number(label_x),
+                number(bottom),
+                number(label_y + radius),
+                number(label_x + radius),
+                number(label_y),
+                number(right),
+                number(bottom - inner),
+                number(right - inner),
+                number(bottom),
+                r = number(radius),
+                inner = number(inner),
+            );
+            group.push_child(Element::new("path").with("d", d).with("class", "labelBox"));
+        } else {
+            group.push_child(
+                Element::new("polygon")
+                    .with("points", points)
+                    .with("class", "labelBox"),
+            );
+        }
+        if let Some(outline) = outline {
+            group.push_child(outline);
+        }
         let label_text = TextData {
             text: label,
             x: label_x,
@@ -302,6 +349,8 @@ impl Renderer<'_> {
                 - block.extent.starty.unwrap_or(f64::NAN),
             fill: block.fill.clone(),
             class: Some("rect".to_owned()),
+            rx: self.design.map(|_| super::design::FRAME_RADIUS),
+            ry: self.design.map(|_| super::design::FRAME_RADIUS),
             ..RectData::default()
         };
         self.lower(draw_rect(&rect));
@@ -321,6 +370,10 @@ impl Renderer<'_> {
         rect.class = Some(format!("activation{}", stacked % 3));
         rect.width = activation.extent.stopx.unwrap_or(f64::NAN) - rect.x;
         rect.height = vertical_pos - rect.y;
+        if self.design.is_some() {
+            rect.rx = Some(super::design::ACTIVATION_RADIUS);
+            rect.ry = rect.rx;
+        }
         let mut element = draw_rect(&rect);
         if self.conf.neo {
             element.set("data-look", "neo");
@@ -356,6 +409,8 @@ impl Renderer<'_> {
             fill: Some(sequence_box.fill.clone()),
             stroke: Some("rgb(0,0,0, 0.5)".to_owned()),
             class: Some("rect".to_owned()),
+            rx: self.design.map(|_| super::design::BOX_RADIUS),
+            ry: self.design.map(|_| super::design::BOX_RADIUS),
             ..RectData::default()
         };
         group.push_child(draw_rect(&rect));

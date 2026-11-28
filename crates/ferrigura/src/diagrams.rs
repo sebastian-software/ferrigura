@@ -269,7 +269,7 @@ fn render_sequence(
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    sequence_render::render_with(
+    sequence_render::render_with_design(
         &Context {
             fonts: prepared.fonts,
             diagram: &sequence::parse_prepared(
@@ -284,6 +284,7 @@ fn render_sequence(
             id,
         },
         options.compat,
+        prepared.design,
     )
 }
 

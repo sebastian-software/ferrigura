@@ -18,6 +18,7 @@ mod actors;
 mod blocks;
 mod bounds;
 mod conf;
+mod design;
 mod icons;
 mod layout;
 mod markers;
@@ -43,6 +44,7 @@ use crate::common::TextMemo;
 use crate::common::decode_entities;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::context::{Context, ThemeView};
+use crate::design::Tone;
 use crate::svg::{number, xlink_declaration, xml_references};
 
 /// The namespace of the root element (`mermaidAPI` writes it on every SVG).
@@ -59,6 +61,9 @@ pub(super) struct Renderer<'a> {
     pub(super) conf: Conf,
     /// Whether participant boxes fit their labels instead of spanning the shared row.
     pub(super) compact_participants: bool,
+    /// The tone of the design mode, when the diagram is drawn in it
+    /// (`docs/decisions/0023-design-mode.md`).
+    pub(super) design: Option<Tone>,
     /// The text measurements of this render.
     pub(super) memo: TextMemo,
     /// The actors, boxes, messages and their layout.
@@ -96,8 +101,12 @@ impl<'a> Renderer<'a> {
     /// The renderer of one diagram, with the configuration applied (`bounds.init`).
     fn new(
         input: &Context<'a, SequenceDiagram, SequenceDiagramConfig>,
+        design: Option<Tone>,
     ) -> Result<Self, RenderError> {
         let mut conf = Conf::new(input.section, input.globals);
+        if design.is_some() {
+            design::measures(&mut conf, input.section);
+        }
         for font in [
             &mut conf.actor_font,
             &mut conf.note_font,
@@ -111,6 +120,7 @@ impl<'a> Renderer<'a> {
             theme: input.theme,
             conf,
             compact_participants: false,
+            design,
             memo: TextMemo::new(),
             layout: Layout::new(input.diagram),
             bounds: Bounds::default(),
@@ -181,10 +191,12 @@ impl<'a> Renderer<'a> {
         self.add_actor_rendering_data();
         let loop_widths = self.calculate_loop_bounds()?;
 
-        for element in markers::arrow_markers(self.id) {
+        for element in markers::arrow_markers(self.id, self.design.is_some()) {
             self.append(element);
         }
-        if self.conf.neo {
+        if let Some(tone) = self.design {
+            self.append(markers::design_drop_shadow(self.id, tone));
+        } else if self.conf.neo {
             let theme = self.conf.theme.clone();
             self.append(markers::drop_shadow(self.id, &theme));
         }
@@ -569,6 +581,7 @@ impl<'a> Renderer<'a> {
             &font_size,
             &families,
             self.conf.neo,
+            self.design,
         );
         let size = calculate_svg_size_attrs(view.height, view.width, self.conf.use_max_width);
         // An actor's menu links and icons write `xlink:href`.
@@ -746,7 +759,21 @@ pub fn render_with(
     input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
     compat: bool,
 ) -> Result<String, RenderError> {
-    let mut renderer = Renderer::new(input)?;
+    render_with_design(input, compat, None)
+}
+
+/// [`render_with`], in the design mode of `design`'s tone when it is set
+/// (`docs/decisions/0023-design-mode.md`). The facade never combines the mode with `compat`.
+///
+/// # Errors
+///
+/// Returns the same errors as [`render`].
+pub fn render_with_design(
+    input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
+    compat: bool,
+    design: Option<Tone>,
+) -> Result<String, RenderError> {
+    let mut renderer = Renderer::new(input, design)?;
     renderer.compact_participants = !compat;
     renderer.draw(&input.diagram.title)?;
     renderer.write(input)

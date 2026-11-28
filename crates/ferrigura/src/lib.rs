@@ -55,8 +55,8 @@ pub struct RenderOptions {
     pub compat: bool,
     /// Draw in the design mode: ferrigura's own look, with hairline outlines, color by the role of
     /// a node, rounded corners and soft shadows, and with its own measures: a node grows to give its
-    /// edges room, and spacings and group paddings are wider. Flowcharts, state diagrams and class
-    /// diagrams support it; other diagram types return an option error, and so does the combination
+    /// edges room, and spacings and group paddings are wider. Flowcharts, state diagrams, class
+    /// diagrams and sequence diagrams support it; other diagram types return an option error, and so does the combination
     /// with `compat`. The user's `themeVariables` and `classDef` styles still apply on top.
     pub design: bool,
     /// Optional one-time SVG draw animation for flowcharts, Gantt, mind maps, pie charts, and XY
@@ -235,7 +235,10 @@ impl Renderer {
             }
             if !matches!(
                 kind,
-                DiagramType::Flowchart | DiagramType::State | DiagramType::Class
+                DiagramType::Flowchart
+                    | DiagramType::State
+                    | DiagramType::Class
+                    | DiagramType::Sequence
             ) {
                 return Err(RenderError::Options(
                     "the design mode is not supported for this diagram type".to_owned(),
