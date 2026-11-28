@@ -690,6 +690,49 @@ fn a_branch_beside_a_decision_leaves_from_its_side_tip() {
 }
 
 #[test]
+fn a_decisions_self_loop_takes_a_side_no_branch_needs() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Branches to both sides: both leave from the tips and turn once, and the loop stands below
+    // the decision, on the side that faces the flow.
+    let text = "flowchart TD\n  S --> D{Valid?}\n  D -->|again| D\n  D -->|yes| A\n  D -->|no| B\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let (x, y) = node_middle(&svg, "D");
+    let (width, height) = decision_size(&svg, "D");
+    for (edge, side) in [("L_D_A_0", -1.0), ("L_D_B_0", 1.0)] {
+        let points = route(&svg, edge);
+        assert_eq!(points.len(), 3, "{edge}: {points:?}");
+        assert!(
+            (points[0].0 - (x + side * width / 2.0)).abs() < 1e-3,
+            "{edge}"
+        );
+        assert!((points[0].1 - y).abs() < 1e-3, "{edge}");
+    }
+    let looped = route(&svg, "L_D_D_0");
+    assert!(
+        looped.iter().all(|p| (p.0 - x).abs() <= 10.0 + 1e-6),
+        "{looped:?}"
+    );
+    assert!(
+        looped.iter().all(|p| p.1 > y) && looped.iter().any(|p| p.1 > y + height / 2.0 + 16.0),
+        "{looped:?}"
+    );
+    // A branch to one side: the loop takes the other tip, and the branch leaves from its own.
+    let chain =
+        "flowchart TD\n  S --> D{Valid?}\n  D -->|again| D\n  D -->|yes| A --> E\n  D -->|no| B\n";
+    let svg = renderer.render_with(chain, &design(None)).unwrap();
+    let (x, y) = node_middle(&svg, "D");
+    let width = decision_size(&svg, "D").0;
+    let branch = route(&svg, "L_D_B_0");
+    assert_eq!(branch.len(), 3, "{branch:?}");
+    assert!((branch[0].0 - (x + width / 2.0)).abs() < 1e-3 && (branch[0].1 - y).abs() < 1e-3);
+    // The loop leaves the left tip, 32 out.
+    let looped = route(&svg, "L_D_D_0");
+    let left = looped.iter().map(|p| p.0).fold(f64::MAX, f64::min);
+    assert!(looped.iter().all(|p| p.0 < x), "{looped:?}");
+    assert!((left - (x - width / 2.0 - 32.0)).abs() < 1e-3, "{looped:?}");
+}
+
+#[test]
 fn a_branch_that_passes_a_layer_keeps_its_route() {
     let renderer = Renderer::new(&Value::empty_object());
     // `Express` stands a layer below `Queue`: its branch passes the layer of `Queue`.
@@ -1359,6 +1402,192 @@ fn a_composite_state_holds_the_notes_of_its_states() {
         note.1 >= frame.1 && note.1 + note.3 <= frame.1 + frame.3,
         "{note:?} {frame:?}"
     );
+}
+
+#[test]
+fn a_note_keeps_room_on_its_own_side_only() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let plain = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n    --\n    [*] --> Count\n    Count --> Report\n  }\n  Work --> [*]\n";
+    let gap = |svg: &str| {
+        let mut frames = region_frames(svg);
+        assert_eq!(frames.len(), 2);
+        frames.sort_by(|a, b| a.0.total_cmp(&b.0));
+        frames[1].0 - (frames[0].0 + frames[0].2)
+    };
+    let without = gap(&renderer.render_with(plain, &design(None)).unwrap());
+    // A note right of `Load` keeps no room on the left of `Load`: the regions stand as close as
+    // without it, whichever side of its region's neighbor it is on.
+    for side in ["right", "left"] {
+        let noted = plain.replace(
+            "    Load --> Save\n",
+            &format!("    Load --> Save\n    note {side} of Load : Reads the input file\n"),
+        );
+        let svg = renderer.render_with(&noted, &design(None)).unwrap();
+        assert_eq!(gap(&svg), without, "{side}");
+        let (note, load) = (note_box(&svg, "Load"), state_box(&svg, "Load"));
+        if side == "right" {
+            assert!(note.0 > load.0 + load.2, "{note:?}");
+        } else {
+            assert!(note.0 + note.2 < load.0, "{note:?}");
+        }
+    }
+    // The same holds for a self-loop.
+    let looped = plain.replace(
+        "    Load --> Save\n",
+        "    Load --> Save\n    Load --> Load : retry\n",
+    );
+    assert_eq!(
+        gap(&renderer.render_with(&looped, &design(None)).unwrap()),
+        without
+    );
+}
+
+/// The frame of the first composite state of an SVG: its `x`, `y`, width and height.
+fn composite_frame(svg: &str) -> (f64, f64, f64, f64) {
+    let group = &svg[svg.find("statediagram-cluster").expect("the composite")..];
+    let outer = &group[group.find("<rect class=\"outer\"").expect("its frame")..];
+    let number = |name: &str| -> f64 { attribute_values(outer, name)[0].parse().unwrap() };
+    (number("x"), number("y"), number("width"), number("height"))
+}
+
+#[test]
+fn a_note_stands_beside_its_composite_state() {
+    let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n  }\n  note right of Work : Runs every night\n  Work --> Done\n  Done --> [*]\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let frame = composite_frame(&svg);
+    let note = note_box(&svg, "Work");
+    // 32 right of the frame, centered on it, with a straight connector between them.
+    assert!(
+        (note.0 - (frame.0 + frame.2 + 32.0)).abs() < 1e-6,
+        "{note:?} {frame:?}"
+    );
+    let middle = |bbox: (f64, f64, f64, f64)| bbox.1 + bbox.3 / 2.0;
+    assert!(
+        (middle(note) - middle(frame)).abs() < 1e-6,
+        "{note:?} {frame:?}"
+    );
+    let connector = route(&svg, "Work-Work----note-3");
+    assert_eq!(connector.len(), 2);
+    assert!(
+        (connector[0].1 - connector[1].1).abs() < 1e-6,
+        "{connector:?}"
+    );
+    assert!(
+        (connector[0].0 - (frame.0 + frame.2)).abs() < 1e-6,
+        "{connector:?}"
+    );
+}
+
+#[test]
+fn two_notes_on_one_side_of_a_state_stand_in_a_column() {
+    let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Paid\n  note right of Pending : Waits for the payment\n  note right of Pending : Expires after a week\n  Paid --> [*]\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let pending = state_box(&svg, "Pending");
+    let column = note_box(&svg, "Pending");
+    // Beside the state, one above the other, centered together on the state.
+    assert!(
+        (column.0 - (pending.0 + pending.2 + 32.0)).abs() < 1e-6,
+        "{column:?}"
+    );
+    assert!(column.3 > pending.3 + 8.0, "{column:?} {pending:?}");
+    let middle = |bbox: (f64, f64, f64, f64)| bbox.1 + bbox.3 / 2.0;
+    assert!((middle(column) - middle(pending)).abs() < 1e-6);
+    // Each connector runs straight across from the state's side, the first above the second.
+    let [first, second] =
+        ["Pending-Pending----note-2", "Pending-Pending----note-3"].map(|id| route(&svg, id));
+    for connector in [&first, &second] {
+        assert_eq!(connector.len(), 2);
+        assert!(
+            (connector[0].1 - connector[1].1).abs() < 1e-6,
+            "{connector:?}"
+        );
+        assert!((connector[0].0 - (pending.0 + pending.2)).abs() < 1e-6);
+        assert!(connector[0].1 > pending.1 && connector[0].1 < pending.1 + pending.3);
+    }
+    assert!(first[0].1 < second[0].1);
+}
+
+#[test]
+fn a_self_loop_on_a_group_stands_beside_its_frame() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // A subgraph: on the right of its frame, around its middle.
+    let text = "flowchart TD\n  A --> G\n  subgraph G [Worker]\n    X --> Y\n  end\n  G -->|retry| G\n  G --> Z\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let group = &svg[svg
+        .find("<g class=\"cluster \" id=\"d-G\"")
+        .expect("the subgraph")..];
+    let number = |name: &str| -> f64 { attribute_values(group, name)[0].parse().unwrap() };
+    let frame = (number("x"), number("y"), number("width"), number("height"));
+    let middle = (frame.0 + frame.2 / 2.0, frame.1 + frame.3 / 2.0);
+    let (loop_box, _) = assert_loop_beside(&svg, "L_G_G_0", middle, LoopSide::Right, 20.0);
+    assert!(
+        (loop_box.0 - (frame.0 + frame.2)).abs() < 1e-6,
+        "{loop_box:?}"
+    );
+    // A composite state: the same.
+    let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n  }\n  Work --> Work : again\n  Work --> [*]\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let frame = composite_frame(&svg);
+    let middle = (frame.0 + frame.2 / 2.0, frame.1 + frame.3 / 2.0);
+    let (loop_box, _) = assert_loop_beside(&svg, "edge3", middle, LoopSide::Right, 20.0);
+    assert!(
+        (loop_box.0 - (frame.0 + frame.2)).abs() < 1e-6,
+        "{loop_box:?}"
+    );
+}
+
+#[test]
+fn more_self_loops_than_free_sides_share_them() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Three loops: two one after the other on the right, the third on the left.
+    let text = "flowchart TD\n  A[Start] --> W[Worker]\n  W -->|retry| W\n  W -->|refresh| W\n  W -->|poll| W\n  W --> D[Done]\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let (x, y) = node_middle(&svg, "W");
+    let (width, height) = node_size(&svg, "W");
+    let [retry, refresh, poll] = ["L_W_W_0", "L_W_W_2", "L_W_W_3"].map(|id| route(&svg, id));
+    for (route, above) in [(&retry, true), (&refresh, false)] {
+        assert_eq!(route.len(), 4, "{route:?}");
+        assert!((route[0].0 - (x + width / 2.0)).abs() < 1e-6, "{route:?}");
+        let middle = (route[0].1 + route[3].1) / 2.0;
+        assert!((middle - (y + if above { -1.0 } else { 1.0 } * height / 4.0)).abs() < 1e-6);
+    }
+    assert!((poll[0].0 - (x - width / 2.0)).abs() < 1e-6, "{poll:?}");
+    // The labels stand past their loops, apart.
+    let (retry_label, refresh_label) =
+        (label_middle(&svg, "L_W_W_0"), label_middle(&svg, "L_W_W_2"));
+    assert!(retry_label.0 > x + width / 2.0 + 32.0 && refresh_label.0 > x + width / 2.0 + 32.0);
+    assert!(
+        refresh_label.1 - retry_label.1 >= 20.0,
+        "{retry_label:?} {refresh_label:?}"
+    );
+    assert!(runs_straight_down(&svg, "L_A_W_0") && runs_straight_down(&svg, "L_W_D_0"));
+
+    // A state with a note on the right takes both loops on the left.
+    let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Pending : retry\n  Pending --> Pending : remind\n  Pending --> Paid\n  note right of Pending : Waits for the payment\n  Paid --> [*]\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let pending = state_box(&svg, "Pending");
+    for id in ["edge1", "edge2"] {
+        let route = route(&svg, id);
+        assert!(route.iter().all(|p| p.0 <= pending.0 + 1e-6), "{route:?}");
+    }
+    assert!(note_box(&svg, "Pending").0 > pending.0 + pending.2);
+
+    // With notes on both sides, the loop stands on the top, at its right end.
+    let text = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Pending : retry\n  Pending --> Paid\n  note left of Pending : Created by the shop\n  note right of Pending : Waits for the payment\n  Paid --> [*]\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let pending = state_box(&svg, "Pending");
+    let route = route(&svg, "edge1");
+    assert!(route.iter().all(|p| p.1 <= pending.1 + 1e-6), "{route:?}");
+    assert!(
+        (route[3].0 - (pending.0 + pending.2 - 4.0)).abs() < 1e-6,
+        "{route:?}"
+    );
+    let label = label_middle(&svg, "edge1");
+    assert!(label.1 < pending.1 - 32.0, "{label:?}");
 }
 
 /// A class diagram with an interface, an abstract class, an enumeration, a class without members,
