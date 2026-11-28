@@ -1135,6 +1135,24 @@ pub fn flowchart_elk_stages(
     config: &Value,
     options: &RenderOptions,
 ) -> Result<serde_json::Value, RenderError> {
+    let stages = with_flowchart_probe(text, config, options, flowchart::elk_stages)?;
+    Ok(serde_json::json!({
+        "elkInput": stages.input,
+        "elkOutput": stages.output,
+    }))
+}
+
+/// The flowchart equivalent of a renderer invocation for development-only geometry probes.
+///
+/// # Errors
+/// Returns the errors of [`render_with`] for a flowchart, and an error for any other diagram.
+#[doc(hidden)]
+pub fn with_flowchart_probe<T>(
+    text: &str,
+    config: &Value,
+    options: &RenderOptions,
+    step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
+) -> Result<T, RenderError> {
     let renderer = Renderer::builder(config).with_all().shared();
     let max_edges = renderer.limits(text)?;
     let Some(source) = preprocess::prepare(text)
@@ -1148,11 +1166,7 @@ pub fn flowchart_elk_stages(
         }));
     };
     let prepared = renderer.prepare(text, source, options, diagrams::flowchart(), max_edges)?;
-    let stages = with_flowchart(&prepared, flowchart::elk_stages)?;
-    Ok(serde_json::json!({
-        "elkInput": stages.input,
-        "elkOutput": stages.output,
-    }))
+    with_flowchart(&prepared, step)
 }
 
 /// Parses a flowchart and hands it, with its sections, globals and theme, to `step`.

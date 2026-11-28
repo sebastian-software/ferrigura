@@ -25,22 +25,23 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 
 ## Architecture
 
-| Record                                            | Decision                                                                                            |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| [0006](./0006-rust-only-no-browser.md)            | Rust only, with no browser at run time                                                              |
-| [0007](./0007-hand-written-parsers.md)            | Hand-written parsers; Mermaid's grammars are the specification                                      |
-| [0008](./0008-canonical-model-and-typed-views.md) | A canonical model per diagram type; the configuration is resolved once and read through typed views |
-| [0009](./0009-svg-text-labels.md)                 | Labels are SVG text, not HTML in `foreignObject`                                                    |
-| [0010](./0010-text-measurement-and-fonts.md)      | Only text is measured, with bundled fonts embedded as subsets                                       |
-| [0011](./0011-themes-as-css-variables.md)         | Themes are CSS custom properties with attribute fallback                                            |
-| [0012](./0012-layout-engines-ported-exactly.md)   | Layout engines and browser arithmetic are ported to give the same numbers                           |
-| [0013](./0013-licenses-of-ported-code.md)         | Ported code keeps its source's license, in a crate of its own when it differs                       |
-| [0018](./0018-deterministic-output.md)            | The same input gives the same output: no randomness, screen or state from the environment           |
-| [0019](./0019-mermaid-geometry-with-compat.md)         | `compat` draws Mermaid's geometry and look for every type; the checks against the reference run on it |
-| [0020](./0020-diagram-types-as-plugins.md)        | Diagram types are plugins of the renderer; a program links only the types it registers              |
-| [0021](./0021-optional-svg-draw-animation.md) | Supported diagrams can carry optional, script-free draw animation with length-based speed and per-section easing |
-| [0023](./0023-the-default-rendering.md) | The default rendering draws every type in ferrigura's own look with its own measures, through the same layout engines |
-| [0024](./0024-a-fixed-list-of-diagram-types.md) | ferrigura draws a fixed list of ten diagram types, each one completely, and names any other type in its error |
+| Record                                            | Decision                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [0006](./0006-rust-only-no-browser.md)            | Rust only, with no browser at run time                                                                                |
+| [0007](./0007-hand-written-parsers.md)            | Hand-written parsers; Mermaid's grammars are the specification                                                        |
+| [0008](./0008-canonical-model-and-typed-views.md) | A canonical model per diagram type; the configuration is resolved once and read through typed views                   |
+| [0009](./0009-svg-text-labels.md)                 | Labels are SVG text, not HTML in `foreignObject`                                                                      |
+| [0010](./0010-text-measurement-and-fonts.md)      | Only text is measured, with bundled fonts embedded as subsets                                                         |
+| [0011](./0011-themes-as-css-variables.md)         | Themes are CSS custom properties with attribute fallback                                                              |
+| [0012](./0012-layout-engines-ported-exactly.md)   | Layout engines and browser arithmetic are ported to give the same numbers                                             |
+| [0013](./0013-licenses-of-ported-code.md)         | Ported code keeps its source's license, in a crate of its own when it differs                                         |
+| [0018](./0018-deterministic-output.md)            | The same input gives the same output: no randomness, screen or state from the environment                             |
+| [0019](./0019-mermaid-geometry-with-compat.md)    | `compat` draws Mermaid's geometry and look for every type; the checks against the reference run on it                 |
+| [0020](./0020-diagram-types-as-plugins.md)        | Diagram types are plugins of the renderer; a program links only the types it registers                                |
+| [0021](./0021-optional-svg-draw-animation.md)     | Supported diagrams can carry optional, script-free draw animation with length-based speed and per-section easing      |
+| [0023](./0023-the-default-rendering.md)           | The default rendering draws every type in ferrigura's own look with its own measures, through the same layout engines |
+| [0024](./0024-a-fixed-list-of-diagram-types.md)   | ferrigura draws a fixed list of ten diagram types, each one completely, and names any other type in its error         |
+| [0025](./0025-tala-pilot.md)                      | The TALA pilot compares measured flowcharts with ELK and keeps the Rust port in an isolated MPL-2.0 crate             |
 
 ## Verification
 

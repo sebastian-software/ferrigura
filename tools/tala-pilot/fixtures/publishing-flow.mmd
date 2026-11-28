@@ -1,0 +1,10 @@
+flowchart LR
+  draft["Draft"] --> read["Editorial review"]
+  read --> fact["Fact check"]
+  fact --> typeset["Typesetting"]
+  typeset --> proofs["Proof approval"]
+  proofs --> build["Build edition"]
+  build --> publish["Publish"]
+  fact --> permissions["Check image rights"]
+  permissions --> proofs
+  build --> archive["Archive originals"]

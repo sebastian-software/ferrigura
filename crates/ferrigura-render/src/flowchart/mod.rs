@@ -8,6 +8,8 @@
 //! `docs/diagrams/flowchart.md#the-pipeline`.
 
 pub mod data;
+#[doc(hidden)]
+pub mod pilot;
 pub(crate) mod placement;
 pub mod policy;
 pub mod style;
@@ -71,11 +73,20 @@ pub fn render_with_animation(
     let config = Config::of(input);
     let mut measured = measure(input)?;
     pipeline::lay_out_for_render(&mut measured, &config)?;
+    paint_measured(input, &measured, &config, animation)
+}
+
+fn paint_measured(
+    input: &Context<'_, FlowchartDiagram, Section<'_>>,
+    measured: &Measured,
+    config: &Config<'_>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
     let id = input.id;
     let painted = pipeline::paint_with_animation(
-        &measured,
+        measured,
         id,
-        &config,
+        config,
         animation,
         pipeline::A11yIds {
             title: !input.diagram.acc_title.is_empty(),

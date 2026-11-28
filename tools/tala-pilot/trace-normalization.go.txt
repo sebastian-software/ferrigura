@@ -1,0 +1,107 @@
+// The development overlay can trace Go Normalize or replace its computation
+// with the Rust port. Serialize values immediately before invoking either stage.
+type pilotPoint struct {
+    X float64 `json:"x"`
+    Y float64 `json:"y"`
+}
+
+type pilotNode struct {
+    ID int64 `json:"id"`
+    TopLeft pilotPoint `json:"top_left"`
+}
+
+type pilotEdge struct {
+    ID int64 `json:"id"`
+    Points []pilotPoint `json:"points"`
+    LabelTopLeft *pilotPoint `json:"label_top_left"`
+}
+
+type pilotGeometry struct {
+    Fixed bool `json:"fixed"`
+    Nodes []pilotNode `json:"nodes"`
+    Edges []pilotEdge `json:"edges"`
+}
+
+func capturePilotGeometry(graph *layoutgraph.Graph) pilotGeometry {
+    result := pilotGeometry{
+        Fixed: graph.HasFixedNode(),
+        Nodes: make([]pilotNode, 0, len(graph.Nodes)),
+        Edges: make([]pilotEdge, 0, len(graph.Edges)),
+    }
+    for _, n := range graph.Nodes {
+        result.Nodes = append(result.Nodes, pilotNode{n.ID, pilotPoint{n.TopLeft.X, n.TopLeft.Y}})
+    }
+    for _, e := range graph.Edges {
+        entry := pilotEdge{ID: e.ID, Points: make([]pilotPoint, 0, len(e.Points))}
+        for _, p := range e.Points {
+            entry.Points = append(entry.Points, pilotPoint{p.X, p.Y})
+        }
+        if e.Label != nil {
+            topLeft := e.LabelTopLeft(e.Label.Position, e.Label.Width, e.Label.Height)
+            entry.LabelTopLeft = &pilotPoint{topLeft.X, topLeft.Y}
+        }
+        result.Edges = append(result.Edges, entry)
+    }
+    return result
+}
+
+func tracePilotNormalization(stage string, graph *layoutgraph.Graph) {
+    if os.Getenv("TALA_PILOT_TRACE") != "1" {
+        return
+    }
+    result := struct {
+        Stage string `json:"stage"`
+        pilotGeometry
+    }{stage, capturePilotGeometry(graph)}
+    encoded, err := json.Marshal(result)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Fprintf(os.Stderr, "TALA_PILOT_TRACE %s\n", encoded)
+}
+
+func runPilotNormalization(ctx context.Context, graph *layoutgraph.Graph) error {
+    binary := os.Getenv("TALA_PILOT_RUST_NORMALIZER")
+    if binary == "" {
+        placement.Normalize(graph)
+        return nil
+    }
+    input, err := json.Marshal(capturePilotGeometry(graph))
+    if err != nil {
+        return err
+    }
+    command := exec.CommandContext(ctx, binary)
+    command.Stdin = bytes.NewReader(input)
+    output, err := command.Output()
+    if err != nil {
+        return fmt.Errorf("Rust pilot normalization: %w", err)
+    }
+    var geometry pilotGeometry
+    if err := json.Unmarshal(output, &geometry); err != nil {
+        return err
+    }
+    if len(geometry.Nodes) != len(graph.Nodes) || len(geometry.Edges) != len(graph.Edges) {
+        return fmt.Errorf("Rust normalization returned different topology")
+    }
+    for i, node := range graph.Nodes {
+        if geometry.Nodes[i].ID != node.ID {
+            return fmt.Errorf("Rust normalization changed node order")
+        }
+    }
+    for i, edge := range graph.Edges {
+        if geometry.Edges[i].ID != edge.ID || len(geometry.Edges[i].Points) != len(edge.Points) {
+            return fmt.Errorf("Rust normalization changed route structure")
+        }
+    }
+    for i, node := range graph.Nodes {
+        translated := geometry.Nodes[i].TopLeft
+        node.TopLeft.X, node.TopLeft.Y = translated.X, translated.Y
+    }
+    for i, edge := range graph.Edges {
+        for j, point := range edge.Points {
+            translated := geometry.Edges[i].Points[j]
+            point.X, point.Y = translated.X, translated.Y
+        }
+    }
+    return nil
+}

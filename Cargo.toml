@@ -27,6 +27,10 @@ name = "flowchart-elk"
 path = "crates/ferrigura/examples/flowchart-elk.rs"
 
 [[example]]
+name = "tala_pilot"
+path = "crates/ferrigura/examples/tala_pilot.rs"
+
+[[example]]
 name = "render"
 path = "crates/ferrigura/examples/render.rs"
 
