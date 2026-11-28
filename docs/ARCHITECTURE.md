@@ -4,16 +4,7 @@ ferrigura renders Mermaid diagram text to SVG in Rust, without a browser ([0006]
 
 ## From text to SVG
 
-```mermaid
-flowchart LR
-  text[Diagram text] --> pre[Preprocess and detect]
-  pre --> parse[Parse]
-  parse --> model[Canonical model]
-  config[Configuration and theme] --> view[Typed view]
-  model --> render[Lay out and render]
-  view --> render
-  render --> svg[SVG with embedded font subsets]
-```
+![Diagram text is preprocessed and detected, then parsed into the canonical model. The model and the typed view of the configuration and theme go into layout and rendering, which writes SVG with embedded font subsets.](./images/architecture.svg)
 
 1. **Preprocess and detect** (`ferrigura-syntax`): line endings are normalized, the YAML front matter and the `%%{init}%%` directives are read, and the detector picks the diagram type from the start of the text. A header of a Mermaid type that ferrigura does not draw is recognized as such, and the facade refuses the text with `Error::Unsupported`.
 2. **Parse** (`ferrigura-syntax`): a hand-written parser per diagram type fills a DB that follows Mermaid's diagram DB ([0007](./decisions/0007-hand-written-parsers.md)).
@@ -24,7 +15,7 @@ flowchart LR
 
 The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the configuration once, `renderer.render(text)` returns the SVG, and `ferrigura::render(text, config)` is the shorthand. Each diagram type is a plugin of the renderer: `Renderer::new` registers all of them, and `Renderer::builder(config).with(diagrams::sequence())` registers only the types a program draws, so that it links only those; the Node addon picks them with one cargo feature per type, all by default ([0020](./decisions/0020-diagram-types-as-plugins.md)).
 
-Render options are separate from Mermaid configuration. `compat` defaults to `false`: flowcharts use adaptive port alignment with label-aware spacing and sequence participant boxes fit their labels. `compat: true` preserves Mermaid-compatible geometry across diagram types ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Edge labels drawn by the shared renderer have full-opacity backgrounds in either mode, while preserving explicit theme color transparency. `design: true` draws flowcharts, state diagrams and class diagrams in ferrigura's own look and with its own measures: its colors are laid under the user's theme variables, the style sheet and shapes add hairline outlines, roles, rounded corners and soft shadows, and nodes, spacings and group paddings are sized anew before the unchanged layout engine runs ([0023](./decisions/0023-design-mode.md)). Render options are passed to each plugin per render and do not change the cached configuration.
+Render options are separate from Mermaid configuration. By default, every diagram type is drawn in ferrigura's own look and with its own measures ([0023](./decisions/0023-the-default-rendering.md)): its colors are laid under the user's theme variables, the style sheet and shapes add hairline outlines, roles, rounded corners and soft shadows, and for the graphs nodes, spacings and group paddings are sized anew before the unchanged layout engine runs, with steps of its own around the engine; sequence diagrams and mindmaps have a layout of their own, and the charts take the look on their layout. `compat: true` draws Mermaid's geometry and look for every type ([0019](./decisions/0019-mermaid-geometry-with-compat.md)); it is the rendering the checks against the reference run on. In code, the default is the tone a render carries (`design: Option<Tone>` in `ferrigura-render`'s sections, with the look in `design.rs`), and `None` is `compat`. Render options are passed to each plugin per render and do not change the cached configuration.
 
 Flowchart, Gantt, mind map, pie, and XY chart accept optional
 [draw animation](./animation.md) ([0021](./decisions/0021-optional-svg-draw-animation.md)).

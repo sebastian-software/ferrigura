@@ -19,7 +19,7 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
-use crate::flowchart::style::look_defs;
+use crate::flowchart::style::look_defs_for;
 use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::geom::BBox;
 use crate::unified::markers;
@@ -32,6 +32,27 @@ const VIEWBOX_PADDING: f64 = 8.0;
 /// The font size of the title and of the labels that the theme does not size: the root of the
 /// reference's SVG sets `font-size` from the theme (`styles.ts` `svg`), and the title inherits it.
 const DEFAULT_FONT_SIZE: f64 = 16.0;
+
+/// The room the default rendering keeps between an entity and the first turn of a relation's line,
+/// along the flow (`docs/decisions/0023-the-default-rendering.md`): the longest cardinality marker,
+/// a crow's foot with its ring (24), and the corner's radius (10) with 2 to spare, so that every
+/// marker stands on a straight end of its line.
+pub const MARKER_ROOM: f64 = 36.0;
+
+/// Gives the relations of an ER diagram in the default rendering a straight end for their markers:
+/// ELK keeps the turns of an edge between two layers [`MARKER_ROOM`] from the nodes, in the root
+/// and in every group.
+pub(crate) fn give_markers_room(graph: &mut ferrigura_elk::json::JsonNode) {
+    graph.layout_options.get_or_insert_default().insert(
+        "elk.layered.spacing.edgeNodeBetweenLayers".to_owned(),
+        MARKER_ROOM.into(),
+    );
+    for child in &mut graph.children {
+        if !child.children.is_empty() {
+            give_markers_room(child);
+        }
+    }
+}
 
 /// `getData` and the measure step of the unified renderer (`erRenderer-unified.ts` 17-28).
 fn measure(
@@ -139,7 +160,8 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "er", &diagram.acc_title, &diagram.acc_descr);
-    let style = style::style_sheet(id, input.theme, input.globals, &families);
+    let design = input.section.design;
+    let style = style::style_sheet(id, input.theme, input.globals, &families, design);
     // `insertMarkers` with `data4Layout.markers` (`erRenderer-unified.ts` 32-41): the `neo` set for
     // the neo look, else the classic one.
     let stroke_width = input
@@ -149,8 +171,11 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
         .text()
         .unwrap_or_else(|| "1".to_owned());
     let background = input.theme.light.main_bkg.text().unwrap_or_default();
-    let marker_defs =
-        markers::er_markers(id, input.globals.look == "neo", &stroke_width, &background);
+    let marker_defs = if design.is_some() {
+        markers::design_er_markers(id)
+    } else {
+        markers::er_markers(id, input.globals.look == "neo", &stroke_width, &background)
+    };
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"erDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{marker_defs}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
@@ -161,6 +186,6 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
         h = number(view_height),
         root = painted.root,
         coloured_markers = painted.coloured_markers,
-        defs = look_defs(id, input.theme, input.globals),
+        defs = look_defs_for(id, input.theme, input.globals, design),
     ))
 }

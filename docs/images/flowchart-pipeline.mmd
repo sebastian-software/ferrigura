@@ -1,0 +1,8 @@
+flowchart LR
+  model[FlowchartDiagram] --> data[get_data]
+  data --> measure[measure: labels and shapes]
+  measure --> build[elk_build]
+  build --> elk[ferrigura-elk]
+  elk --> apply[elk_apply]
+  apply --> paint[paint: clusters, edges, labels, nodes]
+  paint --> svg[SVG with style, defs, viewBox]

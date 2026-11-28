@@ -694,11 +694,33 @@ impl Chart<'_> {
         let state = bar_state(task.active, task.done, task.crit);
         let (fill, stroke) = style::bar_tokens(self.tokens(), state, section, task.vert);
         let mut attributes = String::new();
-        if let Some(token) = fill {
-            attributes.push_str(&self.colour("fill", token));
-        }
-        if let Some(token) = stroke {
-            attributes.push_str(&self.colour("stroke", token));
+        // The default rendering draws a section's bars in its series color, as its rules do.
+        let series = self
+            .design
+            .filter(|_| {
+                matches!(state, Bar::Task | Bar::Active)
+                    && !task.vert
+                    && section < 4
+                    && style::series_by_section(self.tokens(), self.design)
+            })
+            .map(|tone| style::section_series(tone, section));
+        let critical = self.design.is_some()
+            && state == Bar::ActiveCrit
+            && style::series_by_section(self.tokens(), self.design);
+        if let Some((tint, colour)) = series {
+            attributes.push_str(&format!(" fill=\"{tint}\" stroke=\"{colour}\""));
+        } else if critical {
+            attributes.push_str(&self.colour("fill", &self.tokens().crit_bkg_color));
+            if let Some(token) = stroke {
+                attributes.push_str(&self.colour("stroke", token));
+            }
+        } else {
+            if let Some(token) = fill {
+                attributes.push_str(&self.colour("fill", token));
+            }
+            if let Some(token) = stroke {
+                attributes.push_str(&self.colour("stroke", token));
+            }
         }
         let class = bar_class(task, section, state_classes(task));
         let svg = format!(

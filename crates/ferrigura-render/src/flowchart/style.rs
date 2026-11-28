@@ -2,12 +2,14 @@
 //! `packages/mermaid/src/diagrams/flowchart/styles.ts`, the rules of `packages/mermaid/src/styles.ts`
 //! that a flowchart gets, the `classDef` rules of `mermaidAPI.ts` and `insertLookDefs.ts`.
 //!
-//! Colors follow `docs/decisions/0011-themes-as-css-variables.md`: every color is a custom property declared on the
-//! diagram's id, once for each set of variables, and the rules refer to it with `var(…)`. The
-//! elements carry the same colors as presentation attributes, where they have one (see
-//! `clusters.rs`). The rules that the reference writes but no flowchart element can match are left
-//! out, each for a stated reason; `docs/diagrams/flowchart.md#style-sheet-looks-and-the-svg-root` says why, and
-//! `tests/flowchart_styles.rs` checks every other rule in Mermaid mode against the reference's compiled CSS.
+//! Colors follow `docs/decisions/0011-themes-as-css-variables.md`: every color is a custom property
+//! declared on the diagram's id, once for each set of variables, and the rules refer to it with
+//! `var(…)`. The elements carry the same colors as presentation attributes, where they have one
+//! (see `clusters.rs`). The rules that the reference writes but no flowchart element can match are
+//! left out, each for a stated reason;
+//! `docs/diagrams/flowchart.md#style-sheet-looks-and-the-svg-root` says why, and
+//! `tests/flowchart_styles.rs` checks every other rule in `compat` against the reference's compiled
+//! CSS.
 
 use std::borrow::Cow;
 use std::fmt::{self, Write as _};
@@ -16,7 +18,6 @@ use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use super::policy::FlowchartRouting;
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
 use crate::svg::{assemble_stylesheet, escape};
@@ -57,9 +58,8 @@ pub fn style_sheet(
     theme: ThemeView<'_>,
     globals: &Globals,
     classes: &[FlowClass],
-    mode: FlowchartRouting,
 ) -> String {
-    style_sheet_with_fonts(svg_id, theme, globals, classes, &[], mode, None)
+    style_sheet_with_fonts(svg_id, theme, globals, classes, &[], None)
 }
 
 /// [`style_sheet`] for a diagram whose text is set in embedded font subsets. The rules name the first
@@ -72,7 +72,6 @@ pub fn style_sheet_with_fonts(
     globals: &Globals,
     classes: &[FlowClass],
     families: &[EmbeddedFamily],
-    _mode: FlowchartRouting,
     design: Option<Tone>,
 ) -> String {
     let tokens = theme.light;
@@ -91,7 +90,8 @@ pub fn style_sheet_with_fonts(
         "{}px",
         tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned())
     );
-    // The design mode draws hairlines: an outline lighter than an edge, both lighter than the theme's.
+    // The default rendering draws hairlines: an outline lighter than an edge, both lighter than the
+    // theme's.
     let (stroke_width, edge_width, thick_width) = match design {
         Some(_) => (
             design::NODE_STROKE_WIDTH,
@@ -121,7 +121,7 @@ pub fn style_sheet_with_fonts(
         _ => Cow::Borrowed("none"),
     };
     // Match Mermaid's normally opaque HTML paragraph backgrounds in the SVG-only default.
-    // Routing never changes readability: SVG labels mask the line in both modes.
+    // SVG labels mask the line in both renderings.
     // Keep explicitly authored theme colors, including their alpha channel.
     let label_opacity = "1";
 
@@ -191,7 +191,7 @@ pub fn look_defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> Strin
     look_defs_for(svg_id, theme, globals, None)
 }
 
-/// [`look_defs`] for a flowchart, which draws the design mode's shadows in that mode.
+/// [`look_defs`] for a flowchart, which draws the default rendering's shadows in that mode.
 #[must_use]
 pub fn look_defs_for(
     svg_id: &str,
@@ -228,8 +228,8 @@ pub fn look_defs_for(
     defs
 }
 
-/// The shadows of the design mode: short and soft, under the same ids as the look's, so that the
-/// look's rules refer to them. The style sheet sets the flood per scheme.
+/// The shadows of the default rendering: short and soft, under the same ids as the look's, so that
+/// the look's rules refer to them. The style sheet sets the flood per scheme.
 fn design_defs(svg_id: &str, tone: Tone) -> String {
     let (flood, opacity) = design::flood_attributes(tone);
     let shadow = |id: &str, size: &str, blur: &str| {
@@ -243,8 +243,8 @@ fn design_defs(svg_id: &str, tone: Tone) -> String {
     defs
 }
 
-/// The rules of the design mode, after the look's and before the `classDef` rules, which keep the
-/// last word: a group frame without the node's outline and shadow, an edge label in the title's
+/// The rules of the default rendering, after the look's and before the `classDef` rules, which keep
+/// the last word: a group frame without the node's outline and shadow, an edge label in the title's
 /// muted color, and the fill, outline and text of each role.
 fn write_design_rules(css: &mut String, id: &str) {
     let _ = write!(
@@ -287,11 +287,11 @@ fn flood_color(globals: &Globals) -> &'static str {
     }
 }
 
-/// Appends the custom properties of the colors to `css`, declared on `id` (`#` and the SVG's id), with
-/// the palette of the light (or only) scheme. With one set of variables they are written as they are;
-/// with a light and a dark set, the values that differ are `light-dark()` pairs, so one SVG follows the
-/// page's or the viewer's scheme. In the design mode, the mode's own properties take the place of the
-/// palette and the look's flood.
+/// Appends the custom properties of the colors to `css`, declared on `id` (`#` and the SVG's id),
+/// with the palette of the light (or only) scheme. With one set of variables they are written as
+/// they are; with a light and a dark set, the values that differ are `light-dark()` pairs, so one
+/// SVG follows the page's or the viewer's scheme. In the default rendering, the default's own
+/// properties take the place of the palette and the look's flood.
 fn write_custom_properties(
     css: &mut String,
     id: &str,
@@ -366,8 +366,8 @@ fn write_declaration_block(
     let _ = write!(css, "--floodColor:{flood};}}");
 }
 
-/// The custom properties of one set in the design mode, as one rule on `id`: the theme's colors and
-/// the mode's own properties for `tone`.
+/// The custom properties of one set in the default rendering, as one rule on `id`: the theme's
+/// colors and the default's own properties for `tone`.
 fn write_design_block(css: &mut String, id: &str, tokens: &ThemeTokens, tone: Tone) {
     css.push_str(id);
     css.push('{');
@@ -521,7 +521,6 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &[],
-            FlowchartRouting::Mermaid,
         );
         assert!(
             sheet.starts_with("#flowchart{--nodeBorder:#28253D;"),
@@ -551,7 +550,6 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &[],
-            FlowchartRouting::Mermaid,
         );
         assert!(
             sheet.contains("#flowchart{--nodeBorder:light-dark(#28253D,#FFFFFF);"),
@@ -576,7 +574,6 @@ mod tests {
             },
             &globals("redux-dark-color", "classic"),
             &[],
-            FlowchartRouting::Mermaid,
         );
         assert!(!sheet.contains("bkgColor0:"), "{sheet}");
         assert!(sheet.contains("[data-look=\"classic\"][data-color-id=\"color-0\"].cluster:not(.swimlane) rect{stroke:var(--borderColor0);}"), "{sheet}");
@@ -592,7 +589,6 @@ mod tests {
             },
             &globals("default", "neo"),
             &[],
-            FlowchartRouting::Mermaid,
         );
         assert!(!sheet.contains("color-0"), "{sheet}");
     }
@@ -619,7 +615,6 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &classes,
-            FlowchartRouting::Mermaid,
         );
         assert!(
             sheet.contains(
@@ -659,7 +654,6 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &classes,
-            FlowchartRouting::Mermaid,
         );
         assert!(!sheet.contains(".bad"), "{sheet}");
         assert!(!sheet.contains("body"), "{sheet}");
@@ -679,7 +673,6 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &[],
-            FlowchartRouting::Mermaid,
         );
         assert!(sheet.contains("--nodeBorder:a&amp;b;"), "{sheet}");
         assert!(!sheet.contains("&amp;amp;"), "{sheet}");
@@ -773,7 +766,6 @@ mod tests {
             &globals("redux-color", "neo"),
             &[],
             std::slice::from_ref(&family),
-            FlowchartRouting::Mermaid,
             None,
         );
         assert!(

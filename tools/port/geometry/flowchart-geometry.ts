@@ -10,7 +10,8 @@
  * `foreignObject` elements in the reference, which must be zero.
  *
  * The reference is Mermaid's built bundle (`packages/mermaid/dist`), run in Chromium. ferrigura
- * renders the same patched text with its `render` example, with `--id` set to the reference's
+ * renders the same patched text in `compat`, Mermaid's geometry, with its `render` example and
+ * `--id` set to the reference's
  * id, so both SVGs can be paired by element id. Both SVGs are measured in one Chromium page, in
  * their viewBox coordinates, at scale 1: the nodes, the edge paths (sampled), the edge labels, the
  * clusters, the root box and the element counts per class.
@@ -71,7 +72,6 @@ import {
   type SvgGeometry,
 } from './flowchart-compare.js';
 import { STAGES } from './flowchart-stages.js';
-import { ADAPTIVE_PORTS } from './flowchart-routing.js';
 
 const fixtureDir = join(root, 'e2e/diagrams/flowchart');
 /**
@@ -195,7 +195,6 @@ interface FlowchartResult extends FixtureResult {
 }
 
 interface Options {
-  routing: 'adaptive' | 'mermaid';
   filter: string | null;
   stages: string[];
   imageDir: string | null;
@@ -203,10 +202,6 @@ interface Options {
 }
 
 function parseOptions(argv: string[]): Options {
-  const routing = flagValue(argv, '--routing') ?? 'mermaid';
-  if (routing !== 'adaptive' && routing !== 'mermaid') {
-    throw new Error(`unknown routing "${routing}" (expected adaptive or mermaid)`);
-  }
   const stage = flagValue(argv, '--stage');
   const stages = stage
     ? stage
@@ -220,7 +215,6 @@ function parseOptions(argv: string[]): Options {
     }
   }
   return {
-    routing,
     filter: flagValue(argv, '--filter'),
     stages,
     imageDir: flagValue(argv, '--images'),
@@ -229,12 +223,8 @@ function parseOptions(argv: string[]): Options {
 }
 
 /** The `flowchart-elk` example's ELK input for the text, or the first line of its error. */
-function runElkExample(
-  text: string,
-  id: string,
-  routing: Options['routing']
-): { input: ElkElement } | { error: string } {
-  const result = spawnSync(elkBinary, ['--id', id, '--compat', String(routing === 'mermaid')], {
+function runElkExample(text: string, id: string): { input: ElkElement } | { error: string } {
+  const result = spawnSync(elkBinary, ['--id', id, '--compat', 'true'], {
     input: text,
     cwd: root,
     encoding: 'utf8',
@@ -306,14 +296,11 @@ async function main(): Promise<void> {
       (options.stages.length === 0 || inStages.has(file)) &&
       (options.filter === null || matchesFilter(file, options.filter))
   );
-  console.log(
-    `flowchart geometry (${options.routing}): ${selected.length} of ${all.length} fixtures selected`
-  );
+  console.log(`flowchart geometry: ${selected.length} of ${all.length} fixtures selected`);
 
   const results: FlowchartResult[] = [];
   let foreignObjectFixtures = 0;
   await withPage(MEASURE, async (page) => {
-    if (options.routing === 'adaptive') await page.evaluate(ADAPTIVE_PORTS);
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
@@ -370,7 +357,7 @@ async function main(): Promise<void> {
         result.reason = excluded;
         console.log(`– ${file}  excluded: ${excluded}`);
       } else {
-        const rendered = renderFerrigura(text, id, undefined, options.routing === 'mermaid');
+        const rendered = renderFerrigura(text, id);
         if ('error' in rendered) {
           result.class = 'not rendered';
           result.reason = rendered.error;
@@ -425,7 +412,7 @@ async function main(): Promise<void> {
       }
       // ELK: the example's input for the same text, against the reference's first call.
       if (elkProblem === null && result.class !== 'excluded' && reference.elk.length > 0) {
-        const example = runElkExample(text, id, options.routing);
+        const example = runElkExample(text, id);
         if ('error' in example) {
           result.elk.status = 'not available';
           result.elk.problems = [example.error];
@@ -466,19 +453,12 @@ async function main(): Promise<void> {
   );
   const elkMatch = results.filter((result) => result.elk.status === 'match').length;
 
-  await writeJson(
-    join(
-      workDir,
-      options.routing === 'mermaid' ? 'flowchart-geometry.json' : 'flowchart-geometry-adaptive.json'
-    ),
-    {
-      routing: options.routing,
-      tolerances: { pixels: PIXEL_TOLERANCE },
-      elkExample: elkProblem === null ? 'available' : `not available: ${elkProblem}`,
-      summary,
-      results,
-    }
-  );
+  await writeJson(join(workDir, 'flowchart-geometry.json'), {
+    tolerances: { pixels: PIXEL_TOLERANCE },
+    elkExample: elkProblem === null ? 'available' : `not available: ${elkProblem}`,
+    summary,
+    results,
+  });
 
   console.log(`
 flowchart geometry: ${results.length} fixtures`);

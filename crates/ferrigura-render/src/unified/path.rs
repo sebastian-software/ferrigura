@@ -807,6 +807,19 @@ pub fn apply_marker_offsets(points: &[Point], start: &str, end: &str) -> Vec<Poi
 /// full-precision number text. Fewer than two points give an empty string.
 #[must_use]
 pub fn generate_rounded_path(points: &[Point], radius: f64) -> String {
+    generate_rounded_path_from_ends(points, radius, (0.0, 0.0))
+}
+
+/// [`generate_rounded_path`] for points whose ends a marker pulled back by `pulled` (start, end):
+/// the corner next to an end takes at most half of that part as the layout left it, before the
+/// pull-back, and never more than the part that is drawn. The default rendering draws its edges so,
+/// and an arrowhead does not make the turn before it tighter than the others.
+#[must_use]
+pub fn generate_rounded_path_from_ends(
+    points: &[Point],
+    radius: f64,
+    pulled: (f64, f64),
+) -> String {
     if points.len() < 2 {
         return String::new();
     }
@@ -819,7 +832,7 @@ pub fn generate_rounded_path(points: &[Point], radius: f64) -> String {
         } else if i == size - 1 {
             let _ = write!(path, "L{},{}", NumberText(curr.x), NumberText(curr.y));
         } else {
-            match rounded_corner(points[i - 1], curr, points[i + 1], radius) {
+            match rounded_corner_from_ends(points, i, radius, pulled) {
                 Some(corner) => {
                     let _ = write!(
                         path,
@@ -861,6 +874,51 @@ pub struct RoundedCorner {
 /// case the path has a plain `L` through it.
 #[must_use]
 pub fn rounded_corner(prev: Point, curr: Point, next: Point, radius: f64) -> Option<RoundedCorner> {
+    rounded_corner_with_room(prev, curr, next, radius, (0.0, 0.0))
+}
+
+/// The corner at `points[index]` as [`rounded_corner`] computes it, where the first and the last
+/// part of `points` are `pulled` (start, end) shorter than the layout left them: the corner next
+/// to an end takes at most half of the part before the pull-back, and at most the part drawn.
+#[must_use]
+pub fn rounded_corner_from_ends(
+    points: &[Point],
+    index: usize,
+    radius: f64,
+    pulled: (f64, f64),
+) -> Option<RoundedCorner> {
+    let before = if index == 1 { pulled.0 } else { 0.0 };
+    let after = if index + 2 == points.len() {
+        pulled.1
+    } else {
+        0.0
+    };
+    rounded_corner_with_room(
+        points[index - 1],
+        points[index],
+        points[index + 1],
+        radius,
+        (before, after),
+    )
+}
+
+/// How far each end of `offset` was pulled back from the same end of `points` (start, end).
+#[must_use]
+pub fn pulled_back(points: &[Point], offset: &[Point]) -> (f64, f64) {
+    match (points.first(), offset.first(), points.last(), offset.last()) {
+        (Some(&a), Some(&b), Some(&c), Some(&d)) => (a.distance(b), c.distance(d)),
+        _ => (0.0, 0.0),
+    }
+}
+
+/// [`rounded_corner`] with a part before and after the bend that is `extra` longer than drawn.
+fn rounded_corner_with_room(
+    prev: Point,
+    curr: Point,
+    next: Point,
+    radius: f64,
+    extra: (f64, f64),
+) -> Option<RoundedCorner> {
     const EPSILON: f64 = 1e-5;
     let dx1 = curr.x - prev.x;
     let dy1 = curr.y - prev.y;
@@ -887,7 +945,15 @@ pub fn rounded_corner(prev: Point, curr: Point, next: Point, radius: f64) -> Opt
     } else {
         sin(angle / 2.0)
     };
-    let cut_len = js_min3(radius / half_sine, len1 / 2.0, len2 / 2.0);
+    // Half of a part, or of a part and its end's pull-back, but no more than the part drawn.
+    let room = |len: f64, extra: f64| {
+        if extra > 0.0 {
+            ((len + extra) / 2.0).min(len)
+        } else {
+            len / 2.0
+        }
+    };
+    let cut_len = js_min3(radius / half_sine, room(len1, extra.0), room(len2, extra.1));
     Some(RoundedCorner {
         start: Point::new(curr.x - nx1 * cut_len, curr.y - ny1 * cut_len),
         end: Point::new(curr.x + nx2 * cut_len, curr.y + ny2 * cut_len),

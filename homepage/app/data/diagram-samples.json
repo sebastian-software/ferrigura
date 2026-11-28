@@ -1,6 +1,6 @@
 {
   "renderedWith": { "ferrigura": "repository source" },
-  "platform": "linux-x64",
+  "platform": "darwin-arm64",
   "samples": [
     {
       "id": "flowchart",
@@ -43,14 +43,36 @@
       "description": "A guide is drafted and its diagrams drawn at the same time; review follows both, and the guide is published once review ends.",
       "source": "gantt\n  dateFormat YYYY-MM-DD\n  axisFormat %b %d\n  todayMarker off\n  section Writing\n    Draft the guide: draft, 2026-03-02, 5d\n    Draw the diagrams: diagrams, 2026-03-02, 4d\n  section Release\n    Review: review, after draft diagrams, 3d\n    Publish: milestone, after review, 0d\n",
       "file": "gantt.svg"
+    },
+    {
+      "id": "mindmap",
+      "label": "Mindmap",
+      "description": "A release around its center: what changes in the code, what the documentation needs, and how it is announced.",
+      "source": "mindmap\n  root((Release))\n    Code\n      New diagram type\n      Faster layout\n    Documentation\n      Guide\n      Changelog\n    Announcement\n      Blog post\n      Release notes\n",
+      "file": "mindmap.svg"
+    },
+    {
+      "id": "pie",
+      "label": "Pie",
+      "description": "Where the diagrams of a documentation site come from: most are flowcharts, then sequence, class and state diagrams.",
+      "source": "pie title Diagrams in the guide\n  \"Flowchart\" : 42\n  \"Sequence\" : 18\n  \"Class\" : 9\n  \"State\" : 6\n",
+      "file": "pie.svg"
+    },
+    {
+      "id": "quadrant",
+      "label": "Quadrant",
+      "description": "Four pages of a guide placed by how often they are read and how out of date they are; the setup page is read most and needs an update.",
+      "source": "quadrantChart\n  title Which pages to update first\n  x-axis Rarely read --> Often read\n  y-axis Up to date --> Out of date\n  quadrant-1 Update now\n  quadrant-2 Plan an update\n  quadrant-3 Leave as is\n  quadrant-4 Keep an eye on\n  Setup: [0.8, 0.75]\n  Themes: [0.35, 0.6]\n  API reference: [0.7, 0.25]\n  Changelog: [0.2, 0.15]\n",
+      "file": "quadrant.svg"
+    },
+    {
+      "id": "xychart",
+      "label": "XY chart",
+      "description": "Diagrams rendered per month in a documentation build, from January to June, as bars with a line over them; the number grows every month.",
+      "source": "xychart-beta\n  title \"Diagrams rendered per month\"\n  x-axis [Jan, Feb, Mar, Apr, May, Jun]\n  y-axis \"Diagrams\" 0 --> 500\n  bar [120, 180, 210, 290, 360, 430]\n  line [120, 180, 210, 290, 360, 430]\n",
+      "file": "xychart.svg"
     }
   ],
-  "modes": {
-    "source": "flowchart TD\n  write[Write the guide] --> review{Review}\n  review -->|Approved| publish[Publish]\n  review -->|Changes requested| write\n  publish --> announce[Announce the release]\n",
-    "description": "A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.",
-    "adaptive": "mode-adaptive.svg",
-    "mermaid": "mode-mermaid.svg"
-  },
   "design": {
     "samples": [
       {
@@ -59,7 +81,7 @@
         "stacked": true,
         "description": "Diagram text is parsed and its labels measured. One of three layouts follows, the SVG is painted and written to a file; a syntax error is reported instead.",
         "source": "flowchart LR\n  text([Diagram text]) --> parse[Parse]\n  parse --> measure[Measure the labels]\n  measure --> flow[Lay out a flowchart]\n  measure --> sequence[Lay out a sequence]\n  measure --> other[Lay out another type]\n  flow --> paint[Paint the SVG]\n  sequence --> paint\n  other --> paint\n  paint --> file[(SVG file)]\n  parse -. syntax error .-> report[Report the line]\n",
-        "plain": "design-pipeline-default.svg",
+        "plain": "design-pipeline-compat.svg",
         "designed": "design-pipeline.svg"
       },
       {
@@ -68,7 +90,7 @@
         "stacked": false,
         "description": "A reader opens a page. A page in the cache is taken from there, another one is rendered first; either way the page is sent and shown.",
         "source": "flowchart TD\n  open([Reader opens a page]) --> cached{In the cache?}\n  cached -->|yes| stored[Take the stored page]\n  cached -->|no| render[Render the page]\n  stored --> send[Send the page]\n  render --> send\n  send --> shown([Page shown])\n",
-        "plain": "design-decision-default.svg",
+        "plain": "design-decision-compat.svg",
         "designed": "design-decision.svg"
       },
       {
@@ -77,7 +99,7 @@
         "stacked": false,
         "description": "A guide is written, reviewed, approved and published, and the release is announced. Requested changes send it back to writing, and a typo fix is published at once.",
         "source": "flowchart TD\n  write[Write the guide] --> review[Review it]\n  review --> approve[Approve it]\n  approve --> publish[Publish it]\n  write -->|typo fix| publish\n  review -->|changes requested| write\n  publish --> announce([Announce the release])\n",
-        "plain": "design-review-default.svg",
+        "plain": "design-review-compat.svg",
         "designed": "design-review.svg"
       },
       {
@@ -86,7 +108,7 @@
         "stacked": false,
         "description": "A guide starts as a draft. Submitting it puts it in review, where it is approved and published or sent back with requested changes. A published guide is archived at the end. A note says that two editors read every guide.",
         "source": "stateDiagram-v2\n  [*] --> Draft\n  Draft --> Review : submit\n  Review --> Draft : request changes\n  Review --> Published : approve\n  Published --> Archived : archive\n  Archived --> [*]\n  note right of Review\n    Two editors read\n    every guide.\n  end note\n",
-        "plain": "design-state-default.svg",
+        "plain": "design-state-compat.svg",
         "designed": "design-state.svg"
       },
       {
@@ -95,7 +117,7 @@
         "stacked": false,
         "description": "Shape is an interface with an area. Circle and the abstract class Polygon realize it, and Triangle and Rectangle are polygons.",
         "source": "classDiagram\n  class Shape {\n    <<interface>>\n    +area() double\n  }\n  class Polygon {\n    <<abstract>>\n    #List~Point~ vertices\n    +perimeter() double\n  }\n  class Circle {\n    -double radius\n    +area() double\n  }\n  class Triangle {\n    +area() double\n  }\n  class Rectangle {\n    -double width\n    -double height\n    +area() double\n  }\n  Shape <|.. Circle\n  Shape <|.. Polygon\n  Polygon <|-- Triangle\n  Polygon <|-- Rectangle\n",
-        "plain": "design-classes-default.svg",
+        "plain": "design-classes-compat.svg",
         "designed": "design-classes.svg"
       }
     ],
@@ -109,7 +131,7 @@
   },
   "file": {
     "sample": "flowchart",
-    "bytes": 30465,
+    "bytes": 25457,
     "fontFaces": 1,
     "fontBytes": 3748,
     "textElements": 10,

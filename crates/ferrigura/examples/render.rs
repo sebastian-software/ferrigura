@@ -1,6 +1,7 @@
 //! Renders the diagram text on standard input to SVG on standard output.
 //!
-//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--fonts local-fonts.json] [--id ID] [--scheme light|dark|auto] [--now MS] [--compat true|false] [--design true|false]`
+//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--fonts
+//! local-fonts.json] [--id ID] [--scheme light|dark|auto] [--now MS] [--compat true|false]`
 //!
 //! `--config` is the `initialize` configuration as JSON; `--id` is the id of the SVG element, and
 //! `--scheme` the color scheme, and `--now` the current time in milliseconds since the epoch (the
@@ -35,7 +36,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             "--fonts" => font_inputs = Some(std::path::PathBuf::from(value)),
             "--id" => options.id = Some(value),
             "--compat" => options.compat = value.parse()?,
-            "--design" => options.design = value.parse()?,
             "--now" => options.now = Some(value.parse()?),
             "--scheme" => {
                 options.color_scheme = Some(match value.as_str() {

@@ -34,7 +34,6 @@ use ferrigura_model::theme::ThemeTokens;
 
 use crate::context::{Context, Globals};
 use crate::design::{Roles, Tone};
-use crate::flowchart::policy::FlowchartRouting;
 
 /// The sections of the configuration that the unified renderer reads, borrowed from the view that the
 /// facade resolves. The `flowchart` section gives the layout's spacing, the curve and the title
@@ -44,11 +43,11 @@ use crate::flowchart::policy::FlowchartRouting;
 /// and its `useMaxWidth` from it.
 #[derive(Debug, Clone, Copy)]
 pub struct Section<'a> {
-    /// The flowchart's rendering mode. Other diagram types ignore it.
-    pub flowchart_routing: FlowchartRouting,
-    /// The tone of the design mode, when the render draws in it (`docs/decisions/0023-design-mode.md`).
+    /// The tone of the default rendering, when the render draws in it
+    /// (`docs/decisions/0023-the-default-rendering.md`).
     pub design: Option<Tone>,
-    /// The shapes that carry a role in the design mode: the flowchart's, or the state diagram's.
+    /// The shapes that carry a role in the default rendering: the flowchart's, or the state
+    /// diagram's.
     pub roles: Roles,
     /// The `flowchart` section.
     pub flowchart: &'a FlowchartDiagramConfig,
@@ -68,7 +67,6 @@ impl<'a> Section<'a> {
     #[must_use]
     pub fn of(config: &'a MermaidConfig) -> Self {
         Self {
-            flowchart_routing: FlowchartRouting::Mermaid,
             design: None,
             roles: Roles::Flowchart,
             flowchart: &config.flowchart,

@@ -46,8 +46,9 @@ export function Checked() {
           The first comparison is about reading. Fixtures, Mermaid&rsquo;s own test cases and the
           examples from its documentation go through both parsers, and the structures they produce
           must agree. The second is about drawing. Both sides draw the same diagrams in Chromium,
-          and every box, position, edge point and text has to land within 0.05 pixels of
-          Mermaid&rsquo;s.
+          Ferrigura with <code>compat: true</code>, and every box, position, edge point and text has
+          to land within 0.05 pixels of Mermaid&rsquo;s. Ferrigura&rsquo;s default drawing departs
+          from that geometry on purpose and is pinned by its own snapshots.
         </p>
       </MonoPassage>
       <CoverageProofs />

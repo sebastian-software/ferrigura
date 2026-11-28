@@ -23,7 +23,7 @@ const { render, Renderer } = addon.exports;
 
 const PIE = 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n';
 
-void test('flowchart routing is adaptive by default and compatibility is per render', () => {
+void test('the default rendering and compat are chosen per render', () => {
   const text = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
   const renderer = new Renderer();
   const compatible = renderer.render(text, { compat: true });
@@ -115,11 +115,11 @@ void test('a renderer refuses a colour scheme that is not known, and text that i
 void test('compat selects Mermaid geometry for flowcharts and sequence participants', () => {
   const renderer = new Renderer();
   const sequence = 'sequenceDiagram\n participant App\n participant API\n App->>API: Request\n';
-  const compact = renderer.render(sequence);
+  const drawn = renderer.render(sequence);
   const compatible = renderer.render(sequence, { compat: true });
-  assert.match(compact, /height="32" name="App"/);
+  assert.match(drawn, /height="44" name="App"/);
   assert.match(compatible, /height="76" name="App"/);
-  assert.equal(renderer.render(sequence, { compat: false }), compact);
+  assert.equal(renderer.render(sequence, { compat: false }), drawn);
   assert.equal(renderer.render(sequence, { compat: true }), compatible);
   const flow = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
   assert.notEqual(renderer.render(flow), renderer.render(flow, { compat: true }));

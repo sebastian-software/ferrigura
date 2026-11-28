@@ -38,10 +38,10 @@ pub(super) fn question(input: &ShapeInput<'_>) -> Part {
     Part::with_centered_label(svg, bbox, Intersect::Question, label)
 }
 
-/// The decision of the design mode: a flat rhombus, wider than tall, around the label
-/// (`docs/decisions/0023-design-mode.md`). Its size is [`flat_diamond_size`]; the label keeps its
-/// own width, not the node's minimum, which the rhombus sets as its least width instead. It takes
-/// no size of its own, as the reference's diamond does not.
+/// The decision of the default rendering: a flat rhombus, wider than tall, around the label
+/// (`docs/decisions/0023-the-default-rendering.md`). Its size is [`flat_diamond_size`]; the label
+/// keeps its own width, not the node's minimum, which the rhombus sets as its least width instead.
+/// It takes no size of its own, as the reference's diamond does not.
 fn flat_question(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let label = label_helper(input, true);
@@ -65,15 +65,15 @@ fn flat_question(input: &ShapeInput<'_>) -> Part {
     )
 }
 
-/// The room the design mode's decision keeps at the left and the right of its label, beside the
-/// room the slanted sides need.
+/// The room the default rendering's decision keeps at the left and the right of its label, beside
+/// the room the slanted sides need.
 pub(super) const FLAT_DIAMOND_PAD_X: f64 = 16.0;
 
-/// The room above and below the label of the design mode's decision: its height is twice the
+/// The room above and below the label of the default rendering's decision: its height is twice the
 /// label's and this.
 pub(super) const FLAT_DIAMOND_PAD_Y: f64 = 26.0;
 
-/// The width and the height of the design mode's decision for a label of `width` by `height`.
+/// The width and the height of the default rendering's decision for a label of `width` by `height`.
 ///
 /// A box of `w` by `h` centered in a rhombus of `W` by `H` fits when `w / W + h / H <= 1`. The
 /// height is `2 h + 16`, so the label takes a little less than half of it; the width follows from
@@ -87,8 +87,8 @@ pub(super) fn flat_diamond_size(width: f64, height: f64, least_width: f64) -> (f
     (diamond_width.max(least_width), diamond_height)
 }
 
-/// The corners of the design mode's decision of `width` by `height`, around its center: the top,
-/// the right, the bottom and the left tip.
+/// The corners of the default rendering's decision of `width` by `height`, around its center: the
+/// top, the right, the bottom and the left tip.
 #[must_use]
 pub(super) fn flat_diamond_points(width: f64, height: f64) -> [Point; 4] {
     [
@@ -569,7 +569,7 @@ mod tests {
         );
     }
 
-    /// The decision of the design mode for a label box.
+    /// The decision of the default rendering for a label box.
     fn flat(label: BBox) -> crate::unified::shapes::ShapeOutput {
         use crate::unified::Fixture;
         use ferrigura_model::config::MermaidConfig;

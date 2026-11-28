@@ -49,7 +49,7 @@ pub struct ElkState {
     /// run, and the reference's own warnings about unknown algorithm names.
     pub warnings: Vec<String>,
     /// The padding a group's frame keeps around its members when the post-processing pulls the
-    /// frame in: the design mode's, or `None` for the reference's.
+    /// frame in: the default rendering's, or `None` for the reference's.
     pub group_padding: Option<f64>,
 }
 
@@ -122,11 +122,6 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         edges,
         ..JsonNode::default()
     };
-    if data.diagram_type == super::markers::FLOWCHART
-        && section.flowchart_routing == crate::flowchart::policy::FlowchartRouting::Adaptive
-    {
-        crate::flowchart::policy::center_ports(&mut graph);
-    }
     if section.design.is_some() {
         // A placement strategy the configuration names is the user's choice.
         let place = section.elk.node_placement_strategy.is_none();
@@ -141,13 +136,20 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         let mut kept = Vec::new();
         paddings_of(&graph, &shapes, &mut kept);
         crate::flowchart::policy::relax(&mut graph, place);
+        // Siblings stand in one layer whether or not their edges carry labels.
+        crate::flowchart::policy::hold_label_layers(&mut graph);
         pad_untitled_groups(&mut graph, &shapes, &kept);
+        // An ER relation's cardinality marker needs a straight end before its line turns.
+        if data.diagram_type == super::markers::ER {
+            crate::er::give_markers_room(&mut graph);
+        }
         state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }
     ElkInput { graph, state }
 }
 
-/// The padding a note's group has before the design mode relaxes the graph, by the group's id.
+/// The padding a note's group has before the default rendering relaxes the graph, by the group's
+/// id.
 fn paddings_of(node: &JsonNode, shapes: &HashMap<&str, &str>, kept: &mut Vec<(String, Json)>) {
     for child in &node.children {
         if shapes.get(child.id.as_str()) == Some(&"noteGroup")
@@ -162,8 +164,8 @@ fn paddings_of(node: &JsonNode, shapes: &HashMap<&str, &str>, kept: &mut Vec<(St
     }
 }
 
-/// Gives the groups that draw no title the design mode's padding without a title row: a
-/// concurrency region the mode's side padding on every side, and a note's group the padding it
+/// Gives the groups that draw no title the default rendering's padding without a title row: a
+/// concurrency region the default's side padding on every side, and a note's group the padding it
 /// had before (`kept`).
 fn pad_untitled_groups(node: &mut JsonNode, shapes: &HashMap<&str, &str>, kept: &[(String, Json)]) {
     if let Some(ratio) = regions_ratio(node, shapes) {
@@ -947,6 +949,7 @@ fn add_vertices(
             label_data: label_data_of(node, section),
             width: node.width.unwrap_or(0.0),
             height: node.height.unwrap_or(0.0),
+            labels: node.beside.iter().map(|&room| beside_label(room)).collect(),
             ..Work::default()
         });
         index.insert(node.id.clone(), position);
@@ -957,6 +960,26 @@ fn add_vertices(
         }
     }
     added
+}
+
+/// The text of a label that only keeps room beside its node ([`beside_label`]).
+pub(crate) const BESIDE_TEXT: &str = " ";
+
+/// A label that keeps room beside its node for the default rendering (`Node::beside`): a box at a
+/// fixed place from the node's top left corner, which ELK neither moves nor places inside the node,
+/// and which the node's margins hold. Its text is not drawn; ELK leaves out a label without one.
+fn beside_label((x, y, width, height): (f64, f64, f64, f64)) -> JsonLabel {
+    let mut options = LayoutOptions::new();
+    set(&mut options, "nodeLabels.placement", text("[]"));
+    JsonLabel {
+        text: Some(BESIDE_TEXT.to_owned()),
+        x: Some(x),
+        y: Some(y),
+        width: Some(width),
+        height: Some(height),
+        layout_options: Some(options),
+        ..JsonLabel::default()
+    }
 }
 
 /// The root edges of the graph, one per layout-data edge, with their label (`addEdgesToElkGraph`).
@@ -1034,12 +1057,15 @@ fn configure_subgraph_nodes(
             decide_container_algorithm(arena[position].raw_algorithm.as_ref(), warnings);
         let work = &mut arena[position];
         work.container_algorithm = container;
-        work.labels = vec![JsonLabel {
-            text: Some(work.label.clone()),
-            width: Some(work.label_data.width),
-            height: Some(work.label_data.height),
-            ..JsonLabel::default()
-        }];
+        work.labels.insert(
+            0,
+            JsonLabel {
+                text: Some(work.label.clone()),
+                width: Some(work.label_data.width),
+                height: Some(work.label_data.height),
+                ..JsonLabel::default()
+            },
+        );
         let options = build_subgraph_layout_options(
             &SubgraphNode {
                 dir: work.dir.as_deref(),

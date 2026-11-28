@@ -185,7 +185,7 @@ impl LabelLayout {
     }
 
     /// [`LabelLayout::svg_with_background`], with the background drawn as the given box with the
-    /// given corner radius when there is one: the chip of an edge label in the design mode.
+    /// given corner radius when there is one: the chip of an edge label in the default rendering.
     #[must_use]
     pub fn svg_with_background_in(
         &self,
@@ -343,8 +343,8 @@ pub fn layout_inheriting(
     layout_in_style(spec, inherited, FontStyle::Normal)
 }
 
-/// [`layout_inheriting`] with the style of the label's plain and strong words: the design mode's
-/// class box sets an abstract member in italics.
+/// [`layout_inheriting`] with the style of the label's plain and strong words: the default
+/// rendering's class box sets an abstract member in italics.
 ///
 /// # Errors
 ///
@@ -357,9 +357,9 @@ pub fn layout_in_style(
     layout_with(spec, inherited, style, false)
 }
 
-/// [`layout`] for the design mode: a word is never broken inside, unless it is wider than
+/// [`layout`] for the default rendering: a word is never broken inside, unless it is wider than
 /// [`crate::design::WHOLE_WORD_LIMIT`] times the wrapping width. A line that holds such a word
-/// stays one line, wider than the wrapping width (`docs/decisions/0023-design-mode.md`).
+/// stays one line, wider than the wrapping width (`docs/decisions/0023-the-default-rendering.md`).
 ///
 /// # Errors
 ///
@@ -368,7 +368,7 @@ pub fn layout_keeping_words(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderE
     layout_with(spec, None, FontStyle::Normal, true)
 }
 
-/// The layout of a label; `keep_words` is the design mode's rule for a word wider than the
+/// The layout of a label; `keep_words` is the default rendering's rule for a word wider than the
 /// wrapping width.
 fn layout_with(
     spec: &LabelSpec<'_>,
@@ -571,7 +571,8 @@ fn layout_with(
                     Ok(total)
                 };
                 if keep_words {
-                    // The mode's rule: a word wider than the wrapping width stays one line, up to a bound.
+                    // The default's rule: a word wider than the wrapping width stays one line, up
+                    // to a bound.
                     let limit = width * crate::design::WHOLE_WORD_LIMIT;
                     let measured = std::cell::RefCell::new(measured_width);
                     let mut fits = |line: &[Word]| Ok((measured.borrow_mut())(line)? <= width);
@@ -951,10 +952,7 @@ mod tests {
         assert_eq!(layout.font_size, 20.0);
         let background = layout.background.expect("the edge label has a background");
         let plain = layout_with_default(&label);
-        assert_eq!(
-            background,
-            plain.background.expect("the default has one too")
-        );
+        assert_eq!(background, plain.background.expect("`compat` has one too"));
         assert_ne!(background.height, layout.bbox.height);
     }
 
@@ -1013,8 +1011,8 @@ mod tests {
         layout(&plain).expect("lays out")
     }
 
-    /// The design mode keeps a word whole where the default breaks it, wraps between words as the
-    /// default does, and breaks a word wider than the bound.
+    /// The default rendering keeps a word whole where `compat` breaks it, wraps between words as
+    /// `compat` does, and breaks a word wider than the bound.
     #[test]
     fn the_design_mode_keeps_a_word_whole_up_to_the_bound() {
         let styles = [];

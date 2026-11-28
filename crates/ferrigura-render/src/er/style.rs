@@ -15,6 +15,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::{Globals, ThemeView};
+use crate::design::{self, Tone};
 use crate::svg::assemble_stylesheet;
 use crate::unified::palette::{Palette, palette};
 
@@ -49,13 +50,16 @@ const RULES_CAPACITY: usize = 8 * 1024;
 
 /// The `<style>` element's content for an ER diagram with the id `svg_id`. The look is read from
 /// `config.look`, the palette from the theme, and the families of the embedded text give the
-/// `@font-face` rules that come first.
+/// `@font-face` rules that come first. In the default rendering (`design`), the default's rules
+/// follow the entity rules, and the default's own properties take the place of the palette and the
+/// look's flood (`docs/decisions/0023-the-default-rendering.md`).
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
     theme: ThemeView<'_>,
     globals: &Globals,
     families: &[EmbeddedFamily],
+    design: Option<Tone>,
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
@@ -76,7 +80,8 @@ pub fn style_sheet(
     // `look === 'neo' ? strokeWidth : '1px'` (`styles.ts` 117, 122).
     let neo = globals.look == "neo";
     let entity_stroke = if neo { stroke_width.as_str() } else { "1px" };
-    let palette = palette(globals, tokens);
+    // The default rendering uses no palette: every entity is neutral.
+    let palette = palette(globals, tokens).filter(|_| design.is_none());
     let shadow: Cow<'_, str> = match tokens.drop_shadow.text() {
         Some(shadow) if !shadow.is_empty() => Cow::Owned(shadow.replacen(
             "url(#drop-shadow)",
@@ -107,7 +112,10 @@ pub fn style_sheet(
     };
 
     let mut css = String::with_capacity(RULES_CAPACITY);
-    write_custom_properties(&mut css, &id, theme, globals, palette.as_ref());
+    match design {
+        Some(tone) => write_design_properties(&mut css, &id, theme, tone),
+        None => write_custom_properties(&mut css, &id, theme, globals, palette.as_ref()),
+    }
     let _ = write!(
         css,
         "{id}{{font-family:{font};font-size:{font_size};fill:var(--textColor);}}\
@@ -162,7 +170,67 @@ pub fn style_sheet(
 {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:var(--nodeBorder);filter:{shadow};}}\
 :root{{--mermaid-font-family: {font};}}"
     );
+    if design.is_some() {
+        write_design_rules(&mut css, &id);
+    }
     assemble_stylesheet(svg_id, families, css, false)
+}
+
+/// The rules of the default rendering, after the entity rules
+/// (`docs/decisions/0023-the-default-rendering.md`): hairline outlines and dividers, a relationship
+/// in the edge's weight, dashed when it is not identifying, the markers' paint, the muted columns
+/// of an attribute row, the relationship labels in the gap of their line, and a group frame without
+/// the node's shadow. An entity's own styles are written on its elements and keep the last word.
+fn write_design_rules(out: &mut String, id: &str) {
+    let node_width = design::NODE_STROKE_WIDTH;
+    let edge_width = design::EDGE_STROKE_WIDTH;
+    let thick_width = design::THICK_EDGE_STROKE_WIDTH;
+    let _ = write!(
+        out,
+        "{id} .edge-thickness-normal,{id} .relationshipLine{{stroke-width:{edge_width};}}\
+{id} .edge-thickness-thick{{stroke-width:{thick_width};}}\
+{id} .edge-pattern-dashed{{stroke-dasharray:5 4 !important;}}\
+{id} .node rect,{id} .node polygon,{id} .node path,{id} [data-look=\"neo\"].node path{{stroke-width:{node_width};}}\
+{id} .node line.divider{{stroke:var(--nodeBorder);stroke-width:1px;}}\
+{id} .node line.row-divider{{stroke:var(--nodeBorder);stroke-width:1px;stroke-opacity:0.3;}}\
+{id} .attribute-type text,{id} .attribute-keys text,{id} .attribute-comment text{{fill:var(--titleColor);}}\
+{id} .marker.er .design-line{{fill:none;stroke:var(--lineColor);stroke-width:{edge_width};stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;}}\
+{id} .marker.er .design-ring{{fill:var(--background);stroke:var(--lineColor);stroke-width:{edge_width};stroke-dasharray:none;}}\
+{id} .edgeLabel .label text{{fill:var(--titleColor);}}\
+{id} .edgeLabel rect.background,{id} .edgeLabel[data-look] rect.background{{fill:none;stroke:none;opacity:1;}}\
+{id} [data-look=\"neo\"].cluster rect{{stroke:var(--clusterBorder);filter:none;}}\
+{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow{{flood-color:var(--floodColor);flood-opacity:1;}}"
+    );
+}
+
+/// Appends the custom properties of the default rendering: the color tokens of each set and the
+/// page's ground, which fills a marker's ring, with the default's own properties for its tone. With
+/// a light and a dark set, the values that differ are `light-dark()` pairs.
+fn write_design_properties(css: &mut String, id: &str, theme: ThemeView<'_>, tone: Tone) {
+    let write_block = |out: &mut String, tokens: &ThemeTokens, tone: Tone| {
+        out.push_str(id);
+        out.push('{');
+        for (name, token) in color_tokens(tokens)
+            .into_iter()
+            .chain([("background", &tokens.background)])
+        {
+            if let Some(color) = token.text() {
+                let _ = write!(out, "--{name}:{color};");
+            }
+        }
+        out.push_str(design::declarations(tone));
+        out.push('}');
+    };
+    match theme.dark {
+        None => write_block(css, theme.light, tone),
+        Some(dark) => {
+            let mut light_block = String::new();
+            write_block(&mut light_block, theme.light, Tone::Light);
+            let mut dark_block = String::new();
+            write_block(&mut dark_block, dark, Tone::Dark);
+            css.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
+    }
 }
 
 /// Appends the custom properties of the colors, declared on the diagram's id. With one set of

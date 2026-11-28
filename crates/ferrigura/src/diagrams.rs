@@ -150,7 +150,7 @@ fn render_flowchart(
     prepared: &Prepared<'_>,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    with_flowchart(prepared, options.compat, |input| {
+    with_flowchart(prepared, |input| {
         flowchart::render_with_animation(input, options.animation)
     })
 }
@@ -172,7 +172,8 @@ fn read_er(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::
 
 fn render_er(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<String, RenderError> {
     let id = prepared.id.as_str();
-    let section = Section::of(&prepared.view.config);
+    let mut section = Section::of(&prepared.view.config);
+    section.design = prepared.design;
     er_render::render(&Context {
         fonts: prepared.fonts,
         diagram: &er::parse_prepared(&prepared.source)?,
@@ -265,11 +266,11 @@ fn read_sequence(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_
 
 fn render_sequence(
     prepared: &Prepared<'_>,
-    options: &RenderOptions,
+    _options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    sequence_render::render_with(
+    sequence_render::render_with_design(
         &Context {
             fonts: prepared.fonts,
             diagram: &sequence::parse_prepared(
@@ -283,7 +284,7 @@ fn render_sequence(
             theme: prepared.theme(),
             id,
         },
-        options.compat,
+        prepared.design,
     )
 }
 
@@ -349,6 +350,7 @@ fn render_gantt(prepared: &Prepared<'_>, options: &RenderOptions) -> Result<Stri
             section: &gantt_render::GanttSection {
                 config: &typed_config.gantt,
                 now,
+                design: prepared.design,
             },
             globals: &prepared.view.globals,
             theme: prepared.theme(),
@@ -377,7 +379,8 @@ fn read_mindmap(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_j
 fn render_mindmap(prepared: &Prepared<'_>, options: &RenderOptions) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    let section = Section::of(&prepared.view.config);
+    let mut section = Section::of(&prepared.view.config);
+    section.design = prepared.design;
     mindmap_render::render_with_animation(
         &Context {
             fonts: prepared.fonts,
@@ -385,6 +388,7 @@ fn render_mindmap(prepared: &Prepared<'_>, options: &RenderOptions) -> Result<St
             section: &MindmapSection {
                 mindmap: &typed_config.mindmap,
                 unified: section,
+                look: prepared.design,
             },
             globals: &prepared.view.globals,
             theme: prepared.theme(),
@@ -415,17 +419,61 @@ fn render_xy_chart(
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    xychart_render::render_with_animation(
+    // The default rendering draws the plots in its palette, unless the text gives one: the parser
+    // reads the palette from the text's configuration only.
+    let designed = prepared
+        .design
+        .and_then(|_| design_palette_directive(&prepared.directive, prepared.theme().light));
+    xychart_render::render_with_design(
         &Context {
             fonts: prepared.fonts,
-            diagram: &xychart::parse_prepared(&prepared.source, &prepared.directive)?,
+            diagram: &xychart::parse_prepared(
+                &prepared.source,
+                designed.as_ref().unwrap_or(&prepared.directive),
+            )?,
             section: &typed_config.xy_chart,
             globals: &prepared.view.globals,
             theme: prepared.theme(),
             id,
         },
         options.animation,
+        prepared.design,
     )
+}
+
+/// The text's configuration with the palette of the theme the render draws with as the XY chart's
+/// `plotColorPalette`, or `None` when the text gives a palette of its own or the theme none.
+fn design_palette_directive(
+    directive: &Value,
+    tokens: &ferrigura_model::theme::ThemeTokens,
+) -> Option<Value> {
+    let given = directive
+        .get("themeVariables")
+        .and_then(|variables| variables.get("xyChart"))
+        .and_then(|group| group.get("plotColorPalette"))
+        .is_some();
+    let palette = tokens.xy_chart.as_ref()?.plot_color_palette.text()?;
+    if given {
+        return None;
+    }
+    let mut directive = directive.clone();
+    let Value::Object(map) = &mut directive else {
+        return None;
+    };
+    let variables = map
+        .entry("themeVariables".to_owned())
+        .or_insert_with(Value::empty_object);
+    let Value::Object(variables) = variables else {
+        return None;
+    };
+    let group = variables
+        .entry("xyChart".to_owned())
+        .or_insert_with(Value::empty_object);
+    let Value::Object(group) = group else {
+        return None;
+    };
+    group.insert("plotColorPalette".to_owned(), Value::from(palette));
+    Some(directive)
 }
 
 /// The quadrant chart, written `quadrantChart`.

@@ -10,8 +10,8 @@ ferrigura is checked by running the same inputs through the reference and throug
 2. **Differential parse.** An exporter per diagram type turns the reference's diagram DB into the canonical model ([0008](./0008-canonical-model-and-typed-views.md)), and the two models are compared on every input: the fixtures, the probes, the string literals of Mermaid's specs, the diagrams of its documentation and the cases under `tools/port` (`port:diff <type>`). The configuration, the theme variables, the YAML front matter and the Markdown reader have runs of their own.
 3. **Differential layout data.** For the unified renderer, the reference's `getData()` and ferrigura's are compared field by field (`port:diff <type>-data`).
 4. **Differential layout.** Each layout engine is compared with the original on captured inputs, with the engine's own corpus in its crate ([0012](./0012-layout-engines-ported-exactly.md)).
-5. **Geometry.** Both render every fixture and probe in Chromium, and node positions and sizes, edge points and label boxes are compared, paired by their structural keys, within 0.05 px (`port:geometry <type>`). The reference runs with `htmlLabels: false` and loads ferrigura's fonts as web fonts, so that both draw the same text.
-6. **Snapshots.** ferrigura's own output for the corpus is pinned by one default-output hash per file in `crates/ferrigura/tests/snapshots/svg.tsv`, so that any change of the output shows, also where the comparison does not look. Flowcharts and sequences have a second hash for the Mermaid-compatible rendering mode ([0019](./0019-adaptive-flowchart-mode.md)), and flowcharts, state diagrams and class diagrams a last one for the design mode ([0023](./0023-design-mode.md)): a flowchart has three, a state or a class diagram two. The hashes depend on the architecture, so CI runs the test on an arm64 runner; when that job fails, it prints the diff of the manifest its runner produces and uploads both manifests as an artifact, and they are then committed from there.
+5. **Geometry.** The reference and ferrigura's `compat` rendering ([0019](./0019-mermaid-geometry-with-compat.md)) render every fixture and probe in Chromium, and node positions and sizes, edge points and label boxes are compared, paired by their structural keys, within 0.05 px (`port:geometry <type>`). The reference runs with `htmlLabels: false` and loads ferrigura's fonts as web fonts, so that both draw the same text.
+6. **Snapshots.** ferrigura's own output for the corpus is pinned by two hashes per file in `crates/ferrigura/tests/snapshots/svg.tsv`, one for the default rendering ([0023](./0023-the-default-rendering.md)) and one for `compat`, so that any change of the output shows, also where the comparison does not look. The default rendering has no comparison with the reference; the snapshots and its own tests hold it. The hashes depend on the architecture, so CI runs the test on an arm64 runner; when that job fails, it prints the diff of the manifest its runner produces and uploads both manifests as an artifact, and they are then committed from there.
 
 ## Why
 
@@ -19,8 +19,7 @@ Pixel comparison is impossible once fonts and label technique differ, and a port
 
 ## Consequences
 
-- Flowchart geometry runs in both routing modes: unchanged reference inputs for `mermaid`, and centered ports with adaptive spacing on both sides for `adaptive` ([0019](./0019-adaptive-flowchart-mode.md)).
-
+- Every comparison of layout data, layout and geometry runs on `compat`, with unchanged reference inputs ([0019](./0019-mermaid-geometry-with-compat.md)).
 - The harness is the repository's only JavaScript project (`tools/port`), with its own lint, format and tests ([0005](./0005-quality-gates.md)).
 - A geometry run fails on a fixture outside the tolerance and on one ferrigura does not render. Fixtures that use what ferrigura leaves out (`look: handDrawn`, `layout: dagre`, scripts the bundled fonts lack) are left out by rules of the harness, each with its reason.
 - The geometry runs on macOS: Chromium there keeps fractional glyph advances, as ferrigura's measurement does.

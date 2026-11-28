@@ -49,6 +49,13 @@ const nodeVersion = /^>=\s*(\S+)$/.exec(npmManifest.engines?.node ?? '')?.[1];
 if (!nodeVersion) throw new Error('The npm package has no minimum Node.js version.');
 await writeData('site.json', { version, rustVersion, nodeVersion });
 await writeData('coverage.json', await readCoverage());
+const imageDirectory = new URL('../public/docs-images/', import.meta.url);
+await rm(imageDirectory, { recursive: true, force: true });
+await mkdir(imageDirectory, { recursive: true });
+const imageSource = new URL('docs/images/', repository);
+const images = await readdir(imageSource);
+for (const file of images.filter((name) => name.endsWith('.svg')))
+  await writeFile(new URL(file, imageDirectory), await readFile(new URL(file, imageSource)));
 const noticeDirectory = new URL('../public/notices/', import.meta.url);
 await mkdir(noticeDirectory, { recursive: true });
 const fontRoot = new URL('crates/ferrigura-text/', repository);
@@ -180,6 +187,9 @@ function resolveLink(href, source) {
   if (/^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return href;
   const [file, fragment] = href.split('#');
   const target = posix.normalize(posix.join(posix.dirname(source), file));
+  // A rendered diagram of docs/images is served from the site's public folder.
+  if (target.startsWith('docs/images/') && target.endsWith('.svg'))
+    return `/docs-images/${posix.basename(target)}`;
   const destination = destinations.get(target);
   if (destination) {
     return `${destination}${fragment ? `#${fragment}` : ''}`;

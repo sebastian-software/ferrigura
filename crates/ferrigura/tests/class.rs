@@ -1,14 +1,25 @@
-//! Class diagrams through the public entry point: the colors of the redux-color theme, as
-//! `classBox.ts` and the class `styles.js` write them.
+//! Class diagrams through the public entry point: the colors of the redux-color theme in `compat`,
+//! as `classBox.ts` and the class `styles.js` write them.
 
 use ferrigura::render;
 use ferrigura_model::value::Value;
+
+/// The text drawn in `compat`, Mermaid's geometry and look.
+fn render_compat(text: &str, config: &Value) -> Result<String, ferrigura::Error> {
+    ferrigura::Renderer::new(config).render_with(
+        text,
+        &ferrigura::RenderOptions {
+            compat: true,
+            ..ferrigura::RenderOptions::default()
+        },
+    )
+}
 
 #[test]
 fn each_class_box_takes_its_own_palette_slot() {
     // `classBox.ts` stamps `data-color-id` (`stampColorSlot`), and the palette rules of the sheet
     // color the box by it; without the stamp every box is black on white.
-    let svg = render(
+    let svg = render_compat(
         "classDiagram\n  class A\n  class B\n  A --> B\n",
         &Value::empty_object(),
     )
@@ -505,6 +516,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "flowchart LR\n  subgraph gradient\n    A\n  end\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -523,6 +535,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "flowchart LR\n  subgraph gradient\n    A\n  end\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -548,6 +561,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "classDiagram\n  class `Part#1;A`\n  class `Part#2;A`\n  click `Part#1;A` href \"#graph-classId-Part#1;A\"\n  click `Part#2;A` href \"#graph-classId-Part#2;A\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -585,6 +599,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "classDiagram\n  class `Foo#32;`\n  click `Foo#32;` href \"#graph-classId-Foo#32;\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -615,6 +630,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "classDiagram\n  class `Tab\tClass`\n  class Other\n  click `Tab\tClass` href \"#graph-classId-Tab\tClass\"\n  click Other href \"https://example.com/\tkeep\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -646,6 +662,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "classDiagram\n  accTitle: #notebook;\n  class A\n  click A href \"https://example.com/?x=#notebook;\" \"#notebook;\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -669,6 +686,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "classDiagram\n  class A\n  click A href \"https://example.com/?x=#notebook;\" \"#notebook;\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -688,6 +706,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "classDiagram\n  class `Foo#45;Bar`\n  class `Foo-Bar`\n  click `Foo#45;Bar` href \"#graph-classId-Foo#45;Bar\"\n  click `Foo-Bar` href \"#graph-classId-Foo-Bar\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -719,6 +738,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "flowchart LR\n  accTitle: Main\n  A title#45;chart@--> B\n",
             &ferrigura::RenderOptions {
                 id: Some("chart".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -743,6 +763,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "flowchart LR\n  A title#45;chart@--> B\n",
             &ferrigura::RenderOptions {
                 id: Some("chart".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )
@@ -763,6 +784,7 @@ fn unified_dom_ids_and_fragment_links_preserve_navigation_and_reserved_defs() {
             "classDiagram\n  class `New Item#32;`\n  click `New Item#32;` href \"#graph-classId-New%20Item#32;\"\n",
             &ferrigura::RenderOptions {
                 id: Some("graph".to_owned()),
+                compat: true,
                 ..ferrigura::RenderOptions::default()
             },
         )

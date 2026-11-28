@@ -43,8 +43,7 @@ Returns the SVG document of a diagram as a string.
 - `config` is the configuration that `mermaid.initialize` takes, as an object. Without it, the defaults apply. Front matter and `%%{init}%%` directives in `text` apply on top of it, as in Mermaid.
 - `options` is an object with these optional fields:
   - `id`: the id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.
-  - `compat`: `false` (default) uses optimized flowchart routing and compact sequence participant boxes. `true` preserves Mermaid-compatible geometry. Font, fill and readability fixes apply in both modes.
-  - `design`: `true` draws flowcharts in the design mode: ferrigura's own look, with hairline outlines, color by a node's role, rounded corners and soft shadows, and with roomier nodes, spacing and group padding. Other diagram types and the combination with `compat` throw.
+  - `compat`: `false` (default) draws every diagram type in ferrigura's own look: hairline outlines, color by a node's role, rounded corners and soft shadows, with roomier nodes, spacing and group padding. `true` draws Mermaid's geometry and look. Font and readability fixes apply in both.
   - `colorScheme`: `'light'`, `'dark'` or `'auto'`. `'auto'` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. By default the configured theme decides the colors.
 
 ```js

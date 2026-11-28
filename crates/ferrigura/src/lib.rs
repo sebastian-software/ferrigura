@@ -28,7 +28,6 @@ pub use ferrigura_syntax::DiagramType;
 /// The configuration and the values of Mermaid's `initialize` object, front matter and directives.
 pub use ferrigura_model::value::Value;
 pub use ferrigura_render::RenderError as Error;
-use ferrigura_render::flowchart::policy::FlowchartRouting;
 
 /// The color scheme of the output.
 ///
@@ -49,16 +48,14 @@ pub enum ColorScheme {
 /// The options of a render that are not Mermaid configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RenderOptions {
-    /// Use Mermaid-compatible geometry instead of Ferrigura's optimizations. Defaults to false:
-    /// flowchart ports are centered with label-aware spacing and sequence participant boxes fit
-    /// their labels. Font, color and readability fixes apply in both modes.
+    /// Draw Mermaid's geometry and look instead of ferrigura's own. Defaults to false: every
+    /// diagram type is drawn in ferrigura's look, with hairline outlines, color by the role of a
+    /// node, rounded corners and soft shadows, and with its own measures: a node grows to give its
+    /// edges room, spacings and group paddings are wider, and sequence diagrams and mindmaps have
+    /// a layout of their own. `true` draws what the reference draws, for every type. Font and
+    /// readability fixes apply in both renderings, and the user's `themeVariables` and `classDef`
+    /// styles apply on top of both.
     pub compat: bool,
-    /// Draw in the design mode: ferrigura's own look, with hairline outlines, color by the role of
-    /// a node, rounded corners and soft shadows, and with its own measures: a node grows to give its
-    /// edges room, and spacings and group paddings are wider. Flowcharts, state diagrams and class
-    /// diagrams support it; other diagram types return an option error, and so does the combination
-    /// with `compat`. The user's `themeVariables` and `classDef` styles still apply on top.
-    pub design: bool,
     /// Optional one-time SVG draw animation for flowcharts, Gantt, mind maps, pie charts, and XY
     /// charts. `None` leaves the SVG unchanged.
     /// The default draws one line at a time, averaging 700 SVG units per second times its speed,
@@ -128,9 +125,9 @@ pub struct Renderer {
     /// The tokens of `redux-dark-color` with the site overrides, resolved lazily and shared with
     /// views whose effective theme variables match.
     dark_tokens: OnceLock<Arc<ThemeTokens>>,
-    /// The light tokens of the design mode with the site overrides, resolved at first use.
+    /// The light tokens of the default rendering with the site overrides, resolved at first use.
     design_light_tokens: OnceLock<Arc<ThemeTokens>>,
-    /// The dark tokens of the design mode with the site overrides, resolved at first use.
+    /// The dark tokens of the default rendering with the site overrides, resolved at first use.
     design_dark_tokens: OnceLock<Arc<ThemeTokens>>,
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
@@ -227,21 +224,6 @@ impl Renderer {
                 "draw animation is not supported for this diagram type".to_owned(),
             ));
         }
-        if options.design {
-            if options.compat {
-                return Err(RenderError::Options(
-                    "the design mode cannot be combined with compat".to_owned(),
-                ));
-            }
-            if !matches!(
-                kind,
-                DiagramType::Flowchart | DiagramType::State | DiagramType::Class
-            ) {
-                return Err(RenderError::Options(
-                    "the design mode is not supported for this diagram type".to_owned(),
-                ));
-            }
-        }
         let prepared = self.prepare(text, source, options, plugin, max_edges)?;
         plugin.render(&prepared, options)
     }
@@ -278,7 +260,7 @@ impl Renderer {
         }))
     }
 
-    /// Cached design-mode tokens for `tone` with the site's `themeVariables` overrides.
+    /// Cached default rendering's tokens for `tone` with the site's `themeVariables` overrides.
     fn design_tone_tokens(&self, tone: Tone) -> Arc<ThemeTokens> {
         let slot = match tone {
             Tone::Light => &self.design_light_tokens,
@@ -391,7 +373,7 @@ impl Renderer {
         let scheme = options.color_scheme;
         if is_empty_object(&directive) {
             let view = self.view(plugin)?;
-            let design = options.design.then(|| design_tone(scheme, &view));
+            let design = (!options.compat).then(|| design_tone(scheme, &view));
             let (light_tokens, dark_tokens) = self.resolve_tokens(scheme, design, None);
             return Ok(Prepared {
                 source,
@@ -407,7 +389,7 @@ impl Renderer {
             });
         }
         let (view, directive_tokens) = self.directive_view(plugin, &directive)?;
-        let design = options.design.then(|| design_tone(scheme, &view));
+        let design = (!options.compat).then(|| design_tone(scheme, &view));
         let (light_tokens, dark_tokens) =
             self.resolve_tokens(scheme, design, Some((&directive, &directive_tokens)));
         Ok(Prepared {
@@ -1021,14 +1003,14 @@ struct Prepared<'a> {
     light_tokens: Arc<ThemeTokens>,
     dark_tokens: Arc<ThemeTokens>,
     scheme: Option<ColorScheme>,
-    /// The tone of the design mode, when the render draws in it.
+    /// The tone of the default rendering, when the render draws in it.
     design: Option<Tone>,
 }
 
 impl Prepared<'_> {
     /// The theme of the render as typed tokens: the configured theme, or the scheme that the color
     /// scheme chooses, with the light scheme as the primary one when the render draws both. In the
-    /// design mode without a color scheme, the configured theme chooses the tone.
+    /// default rendering without a color scheme, the configured theme chooses the tone.
     fn theme(&self) -> ThemeView<'_> {
         match self.scheme {
             None if self.design == Some(Tone::Dark) => ThemeView {
@@ -1067,9 +1049,9 @@ fn user_sets_layout(site: Option<&Value>, directive: &Value) -> bool {
     site.is_some_and(set) || set(directive)
 }
 
-/// The tokens of one tone of the design mode: the shipped theme with the mode's variables laid
-/// under the user's overrides, which win key by key. Reuses a process-wide cache when there are
-/// no overrides.
+/// The tokens of one tone of the default rendering: the shipped theme with the default's variables
+/// laid under the user's overrides, which win key by key. Reuses a process-wide cache when there
+/// are no overrides.
 fn design_tokens_for(tone: Tone, overrides: &Value) -> Arc<ThemeTokens> {
     static LIGHT: LazyLock<Arc<ThemeTokens>> =
         LazyLock::new(|| compute_design_tokens(Tone::Light, &Value::empty_object()));
@@ -1092,6 +1074,16 @@ fn compute_design_tokens(tone: Tone, overrides: &Value) -> Arc<ThemeTokens> {
     let mut variables = design::theme_variables(tone);
     if let (Value::Object(variables), Value::Object(overrides)) = (&mut variables, overrides) {
         for (name, value) in overrides {
+            // The `xyChart` group is merged key by key too, so that a user's title color keeps the
+            // mode's palette.
+            if let (Some(Value::Object(group)), Value::Object(user)) =
+                (variables.get_mut(name), value)
+            {
+                for (key, value) in user {
+                    group.insert(key.clone(), value.clone());
+                }
+                continue;
+            }
             variables.insert(name.clone(), value.clone());
         }
     }
@@ -1100,8 +1092,8 @@ fn compute_design_tokens(tone: Tone, overrides: &Value) -> Arc<ThemeTokens> {
     ))
 }
 
-/// The tone of the one token set a render in the design mode draws with: the color scheme's, and the
-/// configured theme's without one. A render with both schemes draws with the light set.
+/// The tone of the one token set a render in the default rendering draws with: the color scheme's,
+/// and the configured theme's without one. A render with both schemes draws with the light set.
 fn design_tone(scheme: Option<ColorScheme>, view: &View) -> Tone {
     match scheme {
         Some(ColorScheme::Dark) => Tone::Dark,
@@ -1156,7 +1148,7 @@ pub fn flowchart_elk_stages(
         }));
     };
     let prepared = renderer.prepare(text, source, options, diagrams::flowchart(), max_edges)?;
-    let stages = with_flowchart(&prepared, options.compat, flowchart::elk_stages)?;
+    let stages = with_flowchart(&prepared, flowchart::elk_stages)?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
         "elkOutput": stages.output,
@@ -1166,7 +1158,6 @@ pub fn flowchart_elk_stages(
 /// Parses a flowchart and hands it, with its sections, globals and theme, to `step`.
 fn with_flowchart<T>(
     prepared: &Prepared<'_>,
-    compat: bool,
     step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
     let diagram = ferrigura_syntax::flowchart::parse_prepared_with_security(
@@ -1178,11 +1169,6 @@ fn with_flowchart<T>(
     )
     .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
     let mut section = Section::of(&prepared.view.config);
-    section.flowchart_routing = if compat {
-        FlowchartRouting::Mermaid
-    } else {
-        FlowchartRouting::Adaptive
-    };
     section.design = prepared.design;
     step(&Context {
         fonts: prepared.fonts,
@@ -1832,18 +1818,18 @@ mod view_tests {
             },
             RenderOptions {
                 id: Some("pinned".into()),
-                design: true,
+                compat: true,
                 ..RenderOptions::default()
             },
             RenderOptions {
                 id: Some("pinned".into()),
-                design: true,
+                compat: true,
                 color_scheme: Some(ColorScheme::Auto),
                 ..RenderOptions::default()
             },
             RenderOptions {
                 id: Some("pinned".into()),
-                design: true,
+                compat: true,
                 color_scheme: Some(ColorScheme::Dark),
                 ..RenderOptions::default()
             },

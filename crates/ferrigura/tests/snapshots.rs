@@ -1,10 +1,10 @@
-//! ferrigura's own output, pinned (`docs/decisions/0015-differential-testing.md`). Every `.mmd` of the corpus is
-//! rendered under three configurations and four color schemes, and one hash over its twelve SVGs (or
-//! errors) is compared with `snapshots/svg.tsv`. Flowcharts and sequences have a third column that independently
-//! pins the twelve Mermaid-compatible renders. Flowcharts, state diagrams and class diagrams have one more
-//! column, the last, that pins the twelve renders of the design mode (`docs/decisions/0023-design-mode.md`):
-//! a flowchart's line has four columns, a state or a class diagram's three. Any change of the output fails the test, the ones the
-//! geometry check cannot see included (markup, styles, embedded fonts).
+//! ferrigura's own output, pinned (`docs/decisions/0015-differential-testing.md`). Every `.mmd` of
+//! the corpus is rendered under three configurations and four color schemes, and one hash over its
+//! twelve SVGs (or errors) is compared with `snapshots/svg.tsv`. Each line has the file and two
+//! hashes: the twelve renders of the default rendering
+//! (`docs/decisions/0023-the-default-rendering.md`), then the twelve of `compat`, Mermaid's
+//! geometry (`docs/decisions/0019-mermaid-geometry-with-compat.md`). Any change of the output fails
+//! the test, the ones the geometry check cannot see included (markup, styles, embedded fonts).
 //!
 //! An intended change rewrites the manifest in the same commit:
 //!
@@ -12,9 +12,9 @@
 //! UPDATE_SNAPSHOTS=1 cargo test --release --test snapshots
 //! ```
 //!
-//! and `tools/snapshots/diff.sh` shows which renders of the changed files moved. When the test fails,
-//! the new renders of the changed files are in `target/snapshots/head/` (the design renders of a
-//! flowchart, a state or a class diagram with a `design-` prefix).
+//! and `tools/snapshots/diff.sh` shows which renders of the changed files moved. When the test
+//! fails, the new renders of the changed files are in `target/snapshots/head/` (the `compat`
+//! renders with a `compat-` prefix).
 //!
 //! The output depends on the machine: `ferrigura_jsmath` rounds as V8 does there, with fused
 //! multiply-adds on aarch64 and without them on x86-64. The manifest holds the aarch64 renders, so
@@ -88,28 +88,34 @@ fn the_draw_animation_is_pinned() {
     ];
     let mut actual = String::new();
     for (name, text) in cases {
-        let mut outputs = Vec::new();
-        for (label, order) in [
-            ("source", AnimationOrder::Source),
-            ("flow", AnimationOrder::Flow),
-        ] {
-            for speed in [1.0, 2.0] {
-                let mut animation = Animation::new(speed).unwrap();
-                animation.order = order;
-                let svg = renderer
-                    .render_with(
-                        text,
-                        &RenderOptions {
-                            animation: Some(animation),
-                            now: Some(NOW),
-                            ..RenderOptions::default()
-                        },
-                    )
-                    .unwrap();
-                outputs.push((format!("{label}-{speed}"), svg));
+        // One hash for the default rendering, one for `compat`.
+        let mut hashes = Vec::new();
+        for compat in [false, true] {
+            let mut outputs = Vec::new();
+            for (label, order) in [
+                ("source", AnimationOrder::Source),
+                ("flow", AnimationOrder::Flow),
+            ] {
+                for speed in [1.0, 2.0] {
+                    let mut animation = Animation::new(speed).unwrap();
+                    animation.order = order;
+                    let svg = renderer
+                        .render_with(
+                            text,
+                            &RenderOptions {
+                                animation: Some(animation),
+                                now: Some(NOW),
+                                compat,
+                                ..RenderOptions::default()
+                            },
+                        )
+                        .unwrap();
+                    outputs.push((format!("{label}-{speed}"), svg));
+                }
             }
+            hashes.push(hash(&outputs));
         }
-        writeln!(actual, "{name}\t{}", hash(&outputs)).unwrap();
+        writeln!(actual, "{name}\t{}", hashes.join("\t")).unwrap();
     }
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("crates/ferrigura/tests/snapshots/animation.tsv");
@@ -170,33 +176,11 @@ fn fnv1a(hash: u64, bytes: &[u8]) -> u64 {
     })
 }
 
-/// The render mode of a hash: the default, the Mermaid-compatible one, or the design mode.
+/// The rendering of a hash: the default, or `compat`.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mode {
     Default,
     Compat,
-    Design,
-}
-
-/// Which of the optional columns of a file's line the file has: the compatibility hash for a flowchart
-/// or a sequence, and the design hash for a flowchart or a state diagram, the types the design mode
-/// draws. The test and the review renders use this one rule; `tools/snapshots/diff.sh` asks the
-/// renderer instead, as the number of columns does not tell a sequence from a state diagram.
-fn columns(text: &str) -> (bool, bool) {
-    let kind = ferrigura_syntax::detect(text);
-    let compat = matches!(
-        kind,
-        Some(ferrigura_syntax::DiagramType::Flowchart | ferrigura_syntax::DiagramType::Sequence)
-    );
-    let design = matches!(
-        kind,
-        Some(
-            ferrigura_syntax::DiagramType::Flowchart
-                | ferrigura_syntax::DiagramType::State
-                | ferrigura_syntax::DiagramType::Class
-        )
-    );
-    (compat, design)
 }
 
 /// The twelve renders of one text in one mode, labeled `<configuration>-<scheme>`: the SVG, or the
@@ -221,7 +205,6 @@ fn renders(
                 id: Some(id.clone()),
                 color_scheme,
                 compat: mode == Mode::Compat,
-                design: mode == Mode::Design,
                 ..RenderOptions::default()
             };
             let result = match renderer.render_with(text, &options) {
@@ -293,19 +276,13 @@ fn the_output_of_the_corpus_is_unchanged() {
                         .expect("a corpus file in the repository")
                         .to_string_lossy()
                         .replace('\\', "/");
-                    let mut hash = hash(&renders(&text, &renderers, Mode::Default));
-                    let (compat, design) = columns(&text);
-                    // A further column pins the compatibility mode separately, so updating the new
-                    // default cannot silently bless a change in Mermaid-compatible output. The last
-                    // pins the design mode the same way.
-                    if compat {
-                        hash.push('\t');
-                        hash.push_str(&self::hash(&renders(&text, &renderers, Mode::Compat)));
-                    }
-                    if design {
-                        hash.push('\t');
-                        hash.push_str(&self::hash(&renders(&text, &renderers, Mode::Design)));
-                    }
+                    // The second column pins `compat` separately, so updating the default cannot
+                    // silently bless a change in Mermaid's geometry.
+                    let hash = format!(
+                        "{}\t{}",
+                        hash(&renders(&text, &renderers, Mode::Default)),
+                        hash(&renders(&text, &renderers, Mode::Compat))
+                    );
                     hashes.lock().expect("hashes").push((name, hash));
                 }
             });
@@ -361,11 +338,9 @@ fn the_output_of_the_corpus_is_unchanged() {
         for (label, result) in renders(&text, &renderers, Mode::Default) {
             std::fs::write(folder.join(format!("{label}.svg")), result).expect("a review render");
         }
-        if columns(&text).1 {
-            for (label, result) in renders(&text, &renderers, Mode::Design) {
-                std::fs::write(folder.join(format!("design-{label}.svg")), result)
-                    .expect("a review render");
-            }
+        for (label, result) in renders(&text, &renderers, Mode::Compat) {
+            std::fs::write(folder.join(format!("compat-{label}.svg")), result)
+                .expect("a review render");
         }
     }
 

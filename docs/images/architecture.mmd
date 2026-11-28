@@ -1,0 +1,8 @@
+flowchart LR
+  text[Diagram text] --> pre[Preprocess and detect]
+  pre --> parse[Parse]
+  parse --> model[Canonical model]
+  config[Configuration and theme] --> view[Typed view]
+  model --> render[Lay out and render]
+  view --> render
+  render --> svg[SVG with embedded font subsets]

@@ -17,7 +17,7 @@ pub(super) fn square_rect(input: &ShapeInput<'_>) -> Part {
         (2.0 * node.padding, node.padding)
     };
     let label = label_helper(input, false);
-    // The design mode rounds the corners; the box and its intersection stay the rectangle's.
+    // The default rendering rounds the corners; the box and its intersection stay the rectangle's.
     let radius = input
         .config
         .section
@@ -31,7 +31,7 @@ pub(super) fn rounded_rect(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let radius = util::theme_number(&input.config.theme.radius).unwrap_or(5.0);
     let label = label_helper(input, false);
-    // The design mode gives the text of a state the room of a flowchart's node at its sides.
+    // The default rendering gives the text of a state the room of a flowchart's node at its sides.
     let state = input.config.section.design.is_some()
         && input.config.section.roles == crate::design::Roles::State;
     let pad_x = if state {

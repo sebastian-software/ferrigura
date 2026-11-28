@@ -16,7 +16,7 @@ Every push to `main` runs the whole suite, and a change lands only with it green
 
 ## Why
 
-ferrigura checks Mermaid-compatible output and the explicit adaptive flowchart policy ([0019](./0019-adaptive-flowchart-mode.md)) against the reference. That promise holds only while every check that defines it runs for every change that reaches `main`; a check that is skipped once stops meaning anything. A difference that only Chromium on macOS shows is found on the merge rather than before it; the pull request still runs the model and data runs against the reference, the snapshots and the other platforms, and the label brings the rest forward when a change touches text or geometry.
+ferrigura checks its `compat` rendering against the reference ([0019](./0019-mermaid-geometry-with-compat.md)) and pins its default rendering by snapshots ([0023](./0023-the-default-rendering.md)). That promise holds only while every check that defines it runs for every change that reaches `main`; a check that is skipped once stops meaning anything. A difference that only Chromium on macOS shows is found on the merge rather than before it; the pull request still runs the model and data runs against the reference, the snapshots and the other platforms, and the label brings the rest forward when a change touches text or geometry.
 
 ## Consequences
 

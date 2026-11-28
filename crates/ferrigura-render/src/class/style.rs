@@ -48,9 +48,9 @@ const RULES_CAPACITY: usize = 10 * 1024;
 
 /// The `<style>` element's text of a class diagram with the id `svg_id`. The font of the rules is
 /// the embedded family of the diagram when it has one (`families`), else the theme's `fontFamily`.
-/// In the design mode (`design`), the mode's rules follow the class rules, and the mode's own
-/// properties take the place of the palette and the look's flood
-/// (`docs/decisions/0023-design-mode.md`).
+/// In the default rendering (`design`), the default's rules follow the class rules, and the
+/// default's own properties take the place of the palette and the look's flood
+/// (`docs/decisions/0023-the-default-rendering.md`).
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
@@ -132,18 +132,19 @@ pub fn style_sheet(
     assemble_stylesheet(svg_id, families, css, false)
 }
 
-/// The `<defs>` of the look (the drop shadows and the gradient), which the class diagram writes after
-/// its title as the flowchart does. The design mode draws its own shadows under the same ids.
+/// The `<defs>` of the look (the drop shadows and the gradient), which the class diagram writes
+/// after its title as the flowchart does. The default rendering draws its own shadows under the
+/// same ids.
 #[must_use]
 pub fn defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals, design: Option<Tone>) -> String {
     look_defs_for(svg_id, theme, globals, design)
 }
 
-/// The rules of the design mode, after the class rules (`docs/decisions/0023-design-mode.md`):
-/// hairlines, a relation in the edge's weight, the markers' paint, muted annotations, visibility
-/// marks, edge labels and cardinalities, a group frame without the node's shadow, a flat note, and
-/// the colors of the roles. A class's own styles are written on its elements and keep the last
-/// word.
+/// The rules of the default rendering, after the class rules
+/// (`docs/decisions/0023-the-default-rendering.md`): hairlines, a relation in the edge's weight,
+/// the markers' paint, muted annotations, visibility marks, edge labels and cardinalities, a group
+/// frame without the node's shadow, a flat note, and the colors of the roles. A class's own styles
+/// are written on its elements and keep the last word.
 fn write_design_rules(out: &mut String, id: &str) {
     let node_width = design::NODE_STROKE_WIDTH;
     let edge_width = design::EDGE_STROKE_WIDTH;
@@ -190,7 +191,7 @@ fn write_class_rules(
     globals: &Globals,
     design: Option<Tone>,
 ) {
-    // The design mode uses no palette: a class is neutral unless its role says otherwise.
+    // The default rendering uses no palette: a class is neutral unless its role says otherwise.
     if design.is_none()
         && let Some(palette) = palette(globals, tokens)
     {

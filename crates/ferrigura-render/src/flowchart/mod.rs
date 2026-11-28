@@ -157,7 +157,6 @@ pub fn render_with_animation(
         input.globals,
         &diagram.classes,
         &families,
-        input.section.flowchart_routing,
         input.section.design,
     );
     let header = format!(

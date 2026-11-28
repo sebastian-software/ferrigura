@@ -1,22 +1,21 @@
-//! The place of a note in the design mode: beside its state, at the state's height
-//! (`docs/decisions/0023-design-mode.md`). The step is ferrigura's own, run around ELK's layout;
-//! the ELK port does not know it.
+//! The place of a note in the default rendering: beside its state, at the state's height
+//! (`docs/decisions/0023-the-default-rendering.md`). The step is ferrigura's own, run around ELK's
+//! layout; the ELK port does not know it.
 //!
 //! The reference lays a note out as a node of its own, in a group of its own, joined to its state
 //! by an edge. ELK gives it a layer of its own, so the note stands below or above its state, and
-//! the states of the main flow move off their axis to make room for it. In the design mode, the
-//! notes do not take part in the layout:
+//! the states of the main flow move off their axis to make room for it. In the default rendering,
+//! the notes do not take part in the layout:
 //!
 //! 1. **Out.** Before the layout, the notes, their groups and their connectors leave the layout
-//!    data. A state with notes takes their room instead: its box grows along its layer by the
-//!    note's room on both sides, the gap and the note's size, so that the state stays in the
-//!    middle of its box, where ELK and the placement put its transitions. Along the flow, the box
-//!    grows to the note's size where the note is larger.
-//! 2. **Back.** After ELK's layout, before the result is applied, the state takes its own size in
-//!    the middle of its box, the ends of its transitions move along their last part onto its
-//!    outline, and each note goes into the room beside the state, at the state's height, with its
-//!    group and a straight connector. The group of a note belongs to the state's parent, so a
-//!    composite state's frame holds the notes of its states.
+//!    data. A state with notes keeps their room instead, on the note's side only: each note's box
+//!    goes to ELK as a label of the state at the note's place, which the state's margins hold
+//!    (`Node::beside`). The state keeps its own size, and ELK and the placement put its
+//!    transitions on its own sides.
+//! 2. **Back.** After ELK's layout, before the result is applied, each note goes into the room
+//!    beside its state, at the state's height, with its group and a straight connector. The group
+//!    of a note belongs to the state's parent, so a composite state's frame holds the notes of its
+//!    states.
 //! 3. **Check.** Once applied, a note that touches a node, a transition, a label or a frame, or
 //!    that its state's composite does not hold, makes the whole diagram fall back to the
 //!    reference's place of its notes.
@@ -24,7 +23,10 @@
 //! In a layout from top to bottom (or back), `left of` puts the note to the left of its state and
 //! `right of` to the right. In a layout from left to right (or back), where the transitions meet
 //! the left and the right side, the note keeps its place along the layer, as ELK turns the axes:
-//! `left of` above the state and `right of` below it.
+//! `left of` above the state and `right of` below it. The notes of one side stand in a column
+//! along it, centered together on the state. A composite state is a state here too: its frame's
+//! size, which the room of its notes needs before the layout, comes from a layout before
+//! (`state::composite_sizes`).
 
 use std::collections::{HashMap, HashSet};
 
@@ -35,7 +37,7 @@ use crate::unified::elk_build::{ElkState, sub_graphs};
 use crate::unified::elk_geometry::find_common_ancestor;
 use crate::unified::geom::{BBox, Point};
 use crate::unified::room::{
-    absolute_boxes, contains, crosses, ends_onto_outlines, find_mut, grown, overlaps,
+    absolute_boxes, clear_beside, contains, crosses, find_mut, grown, overlaps,
 };
 
 /// The distance between a state and its note, which the connector spans.
@@ -43,6 +45,13 @@ pub(crate) const NOTE_GAP: f64 = 32.0;
 
 /// The least distance between a note and anything else it does not belong to.
 const CLEARANCE: f64 = 4.0;
+
+/// The distance between two notes on one side of a state.
+const NOTE_STACK_GAP: f64 = 8.0;
+
+/// The least length over which a note on a side shared with another one stands beside its state,
+/// where its connector meets both.
+const MIN_OVERLAP: f64 = 8.0;
 
 /// The side of its state a note stands on, along the state's layer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,9 +79,11 @@ struct Note {
 #[derive(Debug, Clone)]
 struct Host {
     id: String,
-    /// The state's own size, which its box in the layout exceeds.
+    /// The state's own size: for a composite, the size of its frame in a layout before.
     width: f64,
     height: f64,
+    /// Whether the room of its notes is kept: not for a composite whose size is not known yet.
+    sized: bool,
     /// Whether its layer runs along x: a layout from top to bottom or back.
     across: bool,
     notes: Vec<Note>,
@@ -95,15 +106,35 @@ fn is_connector(edge: &Edge) -> bool {
         .any(|class| class == "note-edge")
 }
 
-/// Takes the notes that can stand beside their state out of the layout data and grows their
-/// states by their room. `None` where no note can: then the data is unchanged. The states of
+/// Whether a note stands beside a composite state, whose size its room needs from a layout before.
+pub(crate) fn on_composite(data: &LayoutData) -> bool {
+    data.edges
+        .iter()
+        .filter(|edge| is_connector(edge))
+        .any(|edge| {
+            data.nodes.iter().any(|node| {
+                node.is_group
+                    && node.shape != "noteGroup"
+                    && (node.id == edge.start || node.id == edge.end)
+            })
+        })
+}
+
+/// Takes the notes that can stand beside their state out of the layout data and keeps their room
+/// beside their states. `None` where no note can: then the data is unchanged. The states of
 /// `kept_hosts` keep their notes where the reference puts them.
 ///
-/// A note stays where the reference puts it when its state is a composite or has no size, when
-/// its state has an invisible transition to itself or more of them than the sides without a note
-/// can take (`crate::unified::loops`), when another note of the state stands on the same side, or
-/// when something else than its connector meets it or its group.
-pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> Option<Notes> {
+/// A composite takes the size of its frame from `sizes`, which a layout before gives
+/// (`state::composite_sizes`); without `sizes`, the notes of composites leave the layout data without
+/// room, for that layout. A note stays where the reference puts it when its state has no size,
+/// when its state has an invisible transition to itself, when it would not stand beside its state
+/// in a column with the other notes of its side, or when something else than its connector meets
+/// it or its group.
+pub(crate) fn take_out(
+    data: &mut LayoutData,
+    kept_hosts: &HashSet<String>,
+    sizes: Option<&HashMap<String, (f64, f64)>>,
+) -> Option<Notes> {
     let groups: HashSet<&str> = data
         .nodes
         .iter()
@@ -154,12 +185,21 @@ pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> O
             &edge.start
         };
         let host = by_id.get(host_id.as_str()).copied();
+        // The size of the state, or of a composite's frame in a layout before.
+        let size = |host: &Node| {
+            if !host.is_group {
+                return host.width.zip(host.height).map(|size| (size, true));
+            }
+            match sizes {
+                Some(sizes) => sizes.get(&host.id).map(|&size| (size, true)),
+                None => Some(((0.0, 0.0), false)),
+            }
+        };
         let usable = host.filter(|host| {
             is_connector(edge)
                 && !kept_hosts.contains(&host.id)
-                && !host.is_group
-                && host.width.is_some()
-                && host.height.is_some()
+                && size(host).is_some()
+                && host.shape != "noteGroup"
                 && !host
                     .parent_id
                     .as_deref()
@@ -181,13 +221,23 @@ pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> O
         let entry = match hosts.iter().position(|entry| entry.id == host.id) {
             Some(position) => &mut hosts[position],
             None => {
-                let direction =
-                    crate::unified::pipeline::node_dir(data, index[host.id.as_str()], &by_id)
-                        .unwrap_or(data.direction.as_str());
+                // A composite meets its transitions in the direction of its parent.
+                let at = if host.is_group {
+                    host.parent_id
+                        .as_deref()
+                        .and_then(|parent| index.get(parent).copied())
+                } else {
+                    Some(index[host.id.as_str()])
+                };
+                let direction = at
+                    .and_then(|at| crate::unified::pipeline::node_dir(data, at, &by_id))
+                    .unwrap_or(data.direction.as_str());
+                let ((width, height), sized) = size(host)?;
                 hosts.push(Host {
                     id: host.id.clone(),
-                    width: host.width.unwrap_or(0.0),
-                    height: host.height.unwrap_or(0.0),
+                    width,
+                    height,
+                    sized,
                     across: !matches!(direction, "LR" | "RL"),
                     notes: Vec::new(),
                 });
@@ -204,42 +254,18 @@ pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> O
         });
     }
 
-    // A state with more transitions to itself than free sides for them, with two notes on one
-    // side, or narrower than the bundle of its transitions keeps its notes where the reference
-    // puts them.
+    // A state with an invisible transition to itself, or with a note that would not stand beside
+    // it in the column of its side, keeps its notes where the reference puts them.
     for host in &hosts {
-        let loops: Vec<&Edge> = data
-            .edges
-            .iter()
-            .filter(|edge| edge.start == host.id && edge.end == host.id)
-            .collect();
-        let noted_sides = [Side::Before, Side::After]
-            .iter()
-            .filter(|&&side| host.notes.iter().any(|note| note.side == side))
-            .count();
-        let looped = !loops.is_empty()
-            && (loops.len() + noted_sides > 2
-                || loops.iter().any(|edge| edge.thickness == "invisible"));
-        let ends = |at_start: bool| {
-            data.edges
-                .iter()
-                .filter(|edge| edge.start != edge.end && !is_connector(edge))
-                .filter(|edge| {
-                    if at_start {
-                        edge.start == host.id
-                    } else {
-                        edge.end == host.id
-                    }
-                })
-                .count()
-        };
-        let bundle = (ends(true).max(ends(false)).max(1) - 1) as f64 * crate::design::PORT_PITCH;
-        let side = if host.across { host.width } else { host.height };
-        let narrow = bundle > side;
-        let crowded = [Side::Before, Side::After]
-            .iter()
-            .any(|&side| host.notes.iter().filter(|note| note.side == side).count() > 1);
-        if looped || crowded || narrow {
+        let looped = data.edges.iter().any(|edge| {
+            edge.start == host.id && edge.end == host.id && edge.thickness == "invisible"
+        });
+        let own = BBox::new(0.0, 0.0, host.width, host.height);
+        let crowded = host.sized
+            && placed(host, own).iter().any(|bbox| {
+                overlap(host, own, *bbox).1 - overlap(host, own, *bbox).0 < MIN_OVERLAP
+            });
+        if looped || crowded {
             kept.extend(host.notes.iter().map(|note| note.group.as_str()));
         }
     }
@@ -276,13 +302,16 @@ pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> O
         return None;
     }
 
-    for host in &hosts {
+    for host in hosts.iter().filter(|host| host.sized) {
         let Some(node) = data.nodes.iter_mut().find(|node| node.id == host.id) else {
             continue;
         };
-        let (width, height) = room(host);
-        node.width = Some(width);
-        node.height = Some(height);
+        let own = BBox::new(0.0, 0.0, host.width, host.height);
+        node.beside.extend(
+            placed(host, own)
+                .into_iter()
+                .map(|room| (room.x, room.y, room.width, room.height)),
+        );
     }
     let mut notes = Notes {
         hosts,
@@ -305,50 +334,23 @@ pub(crate) fn take_out(data: &mut LayoutData, kept_hosts: &HashSet<String>) -> O
     Some(notes)
 }
 
-/// The size of a state's box in the layout: its own size, with the room of its notes on both
-/// sides along its layer, and at least the size of its notes along the flow.
-fn room(host: &Host) -> (f64, f64) {
-    let (mut reach, mut depth) = (0.0_f64, 0.0_f64);
-    for note in &host.notes {
-        let (along, flow) = if host.across {
-            (note.width, note.height)
-        } else {
-            (note.height, note.width)
-        };
-        reach = reach.max(NOTE_GAP + along);
-        depth = depth.max(flow);
-    }
-    // The box grows by whole units on each side, so that the middle of its side, where ELK and
-    // the placement put the ports on whole units, is where it is for the state alone.
-    let reach = reach.ceil();
-    let grow = |size: f64| size + 2.0 * ((depth - size) / 2.0).max(0.0).ceil();
-    if host.across {
-        (host.width + 2.0 * reach, grow(host.height))
-    } else {
-        (grow(host.width), host.height + 2.0 * reach)
-    }
-}
-
 impl Notes {
-    /// The states whose boxes hold the room of their notes, with their own size and the sides
-    /// their notes take, for the self-loops that stand beside them on the other side.
+    /// The states with notes beside them, with the sides their notes take, for the self-loops
+    /// that stand beside them on the other side.
     pub(crate) fn reserved(&self) -> Vec<crate::unified::loops::Reserved> {
         self.hosts
             .iter()
             .map(|host| crate::unified::loops::Reserved {
                 id: host.id.clone(),
-                width: host.width,
-                height: host.height,
                 before: host.notes.iter().any(|note| note.side == Side::Before),
                 after: host.notes.iter().any(|note| note.side == Side::After),
             })
             .collect()
     }
 
-    /// Puts the notes back into ELK's result and into the layout data: each state takes its own
-    /// size in the middle of its box, the ends of its transitions move onto its outline, and its
-    /// notes stand beside it. Where an end of a transition does not leave a state's box straight
-    /// from a side, the result is that state's id, with the data unchanged.
+    /// Puts the notes back into ELK's result and into the layout data: the notes of each state
+    /// stand beside it. Where ELK's result lacks a state, the result is that state's id, with the
+    /// data unchanged.
     pub(crate) fn put_back(
         &self,
         graph: &mut JsonNode,
@@ -362,23 +364,14 @@ impl Notes {
                 .map_or_else(Point::default, |(bbox, _)| Point::new(bbox.x, bbox.y))
         };
 
-        // The state's box in the layout and its own box in the middle of it.
-        let mut own: HashMap<&str, (BBox, BBox)> = HashMap::new();
+        // The state's box in the layout.
+        let mut own: HashMap<&str, BBox> = HashMap::new();
         for host in &self.hosts {
             let Some((laid, _)) = boxes.get(&host.id) else {
                 return Err(host.id.clone());
             };
-            let real = BBox::new(
-                laid.x + (laid.width - host.width) / 2.0,
-                laid.y + (laid.height - host.height) / 2.0,
-                host.width,
-                host.height,
-            );
-            own.insert(host.id.as_str(), (*laid, real));
+            own.insert(host.id.as_str(), *laid);
         }
-
-        // The ends of the transitions, on the outline of their state.
-        ends_onto_outlines(graph, &boxes, &own, &state.parent_by_id)?;
 
         // The layout data with the notes, their groups and their connectors, each group in the
         // parent of its state.
@@ -409,8 +402,7 @@ impl Notes {
         }
         for host in &self.hosts {
             if let Some(node) = data.nodes.iter_mut().find(|node| node.id == host.id) {
-                node.width = Some(host.width);
-                node.height = Some(host.height);
+                node.beside.clear();
             }
         }
         let (parent_by_id, children_by_id) = sub_graphs(data);
@@ -418,17 +410,12 @@ impl Notes {
         state.children_by_id = children_by_id;
 
         for host in &self.hosts {
-            let (_, real) = own[host.id.as_str()];
+            let real = own[host.id.as_str()];
             let parent = boxes
                 .get(&host.id)
                 .map_or_else(String::new, |(_, parent)| parent.clone());
             if let Some(node) = find_mut(graph, &host.id) {
-                node.x =
-                    Some(node.x.unwrap_or(0.0) + (node.width.unwrap_or(0.0) - real.width) / 2.0);
-                node.y =
-                    Some(node.y.unwrap_or(0.0) + (node.height.unwrap_or(0.0) - real.height) / 2.0);
-                node.width = Some(real.width);
-                node.height = Some(real.height);
+                clear_beside(node);
             }
             let parent_origin = if parent == graph.id {
                 Point::default()
@@ -436,8 +423,8 @@ impl Notes {
                 origin(Some(&parent))
             };
             let mut groups: Vec<(String, Vec<(String, BBox)>)> = Vec::new();
-            for note in &host.notes {
-                let placed = beside(host, note, real);
+            let places = placed(host, real);
+            for (note, &placed) in host.notes.iter().zip(&places) {
                 match groups.iter_mut().find(|(group, _)| *group == note.group) {
                     Some((_, members)) => members.push((note.id.clone(), placed)),
                     None => groups.push((note.group.clone(), vec![(note.id.clone(), placed)])),
@@ -446,7 +433,7 @@ impl Notes {
                 else {
                     continue;
                 };
-                let (from, to) = connector_ends(host, note, real, placed);
+                let (from, to) = connector_ends(host, note.side, real, placed);
                 let (from, to) = if connector.start == host.id {
                     (from, to)
                 } else {
@@ -591,51 +578,70 @@ impl Notes {
     }
 }
 
-/// Where a note stands beside its state: `NOTE_GAP` from its side, centered on the state across.
-fn beside(host: &Host, note: &Note, real: BBox) -> BBox {
+/// Where the notes of a state stand beside it, in the order of its notes: `NOTE_GAP` from their
+/// side, the notes of one side in a column along it, `NOTE_STACK_GAP` apart and centered together
+/// on the state.
+fn placed(host: &Host, real: BBox) -> Vec<BBox> {
     let middle = real.center();
-    let (x, y) = match (host.across, note.side) {
-        (true, Side::After) => (real.right() + NOTE_GAP, middle.y - note.height / 2.0),
-        (true, Side::Before) => (real.x - NOTE_GAP - note.width, middle.y - note.height / 2.0),
-        (false, Side::After) => (middle.x - note.width / 2.0, real.bottom() + NOTE_GAP),
-        (false, Side::Before) => (middle.x - note.width / 2.0, real.y - NOTE_GAP - note.height),
-    };
-    BBox::new(x, y, note.width, note.height)
+    let along = |note: &Note| if host.across { note.height } else { note.width };
+    let mut boxes = vec![BBox::default(); host.notes.len()];
+    for side in [Side::Before, Side::After] {
+        let members: Vec<usize> = (0..host.notes.len())
+            .filter(|&index| host.notes[index].side == side)
+            .collect();
+        let total = members
+            .iter()
+            .map(|&index| along(&host.notes[index]))
+            .sum::<f64>()
+            + NOTE_STACK_GAP * members.len().saturating_sub(1) as f64;
+        let mut at = if host.across { middle.y } else { middle.x } - total / 2.0;
+        for index in members {
+            let note = &host.notes[index];
+            let (x, y) = match (host.across, side) {
+                (true, Side::After) => (real.right() + NOTE_GAP, at),
+                (true, Side::Before) => (real.x - NOTE_GAP - note.width, at),
+                (false, Side::After) => (at, real.bottom() + NOTE_GAP),
+                (false, Side::Before) => (at, real.y - NOTE_GAP - note.height),
+            };
+            boxes[index] = BBox::new(x, y, note.width, note.height);
+            at += along(note) + NOTE_STACK_GAP;
+        }
+    }
+    boxes
 }
 
-/// The ends of a note's connector: on the state's side and on the note's, through their middles.
-fn connector_ends(host: &Host, note: &Note, real: BBox, placed: BBox) -> (Point, Point) {
-    let middle = real.center();
-    match (host.across, note.side) {
-        (true, Side::After) => (
-            Point::new(real.right(), middle.y),
-            Point::new(placed.x, middle.y),
-        ),
-        (true, Side::Before) => (
-            Point::new(real.x, middle.y),
-            Point::new(placed.right(), middle.y),
-        ),
-        (false, Side::After) => (
-            Point::new(middle.x, real.bottom()),
-            Point::new(middle.x, placed.y),
-        ),
-        (false, Side::Before) => (
-            Point::new(middle.x, real.y),
-            Point::new(middle.x, placed.bottom()),
-        ),
+/// The stretch along the state's side over which a note stands beside it: from, to.
+fn overlap(host: &Host, real: BBox, placed: BBox) -> (f64, f64) {
+    if host.across {
+        (real.y.max(placed.y), real.bottom().min(placed.bottom()))
+    } else {
+        (real.x.max(placed.x), real.right().min(placed.right()))
+    }
+}
+
+/// The ends of a note's connector: on the state's side and on the note's, straight across, in the
+/// middle of the stretch over which the note stands beside the state.
+fn connector_ends(host: &Host, side: Side, real: BBox, placed: BBox) -> (Point, Point) {
+    let (from, to) = overlap(host, real, placed);
+    let at = f64::midpoint(from, to);
+    match (host.across, side) {
+        (true, Side::After) => (Point::new(real.right(), at), Point::new(placed.x, at)),
+        (true, Side::Before) => (Point::new(real.x, at), Point::new(placed.right(), at)),
+        (false, Side::After) => (Point::new(at, real.bottom()), Point::new(at, placed.y)),
+        (false, Side::Before) => (Point::new(at, real.y), Point::new(at, placed.bottom())),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::room::onto_outline;
 
     fn host(across: bool, sides: &[Side]) -> Host {
         Host {
             id: "S".to_owned(),
             width: 100.0,
             height: 40.0,
+            sized: true,
             across,
             notes: sides
                 .iter()
@@ -653,94 +659,56 @@ mod tests {
     }
 
     #[test]
-    fn a_state_takes_the_room_of_its_note_on_both_sides_of_its_layer() {
-        // From top to bottom: the layer runs along x, the note is taller than the state.
-        assert_eq!(
-            room(&host(true, &[Side::After])),
-            (100.0 + 2.0 * 182.0, 60.0)
-        );
-        // From left to right: the layer runs along y, the note is wider than the state.
-        assert_eq!(
-            room(&host(false, &[Side::Before])),
-            (150.0, 40.0 + 2.0 * 92.0)
-        );
-        // Two notes take the room of the larger one.
-        assert_eq!(
-            room(&host(true, &[Side::Before, Side::After])),
-            (100.0 + 2.0 * 182.0, 60.0)
-        );
-    }
-
-    #[test]
     fn a_note_stands_beside_its_state_at_its_height() {
         let real = BBox::new(0.0, 0.0, 100.0, 40.0);
         let right = host(true, &[Side::After]);
-        let placed = beside(&right, &right.notes[0], real);
+        let placed = placed(&right, real)[0];
         assert_eq!(placed, BBox::new(132.0, -10.0, 150.0, 60.0));
         assert_eq!(
-            connector_ends(&right, &right.notes[0], real, placed),
+            connector_ends(&right, Side::After, real, placed),
             (Point::new(100.0, 20.0), Point::new(132.0, 20.0))
         );
         let left = host(true, &[Side::Before]);
         assert_eq!(
-            beside(&left, &left.notes[0], real),
-            BBox::new(-182.0, -10.0, 150.0, 60.0)
+            super::placed(&left, real),
+            [BBox::new(-182.0, -10.0, 150.0, 60.0)]
         );
         // From left to right, `right of` is below and `left of` above.
         let below = host(false, &[Side::After]);
         assert_eq!(
-            beside(&below, &below.notes[0], real),
-            BBox::new(-25.0, 72.0, 150.0, 60.0)
+            super::placed(&below, real),
+            [BBox::new(-25.0, 72.0, 150.0, 60.0)]
         );
         let above = host(false, &[Side::Before]);
         assert_eq!(
-            beside(&above, &above.notes[0], real),
-            BBox::new(-25.0, -92.0, 150.0, 60.0)
+            super::placed(&above, real),
+            [BBox::new(-25.0, -92.0, 150.0, 60.0)]
         );
     }
 
     #[test]
-    fn the_end_of_a_transition_moves_along_its_last_part_onto_the_state() {
-        let laid = BBox::new(0.0, 0.0, 300.0, 60.0);
-        let real = BBox::new(100.0, 10.0, 100.0, 40.0);
-        // Straight down out of the bottom of the box.
+    fn two_notes_on_one_side_stand_in_a_column_with_straight_connectors() {
+        let real = BBox::new(0.0, 0.0, 100.0, 40.0);
+        let mut two = host(true, &[Side::After, Side::After]);
+        two.notes[0].height = 30.0;
+        two.notes[1].height = 30.0;
+        let places = placed(&two, real);
+        // 30, 8 and 30, centered on the state's middle at 20.
         assert_eq!(
-            onto_outline(
-                Point::new(150.0, 60.0),
-                Point::new(150.0, 100.0),
-                laid,
-                real
-            ),
-            Some(Point::new(150.0, 50.0))
+            places,
+            [
+                BBox::new(132.0, -14.0, 150.0, 30.0),
+                BBox::new(132.0, 24.0, 150.0, 30.0)
+            ]
         );
-        // Straight up into the top.
+        // Each connector runs across where its note stands beside the state.
         assert_eq!(
-            onto_outline(Point::new(140.0, 0.0), Point::new(140.0, -30.0), laid, real),
-            Some(Point::new(140.0, 10.0))
-        );
-        // At a slant, or beside the state, it cannot.
-        assert_eq!(
-            onto_outline(
-                Point::new(150.0, 60.0),
-                Point::new(170.0, 100.0),
-                laid,
-                real
-            ),
-            None
+            connector_ends(&two, Side::After, real, places[0]),
+            (Point::new(100.0, 8.0), Point::new(132.0, 8.0))
         );
         assert_eq!(
-            onto_outline(Point::new(50.0, 60.0), Point::new(50.0, 100.0), laid, real),
-            None
-        );
-        // Not on a side of the box.
-        assert_eq!(
-            onto_outline(
-                Point::new(150.0, 30.0),
-                Point::new(150.0, 100.0),
-                laid,
-                real
-            ),
-            None
+            connector_ends(&two, Side::After, real, places[1]),
+            (Point::new(100.0, 32.0), Point::new(132.0, 32.0))
         );
     }
 
@@ -807,15 +775,17 @@ mod tests {
     }
 
     #[test]
-    fn the_notes_leave_the_layout_and_their_state_takes_their_room() {
+    fn the_notes_leave_the_layout_and_their_state_keeps_their_room_on_their_side() {
         let mut data = noted();
-        let notes =
-            take_out(&mut data, &HashSet::new()).expect("the note can stand beside its state");
+        let notes = take_out(&mut data, &HashSet::new(), Some(&HashMap::new()))
+            .expect("the note can stand beside its state");
         let ids: Vec<&str> = data.nodes.iter().map(|node| node.id.as_str()).collect();
         assert_eq!(ids, ["A", "B"]);
         assert_eq!(data.edges.len(), 1);
-        assert_eq!(data.nodes[0].width, Some(100.0 + 2.0 * (NOTE_GAP + 100.0)));
+        // The state keeps its size; the note's room is on its right only.
+        assert_eq!(data.nodes[0].width, Some(100.0));
         assert_eq!(data.nodes[0].height, Some(40.0));
+        assert_eq!(data.nodes[0].beside, [(100.0 + NOTE_GAP, 0.0, 100.0, 40.0)]);
         assert_eq!(notes.nodes.len(), 2);
         assert_eq!(notes.edges.len(), 1);
     }
@@ -824,20 +794,38 @@ mod tests {
     fn a_state_with_a_loop_keeps_its_note_beside_it() {
         let mut data = noted();
         data.edges.push(edge("e2", "A", "A", "transition"));
-        let notes = take_out(&mut data, &HashSet::new()).expect("the note beside its state");
+        let notes = take_out(&mut data, &HashSet::new(), Some(&HashMap::new()))
+            .expect("the note beside its state");
         let reserved = notes.reserved();
         assert_eq!(reserved.len(), 1);
         assert_eq!(reserved[0].id, "A");
     }
 
     #[test]
-    fn a_state_with_more_loops_than_free_sides_keeps_its_note_where_the_reference_puts_it() {
+    fn a_state_with_an_invisible_loop_keeps_its_note_where_the_reference_puts_it() {
         let mut data = noted();
-        data.edges.push(edge("e2", "A", "A", "transition"));
-        data.edges.push(edge("e3", "A", "A", "transition"));
+        let mut invisible = edge("e2", "A", "A", "transition");
+        invisible.thickness = "invisible".to_owned();
+        data.edges.push(invisible);
         let before = data.nodes.len();
-        assert!(take_out(&mut data, &HashSet::new()).is_none());
+        assert!(take_out(&mut data, &HashSet::new(), Some(&HashMap::new())).is_none());
         assert_eq!(data.nodes.len(), before);
-        assert_eq!(data.nodes[0].width, Some(100.0));
+        assert!(data.nodes[0].beside.is_empty());
+    }
+
+    #[test]
+    fn a_composite_takes_its_size_from_a_layout_before() {
+        let mut data = noted();
+        data.nodes[0].is_group = true;
+        data.nodes[0].width = None;
+        data.nodes[0].height = None;
+        // Without sizes, the note leaves the layout without room.
+        let mut probe = data.clone();
+        assert!(take_out(&mut probe, &HashSet::new(), None).is_some());
+        assert!(probe.nodes[0].beside.is_empty());
+        // With the composite's size, it keeps its room beside the frame.
+        let sizes = HashMap::from([("A".to_owned(), (300.0, 200.0))]);
+        assert!(take_out(&mut data, &HashSet::new(), Some(&sizes)).is_some());
+        assert_eq!(data.nodes[0].beside, [(332.0, 80.0, 100.0, 40.0)]);
     }
 }

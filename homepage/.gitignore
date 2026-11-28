@@ -13,4 +13,5 @@ app/routes/architecture/**/*.md
 app/routes/comparisons/*.md
 app/routes/changelog.md
 public/notices/
+public/docs-images/
 public/fonts/

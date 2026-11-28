@@ -82,3 +82,56 @@ pub fn own_rules(id: &str, tokens: &ThemeTokens, look: &str) -> String {
     }
     css
 }
+
+/// The rules of the mindmap in the default rendering
+/// (`docs/decisions/0023-the-default-rendering.md`), to append to the base style sheet: a branch's
+/// nodes in the tint of its color (`cScale<i>`) with a hairline in its color (`cScalePeer<i>`) and
+/// the text color (`cScaleLabel<i>`), its edges in its color and thinner with each level, and the
+/// root in the flowchart's terminal color (`git0`, `gitBranchLabel0`). The default's theme
+/// variables give those colors, and the user's win. With both color schemes, the colors that differ
+/// are `light-dark()` pairs.
+#[must_use]
+pub fn design_rules(id: &str, theme: crate::context::ThemeView<'_>) -> String {
+    let light = design_rules_of(id, theme.light);
+    match theme.dark {
+        None => light,
+        Some(dark) => {
+            let merged = crate::scheme::both(&light, &design_rules_of(id, dark));
+            // The base sheet declares both schemes on the root already.
+            merged
+                .strip_prefix("svg:root{color-scheme:light dark;}")
+                .map_or(merged.clone(), str::to_owned)
+        }
+    }
+}
+
+/// [`design_rules`] for one set of tokens.
+fn design_rules_of(id: &str, tokens: &ThemeTokens) -> String {
+    let text = |token: &Token| token.text().unwrap_or_default();
+    let stroke = crate::design::NODE_STROKE_WIDTH;
+    let mut css = format!("#{id} .edge{{stroke-width:2;fill:none;}}");
+    for index in 0..COLOR_LIMIT {
+        let section = index as i64 - 1;
+        let fill = text(tokens.c_scale.get(index));
+        let line = text(tokens.c_scale_peer.get(index));
+        let label = text(tokens.c_scale_label.get(index));
+        // The edges of the root's children are the widest, and each level is thinner, down to the
+        // width of a flowchart's edge.
+        let edge_width = crate::svg::number((4.0 - 0.75 * index as f64).max(1.5));
+        css.push_str(&format!(
+            "#{id} .section-{section} rect,#{id} .section-{section} path,#{id} .section-{section} circle,#{id} .section-{section} polygon{{fill:{fill};stroke:{line};stroke-width:{stroke};}}\
+             #{id} .section-{section} text{{fill:{label};}}\
+             #{id} .section-{section} span{{color:{label};}}\
+             #{id} .section-edge-{section}{{stroke:{line};}}\
+             #{id} .edge-depth-{section}{{stroke-width:{edge_width};}}"
+        ));
+    }
+    let root = text(tokens.git.get(0));
+    let root_text = text(tokens.git_branch_label.get(0));
+    css.push_str(&format!(
+        "#{id} .section-root rect,#{id} .section-root path,#{id} .section-root circle,#{id} .section-root polygon{{fill:{root};stroke:{root};}}\
+         #{id} .section-root text{{fill:{root_text};}}\
+         #{id} .section-root span{{color:{root_text};}}"
+    ));
+    css
+}

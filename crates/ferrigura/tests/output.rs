@@ -1,6 +1,6 @@
-//! The SVG a pie is written as: colors as custom properties with presentation attribute fallback
-//! (decision 0011), the scope of the styles to the diagram's id, the color schemes, and the
-//! accessible title and description.
+//! The SVG a pie is written as in `compat`: colors as custom properties with presentation attribute
+//! fallback (decision 0011), the scope of the styles to the diagram's id, the color schemes, and
+//! the accessible title and description.
 
 use ferrigura::{ColorScheme, RenderOptions, render, render_with};
 use ferrigura_model::value::Value;
@@ -13,10 +13,10 @@ const DARK_TITLE: &str = "#ccc";
 
 const PIE: &str = "pie title Sports in Sweden\n  \"Bandy\" : 40\n  \"Ice-Hockey\" : 80\n";
 
+/// The text drawn in `compat`, whose colors are the shipped themes'.
 fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String {
     let options = RenderOptions {
-        compat: false,
-        design: false,
+        compat: true,
         animation: None,
         id: id.map(str::to_owned),
         color_scheme: scheme,
@@ -207,7 +207,6 @@ fn an_id_that_is_not_a_css_identifier_is_refused() {
     for bad in ["1pie", "my pie", "a.b", "", "x{}"] {
         let options = RenderOptions {
             compat: false,
-            design: false,
             animation: None,
             id: Some(bad.to_owned()),
             color_scheme: None,
@@ -302,47 +301,6 @@ fn sequence_text_inherits_the_embedded_font_in_standalone_svg() {
 }
 
 #[test]
-fn neo_participant_boxes_fit_their_labels_and_touch_the_lifelines() {
-    for (label, expected_height) in [("App", 32.0), ("App<br/>client", 52.0)] {
-        let svg = render(
-            &format!(
-                "sequenceDiagram\n actor User\n participant App as {label}\n User->>App: Open\n"
-            ),
-            &Value::empty_object(),
-        )
-        .expect("renders");
-        let doc = roxmltree::Document::parse(&svg).expect("valid SVG");
-        let value = |node: roxmltree::Node<'_, '_>, name| {
-            node.attribute(name).unwrap().parse::<f64>().unwrap()
-        };
-        let top = doc
-            .descendants()
-            .find(|n| {
-                n.has_tag_name("rect")
-                    && n.attribute("name") == Some("App")
-                    && n.attribute("class") == Some("actor actor-top")
-            })
-            .unwrap();
-        assert_eq!(value(top, "height"), expected_height);
-        let line = doc
-            .descendants()
-            .find(|n| n.has_tag_name("line") && n.attribute("name") == Some("App"))
-            .unwrap();
-        assert_eq!(value(top, "y") + value(top, "height"), value(line, "y1"));
-        let bottom = doc
-            .descendants()
-            .find(|n| {
-                n.has_tag_name("rect")
-                    && n.attribute("name") == Some("App")
-                    && n.attribute("class") == Some("actor actor-bottom")
-            })
-            .unwrap();
-        assert_eq!(value(bottom, "height"), expected_height);
-        assert_eq!(value(bottom, "y"), value(line, "y2"));
-    }
-}
-
-#[test]
 fn sequence_fonts_embed_the_decoded_entity_glyphs() {
     let config = Value::empty_object();
     let options = RenderOptions {
@@ -364,19 +322,19 @@ fn sequence_fonts_embed_the_decoded_entity_glyphs() {
 }
 
 #[test]
-fn compat_switches_optimizations_per_render_without_leaking() {
+fn compat_switches_the_rendering_per_render_without_leaking() {
     use ferrigura::Renderer;
     let renderer = Renderer::new(&Value::empty_object());
-    let optimized = RenderOptions {
+    let drawn = RenderOptions {
         id: Some("mode".to_owned()),
         ..RenderOptions::default()
     };
     let compatible = RenderOptions {
         compat: true,
-        ..optimized.clone()
+        ..drawn.clone()
     };
     let sequence = "sequenceDiagram\n actor User\n participant App\n User->>App: Open\n";
-    let small = renderer.render_with(sequence, &optimized).unwrap();
+    let small = renderer.render_with(sequence, &drawn).unwrap();
     let large = renderer.render_with(sequence, &compatible).unwrap();
     let top = |svg: &str| {
         let doc = roxmltree::Document::parse(svg).unwrap();
@@ -390,26 +348,13 @@ fn compat_switches_optimizations_per_render_without_leaking() {
             .unwrap();
         rect.attribute("height").unwrap().to_owned()
     };
-    assert_eq!(top(&small), "32");
+    assert_eq!(top(&small), "44");
     assert_eq!(top(&large), "76");
-    let messages = |svg: &str| {
-        let doc = roxmltree::Document::parse(svg).unwrap();
-        doc.descendants()
-            .filter(|n| {
-                n.attribute("class")
-                    .is_some_and(|c| c.starts_with("messageLine") || c.starts_with("actor-line"))
-            })
-            .map(|n| {
-                ["x1", "y1", "x2", "y2", "d"].map(|a| n.attribute(a).unwrap_or_default().to_owned())
-            })
-            .collect::<Vec<_>>()
-    };
-    assert_eq!(messages(&small), messages(&large));
-    assert_eq!(renderer.render_with(sequence, &optimized).unwrap(), small);
+    assert_eq!(renderer.render_with(sequence, &drawn).unwrap(), small);
     assert_eq!(renderer.render_with(sequence, &compatible).unwrap(), large);
     let flowchart = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
     assert_ne!(
-        renderer.render_with(flowchart, &optimized).unwrap(),
+        renderer.render_with(flowchart, &drawn).unwrap(),
         renderer.render_with(flowchart, &compatible).unwrap()
     );
     for source in [
@@ -418,8 +363,8 @@ fn compat_switches_optimizations_per_render_without_leaking() {
         "stateDiagram-v2\n A --> B\n",
         "erDiagram\n A ||--o{ B : uses\n",
     ] {
-        assert_eq!(
-            renderer.render_with(source, &optimized).unwrap(),
+        assert_ne!(
+            renderer.render_with(source, &drawn).unwrap(),
             renderer.render_with(source, &compatible).unwrap()
         );
     }

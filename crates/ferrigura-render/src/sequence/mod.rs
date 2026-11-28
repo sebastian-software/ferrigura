@@ -18,6 +18,7 @@ mod actors;
 mod blocks;
 mod bounds;
 mod conf;
+mod design;
 mod icons;
 mod layout;
 mod markers;
@@ -43,6 +44,7 @@ use crate::common::TextMemo;
 use crate::common::decode_entities;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::context::{Context, ThemeView};
+use crate::design::Tone;
 use crate::svg::{number, xlink_declaration, xml_references};
 
 /// The namespace of the root element (`mermaidAPI` writes it on every SVG).
@@ -57,8 +59,9 @@ pub(super) struct Renderer<'a> {
     pub(super) theme: ThemeView<'a>,
     /// The resolved configuration.
     pub(super) conf: Conf,
-    /// Whether participant boxes fit their labels instead of spanning the shared row.
-    pub(super) compact_participants: bool,
+    /// The tone of the default rendering, when the diagram is drawn in it
+    /// (`docs/decisions/0023-the-default-rendering.md`).
+    pub(super) design: Option<Tone>,
     /// The text measurements of this render.
     pub(super) memo: TextMemo,
     /// The actors, boxes, messages and their layout.
@@ -69,6 +72,8 @@ pub(super) struct Renderer<'a> {
     pub(super) actor_cnt: i64,
     /// Whether the sequence numbers are shown (`db.sequenceNumbersEnabled`).
     pub(super) sequence_numbers: bool,
+    /// The boxes of the labels that interrupt the lifelines in the default rendering.
+    pub(super) gaps: Vec<design::Gap>,
     /// The children of the root that `lower()` moved to the front, in the order they were moved.
     front: Vec<Element>,
     /// The other children of the root, in order.
@@ -96,8 +101,12 @@ impl<'a> Renderer<'a> {
     /// The renderer of one diagram, with the configuration applied (`bounds.init`).
     fn new(
         input: &Context<'a, SequenceDiagram, SequenceDiagramConfig>,
+        design: Option<Tone>,
     ) -> Result<Self, RenderError> {
         let mut conf = Conf::new(input.section, input.globals);
+        if design.is_some() {
+            design::measures(&mut conf);
+        }
         for font in [
             &mut conf.actor_font,
             &mut conf.note_font,
@@ -110,7 +119,8 @@ impl<'a> Renderer<'a> {
             id: input.id,
             theme: input.theme,
             conf,
-            compact_participants: false,
+            design,
+            gaps: Vec::new(),
             memo: TextMemo::new(),
             layout: Layout::new(input.diagram),
             bounds: Bounds::default(),
@@ -181,10 +191,12 @@ impl<'a> Renderer<'a> {
         self.add_actor_rendering_data();
         let loop_widths = self.calculate_loop_bounds()?;
 
-        for element in markers::arrow_markers(self.id) {
+        for element in markers::arrow_markers(self.id, self.design.is_some()) {
             self.append(element);
         }
-        if self.conf.neo {
+        if let Some(tone) = self.design {
+            self.append(markers::design_drop_shadow(self.id, tone));
+        } else if self.conf.neo {
             let theme = self.conf.theme.clone();
             self.append(markers::drop_shadow(self.id, &theme));
         }
@@ -346,6 +358,7 @@ impl<'a> Renderer<'a> {
             self.draw_rect_background(block);
         }
         self.fix_lifeline_heights();
+        self.mask_lifelines();
 
         for box_index in self.bounds.boxes.clone() {
             let (x, y, width) = {
@@ -523,6 +536,51 @@ impl<'a> Renderer<'a> {
         }
     }
 
+    /// The default rendering's gaps in the lifelines: a mask, white with a black box for each
+    /// label, on every lifeline, so that a label interrupts a lifeline that crosses it whatever
+    /// stands behind it (`docs/diagrams/sequence.md#default-look`).
+    fn mask_lifelines(&mut self) {
+        if self.design.is_none() || self.gaps.is_empty() {
+            return;
+        }
+        let id = format!("{}-label-gaps", self.id);
+        let mut mask = Element::new("mask")
+            .with("id", id.clone())
+            .with("maskUnits", "userSpaceOnUse")
+            .with("x", "-100000")
+            .with("y", "-100000")
+            .with("width", "200000")
+            .with("height", "200000")
+            .child(
+                Element::new("rect")
+                    .with("x", "-100000")
+                    .with("y", "-100000")
+                    .with("width", "200000")
+                    .with("height", "200000")
+                    .with("fill", "white"),
+            );
+        for gap in &self.gaps {
+            mask.push_child(
+                Element::new("rect")
+                    .with("x", number(gap.x))
+                    .with("y", number(gap.y))
+                    .with("width", number(gap.width))
+                    .with("height", number(gap.height))
+                    .with("rx", "4")
+                    .with("fill", "black"),
+            );
+        }
+        let reference = format!("url(#{id})");
+        for element in self.front.iter_mut().chain(self.back.iter_mut()) {
+            element.visit_mut(&mut |node| {
+                if node.get("data-et") == Some("life-line") {
+                    node.set("mask", reference.clone());
+                }
+            });
+        }
+        self.append(Element::new("defs").child(mask));
+    }
+
     /// The root element: its size and view box, its accessibility texts, its style, the empty group
     /// `mermaidAPI` appends, and the drawing (`mermaidAPI.ts`, `setupGraphViewbox.js`).
     fn write(
@@ -569,6 +627,7 @@ impl<'a> Renderer<'a> {
             &font_size,
             &families,
             self.conf.neo,
+            self.design,
         );
         let size = calculate_svg_size_attrs(view.height, view.width, self.conf.use_max_width);
         // An actor's menu links and icons write `xlink:href`.
@@ -734,20 +793,22 @@ fn stop_y(block: &Block) -> f64 {
 pub fn render(
     input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
 ) -> Result<String, RenderError> {
-    render_with(input, true)
+    render_with_design(input, None)
 }
 
-/// Renders with Mermaid participant geometry when `compat` is true; otherwise boxes fit their labels.
+/// [`render`], in ferrigura's own look of `design`'s tone when it is set
+/// (`docs/decisions/0023-the-default-rendering.md`): participant boxes fit their labels, and the
+/// parts take the look's colors and measures. `None` draws the reference's geometry, as [`render`]
+/// does.
 ///
 /// # Errors
 ///
 /// Returns the same errors as [`render`].
-pub fn render_with(
+pub fn render_with_design(
     input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
-    compat: bool,
+    design: Option<Tone>,
 ) -> Result<String, RenderError> {
-    let mut renderer = Renderer::new(input)?;
-    renderer.compact_participants = !compat;
+    let mut renderer = Renderer::new(input, design)?;
     renderer.draw(&input.diagram.title)?;
     renderer.write(input)
 }

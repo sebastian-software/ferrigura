@@ -1,8 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Paths are a fresh temporary directory and fixed files in this repository. */
 // Renders every homepage diagram from the current Rust source. The generated
-// files are checked against the same source; callers use the single compat
-// option for optimized and Mermaid-compatible drawings, and the design option
-// for the design mode.
+// files are checked against the same source. A drawing without options is
+// Ferrigura's default rendering; `compat: true` draws Mermaid's geometry.
 // Coordinates may differ by 0.01 on another architecture (published-output.mjs).
 import assert from 'node:assert/strict';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -18,7 +17,7 @@ const svgDirectory = new URL('../app/data/diagrams/', import.meta.url);
 const recorded = check ? JSON.parse(await readFile(target, 'utf8')) : undefined;
 const platform = `${process.platform}-${process.arch}`;
 
-/** The gallery: one everyday diagram of six types, each with a plain description. */
+/** The gallery: one everyday diagram of each of the ten types, each with a plain description. */
 const gallery = [
   {
     id: 'flowchart',
@@ -124,19 +123,74 @@ const gallery = [
     Publish: milestone, after review, 0d
 `,
   },
+  {
+    id: 'mindmap',
+    label: 'Mindmap',
+    description:
+      'A release around its center: what changes in the code, what the documentation needs, and how it is announced.',
+    source: `mindmap
+  root((Release))
+    Code
+      New diagram type
+      Faster layout
+    Documentation
+      Guide
+      Changelog
+    Announcement
+      Blog post
+      Release notes
+`,
+  },
+  {
+    id: 'pie',
+    label: 'Pie',
+    description:
+      'Where the diagrams of a documentation site come from: most are flowcharts, then sequence, class and state diagrams.',
+    source: `pie title Diagrams in the guide
+  "Flowchart" : 42
+  "Sequence" : 18
+  "Class" : 9
+  "State" : 6
+`,
+  },
+  {
+    id: 'quadrant',
+    label: 'Quadrant',
+    description:
+      'Four pages of a guide placed by how often they are read and how out of date they are; the setup page is read most and needs an update.',
+    source: `quadrantChart
+  title Which pages to update first
+  x-axis Rarely read --> Often read
+  y-axis Up to date --> Out of date
+  quadrant-1 Update now
+  quadrant-2 Plan an update
+  quadrant-3 Leave as is
+  quadrant-4 Keep an eye on
+  Setup: [0.8, 0.75]
+  Themes: [0.35, 0.6]
+  API reference: [0.7, 0.25]
+  Changelog: [0.2, 0.15]
+`,
+  },
+  {
+    id: 'xychart',
+    label: 'XY chart',
+    description:
+      'Diagrams rendered per month in a documentation build, from January to June, as bars with a line over them; the number grows every month.',
+    source: `xychart-beta
+  title "Diagrams rendered per month"
+  x-axis [Jan, Feb, Mar, Apr, May, Jun]
+  y-axis "Diagrams" 0 --> 500
+  bar [120, 180, 210, 290, 360, 430]
+  line [120, 180, 210, 290, 360, 430]
+`,
+  },
 ];
 
-/** The flowchart the two rendering modes are compared on: a review cycle with labels. */
-const modeSource = `flowchart TD
-  write[Write the guide] --> review{Review}
-  review -->|Approved| publish[Publish]
-  review -->|Changes requested| write
-  publish --> announce[Announce the release]
-`;
-const modeDescription =
-  'A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.';
-
-/** The design mode: three flowcharts, each drawn in the default and in the design mode. */
+/**
+ * Ferrigura's own look: three flowcharts, a state and a class diagram. The homepage shows the
+ * default drawing; the comparison page shows each beside its drawing in `compat`.
+ */
 const designSamples = [
   {
     id: 'pipeline',
@@ -266,26 +320,14 @@ try {
   };
 
   const samples = gallery.map((sample) => ({ ...sample, file: render(sample.id, sample.source) }));
-  const modes = {
-    source: modeSource,
-    description: modeDescription,
-    adaptive: render('mode-adaptive', modeSource, { compat: false }),
-    mermaid: render('mode-mermaid', modeSource, { compat: true }),
-  };
-  assert.notEqual(
-    svgs.get(modes.adaptive),
-    svgs.get(modes.mermaid),
-    'The two flowchart modes must differ on the compared source'
-  );
   const design = {
     samples: designSamples.map((sample) => ({
       ...sample,
-      plain: render(`design-${sample.id}-default`, sample.source, { design: false }),
-      designed: render(`design-${sample.id}`, sample.source, { design: true }),
+      plain: render(`design-${sample.id}-compat`, sample.source, { compat: true }),
+      designed: render(`design-${sample.id}`, sample.source),
     })),
     // The second sample again, on a dark ground.
     dark: render(`design-${designSamples[1].id}-dark`, designSamples[1].source, {
-      design: true,
       colorScheme: 'dark',
     }),
   };
@@ -293,7 +335,7 @@ try {
     assert.notEqual(
       svgs.get(sample.plain),
       svgs.get(sample.designed),
-      `The design mode must change ${sample.id}`
+      `The default rendering must differ from compat on ${sample.id}`
     );
     assert.match(svgs.get(sample.designed), /data-role="/, `${sample.id} carries no role`);
   }
@@ -334,7 +376,6 @@ try {
     renderedWith: { ferrigura: 'repository source' },
     platform: check ? recorded.platform : platform,
     samples,
-    modes,
     design,
     schemes,
     file,

@@ -23,6 +23,7 @@ mod containers;
 mod cylinder;
 mod decorated;
 mod er_box;
+mod er_design;
 mod icon;
 mod intersect;
 mod person;
@@ -501,12 +502,16 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::IconCircle => icon::icon_circle(input),
         Kind::ImageSquare => icon::image_square(input)?,
         // The entity draws its own labels and their group box, so it returns its output whole.
+        // The default rendering draws its own entity box, neutral and without a palette slot.
+        Kind::ErBox if input.config.section.design.is_some() => {
+            return er_design::er_box(input);
+        }
         Kind::ErBox => return er_box::er_box(input),
         Kind::Composite => composite::composite(input),
         Kind::ClassBox => {
             // `classBox` stamps the class's palette slot as the collapsed group does
             // (`classBox.ts` 29).
-            // The design mode colors a class by its role, not by a slot.
+            // The default rendering colors a class by its role, not by a slot.
             if input.config.section.design.is_some() {
                 let class_design::DesignClassBox { part, texts: rows } =
                     class_design::class_box(input)?;
@@ -557,9 +562,9 @@ pub fn is_decision(node: &Node) -> bool {
     !node.is_group && registry::resolve_node(node) == Some(Kind::Question)
 }
 
-/// The `data-role` of a node in the design mode, with its leading space: the meaning its shape
-/// carries, which the style sheet colors (`docs/decisions/0023-design-mode.md`). Empty outside the
-/// mode and for a shape without a role.
+/// The `data-role` of a node in the default rendering, with its leading space: the meaning its
+/// shape carries, which the style sheet colors (`docs/decisions/0023-the-default-rendering.md`).
+/// Empty in `compat` and for a shape without a role.
 fn role_attribute(input: &ShapeInput<'_>, kind: Kind) -> String {
     if input.config.section.design.is_none() {
         return String::new();

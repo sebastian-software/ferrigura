@@ -273,8 +273,8 @@ fn declarations(style: &str) -> Vec<String> {
 /// Lays out an edge's label as `insertEdgeLabel` does when it measures it: wrapped at 200 pixels,
 /// with a background, in `font_size`, the theme's `fontSize` that the root rule of the reference's
 /// SVG sets and every label inherits. The caller stores the size on the edge before layout (see
-/// [`label_size`]). `None` for an edge without a label. With `keep_words` (the design mode), a word
-/// is not broken inside ([`label::layout_keeping_words`]).
+/// [`label_size`]). `None` for an edge without a label. With `keep_words` (the default rendering),
+/// a word is not broken inside ([`label::layout_keeping_words`]).
 ///
 /// # Errors
 ///
@@ -336,13 +336,20 @@ fn path_data(edge: &Edge, curve_name: &str, radius: f64, design: bool) -> Option
         .collect();
     let (start, end) = (&edge.arrow_type_start, &edge.arrow_type_end);
     if curve_name == "rounded" {
-        // The design mode turns every corner on the same radius.
+        // The default rendering turns every corner on the same radius.
         let line_data = if design {
             without_points_on_a_line(&line_data)
         } else {
             line_data
         };
         let offset = apply_marker_offsets(&line_data, start, end);
+        // The default rendering counts the parts at the ends from the node, before the arrowheads.
+        if design {
+            let pulled = super::path::pulled_back(&line_data, &offset);
+            return Some(super::path::generate_rounded_path_from_ends(
+                &offset, radius, pulled,
+            ));
+        }
         return Some(generate_rounded_path(&offset, radius));
     }
     let fixed = fix_corners(&line_data);
@@ -482,7 +489,7 @@ pub(crate) fn prepare_paths(
     path_ids: Option<&[String]>,
 ) -> Vec<Painted> {
     let default_curve = section.flowchart.curve.clone();
-    // The design mode turns an edge on a wider radius and draws its own arrowheads.
+    // The default rendering turns an edge on a wider radius and draws its own arrowheads.
     let design = section.design.is_some();
     let radius = if design {
         crate::design::EDGE_RADIUS
@@ -534,6 +541,7 @@ pub(crate) fn prepare_paths(
                 arrow_type_end: edges[index].arrow_type_end.clone(),
                 style: painted[index].style.clone(),
                 corner_radius: radius,
+                from_ends: design,
             })
             .collect();
         let config = LineJumpConfig {
@@ -748,7 +756,8 @@ pub(crate) fn paint_label_at(
     let y = y.unwrap_or(0.0) + margin / 2.0;
     let text = label.bbox;
     let (text_x, text_y) = (text.x + text.width / 2.0, text.y + text.height / 2.0);
-    // The design mode draws the background as a chip: wider than the text, with round corners.
+    // The default rendering draws the background as a chip: wider than the text, with round
+    // corners.
     let chip = label
         .background
         .filter(|_| section.design.is_some())
@@ -796,10 +805,10 @@ pub(crate) fn paint_label_at(
     }
 }
 
-/// The edge paths of a diagram in the design mode, with a gap under every edge label
-/// (`docs/decisions/0023-design-mode.md`): a mask over the whole drawing that hides the edges in the
-/// rounded box of each label. `drawn` is the box the diagram covers; the mask reaches beyond it, so
-/// that a stroke or an arrowhead at its border is not cut.
+/// The edge paths of a diagram in the default rendering, with a gap under every edge label
+/// (`docs/decisions/0023-the-default-rendering.md`): a mask over the whole drawing that hides the
+/// edges in the rounded box of each label. `drawn` is the box the diagram covers; the mask reaches
+/// beyond it, so that a stroke or an arrowhead at its border is not cut.
 #[must_use]
 pub(crate) fn with_label_gaps(
     edge_paths: &str,
@@ -836,12 +845,12 @@ pub(crate) fn with_label_gaps(
     )
 }
 
-/// The center of an edge label in the design mode, moved off the frame of a group
-/// (`docs/decisions/0023-design-mode.md`). The layout places a label on its edge without regard to a
-/// frame that is pulled in afterwards, so a chip can sit on a frame's line. The label then slides
-/// along the straight part of the edge it sits on, the shorter way, until its chip is
-/// [`CHIP_MARGIN`](crate::design::CHIP_MARGIN) clear of the line. It stays where it is when it
-/// sits on no axis-parallel part, or when that part is too short for the move.
+/// The center of an edge label in the default rendering, moved off the frame of a group
+/// (`docs/decisions/0023-the-default-rendering.md`). The layout places a label on its edge without
+/// regard to a frame that is pulled in afterwards, so a chip can sit on a frame's line. The label
+/// then slides along the straight part of the edge it sits on, the shorter way, until its chip is
+/// [`CHIP_MARGIN`](crate::design::CHIP_MARGIN) clear of the line. It stays where it is when it sits
+/// on no axis-parallel part, or when that part is too short for the move.
 #[must_use]
 pub(crate) fn label_clear_of_frames(edge: &Edge, label: &LabelLayout, frames: &[BBox]) -> Point {
     let centre = Point::new(edge.x.unwrap_or(0.0), edge.y.unwrap_or(0.0));
@@ -943,7 +952,7 @@ pub fn markers(svg_id: &str) -> String {
     markers::markers(svg_id, markers::FLOWCHART)
 }
 
-/// [`markers()`], with the arrowheads of the design mode when `design` is set.
+/// [`markers()`], with the arrowheads of the default rendering when `design` is set.
 #[must_use]
 pub fn markers_for(svg_id: &str, design: bool) -> String {
     markers::markers_for(svg_id, markers::FLOWCHART, design)
@@ -1137,7 +1146,7 @@ mod tests {
             path_data(&edge, "rounded", radius, false).as_deref(),
             Some("M0,0L0,26L0,38Q0,50 12,50L50,50")
         );
-        // The design mode turns on its radius, as it does without the point.
+        // The default rendering turns on its radius, as it does without the point.
         let designed = path_data(&edge, "rounded", radius, true).expect("a path");
         let start: f64 = designed
             .strip_prefix("M0,0L0,")

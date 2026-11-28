@@ -24,7 +24,7 @@ export const meta: ArdoMetaFunction = () => [
   {
     name: 'description',
     content:
-      'Ferrigura renders Mermaid diagram text to standalone SVG in Rust, without a browser: ten diagram types, each drawn completely and checked against Mermaid, with bundled fonts, labels that stay text and a design mode. For Rust, Node.js and the command line.',
+      'Ferrigura renders Mermaid diagram text to standalone SVG in Rust, without a browser: ten diagram types, each drawn completely and checked against Mermaid, with bundled fonts, labels that stay text and a look of its own. For Rust, Node.js and the command line.',
   },
 ];
 // oxlint-disable-next-line react/only-export-components -- Ardo reads the route layout.
@@ -69,7 +69,7 @@ function Opening() {
                 <em>{grouped(coverage.agreed)}</em> of {grouped(coverage.compared)}
               </>
             ),
-            label: 'drawings within 0.05 px of Mermaid’s',
+            label: 'drawings within 0.05 px of Mermaid’s, with compat',
           },
           {
             value: <em>{grouped(coverage.parsed)}</em>,

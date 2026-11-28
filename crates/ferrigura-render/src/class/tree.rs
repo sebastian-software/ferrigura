@@ -1,6 +1,7 @@
-//! The inheritance tree of the design mode (`docs/decisions/0023-design-mode.md`): the
-//! generalizations that meet a class on one side share one triangle in the middle of that side and
-//! one line into it, and branch on a bus to their children, as a person draws an inheritance tree.
+//! The inheritance tree of the default rendering (`docs/decisions/0023-the-default-rendering.md`):
+//! the generalizations that meet a class on one side share one triangle in the middle of that side
+//! and one line into it, and branch on a bus to their children, as a person draws an inheritance
+//! tree.
 //!
 //! ELK gives every edge a port of its own, so two children of one parent would meet it at two
 //! triangles side by side. After the layout, this step takes the edges with a triangle at the same
@@ -8,8 +9,10 @@
 //! merged), and moves their ends to the middle of that side. Each route runs on past its last turn
 //! to the bus, the line where the edge that turns closest to the class turns, along the bus to the
 //! middle, and into the class. Where one child stands straight below its parent, its line takes the
-//! place of the middle, so that the bus meets it without a step. A side where another edge meets the class near its middle, a route
-//! that is not orthogonal, and an end with a cardinality or an edge with a label are left alone.
+//! place of the middle, so that the bus meets it without a step. Where another edge meets the class
+//! near the middle of the side, the triangle stands in the middle of its edges' ends instead; a
+//! side where that place is taken too, a route that is not orthogonal, and an end with a
+//! cardinality or an edge with a label are left alone.
 //! The step runs on the applied layout, in the renderer, not in the ELK port.
 
 use std::collections::BTreeMap;
@@ -85,23 +88,35 @@ pub fn merge_generalizations(edges: &mut [Edge], nodes: &[Node]) {
                 }
             }
         };
-        // Another edge that meets the side near its middle would run on the merged line.
-        let crowded = edges.iter().enumerate().any(|(index, edge)| {
-            [true, false].into_iter().any(|at_start| {
-                let id = if at_start { &edge.start } else { &edge.end };
-                if *id != node_id || members.contains(&(index, at_start)) {
-                    return false;
-                }
-                let points = toward(edge, at_start);
-                side_of(&points) == Some(side)
-                    && points
-                        .last()
-                        .is_some_and(|end| (side.across(*end) - middle).abs() < CLEARANCE)
+        // Another edge that meets the side near its middle would run on the merged line. The
+        // triangle then stands in the middle of its members' ends, where that is free.
+        let crowded = |middle: f64| {
+            edges.iter().enumerate().any(|(index, edge)| {
+                [true, false].into_iter().any(|at_start| {
+                    let id = if at_start { &edge.start } else { &edge.end };
+                    if *id != node_id || members.contains(&(index, at_start)) {
+                        return false;
+                    }
+                    let points = toward(edge, at_start);
+                    side_of(&points) == Some(side)
+                        && points
+                            .last()
+                            .is_some_and(|end| (side.across(*end) - middle).abs() < CLEARANCE)
+                })
             })
-        });
-        if crowded {
+        };
+        let ends: Vec<f64> = routes
+            .iter()
+            .filter_map(|route| route.last().map(|end| side.across(*end)))
+            .collect();
+        let bundle = ends.iter().sum::<f64>() / ends.len() as f64;
+        let middle = if !crowded(middle) {
+            middle
+        } else if straight.is_empty() && !crowded(bundle) {
+            bundle
+        } else {
             continue;
-        }
+        };
         // The bus runs where the edge that turns closest to the class turns.
         let Some(bus) = routes
             .iter()

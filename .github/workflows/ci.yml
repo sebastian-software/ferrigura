@@ -218,8 +218,6 @@ jobs:
         run: pnpm -C tools/port port:scope-pie
       - name: Flowchart geometry against the reference in Chromium
         run: pnpm -C tools/port port:geometry-flowchart
-      - name: Adaptive flowchart geometry against the reference with centered ports
-        run: pnpm -C tools/port port:geometry-flowchart --routing adaptive
       - name: Geometry of the other diagram types against the reference in Chromium
         # Every type runs, so one failing type does not hide the others.
         run: |

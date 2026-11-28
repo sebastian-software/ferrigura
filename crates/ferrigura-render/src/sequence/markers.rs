@@ -5,6 +5,7 @@
 
 use super::icons::{CLOCK_ICON, COMPUTER_ICON, DATABASE_ICON};
 use crate::common::Element;
+use crate::design::Tone;
 
 /// The `defs` of a symbol with one path: the icons of the diagram (`insertDatabaseIcon` …).
 fn symbol(id: String, width: Option<&str>, path: &str, fill_rule: bool) -> Element {
@@ -60,14 +61,26 @@ fn marker(
     Element::new("defs").child(marker)
 }
 
-/// The `defs` of the arrowhead markers, in the order the reference appends them: the arrowhead,
-/// the cross, the filled head, the sequence number, the four half arrows (`insertArrowHead`,
-/// `insertArrowCrossHead`, `insertArrowFilledHead`, `insertSequenceNumber`, `insertSolidTopArrowHead`,
-/// `insertSolidBottomArrowHead`, `insertStickTopArrowHead`, `insertStickBottomArrowHead`).
+/// The `defs` of the arrowhead markers, in the order the reference appends them: the arrowhead, the
+/// cross, the filled head, the sequence number, the four half arrows (`insertArrowHead`,
+/// `insertArrowCrossHead`, `insertArrowFilledHead`, `insertSequenceNumber`,
+/// `insertSolidTopArrowHead`, `insertSolidBottomArrowHead`, `insertStickTopArrowHead`,
+/// `insertStickBottomArrowHead`). In the default rendering the arrowhead is the default's slim one,
+/// notched at the back, with its tip where the reference's is: 2.1 past the end of the line.
 #[must_use]
-pub fn arrow_markers(id: &str) -> Vec<Element> {
+pub fn arrow_markers(id: &str, design: bool) -> Vec<Element> {
     let path = |d: &str| Element::new("path").with("d", d);
-    vec![
+    let arrowhead = if design {
+        marker(
+            format!("{id}-arrowhead"),
+            7.9,
+            4.5,
+            (10.0, 9.0),
+            "auto-start-reverse",
+            true,
+            path(DESIGN_HEAD),
+        )
+    } else {
         marker(
             format!("{id}-arrowhead"),
             7.9,
@@ -76,7 +89,10 @@ pub fn arrow_markers(id: &str) -> Vec<Element> {
             "auto-start-reverse",
             true,
             path("M -1 0 L 10 5 L 0 10 z"),
-        ),
+        )
+    };
+    vec![
+        arrowhead,
         // The cross: a path with no fill, drawn with a stroke of 1pt.
         Element::new("defs").child(
             Element::new("marker")
@@ -161,6 +177,31 @@ pub fn arrow_markers(id: &str) -> Vec<Element> {
                 .with("fill", "none"),
         ),
     ]
+}
+
+/// The outline of the default rendering's arrowhead in its box of 10 by 9: the tip at the right,
+/// notched at the back, as the flowchart's (`unified/markers.rs`).
+const DESIGN_HEAD: &str = "M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z";
+
+/// The drop shadow of the default rendering: short and soft, under the neo look's id. The style
+/// sheet sets the flood per scheme.
+#[must_use]
+pub fn design_drop_shadow(id: &str, tone: Tone) -> Element {
+    let (flood, opacity) = crate::design::flood_attributes(tone);
+    Element::new("defs").child(
+        Element::new("filter")
+            .with("id", format!("{id}-drop-shadow"))
+            .with("height", "130%")
+            .with("width", "130%")
+            .child(
+                Element::new("feDropShadow")
+                    .with("dx", "0")
+                    .with("dy", "1")
+                    .with("stdDeviation", "1.5")
+                    .with("flood-opacity", opacity)
+                    .with("flood-color", flood),
+            ),
+    )
 }
 
 /// The drop shadow of the neo look: a filter on the diagram's id (`insertDropShadow`). The flood

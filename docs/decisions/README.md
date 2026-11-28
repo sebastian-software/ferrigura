@@ -36,10 +36,10 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 | [0012](./0012-layout-engines-ported-exactly.md)   | Layout engines and browser arithmetic are ported to give the same numbers                           |
 | [0013](./0013-licenses-of-ported-code.md)         | Ported code keeps its source's license, in a crate of its own when it differs                       |
 | [0018](./0018-deterministic-output.md)            | The same input gives the same output: no randomness, screen or state from the environment           |
-| [0019](./0019-adaptive-flowchart-mode.md)         | Optimized rendering by default, with one general switch for Mermaid-compatible geometry             |
+| [0019](./0019-mermaid-geometry-with-compat.md)         | `compat` draws Mermaid's geometry and look for every type; the checks against the reference run on it |
 | [0020](./0020-diagram-types-as-plugins.md)        | Diagram types are plugins of the renderer; a program links only the types it registers              |
 | [0021](./0021-optional-svg-draw-animation.md) | Supported diagrams can carry optional, script-free draw animation with length-based speed and per-section easing |
-| [0023](./0023-design-mode.md) | An optional design mode draws ferrigura's own look with its own measures, through the same layout engines; it excludes `compat` |
+| [0023](./0023-the-default-rendering.md) | The default rendering draws every type in ferrigura's own look with its own measures, through the same layout engines |
 | [0024](./0024-a-fixed-list-of-diagram-types.md) | ferrigura draws a fixed list of ten diagram types, each one completely, and names any other type in its error |
 
 ## Verification

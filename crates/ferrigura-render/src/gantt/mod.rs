@@ -36,6 +36,9 @@ pub struct GanttSection<'a> {
     pub config: &'a GanttDiagramConfig,
     /// The current time in milliseconds since the epoch, for the today marker.
     pub now: i64,
+    /// The tone of the default rendering, when the render draws in it
+    /// (`docs/decisions/0023-the-default-rendering.md`).
+    pub design: Option<crate::design::Tone>,
 }
 
 /// The width of the chart when the configuration gives none: `ganttRenderer.js:101-103`, the
@@ -115,7 +118,14 @@ pub fn render_with_animation(
             input.id
         ));
     }
-    let style = style::style_element(input.id, input.theme, &family, &families, &extra);
+    let style = style::style_element(
+        input.id,
+        input.theme,
+        &family,
+        &families,
+        &extra,
+        input.section.design,
+    );
     let title = input.diagram.acc_title.as_str();
     let description = input.diagram.acc_descr.as_str();
     let accessibility = a11y::children(input.id, title, description);
@@ -187,6 +197,8 @@ pub(super) struct Chart<'a> {
     pub(super) theme: ThemeView<'a>,
     /// The time of the render, for the today marker.
     pub(super) now: i64,
+    /// The tone of the default rendering, when the render draws in it.
+    pub(super) design: Option<crate::design::Tone>,
     pub(super) model: &'a GanttDiagram,
     pub(super) conf: &'a GanttDiagramConfig,
     /// `w`: the width of the chart.
@@ -304,6 +316,7 @@ impl<'a> Chart<'a> {
             loose: input.globals.security_level == "loose",
             theme: input.theme,
             now: input.section.now,
+            design: input.section.design,
             model,
             conf,
             w: width,

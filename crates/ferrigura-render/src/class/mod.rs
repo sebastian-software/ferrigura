@@ -152,13 +152,13 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     ))
 }
 
-/// Turns each relation whose whole or general end is its second one, in the design mode
-/// (`docs/decisions/0023-design-mode.md`): the layout runs an edge from its start to its end, so
-/// `Dog --|> Animal` would put the parent below its child and `Wheel --* Car` the whole below its
-/// part. A relation with a triangle or a diamond at its end and none at its start is drawn from the
-/// other end: its ends, its markers and its cardinalities change places, and the drawing says the
-/// same. A relation with such a marker at both ends, or with none, keeps the direction it is written
-/// in.
+/// Turns each relation whose whole or general end is its second one, in the default rendering
+/// (`docs/decisions/0023-the-default-rendering.md`): the layout runs an edge from its start to its
+/// end, so `Dog --|> Animal` would put the parent below its child and `Wheel --* Car` the whole
+/// below its part. A relation with a triangle or a diamond at its end and none at its start is
+/// drawn from the other end: its ends, its markers and its cardinalities change places, and the
+/// drawing says the same. A relation with such a marker at both ends, or with none, keeps the
+/// direction it is written in.
 fn orient_relations(data: &mut crate::unified::data::LayoutData) {
     let general = |arrow: &str| matches!(arrow, "extension" | "composition" | "aggregation");
     for edge in &mut data.edges {

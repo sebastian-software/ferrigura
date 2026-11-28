@@ -50,6 +50,21 @@ pub fn render_with_animation(
     input: &Context<'_, XyChartDiagram, XYChartConfig>,
     animation: Option<crate::animation::Animation>,
 ) -> Result<String, RenderError> {
+    render_with_design(input, animation, None)
+}
+
+/// [`render_with_animation`] in the default rendering when `design` gives its tone
+/// (`docs/decisions/0023-the-default-rendering.md`). The colors are the default's theme variables;
+/// what the mode decides here is a data label's color where the theme gives none: the series' text
+/// color on a bar, the text color beside it.
+///
+/// # Errors
+/// Returns the errors of [`render_with_animation`].
+pub fn render_with_design(
+    input: &Context<'_, XyChartDiagram, XYChartConfig>,
+    animation: Option<crate::animation::Animation>,
+    design: Option<crate::design::Tone>,
+) -> Result<String, RenderError> {
     let mut drawing = animation.map(|options| crate::animation::Drawing::new(input.id, options));
     let mut plot_times = std::collections::HashMap::new();
     let mut plot_starts = std::collections::HashMap::new();
@@ -58,7 +73,19 @@ pub fn render_with_animation(
     let mut config = config::chart_config(input.section, diagram.orientation == "horizontal");
     config.fonts = input.text_fonts();
     let primary = config.fonts.face(FontWeight::Normal, FontStyle::Normal)?;
-    let theme = config::theme_config(tokens.xy_chart.as_ref());
+    let mut theme = config::theme_config(tokens.xy_chart.as_ref());
+    if let Some(tone) = design
+        && tokens
+            .xy_chart
+            .as_ref()
+            .is_none_or(|xy| xy.data_label_color.text().is_none())
+    {
+        theme.data_label_color = if input.section.show_data_label_outside_bar {
+            theme.title_color.clone()
+        } else {
+            crate::design::series_text(tone).to_owned()
+        };
+    }
     let data = config::chart_data(diagram);
 
     // `labelData` is read before the chart is built (`xychartRenderer.ts` 17). With no plot, the

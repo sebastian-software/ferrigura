@@ -173,6 +173,7 @@ impl Renderer<'_> {
         let width_conf = self.conf.width;
         let height_conf = self.conf.height;
         let neo = self.conf.neo;
+        let design = self.design.is_some();
         let mut max_height = 0.0_f64;
         {
             let actor_font = &self.conf.actor_font;
@@ -189,12 +190,26 @@ impl Renderer<'_> {
                 let dims = dimensions(memo, &actor.description, actor_font)?;
                 actor.width = if actor.wrap {
                     width_conf
+                } else if design {
+                    super::design::participant_width(dims.width)
+                        + if actor.actor_type == "queue" {
+                            super::design::QUEUE_CAP
+                        } else {
+                            0.0
+                        }
                 } else {
                     get_max(&[Some(width_conf), Some(dims.width + 2.0 * padding)])
                 };
                 if neo {
                     actor.actor_text_height = Some(dims.height);
-                    actor.height = get_max(&[Some(stack_height(dims.height)), Some(height_conf)]);
+                    // A participant has no glyph above its name: in the default rendering the row
+                    // is only as high as its box where no participant has a glyph.
+                    let stack = if design && actor.actor_type == "participant" {
+                        super::design::participant_height(dims.height)
+                    } else {
+                        stack_height(dims.height)
+                    };
+                    actor.height = get_max(&[Some(stack), Some(height_conf)]);
                 } else {
                     actor.height = if actor.wrap {
                         get_max(&[Some(dims.height), Some(height_conf)])
@@ -224,6 +239,9 @@ impl Renderer<'_> {
                 Some(next) => message_width + actor_width - actor.width / 2.0 - next / 2.0,
             };
             actor.margin = Some(get_max(&[Some(margin), Some(actor_width)]));
+        }
+        if design {
+            self.even_pitch();
         }
 
         // The boxes: the margin they add beside their actors, and the height of their titles
@@ -268,6 +286,34 @@ impl Renderer<'_> {
             sequence_box.text_max_height = max_box_height;
         }
         Ok(get_max(&[Some(max_height), Some(height_conf)]))
+    }
+
+    /// The default rendering's pitch: neighboring lifelines stand at least
+    /// [`super::design::MIN_PITCH`] apart, or as far as the widest participant's box and the actor
+    /// margin, so that the columns share one pitch unless a label between two of them needs more.
+    fn even_pitch(&mut self) {
+        let actor_margin = self.conf.actor_margin;
+        let widest = self
+            .layout
+            .actors
+            .iter()
+            .map(|actor| actor.width)
+            .fold(0.0_f64, f64::max);
+        let pitch = (widest + actor_margin).max(super::design::MIN_PITCH);
+        for index in 0..self.layout.actors.len() {
+            let Some(next) = self.layout.actors[index]
+                .next_actor
+                .as_deref()
+                .and_then(|next| self.layout.actor_index(next))
+            else {
+                continue;
+            };
+            let next_width = self.layout.actors[next].width;
+            let actor = &mut self.layout.actors[index];
+            let least = pitch - actor.width / 2.0 - next_width / 2.0;
+            let margin = actor.margin.unwrap_or(actor_margin);
+            actor.margin = Some(margin.max(least));
+        }
     }
 
     /// `buildNoteModel` (`:1701-1771`): the geometry of a note.
@@ -717,8 +763,18 @@ impl Renderer<'_> {
                 sequence_box.y = 0.0;
                 prev_margin += sequence_box.margin;
             }
+            // The default rendering's columns are as wide as their boxes, from a least width of its
+            // own.
+            let least_width = if self.design.is_some() {
+                super::design::PARTICIPANT_MIN_WIDTH
+            } else {
+                width_conf
+            };
             let actor: &mut Actor = &mut self.layout.actors[index];
-            actor.width = get_max(&[Some(or_default(actor.width, width_conf)), Some(width_conf)]);
+            actor.width = get_max(&[
+                Some(or_default(actor.width, least_width)),
+                Some(least_width),
+            ]);
             actor.height = get_max(&[
                 Some(or_default(actor.height, height_conf)),
                 Some(height_conf),

@@ -298,10 +298,12 @@ fn direct_renderers_escape_special_characters_in_svg_id() {
     let gantt_section = ferrigura_render::gantt::GanttSection {
         config: &config.gantt,
         now: NOW,
+        design: None,
     };
     let mindmap_section = ferrigura_render::mindmap::MindmapSection {
         mindmap: &config.mindmap,
         unified,
+        look: None,
     };
 
     let svgs: [(&str, String); 10] = [

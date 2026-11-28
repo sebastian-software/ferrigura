@@ -139,7 +139,8 @@ impl Renderer<'_> {
 
     /// Whether the theme takes its actor colors from the palettes (`COLOR_THEMES`).
     pub(super) fn uses_palettes(&self) -> bool {
-        matches!(self.conf.theme.as_str(), "redux-color" | "redux-dark-color")
+        self.design.is_none()
+            && matches!(self.conf.theme.as_str(), "redux-color" | "redux-dark-color")
     }
 
     /// The stroke and fill of an actor's shape: the palette color of its place under the palette
@@ -335,15 +336,22 @@ impl Renderer<'_> {
         let neo = self.conf.neo;
         let rect_source = self.actor_rect(&actor, actor_y, footer);
         let mut rect = rect_source.clone();
-        if neo && self.compact_participants {
+        if neo && self.design.is_some() {
             // A participant has no glyph above its label. Keep its bottom on the shared
-            // lifeline datum, but size the box to the text and the band's two 6 px gaps.
-            rect.height = actor.actor_text_height.unwrap_or(0.0) + 2.0 * LABEL_LIFELINE_GAP;
+            // lifeline datum, but size the box to the text.
+            let text_height = actor.actor_text_height.unwrap_or(0.0);
+            rect.height = super::design::participant_height(text_height);
             if !footer {
                 rect.y += actor.height - rect.height;
             }
         }
-        rect.rx = Some(if neo { 6.0 } else { 3.0 });
+        rect.rx = Some(if self.design.is_some() {
+            super::design::PARTICIPANT_RADIUS
+        } else if neo {
+            6.0
+        } else {
+            3.0
+        });
         rect.ry = rect.rx;
         let mut group = Element::new("g");
         let mut lifeline_element = Element::new("g");
@@ -598,6 +606,11 @@ impl Renderer<'_> {
         self.layout.actors[index].rect_data = Some(rect.clone());
         let mut cylinder_group =
             Element::new("g").with("class", rect.class.clone().unwrap_or_default());
+        if self.design.is_some()
+            && let Some(role) = super::design::participant_role(&actor.actor_type)
+        {
+            cylinder_group.set("data-role", role);
+        }
         cylinder_group.push_child(Element::new("path").with("d", d));
         if neo {
             cylinder_group.set("filter", format!("url(#{}-drop-shadow)", self.id));
@@ -606,7 +619,7 @@ impl Renderer<'_> {
             if let Some(style) = style_text(&self.shape_style(index, true)) {
                 cylinder_group.set("style", style);
             }
-        } else {
+        } else if self.design.is_none() {
             cylinder_group.set(
                 "style",
                 format!(
@@ -723,7 +736,7 @@ impl Renderer<'_> {
             if let Some(style) = style_text(&self.shape_style(index, true)) {
                 act.set("style", style);
             }
-        } else {
+        } else if self.design.is_none() {
             act.set(
                 "style",
                 format!(
@@ -850,7 +863,7 @@ impl Renderer<'_> {
             if let Some(style) = style_text(&self.shape_style(index, true)) {
                 act.set("style", style);
             }
-        } else {
+        } else if self.design.is_none() {
             let (stroke, fill) = (
                 self.theme.light.actor_border.text(),
                 self.theme.light.actor_bkg.text(),
@@ -1006,6 +1019,11 @@ impl Renderer<'_> {
                 ),
             )
             .with("name", actor.name.clone());
+        if self.design.is_some()
+            && let Some(role) = super::design::participant_role(&actor.actor_type)
+        {
+            act.set("data-role", role);
+        }
         if !footer {
             act.set("data-et", "participant");
             act.set("data-type", "actor");
@@ -1067,7 +1085,7 @@ impl Renderer<'_> {
             if let Some(style) = style_text(&self.shape_style(index, true)) {
                 act.set("style", style);
             }
-        } else {
+        } else if self.design.is_none() {
             act.set(
                 "style",
                 format!(

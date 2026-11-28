@@ -16,8 +16,6 @@ import {
 import coverage from '../data/coverage.json';
 import samples from '../data/diagram-samples.json';
 import firstDrawing from '../data/diagrams/flowchart.svg?raw';
-import modeAdaptive from '../data/diagrams/mode-adaptive.svg?raw';
-import modeMermaid from '../data/diagrams/mode-mermaid.svg?raw';
 import schemeDark from '../data/diagrams/scheme-dark.svg?raw';
 import schemeLight from '../data/diagrams/scheme-light.svg?raw';
 import { nodeVersion, rustVersion } from '../version';
@@ -34,7 +32,6 @@ const drawings = import.meta.glob<string>(
   [
     '../data/diagrams/*.svg',
     '!../data/diagrams/flowchart.svg',
-    '!../data/diagrams/mode-*.svg',
     '!../data/diagrams/scheme-*.svg',
     '!../data/diagrams/design-*.svg',
   ],
@@ -90,7 +87,7 @@ export function Source({ children, label }: { children: string; label: string })
   );
 }
 
-/** The gallery: one diagram of six types, the text facing its drawing. */
+/** The gallery: one diagram of each of the ten types, the text facing its drawing. */
 export function DiagramGallery() {
   const [selected, setSelected] = useState(first.id);
   const [loaded, setLoaded] = useState<Record<string, string>>({ [first.file]: firstDrawing });
@@ -171,27 +168,6 @@ export function FileContents() {
   );
 }
 
-/** The same flowchart in both rendering modes. */
-export function ModeSheets() {
-  const { modes } = samples;
-  return (
-    <figure className="mono-wide fgr-pair">
-      <MonoFacing>
-        <MonoSheet label="Adaptive, the default" meta="compat: false">
-          <Drawing svg={modeAdaptive} label={`${modes.description} Drawn in adaptive mode.`} />
-        </MonoSheet>
-        <MonoSheet label="Mermaid-compatible" meta="compat: true">
-          <Drawing svg={modeMermaid} label={`${modes.description} Drawn in Mermaid mode.`} />
-        </MonoSheet>
-      </MonoFacing>
-      <MonoCaption>{credit}, the same diagram text rendered twice.</MonoCaption>
-      <MonoTableView summary="Show the diagram text">
-        <Source label="Flowchart text for both drawings">{modes.source}</Source>
-      </MonoTableView>
-    </figure>
-  );
-}
-
 /** The sequence diagram from the gallery in the light and the dark scheme. */
 export function SchemeSheets() {
   const { schemes } = samples;
@@ -265,9 +241,9 @@ export function CoverageProofs() {
         }))}
       />
       <MonoCaption>
-        Drawings of each type that agree with Mermaid&rsquo;s within 0.05 px, out of those both
-        sides draw. The figures come from the repository&rsquo;s coverage table, which the test
-        harness rewrites from its latest runs.
+        Drawings of each type that agree with Mermaid&rsquo;s within 0.05 px in <code>compat</code>,
+        out of those both sides draw. The figures come from the repository&rsquo;s coverage table,
+        which the test harness rewrites from its latest runs.
       </MonoCaption>
       <CoverageTable />
     </figure>

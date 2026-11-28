@@ -2,6 +2,23 @@
 
 A Gantt diagram draws tasks as bars on a time axis, grouped in sections, with milestones, vertical markers, excluded days, a today marker and an optional title. It starts with the keyword `gantt`. ferrigura parses it with a hand-written parser that ports the Jison grammar `gantt.jison`, the DB `ganttDb.js` and the date rules they rely on (`crates/ferrigura-syntax/src/gantt/`), and draws it with a renderer of its own (`crates/ferrigura-render/src/gantt/`) on ports of d3-time, d3-scale, d3-time-format and d3-axis. There is no layout engine.
 
+## Default look
+
+By default, ferrigura draws a gantt chart in its own look ([0023](../decisions/0023-the-default-rendering.md)); `compat` draws the reference's ([flowchart](./flowchart.md#default-look)). It changes no layout: the colors are the default's theme variables, laid under the user's `themeVariables`, and its rules follow the reference's.
+
+| Element       | Default                                                                                                                                                                                                                                        |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task          | Its section's color: the tint of the series color as the fill, the series color as a 1.25 px outline. The rules name four section classes, so the sections take the first four colors (blue, teal, amber, violet) and wrap as their classes do |
+| Active task   | Its section's colors with a 2.5 px outline                                                                                                                                                                                                     |
+| Done task     | Neutral: a gray fill and the node outline's gray                                                                                                                                                                                               |
+| Critical task | A red tint and outline, a red the palette does not use; an active critical task keeps the red fill                                                                                                                                             |
+| Text          | The text color in and beside every bar; a link in the terminal's blue                                                                                                                                                                          |
+| Section bands | Full opacity, a quiet gray and the background in turn, where the reference draws them at 0.2                                                                                                                                                   |
+| Grid, ticks   | A light gray grid; tick labels and section titles in the muted `titleColor`                                                                                                                                                                    |
+| Today marker  | The critical red, 1.5 px                                                                                                                                                                                                                       |
+
+A section's bars take its series color while the task colors are the default's own: a user's `taskBkgColor`, `taskBorderColor`, `activeTaskBkgColor` or `activeTaskBorderColor` colors every bar alike, as in `compat`. The bars carry their colors as presentation attributes, and `colorScheme: auto` writes both sets as `light-dark()` values.
+
 ## Draw animation
 
 The optional [draw animation](../animation.md) render option draws one element

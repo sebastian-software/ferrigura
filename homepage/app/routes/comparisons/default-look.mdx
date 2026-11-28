@@ -1,0 +1,20 @@
+---
+title: The default beside compat
+description: Five everyday diagrams, each rendered twice from the same text by Ferrigura, once in its default look and once with compat, which draws Mermaid's geometry.
+---
+
+import { LookComparison } from '../../components/look-comparison';
+
+Ferrigura draws every diagram in its own look by default. With `{ compat: true }`, or `--compat` on the command line, it draws Mermaid's geometry and colors instead, the drawing the checks hold to within 0.05 px of Mermaid's. This page shows both for the same text: three flowcharts, a state diagram and a class diagram. Pick an example to compare.
+
+<LookComparison />
+
+## What the default changes
+
+Both drawings take the layers and the order from the same layout engine. The default then places the boxes itself: a chain stands on one line, a decision stands between its branches, and the arrows of a box leave together from the middle of its side. Outlines are thin, corners round, and a label sits in a gap of its arrow. Color follows what a shape stands for, not the order of the boxes.
+
+The other types change the same way. Sequence diagrams and mind maps get a layout of their own, entity relationship diagrams boxes with columns, and the charts one calm palette for their series. [The homepage](/#design-mode) shows every type in the default look, and each type's page has a section on it.
+
+## When to pick compat
+
+Pick `compat` when a diagram must look exactly as it does in Mermaid, for example beside drawings Mermaid made, or to compare a drawing with Mermaid's. [Side by side with Mermaid](/comparisons/side-by-side/) lays Ferrigura's `compat` drawing over Mermaid's own for nine types. [Decision 0019](/architecture/decisions/0019-mermaid-geometry-with-compat/) says what `compat` keeps, and [decision 0023](/architecture/decisions/0023-the-default-rendering/) how the default rendering decides.

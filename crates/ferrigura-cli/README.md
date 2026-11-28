@@ -38,9 +38,7 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
-      --compat           Use Mermaid geometry instead of optimized routing and participant boxes
-      --design           Draw flowcharts, state and class diagrams in the design mode:
-                          ferrigura's own look and spacing
+      --compat            Draw Mermaid's geometry and look instead of ferrigura's own
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
                           Positive multiplier of 700 SVG units/s on average; enables animation
@@ -164,9 +162,7 @@ charts, `flow` starts independent elements together. See
 The SVG contains CSS and masks without JavaScript. Reduced motion shows the
 complete diagram. Without animation options, output remains unchanged.
 
-By default, optimized rendering centers flowchart ports and compacts sequence participant boxes. `--compat` preserves Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes.
-
-`--design` draws flowcharts, state diagrams and class diagrams in the design mode ([flowchart](../../docs/diagrams/flowchart.md#design-mode), [state diagram](../../docs/diagrams/state.md#design-mode), [class diagram](../../docs/diagrams/class.md#design-mode)): hairline outlines, color by a node's role, rounded corners and soft shadows, with roomier nodes and spacing. Other diagram types and the combination with `--compat` are rejected.
+By default, every diagram type is drawn in ferrigura's own look ([flowchart](../../docs/diagrams/flowchart.md#default-look), [state diagram](../../docs/diagrams/state.md#default-look), [class diagram](../../docs/diagrams/class.md#default-look), [ER diagram](../../docs/diagrams/er.md#default-look), [mindmap](../../docs/diagrams/mindmap.md#default-look), [pie](../../docs/diagrams/pie.md#default-look), [XY chart](../../docs/diagrams/xychart.md#default-look), [quadrant chart](../../docs/diagrams/quadrant.md#default-look), [gantt](../../docs/diagrams/gantt.md#default-look), [sequence diagram](../../docs/diagrams/sequence.md#default-look)): hairline outlines, color by a node's role, one calm palette for a series, rounded corners and soft shadows, with roomier nodes and spacing. `--compat` draws Mermaid's geometry and look for every type instead. Font and readability fixes apply in both.
 
 - Several inputs are rendered through one renderer, so the configuration is resolved once. They are rendered in the order given.
 - Rendering stops at the first input that fails. The SVGs of the inputs before it are already written.

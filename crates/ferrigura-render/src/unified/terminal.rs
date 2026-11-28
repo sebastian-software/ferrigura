@@ -443,11 +443,11 @@ pub fn put_on_their_side(edges: &mut [Edge], nodes: &[Node]) {
 }
 
 /// The room between a terminal label and its node's outline, and between the label and its line
-/// or marker, in the design mode.
+/// or marker, in the default rendering.
 const DESIGN_GAP: f64 = 4.0;
 
-/// Half the width of the design mode's marker at an end, across its line: the label keeps clear of
-/// it (`markers::design_class_markers`).
+/// Half the width of the default rendering's marker at an end, across its line: the label keeps
+/// clear of it (`markers::design_class_markers`).
 fn design_marker_half_width(marker: &str) -> f64 {
     match marker {
         "extension" => 7.5,
@@ -458,14 +458,14 @@ fn design_marker_half_width(marker: &str) -> f64 {
     }
 }
 
-/// Places the terminal labels of the design mode (`docs/decisions/0023-design-mode.md`): each
-/// beside the end it belongs to, 4 off its node's outline and off its line and
-/// marker, on the side of its line that faces away from the middle of the node's side, so that the
-/// labels of two edges that meet one side stand outside the pair. An edge in the middle of its side
-/// takes its label at the right of a vertical line and above a horizontal one. Where that place
-/// touches a node, a center label, a frame, another route or a terminal label placed before, the
-/// label takes the other side, and then moves outwards along its segment in steps of the gap; where
-/// no place is free, it keeps the first.
+/// Places the terminal labels of the default rendering
+/// (`docs/decisions/0023-the-default-rendering.md`): each beside the end it belongs to, 4 off its
+/// node's outline and off its line and marker, on the side of its line that faces away from the
+/// middle of the node's side, so that the labels of two edges that meet one side stand outside the
+/// pair. An edge in the middle of its side takes its label at the right of a vertical line and
+/// above a horizontal one. Where that place touches a node, a center label, a frame, another route
+/// or a terminal label placed before, the label takes the other side, and then moves outwards along
+/// its segment in steps of the gap; where no place is free, it keeps the first.
 pub fn place_beside_ends(edges: &mut [Edge], nodes: &[Node]) {
     for edge in edges.iter_mut() {
         for terminal in &mut edge.terminals {

@@ -1,8 +1,9 @@
-//! The class box of the design mode (`docs/decisions/0023-design-mode.md`): a rounded box with a
-//! name compartment and a compartment for the attributes and one for the methods, each only when
-//! it has rows, divided by hairlines. The annotation is a small, muted line above the name; the
-//! name is bold and centered; the members start at the left, after a column for their visibility
-//! marks, which are muted. A static member is underlined and an abstract one set in italics.
+//! The class box of the default rendering (`docs/decisions/0023-the-default-rendering.md`): a
+//! rounded box with a name compartment and a compartment for the attributes and one for the
+//! methods, each only when it has rows, divided by hairlines. The annotation is a small, muted line
+//! above the name; the name is bold and centered; the members start at the left, after a column for
+//! their visibility marks, which are muted. A static member is underlined and an abstract one set
+//! in italics.
 //!
 //! The rows are plain text: entities are decoded (so a generic type shows its angle brackets) and
 //! no Markdown is read, so a member such as `__init__` keeps its underscores. The box is as large as
@@ -54,9 +55,9 @@ const MARK_COLUMN: f64 = 1.0;
 /// The narrowest box: a class with a short name still reads as a box, not as a tag.
 pub const MIN_WIDTH: f64 = 120.0;
 
-/// The role of a class in the design mode, from its first annotation: an interface or an abstract
-/// class, which is not instantiated, and an enumeration, a fixed set of values. Other annotations,
-/// such as `<<service>>`, carry none.
+/// The role of a class in the default rendering, from its first annotation: an interface or an
+/// abstract class, which is not instantiated, and an enumeration, a fixed set of values. Other
+/// annotations, such as `<<service>>`, carry none.
 #[must_use]
 pub fn role(class: &ClassNodeData) -> Option<Role> {
     let annotation = class.annotations.first()?.trim().to_ascii_lowercase();
@@ -177,7 +178,7 @@ fn compartment(rows: &[Row]) -> (f64, Vec<f64>) {
     (y + MEMBERS_PADDING_BOTTOM, tops)
 }
 
-/// What the design mode's class box draws: its part, and the texts of its rows.
+/// What the default rendering's class box draws: its part, and the texts of its rows.
 pub(super) struct DesignClassBox {
     /// The part, with the outline as its box.
     pub part: Part,
@@ -185,7 +186,7 @@ pub(super) struct DesignClassBox {
     pub texts: Vec<LabelLayout>,
 }
 
-/// Draws the design mode's class box around the origin.
+/// Draws the default rendering's class box around the origin.
 pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<DesignClassBox, RenderError> {
     let empty = ClassNodeData::default();
     let data = input.node.class.as_ref().unwrap_or(&empty);

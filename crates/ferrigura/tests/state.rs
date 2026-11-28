@@ -4,6 +4,17 @@
 use ferrigura::render;
 use ferrigura_model::value::Value;
 
+/// The text drawn in `compat`, Mermaid's geometry and look.
+fn render_compat(text: &str, config: &Value) -> Result<String, ferrigura::Error> {
+    ferrigura::Renderer::new(config).render_with(
+        text,
+        &ferrigura::RenderOptions {
+            compat: true,
+            ..ferrigura::RenderOptions::default()
+        },
+    )
+}
+
 /// The root element's start tag, up to its closing `>`.
 fn root_tag(svg: &str) -> &str {
     let end = svg.find('>').expect("the root element closes");
@@ -32,7 +43,7 @@ fn a_state_diagram_is_a_statediagram_root_with_its_barb_markers() {
 #[test]
 fn a_classic_state_diagram_points_its_edges_at_the_plain_barb() {
     let text = "%%{init: {\"look\":\"classic\"}}%%\nstateDiagram\n  A --> B\n";
-    let svg = render(text, &Value::empty_object()).expect("renders");
+    let svg = render_compat(text, &Value::empty_object()).expect("renders");
     assert!(svg.contains("_stateDiagram-barbEnd\""), "{svg}");
     assert!(!svg.contains("-barbEnd-margin\""), "{svg}");
 }
@@ -68,7 +79,7 @@ fn the_rough_state_shapes_carry_their_colors_as_attributes() {
   paid --> [*]
   note right of Cart: Text
 ";
-    let svg = render(text, &Value::empty_object()).expect("renders");
+    let svg = render_compat(text, &Value::empty_object()).expect("renders");
     // The note: `noteBkgColor` and `noteBorderColor` (`note.ts`).
     let note = node(&svg, "Cart----note-3");
     assert!(note.contains("fill=\"#fff5ad\""), "{note}");

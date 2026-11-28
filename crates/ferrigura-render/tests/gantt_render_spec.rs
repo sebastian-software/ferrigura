@@ -33,6 +33,7 @@ fn draw(text: &str, now: i64, gantt: &[(&str, Value)]) -> String {
         section: &GanttSection {
             config: &config.gantt,
             now,
+            design: None,
         },
         globals: &Globals::of(&config),
         theme: ThemeView {

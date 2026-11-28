@@ -9,6 +9,7 @@
 //! Labels are SVG text (decision 0009).
 
 pub mod data;
+mod design;
 mod layout;
 mod paint;
 mod style;
@@ -41,6 +42,10 @@ pub struct MindmapSection<'a> {
     pub mindmap: &'a MindmapDiagramConfig,
     /// The sections that the unified renderer reads.
     pub unified: Section<'a>,
+    /// The tone of the default rendering's look, when the render draws in it: its colors, outlines
+    /// and edge widths (`docs/decisions/0023-the-default-rendering.md`). It is the look only; the
+    /// layout reads `unified`.
+    pub look: Option<crate::design::Tone>,
 }
 
 /// Renders the diagram to an SVG document.
@@ -78,7 +83,10 @@ pub fn render_with_animation(
 
     // `getData` and the overrides of the shapes (`mindmapRenderer.ts` 58-74), then the measure step:
     // every node's shape and label, and the sizes of their groups.
-    let data = data::layout_data(input.diagram, input.globals, input.section.mindmap);
+    let mut data = data::layout_data(input.diagram, input.globals, input.section.mindmap);
+    if input.section.unified.design.is_some() {
+        design::pad_by_depth(&mut data);
+    }
     let unified = Config {
         fonts: input.text_fonts(),
         section: input.section.unified,
@@ -88,8 +96,12 @@ pub fn render_with_animation(
     let mut measured = pipeline::measure(data, &unified)?;
 
     // The layout: the name the configuration gives, or cose-bilkent for the names that are not
-    // registered (`mindmapRenderer.ts` 47-49).
+    // registered (`mindmapRenderer.ts` 47-49). The default rendering lays the tree out around its
+    // root in place of cose-bilkent; a tidy tree or an ELK layout named in the configuration is the
+    // user's choice and stays.
     match layout::of(&input.globals.layout) {
+        layout::Layout::CoseBilkent
+            if input.section.unified.design.is_some() && design::lay_out(&mut measured.data) => {}
         layout::Layout::CoseBilkent => layout::cose(&mut measured.data)?,
         layout::Layout::TidyTree => layout::tidy(&mut measured.data)?,
         layout::Layout::Elk => {
@@ -135,7 +147,10 @@ pub fn render_with_animation(
         &font_family,
         &format!("{}px", number(font_size)),
         &families,
-        &style::own_rules(input.id, input.theme.light, &input.globals.look),
+        &match input.section.look {
+            Some(_) => style::design_rules(input.id, input.theme),
+            None => style::own_rules(input.id, input.theme.light, &input.globals.look),
+        },
     );
 
     // `setupViewPortForSVG` (`mindmapRenderer.ts` 110-115): the class, the size and the viewBox from

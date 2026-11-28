@@ -8,10 +8,10 @@
 #
 # Each changed file is rendered under the test's three configurations and four color schemes, with
 # the base's renderer and with the working tree's, into target/snapshots/{base,head}/<file>/
-# <configuration>-<scheme>.svg, and the renders that differ are listed. A file of a type the design mode
-# draws, a flowchart, a state or a class diagram, also has its design renders, named
-# design-<configuration>-<scheme>.svg. Compare them side by side, or check the new output
-# against the reference with `pnpm -C tools/port port:geometry <type> --filter <file>`.
+# <configuration>-<scheme>.svg, and the renders that differ are listed. Every file also has its
+# `compat` renders, named compat-<configuration>-<scheme>.svg. Compare them side by side, or check
+# the new `compat` output against the reference with
+# `pnpm -C tools/port port:geometry <type> --filter <file>`.
 set -euo pipefail
 
 base="${1:-main}"
@@ -49,17 +49,6 @@ echo '{}' >"$work/none.json"
 echo '{"theme": "redux-dark-color"}' >"$work/dark.json"
 cp crates/ferrigura/tests/snapshots/override.json "$work/override.json"
 
-# Whether a renderer draws a file in the design mode: it does not refuse the file's type with the
-# mode's option error. A file that is missing on that side has no renders there.
-draws_design() {
-  local bin="$1" src="$2" error
-  [ -f "$src" ] || return 1
-  error="$("$bin" --design true <"$src" 2>&1 >/dev/null || true)"
-  case "$error" in
-  *"design mode is not supported for this diagram type"*) return 1 ;;
-  esac
-}
-
 out="$root/target/snapshots"
 rm -rf "$out/base" "$out/head"
 count=0
@@ -67,22 +56,16 @@ while IFS= read -r file; do
   [ -n "$file" ] || continue
   count=$((count + 1))
   moved=""
-  # The design renders exist for a type the design mode draws on either side. The number of columns
-  # does not tell: a state diagram's line and a sequence's both have two hashes.
-  modes=(default)
-  if draws_design "$base_bin" "$work/base/$file" || draws_design "$head_bin" "$file"; then
-    modes+=(design)
-  fi
-  for mode in "${modes[@]}"; do
+  for mode in default compat; do
     prefix=""
-    design=false
-    if [ "$mode" = design ]; then
-      prefix="design-"
-      design=true
+    compat=false
+    if [ "$mode" = compat ]; then
+      prefix="compat-"
+      compat=true
     fi
     for config in none override dark; do
       for scheme in none light dark auto; do
-        args=(--now "$now" --config "$work/$config.json" --design "$design")
+        args=(--now "$now" --config "$work/$config.json" --compat "$compat")
         if [ "$scheme" != none ]; then
           args+=(--scheme "$scheme")
         fi
