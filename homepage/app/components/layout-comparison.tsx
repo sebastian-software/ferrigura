@@ -130,17 +130,18 @@ export function LayoutExample({ id }: { id: string }) {
 }
 
 export function HomepageLayouts() {
-  const sample = comparison.examples.find(({ id }) => id === 'library-architecture');
-  if (!sample) throw new Error('No grouped layout comparison');
+  const sample = comparison.examples.find(({ id }) => id === 'native-parallel');
+  if (!sample) throw new Error('No native parallel-edge comparison');
   return (
     <MonoSection
       id="layout-engines"
       title="Two ways to lay out a flowchart."
-      standfirst="ELK Layered is Ferrigura’s default. The Go reference for TALA shows another way to place groups and route their links."
+      standfirst="ELK Layered is Ferrigura’s default. A custom build can select the experimental Rust port of TALA for supported flowcharts."
     >
       <p>
-        In this service map, the TALA reference uses fewer turns and trades width for height. ELK
-        keeps the map shallower and draws the directional workflow with shorter connections.
+        TALA makes room for the two captions and shortens the routes. ELK keeps the original box
+        heights. The full comparison includes a group boundary where ELK draws the shorter
+        connection.
       </p>
       <LayoutPair sample={sample} />
       <p>
