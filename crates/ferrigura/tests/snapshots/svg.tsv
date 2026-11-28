@@ -877,40 +877,40 @@ e2e/diagrams/katex/pr-check/1-should-render-a-complex-katex-flowchart-no-htmllab
 e2e/diagrams/katex/pr-check/2-should-render-a-katex-flowchart-containing-the-greek-alphabet.mmd	55ad61c769a67469	55ad61c769a67469	4f689e9e6b610807
 e2e/diagrams/katex/pr-check/3-should-render-a-katex-flowchart-containing-set-theory-symbols.mmd	259ab7ee4fb5e6fb	259ab7ee4fb5e6fb	300b203452ed0265
 e2e/diagrams/katex/pr-check/4-should-render-consecutive-latex-equations-separated-by-text.mmd	2fb8546ea4879cf1	2fb8546ea4879cf1	8ed1a4505c9bc823
-e2e/diagrams/mindmap/nightly-check/a-root-with-a-shape.mmd	f8e71aaa6630a20e
-e2e/diagrams/mindmap/nightly-check/a-root-with-an-icon.mmd	3f1dc5e315239da0
-e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-a-shape.mmd	fe7de2c9ab10001a
-e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-long-words-that-exceed-width.mmd	4df1cb9e4d55b540
-e2e/diagrams/mindmap/nightly-check/adding-children.mmd	98edbd325de252b0
-e2e/diagrams/mindmap/nightly-check/adding-grand-children.mmd	9e4dca18c142f5ca
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-dark-theme.mmd	a7f95bc46e3ce858
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-theme.mmd	2e307f7c78631a48
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-color-theme.mmd	c4c91a0704d108ac
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-color-theme.mmd	b40cdd904828d290
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-theme.mmd	c08343f315f99e68
-e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-theme.mmd	486df2550d4d9fb0
-e2e/diagrams/mindmap/nightly-check/all-shapes-with-mdi-fire-icon.mmd	66dc8786372588c0
-e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape-with-icons.mmd	5b01beb81a2e68d2
-e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape.mmd	b9003b2513728d14
-e2e/diagrams/mindmap/nightly-check/branches-with-shapes-and-labels.mmd	ac6d6bff764b7dc6
-e2e/diagrams/mindmap/nightly-check/branches.mmd	950db55d0ad387e8
-e2e/diagrams/mindmap/nightly-check/circle-shape.mmd	2341bd29d7d31ec8
-e2e/diagrams/mindmap/nightly-check/default-shape.mmd	678e792caf925408
-e2e/diagrams/mindmap/nightly-check/level-2-nodes-exceeding-11.mmd	13ad47827028d3f2
-e2e/diagrams/mindmap/nightly-check/only-a-root.mmd	c7b1361224f19cb6
-e2e/diagrams/mindmap/nightly-check/rounded-rect-shape.mmd	f3e8dae9cf4d3944
-e2e/diagrams/mindmap/nightly-check/square-shape.mmd	202e0ee437b203a6
-e2e/diagrams/mindmap/nightly-check/text-should-wrap-with-icon.mmd	197cedcc80ad912e
-e2e/diagrams/mindmap/pr-check/6-should-centre-svg-text-labels-in-all-node-shapes-issue-8387.mmd	e48d8d64d9264456
-e2e/diagrams/mindmap/pr-check/depth-colors.mmd	8bde6c3b47e75426
-e2e/diagrams/mindmap/pr-check/formatted-label-with-linebreak-and-a-wrapping-label-and-emojis.mmd	5512b65b6f4130fe
-e2e/diagrams/mindmap/pr-check/simple-mindmap.mmd	1521a2ee03acb020
-e2e/diagrams/mindmap/visual-check/1-tidy-tree-should-render-a-simple-mindmap-without-children.mmd	a317eb0e9c69d95e
-e2e/diagrams/mindmap/visual-check/2-tidy-tree-should-render-a-simple-mindmap.mmd	59d11216440ba3a8
-e2e/diagrams/mindmap/visual-check/3-tidy-tree-should-render-a-mindmap-with-different-shapes.mmd	008e9826fc1ee568
-e2e/diagrams/mindmap/visual-check/4-tidy-tree-should-render-a-mindmap-with-children.mmd	7a6d06cc8ba31854
-e2e/diagrams/mindmap/visual-check/5-tidy-tree-should-keep-root-edges-connected-to-a-rectangular-root-issue-7572.mmd	3ce3fc99d545b332
-e2e/diagrams/mindmap/visual-check/knsv2-16-mindmap-tidy-tree.mmd	e67c0d252d033e64
+e2e/diagrams/mindmap/nightly-check/a-root-with-a-shape.mmd	f8e71aaa6630a20e	11541ea4f07c7b00
+e2e/diagrams/mindmap/nightly-check/a-root-with-an-icon.mmd	3f1dc5e315239da0	f840aa08ebfa743e
+e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-a-shape.mmd	fe7de2c9ab10001a	38f8ee1d398f9f12
+e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-long-words-that-exceed-width.mmd	4df1cb9e4d55b540	f1f0b5e2cd598f60
+e2e/diagrams/mindmap/nightly-check/adding-children.mmd	98edbd325de252b0	35499ddfd4b2a6c4
+e2e/diagrams/mindmap/nightly-check/adding-grand-children.mmd	9e4dca18c142f5ca	360a7bab69fb7bec
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-dark-theme.mmd	a7f95bc46e3ce858	a8efdefaf6ec7016
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-theme.mmd	2e307f7c78631a48	c0c60e79410a972c
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-color-theme.mmd	c4c91a0704d108ac	e64d853ec2988194
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-color-theme.mmd	b40cdd904828d290	c6c3e6254c40f6ca
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-theme.mmd	c08343f315f99e68	ed8a16ac7c924916
+e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-theme.mmd	486df2550d4d9fb0	5d33a5faf7aa0ad4
+e2e/diagrams/mindmap/nightly-check/all-shapes-with-mdi-fire-icon.mmd	66dc8786372588c0	a7cbce475a5d0fe8
+e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape-with-icons.mmd	5b01beb81a2e68d2	d9abe8dc3a599d88
+e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape.mmd	b9003b2513728d14	eb92d098d6cf06ea
+e2e/diagrams/mindmap/nightly-check/branches-with-shapes-and-labels.mmd	ac6d6bff764b7dc6	30587acef4b91f1a
+e2e/diagrams/mindmap/nightly-check/branches.mmd	950db55d0ad387e8	3459a6ae4510d928
+e2e/diagrams/mindmap/nightly-check/circle-shape.mmd	2341bd29d7d31ec8	d8d010ed73b7bc5c
+e2e/diagrams/mindmap/nightly-check/default-shape.mmd	678e792caf925408	f5adb3ca2acfc198
+e2e/diagrams/mindmap/nightly-check/level-2-nodes-exceeding-11.mmd	13ad47827028d3f2	e4d3c8cbeb3f678c
+e2e/diagrams/mindmap/nightly-check/only-a-root.mmd	c7b1361224f19cb6	8bb55b91bf2d7ace
+e2e/diagrams/mindmap/nightly-check/rounded-rect-shape.mmd	f3e8dae9cf4d3944	819356641fc54f72
+e2e/diagrams/mindmap/nightly-check/square-shape.mmd	202e0ee437b203a6	1ba22a944b0d7080
+e2e/diagrams/mindmap/nightly-check/text-should-wrap-with-icon.mmd	197cedcc80ad912e	7fabc582e3712de0
+e2e/diagrams/mindmap/pr-check/6-should-centre-svg-text-labels-in-all-node-shapes-issue-8387.mmd	e48d8d64d9264456	76214e5162f94192
+e2e/diagrams/mindmap/pr-check/depth-colors.mmd	8bde6c3b47e75426	65be2bc33f967992
+e2e/diagrams/mindmap/pr-check/formatted-label-with-linebreak-and-a-wrapping-label-and-emojis.mmd	5512b65b6f4130fe	0eaa46217c3d0882
+e2e/diagrams/mindmap/pr-check/simple-mindmap.mmd	1521a2ee03acb020	aeb37ade668c913e
+e2e/diagrams/mindmap/visual-check/1-tidy-tree-should-render-a-simple-mindmap-without-children.mmd	a317eb0e9c69d95e	4176d9f74b36fdb2
+e2e/diagrams/mindmap/visual-check/2-tidy-tree-should-render-a-simple-mindmap.mmd	59d11216440ba3a8	b89b4f85d6e6dc94
+e2e/diagrams/mindmap/visual-check/3-tidy-tree-should-render-a-mindmap-with-different-shapes.mmd	008e9826fc1ee568	754b50ef6ba7e4e8
+e2e/diagrams/mindmap/visual-check/4-tidy-tree-should-render-a-mindmap-with-children.mmd	7a6d06cc8ba31854	742814b0bc89794e
+e2e/diagrams/mindmap/visual-check/5-tidy-tree-should-keep-root-edges-connected-to-a-rectangular-root-issue-7572.mmd	3ce3fc99d545b332	0330e7008247287c
+e2e/diagrams/mindmap/visual-check/knsv2-16-mindmap-tidy-tree.mmd	e67c0d252d033e64	40f40f55d119ebe2
 e2e/diagrams/pie/nightly-check/dark-theme.mmd	24aa08b3fbc70a6a
 e2e/diagrams/pie/nightly-check/default-theme.mmd	5b9e070878a2fdd2
 e2e/diagrams/pie/nightly-check/forest-theme.mmd	bcc62e7e071d986a
@@ -1423,29 +1423,29 @@ e2e/platform/dev-diagrams/performance/flowcharts/medium2.mmd	7fd398b66f3aa3d0	7f
 e2e/platform/dev-diagrams/performance/flowcharts/medium3.mmd	6a5c537ba54822d7	1d470d39b52c8713	c458c4667025fd59
 e2e/platform/dev-diagrams/performance/flowcharts/medium4.mmd	9c00ebad148f7469	9c00ebad148f7469	2ad6b2a8f3a77a99
 e2e/platform/dev-diagrams/performance/flowcharts/medium5.mmd	79622f4736c800b5	e0ff15a29c913671	9189b47512b768cf
-tools/port/geometry/probes/mindmap/p01-rounded-tree.mmd	ebbb6958ed01e118
-tools/port/geometry/probes/mindmap/p02-rect-tree.mmd	818adec44f0de97e
-tools/port/geometry/probes/mindmap/p03-circle-tree.mmd	44df0dd659153be4
-tools/port/geometry/probes/mindmap/p04-cloud-tree.mmd	095627a6ec51412a
-tools/port/geometry/probes/mindmap/p05-bang-tree.mmd	d1d030db558d4c2e
-tools/port/geometry/probes/mindmap/p06-hexagon-tree.mmd	fe2966f99949be84
-tools/port/geometry/probes/mindmap/p07-depth-plain.mmd	82d9b4d7b24aac22
-tools/port/geometry/probes/mindmap/p08-depth-rounded.mmd	3db6c0a6f3bdd1dc
-tools/port/geometry/probes/mindmap/p09-wide-plain.mmd	6597af86939827be
-tools/port/geometry/probes/mindmap/p10-all-shapes-classic.mmd	a57184f31cce61bc
-tools/port/geometry/probes/mindmap/p11-neo-plain.mmd	42e5b1d3efb8be9c
-tools/port/geometry/probes/mindmap/p12-branches-first-three.mmd	786dd09b7f8fd2fa
-tools/port/geometry/probes/mindmap/p13-branches-last-four.mmd	2e02aed0e4bf2ab4
-tools/port/geometry/probes/mindmap/p14-long-text-wrap.mmd	cd59703a56e6cd1e
-tools/port/geometry/probes/mindmap/p15-markdown-multiline.mmd	36edb8466e488c4e
-tools/port/geometry/probes/mindmap/p16-classes-and-icons.mmd	eb0ac35e6b49a9ae
-tools/port/geometry/probes/mindmap/p17-many-sections.mmd	7f06171ef1a1c7fa
-tools/port/geometry/probes/mindmap/p18-color-by-depth.mmd	f02c52715eb349f8
-tools/port/geometry/probes/mindmap/p19-deep-chain.mmd	5719c3a37f3535a8
-tools/port/geometry/probes/mindmap/p20-tidy-both-sides.mmd	842e5abca53ef642
-tools/port/geometry/probes/mindmap/p21-empty-tree.mmd	5569e8931cb2122c
-tools/port/geometry/probes/mindmap/p22-unregistered-layout.mmd	81c7347f8c287964
-tools/port/geometry/probes/mindmap/p23-diagram-scoped-layout.mmd	a5b0800e873d1304
+tools/port/geometry/probes/mindmap/p01-rounded-tree.mmd	ebbb6958ed01e118	0f97a7ceafe84968
+tools/port/geometry/probes/mindmap/p02-rect-tree.mmd	818adec44f0de97e	c25e3292f210ddc8
+tools/port/geometry/probes/mindmap/p03-circle-tree.mmd	44df0dd659153be4	cd238a019f0203a0
+tools/port/geometry/probes/mindmap/p04-cloud-tree.mmd	095627a6ec51412a	f5ccdabc4a85c702
+tools/port/geometry/probes/mindmap/p05-bang-tree.mmd	d1d030db558d4c2e	5cff4457cd4f4a3c
+tools/port/geometry/probes/mindmap/p06-hexagon-tree.mmd	fe2966f99949be84	e01bf13d7e3ee0bc
+tools/port/geometry/probes/mindmap/p07-depth-plain.mmd	82d9b4d7b24aac22	e6fd1ee02f77da76
+tools/port/geometry/probes/mindmap/p08-depth-rounded.mmd	3db6c0a6f3bdd1dc	5a582248e3bb1f64
+tools/port/geometry/probes/mindmap/p09-wide-plain.mmd	6597af86939827be	0526911e5d34ed08
+tools/port/geometry/probes/mindmap/p10-all-shapes-classic.mmd	a57184f31cce61bc	0aece134d60a9720
+tools/port/geometry/probes/mindmap/p11-neo-plain.mmd	42e5b1d3efb8be9c	1eb931f262f84821
+tools/port/geometry/probes/mindmap/p12-branches-first-three.mmd	786dd09b7f8fd2fa	e53208210972ee8c
+tools/port/geometry/probes/mindmap/p13-branches-last-four.mmd	2e02aed0e4bf2ab4	532c77f68c1cbfde
+tools/port/geometry/probes/mindmap/p14-long-text-wrap.mmd	cd59703a56e6cd1e	037dd4aedc91fc04
+tools/port/geometry/probes/mindmap/p15-markdown-multiline.mmd	36edb8466e488c4e	8157a3893d6011a0
+tools/port/geometry/probes/mindmap/p16-classes-and-icons.mmd	eb0ac35e6b49a9ae	21b1c62db803fb92
+tools/port/geometry/probes/mindmap/p17-many-sections.mmd	7f06171ef1a1c7fa	b33ac228eedb2006
+tools/port/geometry/probes/mindmap/p18-color-by-depth.mmd	f02c52715eb349f8	1d5c08f426dcb8c8
+tools/port/geometry/probes/mindmap/p19-deep-chain.mmd	5719c3a37f3535a8	27b190fba5254c66
+tools/port/geometry/probes/mindmap/p20-tidy-both-sides.mmd	842e5abca53ef642	ba9ab350cdfb710a
+tools/port/geometry/probes/mindmap/p21-empty-tree.mmd	5569e8931cb2122c	5569e8931cb2122c
+tools/port/geometry/probes/mindmap/p22-unregistered-layout.mmd	81c7347f8c287964	c776e4fe1b8e2570
+tools/port/geometry/probes/mindmap/p23-diagram-scoped-layout.mmd	a5b0800e873d1304	01b80b1784ead736
 tools/port/geometry/probes/quadrantChart/p01-points-on-the-edges.mmd	20e72631e196aed8
 tools/port/geometry/probes/quadrantChart/p02-coordinates-outside-the-chart.mmd	4a90564aef12d4b4
 tools/port/geometry/probes/quadrantChart/p03-coordinates-the-scale-cannot-read.mmd	5cd0e5e54e63b3ea

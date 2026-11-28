@@ -25,7 +25,7 @@ The mode has its own look and its own measures. The look is paint: colors, outli
 - **A word stays whole in a label.** A label wraps between words as the default does, but a word that does not fit the wrapping width on a line of its own is not broken inside: the line stays one line wider than the wrapping width, and its node grows as wide as the word needs, with the node's usual padding. This holds for the labels of nodes and states, edge labels and Markdown group titles (a plain group title never wraps); a class box does not wrap its rows. A word is what stands between spaces: no break point is added at a hyphen, a slash or a camel-case boundary. A word wider than 4 times the wrapping width, such as a pasted URL, is still broken as the default breaks it, so that one label cannot blow a diagram up (`WHOLE_WORD_LIMIT` in `design.rs`). The default and `compat` break the word, as the reference does.
 - **A `classDef` or `style` of the diagram keeps the last word.** The mode's rules come before the class rules.
 
-Flowcharts, state diagrams and class diagrams support the mode. Another diagram type returns an option error when the mode is requested, as an unsupported draw animation does ([0021](./0021-optional-svg-draw-animation.md)).
+Flowcharts, state diagrams, class diagrams and mindmaps support the mode. Another diagram type returns an option error when the mode is requested, as an unsupported draw animation does ([0021](./0021-optional-svg-draw-animation.md)).
 
 A state diagram goes through the flowchart's pipeline and engine, so the measures, the placement, the edges and the labels are the flowchart's. What only a state diagram has is decided for it:
 
@@ -49,6 +49,16 @@ A class diagram goes through the same pipeline and engine, so the measures, the 
 - **A cardinality stands beside its end**, 4 off the outline, beside the marker and 4 clear of it, on the side away from the middle of the class's side, so that the cardinalities of two edges into one side stand outside the pair. Where that place is taken it takes the other side of its line, then steps outward along its segment. The reference's passes for the cardinalities do not run in the mode.
 - **A namespace is the flowchart's group**, and a note is the state diagram's flat paper.
 
+A mindmap is laid out by a layout of the mode's own, not by cose-bilkent, the reference's force-directed engine, whose branches land where its forces settle ([mindmap](../diagrams/mindmap.md#design-mode)):
+
+- **A tree around its center, clockwise.** The root's first branches stand on its right from top to bottom, the rest on its left from bottom to top, so that the order of the text runs around the root; the split is the one that makes the taller side the least tall, and of equal ones the one with more on the right.
+- **Each side grows outwards in columns.** A node's children stand beyond it in the order of the text, their inner sides on one line, 40 from the node; the root's branches 64 from the root, or further where a side has many, so that no line from the root rises more than 3 for 1 across. A node stands in the middle between its first and its last child.
+- **Siblings have even room.** Each subtree takes the room of its box; siblings stand 10 apart, the root's branches 24.
+- **A line reads with its branch.** It leaves the middle of the parent's outer side and enters the middle of the child's inner side, level at both ends, as a `basis` curve; a line from the root starts in its center and leaves the root's box where the straight line to its branch does, so that the branches leave the root apart.
+- **Depth shows in size.** The root has 5 more padding than its shape gives it, a node below a branch 6 less (at least 6). A label is centered in every shape, the cloud and the bang included, and a node does not grow for its edges.
+
+A `layout` that names the tidy tree or ELK is the user's choice and stays. The tidy tree is not the base: it alternates the root's children between the sides and packs subtrees by their contours. The layout is deterministic ([0018](./0018-deterministic-output.md)); the default and `compat` keep cose-bilkent.
+
 `design` and `compat` exclude each other; the combination returns an option error. The design mode builds on the optimized default and is free to depart from the reference's geometry.
 
 ## Why
@@ -69,11 +79,11 @@ Weighed and not chosen: changing the default look, which breaks the comparison w
 
 ## Consequences
 
-- The reference has no counterpart to this mode, and its geometry is not compared with the reference's. The engine that lays it out is: the default and the compatibility rendering run the same code against the reference. The mode's own tests cover the flat decision and the side exits of its branches, the place of a note beside its state, the place of a self-loop and its label, the room a node gives its edges, the group's padding and title, the class box's compartments, the direction of a class relation, the shared triangle, the place of a cardinality, the roles, both color schemes, the contrast ratios and the precedence of the user's styles.
+- The reference has no counterpart to this mode, and its geometry is not compared with the reference's. The engine that lays it out is: the default and the compatibility rendering run the same code against the reference. The mode's own tests cover the flat decision and the side exits of its branches, the place of a note beside its state, the place of a self-loop and its label, the room a node gives its edges, the group's padding and title, the class box's compartments, the direction of a class relation, the shared triangle, the place of a cardinality, a mindmap's order, room, lines and sizes, the roles, both color schemes, the contrast ratios and the precedence of the user's styles.
 - A diagram in the mode is larger than in the default rendering.
 - A diagram type gains the mode in its style sheet and shapes; the option error lists nothing and names no types, so adding a type changes no message.
 - Roles are read from the shape and the diagram type alone, and a class's from its first annotation. A diagram that uses one of those shapes for every node is colored throughout.
 
 ## Related
 
-[0011](./0011-themes-as-css-variables.md), [0012](./0012-layout-engines-ported-exactly.md), [0017](./0017-reproduce-the-reference.md), [0019](./0019-adaptive-flowchart-mode.md), [0021](./0021-optional-svg-draw-animation.md), [flowchart](../diagrams/flowchart.md#design-mode), [state diagram](../diagrams/state.md#design-mode), [class diagram](../diagrams/class.md#design-mode).
+[0011](./0011-themes-as-css-variables.md), [0012](./0012-layout-engines-ported-exactly.md), [0017](./0017-reproduce-the-reference.md), [0019](./0019-adaptive-flowchart-mode.md), [0021](./0021-optional-svg-draw-animation.md), [flowchart](../diagrams/flowchart.md#design-mode), [state diagram](../diagrams/state.md#design-mode), [class diagram](../diagrams/class.md#design-mode), [mindmap](../diagrams/mindmap.md#design-mode).

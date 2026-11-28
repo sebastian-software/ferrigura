@@ -377,7 +377,8 @@ fn read_mindmap(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_j
 fn render_mindmap(prepared: &Prepared<'_>, options: &RenderOptions) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    let section = Section::of(&prepared.view.config);
+    let mut section = Section::of(&prepared.view.config);
+    section.design = prepared.design;
     mindmap_render::render_with_animation(
         &Context {
             fonts: prepared.fonts,

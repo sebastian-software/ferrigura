@@ -39,7 +39,7 @@ Options:
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
       --compat           Use Mermaid geometry instead of optimized routing and participant boxes
-      --design           Draw flowcharts, state and class diagrams in the design mode:
+      --design           Draw flowcharts, state and class diagrams and mindmaps in the design mode:
                           ferrigura's own look and spacing
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
@@ -166,7 +166,7 @@ complete diagram. Without animation options, output remains unchanged.
 
 By default, optimized rendering centers flowchart ports and compacts sequence participant boxes. `--compat` preserves Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes.
 
-`--design` draws flowcharts, state diagrams and class diagrams in the design mode ([flowchart](../../docs/diagrams/flowchart.md#design-mode), [state diagram](../../docs/diagrams/state.md#design-mode), [class diagram](../../docs/diagrams/class.md#design-mode)): hairline outlines, color by a node's role, rounded corners and soft shadows, with roomier nodes and spacing. Other diagram types and the combination with `--compat` are rejected.
+`--design` draws flowcharts, state diagrams, class diagrams and mindmaps in the design mode ([flowchart](../../docs/diagrams/flowchart.md#design-mode), [state diagram](../../docs/diagrams/state.md#design-mode), [class diagram](../../docs/diagrams/class.md#design-mode), [mindmap](../../docs/diagrams/mindmap.md#design-mode)): hairline outlines, color by a node's role, rounded corners and soft shadows, with roomier nodes and spacing, and a mindmap laid out around its root. Other diagram types and the combination with `--compat` are rejected.
 
 - Several inputs are rendered through one renderer, so the configuration is resolved once. They are rendered in the order given.
 - Rendering stops at the first input that fails. The SVGs of the inputs before it are already written.

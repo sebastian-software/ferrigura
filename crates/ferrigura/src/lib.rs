@@ -235,7 +235,10 @@ impl Renderer {
             }
             if !matches!(
                 kind,
-                DiagramType::Flowchart | DiagramType::State | DiagramType::Class
+                DiagramType::Flowchart
+                    | DiagramType::State
+                    | DiagramType::Class
+                    | DiagramType::Mindmap
             ) {
                 return Err(RenderError::Options(
                     "the design mode is not supported for this diagram type".to_owned(),

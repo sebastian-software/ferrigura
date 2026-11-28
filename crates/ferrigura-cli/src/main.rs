@@ -61,7 +61,7 @@ Options:
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
       --compat           Use Mermaid geometry instead of optimized routing and participant boxes
-      --design           Draw flowcharts, state and class diagrams in the design mode:
+      --design           Draw flowcharts, state and class diagrams and mindmaps in the design mode:
                           ferrigura's own look and spacing
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>

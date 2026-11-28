@@ -91,8 +91,9 @@ export interface RenderOptionsInput {
    */
   compat?: boolean
   /**
-   * The design mode when true: ferrigura's own look for flowcharts, state diagrams and class diagrams, with
-   * roomier nodes and spacing. Other diagram types and the combination with `compat` are rejected.
+   * The design mode when true: ferrigura's own look for flowcharts, state diagrams, class diagrams
+   * and mindmaps, with roomier nodes and spacing. Other diagram types and the combination with
+   * `compat` are rejected.
    */
   design?: boolean
   /**

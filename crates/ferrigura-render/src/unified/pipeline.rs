@@ -251,7 +251,10 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
     } else {
         node_anchor(&data.diagram_type)
     };
-    let busiest = if config.section.design.is_some() {
+    // A mindmap's edges do not meet a side of a node in a bundle, so its nodes keep their size.
+    let busiest = if config.section.design.is_some()
+        && data.diagram_type != crate::mindmap::data::DIAGRAM_TYPE
+    {
         busiest_sides(&data)
     } else {
         Vec::new()
