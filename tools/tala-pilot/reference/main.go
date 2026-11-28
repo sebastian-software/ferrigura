@@ -61,7 +61,7 @@ type point struct {
 }
 
 type graphOutput struct {
-	Seed  int          `json:"seed"`
+	Seed  int64        `json:"seed,omitempty"`
 	Nodes []nodeOutput `json:"nodes"`
 	Edges []edgeOutput `json:"edges"`
 }
@@ -236,24 +236,25 @@ func makeGraph(input graphInput) (*d2graph.Graph, map[string]*d2graph.Object, []
 	return graph, nodes, edges, nil
 }
 
-func layout(ctx context.Context, graph *d2graph.Graph) error {
-	options := d2talalayout.Options{Seeds: []int64{pilotSeed}, MaxConcurrency: 1}
-	return d2talalayout.Layout(ctx, graph, &options)
+func pilotOptions() *d2talalayout.Options {
+	return &d2talalayout.Options{Seeds: []int64{pilotSeed}, MaxConcurrency: 1}
 }
 
-func capture(ctx context.Context, input graphInput) (graphOutput, error) {
+func capture(ctx context.Context, input graphInput, options *d2talalayout.Options) (graphOutput, error) {
 	graph, nodes, edges, err := makeGraph(input)
 	if err != nil {
 		return graphOutput{}, err
 	}
-	if err := layout(ctx, graph); err != nil {
+	if err := d2talalayout.Layout(ctx, graph, options); err != nil {
 		return graphOutput{}, err
 	}
 
 	output := graphOutput{
-		Seed:  pilotSeed,
 		Nodes: make([]nodeOutput, 0, len(nodes)),
 		Edges: make([]edgeOutput, 0, len(edges)),
+	}
+	if options != nil && len(options.Seeds) == 1 {
+		output.Seed = options.Seeds[0]
 	}
 	for _, node := range input.Nodes {
 		object := nodes[node.ID]
@@ -315,13 +316,14 @@ func readGraph(reader io.Reader) (graphInput, error) {
 
 func benchmark(ctx context.Context, input graphInput, warmup, samples int) ([]int64, error) {
 	times := make([]int64, 0, samples)
+	options := pilotOptions()
 	for i := -warmup; i < samples; i++ {
 		graph, _, _, err := makeGraph(input)
 		if err != nil {
 			return nil, err
 		}
 		start := time.Now()
-		if err := layout(ctx, graph); err != nil {
+		if err := d2talalayout.Layout(ctx, graph, options); err != nil {
 			return nil, err
 		}
 		elapsed := time.Since(start).Nanoseconds()
@@ -339,14 +341,18 @@ func run(ctx context.Context, reader io.Reader, writer io.Writer, args []string)
 	}
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent("", "  ")
-	switch len(args) {
-	case 0:
-		output, err := capture(ctx, input)
+	switch {
+	case len(args) == 0 || len(args) == 1 && args[0] == "--default":
+		var options *d2talalayout.Options
+		if len(args) == 0 {
+			options = pilotOptions()
+		}
+		output, err := capture(ctx, input, options)
 		if err != nil {
 			return err
 		}
 		return encoder.Encode(output)
-	case 2:
+	case len(args) == 2:
 		warmup, warmupErr := strconv.Atoi(args[0])
 		samples, samplesErr := strconv.Atoi(args[1])
 		if warmupErr != nil || warmup < 0 || samplesErr != nil || samples < 1 {
@@ -358,7 +364,7 @@ func run(ctx context.Context, reader io.Reader, writer io.Writer, args []string)
 		}
 		return encoder.Encode(times)
 	default:
-		return errors.New("usage: tala-reference [warmup samples]")
+		return errors.New("usage: tala-reference [--default | warmup samples]")
 	}
 }
 

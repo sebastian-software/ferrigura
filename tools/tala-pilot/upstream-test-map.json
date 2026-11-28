@@ -1,0 +1,8 @@
+{
+  "internal/routing/edge_simplify_safety_test.go#TestSimplifyChecksBothReplacementLegs": [
+    "simplify::tests::both_replacement_legs_and_the_target_approach_follow_the_reference"
+  ],
+  "internal/routing/edge_simplify_safety_test.go#TestSimplifyChecksObstacleContainingNewBend": [
+    "simplify::tests::rejects_an_obstacle_that_contains_the_new_bend"
+  ]
+}

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-// Source: D2 b463ea5, internal/routing/edge_simplify_safety_test.go.
+// Source: D2 b463ea5, internal/routing/{edge_simplify_safety,post_route_atomicity}_test.go.
 
 use super::*;
 use crate::{Edge, EdgeGeometry, Node};
@@ -80,6 +80,14 @@ fn cases(obstruction: &str, transpose: bool) -> (Graph, Layout) {
             std::mem::swap(&mut point.x, &mut point.y);
         }
     }
+    routed_graph(boxes, edges, routes)
+}
+
+fn routed_graph(
+    boxes: Vec<NodeGeometry>,
+    edges: Vec<Edge>,
+    routes: Vec<EdgeGeometry>,
+) -> (Graph, Layout) {
     let nodes = boxes
         .iter()
         .map(|node| Node {
@@ -131,6 +139,34 @@ fn both_replacement_legs_and_the_target_approach_follow_the_reference() {
             );
         }
     }
+}
+
+#[test]
+fn rejects_an_obstacle_that_contains_the_new_bend() {
+    let path = [
+        (0.0, 0.0),
+        (10.0, 0.0),
+        (10.0, 10.0),
+        (20.0, 10.0),
+        (20.0, 0.0),
+    ]
+    .map(|(x, y)| point(x, y))
+    .to_vec();
+    let (graph, mut layout) = routed_graph(
+        vec![
+            node("a", 1_000.0, 1_000.0, 10.0, 10.0),
+            node("b", 2_000.0, 2_000.0, 10.0, 10.0),
+            node("obstacle", 16.0, -4.0, 8.0, 8.0),
+        ],
+        vec![edge("e", "a", "b")],
+        vec![EdgeGeometry {
+            id: "e".into(),
+            points: path.clone(),
+            label: None,
+        }],
+    );
+    simplify_routes(&graph, &mut layout).unwrap();
+    assert_eq!(layout.edges[0].points, path);
 }
 
 #[test]

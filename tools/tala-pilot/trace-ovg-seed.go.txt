@@ -1,0 +1,89 @@
+// The development overlay captures the ordered ports and vertices after both
+// initial visibility stages. It does not perform or replace any Go layout work.
+type pilotOVGOwner struct {
+    Node int `json:"node"`
+    Sides uint8 `json:"sides"`
+    Center bool `json:"center"`
+}
+
+type pilotOVGVertex struct {
+    Point struct {
+        X float64 `json:"x"`
+        Y float64 `json:"y"`
+    } `json:"point"`
+    Owners []pilotOVGOwner `json:"owners"`
+}
+
+type pilotOVGRectangle struct {
+    ID string `json:"id"`
+    X float64 `json:"x"`
+    Y float64 `json:"y"`
+    Width float64 `json:"width"`
+    Height float64 `json:"height"`
+}
+
+func tracePilotOVGSeed(ovg *OVG, graph *layoutgraph.Graph, ordinary bool) {
+    if os.Getenv("TALA_PILOT_TRACE_OVG_SEED") != "1" {
+        return
+    }
+    if !ordinary || len(ovg.NodesInsideBoundingBox) != len(graph.Nodes) {
+        return
+    }
+    nodes := make([]pilotOVGRectangle, 0, len(graph.Nodes))
+    slots := make([][]int, len(graph.Nodes))
+    vertices := make([]pilotOVGVertex, 0, len(ovg.Nodes))
+    indices := make(map[*OVGNode]int, len(ovg.Nodes))
+    sides := [...]geo.Orientation{geo.Top, geo.Left, geo.Bottom, geo.Right}
+    for i, vertex := range ovg.Nodes {
+        indices[vertex] = i
+        entry := pilotOVGVertex{Owners: make([]pilotOVGOwner, 0, len(vertex.portOwners()))}
+        entry.Point.X, entry.Point.Y = vertex.X, vertex.Y
+        for j, node := range graph.Nodes {
+            directions, ok := vertex.portDirectionsFor(node)
+            if !ok {
+                continue
+            }
+            var flags uint8
+            for side, direction := range sides {
+                if directions.has(direction) {
+                    flags |= 1 << side
+                }
+            }
+            entry.Owners = append(entry.Owners, pilotOVGOwner{j, flags, vertex.isCenterPortOf(node)})
+        }
+        if len(entry.Owners) != len(vertex.portOwners()) {
+            return
+        }
+        vertices = append(vertices, entry)
+    }
+    for i, node := range graph.Nodes {
+        ports := ovg.Ports[node]
+        if node.Shape.GetType() != "Square" || node.IsContainer() || node.IsInvisible ||
+            node.Sequence != nil || node.FixedTopLeft != nil || len(ports) != 12 {
+            return
+        }
+        slots[i] = make([]int, 0, len(ports))
+        for _, port := range ports {
+            index, ok := indices[port]
+            if !ok {
+                return
+            }
+            slots[i] = append(slots[i], index)
+        }
+        nodes = append(nodes, pilotOVGRectangle{node.DebugID(), node.TopLeft.X, node.TopLeft.Y, node.Width, node.Height})
+    }
+    result := struct {
+        Nodes []pilotOVGRectangle `json:"nodes"`
+        Expected struct {
+            Vertices []pilotOVGVertex `json:"vertices"`
+            PortsByNode [][]int `json:"portsByNode"`
+        } `json:"expected"`
+    }{Nodes: nodes}
+    result.Expected.Vertices = vertices
+    result.Expected.PortsByNode = slots
+    encoded, err := json.Marshal(result)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Fprintf(os.Stderr, "TALA_PILOT_OVG_SEED %s\n", encoded)
+}

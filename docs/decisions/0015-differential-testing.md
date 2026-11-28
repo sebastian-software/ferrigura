@@ -13,6 +13,16 @@ ferrigura is checked by running the same inputs through the reference and throug
 5. **Geometry.** The reference and ferrigura's `compat` rendering ([0019](./0019-mermaid-geometry-with-compat.md)) render every fixture and probe in Chromium, and node positions and sizes, edge points and label boxes are compared, paired by their structural keys, within 0.05 px (`port:geometry <type>`). The reference runs with `htmlLabels: false` and loads ferrigura's fonts as web fonts, so that both draw the same text.
 6. **Snapshots.** ferrigura's own output for the corpus is pinned by two hashes per file in `crates/ferrigura/tests/snapshots/svg.tsv`, one for the default rendering ([0023](./0023-the-default-rendering.md)) and one for `compat`, so that any change of the output shows, also where the comparison does not look. The default rendering has no comparison with the reference; the snapshots and its own tests hold it. The hashes depend on the architecture, so CI runs the test on an arm64 runner; when that job fails, it prints the diff of the manifest its runner produces and uploads both manifests as an artifact, and they are then committed from there.
 
+## TALA
+
+The TALA harness uses the unmodified D2 engine at its exact Go revision.
+The end-to-end check runs D2's default seed selection and compares ordered
+node boxes, routes, label centers, and the SVG from the native Ferrigura
+render call. A difference or unsupported case fails the check. The named
+upstream test inventory checks that each mapped Go and Rust test actually
+passes. The strict check also fails on missing counterparts.
+[TALA parity commands](../../tools/tala-pilot/README.md).
+
 ## Why
 
 Pixel comparison is impossible once fonts and label technique differ, and a port that is only reviewed drifts. Comparing at every stage finds a difference where it starts: a wrong number in the parse shows as a model difference, not as a shifted node three stages later. Existing specs and inputs measure progress instead of estimating it.
