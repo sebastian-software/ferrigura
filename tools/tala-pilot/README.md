@@ -236,6 +236,22 @@ node tools/tala-pilot/check-ovg-seed.mjs \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
 
+### Raw orthogonal routes
+
+The Observatory check compares the order, strategy, visibility vertices,
+and cost of all three Go routing flavors. It also compares the selected
+flavor and all materialized port and turn coordinates. This check starts
+from the positioned rectangles at the first routing stage.
+
+```sh
+node tools/tala-pilot/trace-raw-routes.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-raw-routes
+GOFLAGS=-overlay=/tmp/ferrigura-tala-raw-routes/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-routes
+node tools/tala-pilot/check-raw-routes.mjs \
+  /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-traced-routes \
+  tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
 ### Ordinary edge label placement
 
 The trace passes already routed geometry, node obstacles, and previously

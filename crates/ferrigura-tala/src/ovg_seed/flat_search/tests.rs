@@ -151,76 +151,106 @@ fn matches_every_pinned_go_raw_observatory_route() {
     let edges: Vec<_> = edges.into_iter().map(edge_for).collect();
     let mut weighted = 0;
     let mut slingshot = 0;
-    for flavor in flavors {
-        let mut history = RouteHistory::new(&graph, &mut work).unwrap();
-        let mut scratch = SearchScratch::default();
-        for fixture in flavor.routes {
-            let edge = edge_for(fixture.owners);
-            let path: Vec<_> = fixture
-                .points
+    for fixture in flavors {
+        let flavor = match fixture.name.as_str() {
+            "Default" => Flavor::Default,
+            "ShortestToLongest" => Flavor::ShortestToLongest,
+            "LongestToShortest" => Flavor::LongestToShortest,
+            name => panic!("unknown reference flavor {name}"),
+        };
+        let native = search
+            .route_flavor(flavor, &node_ids, &edges, &mut work)
+            .unwrap()
+            .unwrap();
+        assert_eq!(native.routes.len(), fixture.routes.len());
+        for (choice, expected) in native.routes.into_iter().zip(fixture.routes) {
+            let owners = edges[choice.edge].owners;
+            assert_eq!(owners, expected.owners, "{}", fixture.name);
+            let strategy = match choice.strategy {
+                RouteStrategy::Slingshot => {
+                    slingshot += 1;
+                    "slingshot"
+                }
+                RouteStrategy::Weighted => {
+                    weighted += 1;
+                    "search"
+                }
+            };
+            assert_eq!(
+                strategy, expected.policy,
+                "{} {:?} route policy",
+                fixture.name, owners
+            );
+            let path: Vec<_> = choice
+                .route
+                .vertices
                 .iter()
-                .enumerate()
-                .map(|(index, &[x, y])| {
-                    if index == 0 {
-                        return graph.centers_by_node[edge.owners[0]];
-                    } else if index == fixture.points.len() - 1 {
-                        return graph.centers_by_node[edge.owners[1]];
-                    }
-                    graph
-                        .vertices
-                        .iter()
-                        .enumerate()
-                        .find_map(|(index, vertex)| {
-                            (vertex.point == Point { x, y }
-                                && !graph.centers_by_node.contains(&index))
-                            .then_some(index)
-                        })
-                        .unwrap()
+                .map(|&vertex| {
+                    let point = graph.vertices[vertex].point;
+                    [point.x, point.y]
                 })
                 .collect();
-            let expected = SearchRoute {
-                cost: fixture.cost,
-                vertices: path,
-            };
-            let shortcut = search
-                .slingshot(&mut history, &edge, &node_ids, &edges, &mut work)
-                .unwrap();
-            let (policy, found) = if let Some(shortcut) = shortcut {
-                slingshot += 1;
-                ("slingshot", shortcut)
-            } else {
-                weighted += 1;
-                (
-                    "search",
-                    search
-                        .find(&mut scratch, &mut history, &edge, &mut work)
-                        .unwrap()
-                        .unwrap(),
-                )
-            };
+            assert_eq!(path, expected.points, "{} {:?} path", fixture.name, owners);
             assert_eq!(
-                policy, fixture.policy,
-                "{} {:?} route policy",
-                flavor.name, edge.owners
-            );
-            assert_eq!(
-                found.cost.to_bits(),
+                choice.route.cost.to_bits(),
                 expected.cost.to_bits(),
-                "{} {:?} cost: {} vs {}",
-                flavor.name,
-                edge.owners,
-                found.cost,
-                expected.cost
+                "{} {:?} raw cost",
+                fixture.name,
+                owners
             );
-            assert_eq!(
-                found.vertices, expected.vertices,
-                "{} {:?} path",
-                flavor.name, edge.owners
-            );
-            history.accept(edge, found, &mut work).unwrap();
         }
     }
     assert_eq!((weighted, slingshot), (24, 3));
+
+    let selected = search
+        .select_flavor(&node_ids, &edges, &mut work)
+        .unwrap()
+        .unwrap();
+    assert_eq!(selected.flavor, Flavor::LongestToShortest);
+    assert_eq!(selected.cost.to_bits(), 3_815.364_66_f64.to_bits());
+    let expected: &[([usize; 2], &[[f64; 2]])] = &[
+        (
+            [1, 4],
+            &[[1496.0, 1220.0], [1200.0, 1220.0], [1200.0, 1248.0]],
+        ),
+        (
+            [4, 5],
+            &[[1124.0, 1269.0], [1076.0, 1269.0], [1076.0, 1434.0]],
+        ),
+        (
+            [3, 1],
+            &[[1524.0, 1021.0], [1572.0, 1021.0], [1572.0, 1186.0]],
+        ),
+        ([2, 6], &[[1324.0, 1378.0], [1324.0, 1496.0]]),
+        (
+            [5, 2],
+            &[[1114.0, 1434.0], [1114.0, 1361.0], [1248.0, 1361.0]],
+        ),
+        (
+            [0, 3],
+            &[[1324.0, 1142.0], [1324.0, 1021.0], [1372.0, 1021.0]],
+        ),
+        ([2, 0], &[[1324.0, 1310.0], [1324.0, 1210.0]]),
+        (
+            [5, 6],
+            &[[1076.0, 1502.0], [1076.0, 1530.0], [1248.0, 1530.0]],
+        ),
+        (
+            [0, 1],
+            &[[1400.0, 1159.0], [1572.0, 1159.0], [1572.0, 1186.0]],
+        ),
+    ];
+    assert_eq!(selected.routes.len(), expected.len());
+    for (route, (owners, vertices)) in selected.routes.into_iter().zip(expected) {
+        assert_eq!(&edges[route.edge].owners, owners);
+        let points: Vec<_> = search
+            .route_points(&route.route)
+            .unwrap()
+            .into_iter()
+            .map(|point| [point.x, point.y])
+            .collect();
+        assert_eq!(&points, vertices, "{owners:?}");
+    }
 }
 
 fn attempt_flight(rectangles: &[(f64, f64, f64, f64)]) -> Option<(Vec<Point>, f64)> {

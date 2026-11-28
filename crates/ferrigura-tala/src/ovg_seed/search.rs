@@ -83,7 +83,7 @@ pub struct Transition {
     pub from_horizontal: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SearchRoute {
     pub vertices: Vec<usize>,
     pub cost: f64,

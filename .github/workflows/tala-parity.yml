@@ -98,6 +98,15 @@ jobs:
             --ferrigura target/debug/examples/tala_pilot \
             --measured tools/tala-pilot/captures \
             --captures "$RUNNER_TEMP/tala-normalization.json"
+      - name: Compare complete raw routing and port geometry with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-raw-routes.mjs .tala-reference "$RUNNER_TEMP/tala-raw-routes"
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-raw-routes/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-raw-routes-reference"
+          node tools/tala-pilot/check-raw-routes.mjs \
+            "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-raw-routes-reference" \
+            tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Compare ordinary edge label placement with Go
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

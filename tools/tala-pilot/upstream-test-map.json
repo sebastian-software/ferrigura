@@ -149,6 +149,18 @@
   "internal/routing/ovg_edge_router_test.go#TestAddRoute": [
     "ovg_seed::flat_search::history::tests::add_route_preserves_order_at_points_and_deduplicates_indexed_segments"
   ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesPreservesClusterTies": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_preserves_cluster_ties"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesPreservesDistanceTies": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_preserves_distance_ties"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesPreservesNaNDistanceTie": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_preserves_nan_distance_tie"
+  ],
+  "internal/routing/ovg_edge_router_test.go#TestSortEdgesTopDownLeftRight": [
+    "ovg_seed::flat_search::flavors::tests::sort_edges_top_down_left_right"
+  ],
   "internal/routing/ovg_test.go#TestTunnelKeepsExistingPortDirections": [
     "ovg_seed::tunnels::tests::tunnel_keeps_existing_port_directions"
   ],

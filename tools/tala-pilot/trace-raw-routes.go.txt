@@ -1,0 +1,160 @@
+// These development hooks observe the reference's chosen routes and do not
+// modify geometry, input order, or the routing decisions.
+type pilotRawRectangle struct {
+    X float64 `json:"x"`
+    Y float64 `json:"y"`
+    Width float64 `json:"width"`
+    Height float64 `json:"height"`
+}
+
+type pilotRawNode struct {
+    pilotRawRectangle
+    ID string `json:"id"`
+}
+
+type pilotRawAppearance struct {
+    Opacity *string `json:"opacity"`
+    Stroke *string `json:"stroke"`
+    StrokeWidth *string `json:"strokeWidth"`
+    StrokeDash *string `json:"strokeDash"`
+    Animated *string `json:"animated"`
+}
+
+type pilotRawEdge struct {
+    Owners [2]int `json:"owners"`
+    Arrowheads [2]string `json:"arrowheads"`
+    Appearance pilotRawAppearance `json:"appearance"`
+    Invisible bool `json:"invisible"`
+}
+
+type pilotRawInput struct {
+    Nodes []pilotRawNode `json:"nodes"`
+    NodeIDs []string `json:"nodeIds"`
+    Edges []pilotRawEdge `json:"edges"`
+    Labels []*pilotRawRectangle `json:"labels"`
+}
+
+type pilotRawPath struct {
+    Edge int `json:"edge"`
+    Strategy string `json:"strategy"`
+    Cost float64 `json:"cost"`
+    Points [][2]float64 `json:"points"`
+}
+
+type pilotRawTrace struct {
+    Input pilotRawInput `json:"input"`
+    Flavor RouteGenerationFlavor `json:"flavor"`
+    Cost float64 `json:"cost"`
+    Routes []pilotRawPath `json:"routes"`
+    edgeIndices map[*layoutgraph.Edge]int
+}
+
+func startPilotRawRoutes(router *ovgEdgeRouter) *pilotRawTrace {
+    if os.Getenv("TALA_PILOT_TRACE_RAW_ROUTES") != "1" {
+        return nil
+    }
+    graph := router.graph
+    if len(graph.NodeToTree) != 0 || len(graph.Clusters) != 0 {
+        return nil
+    }
+    trace := &pilotRawTrace{Flavor: router.flavor, edgeIndices: make(map[*layoutgraph.Edge]int)}
+    nodeIndices := make(map[*layoutgraph.Node]int)
+    for i, node := range graph.Nodes {
+        if node.Shape.GetType() != "Square" || node.IsContainer() || node.IsInvisible ||
+            node.Sequence != nil || node.FixedTopLeft != nil || node.Hierarchy != nil {
+            return nil
+        }
+        nodeIndices[node] = i
+        trace.Input.Nodes = append(trace.Input.Nodes, pilotRawNode{
+            pilotRawRectangle{node.TopLeft.X, node.TopLeft.Y, node.Width, node.Height},
+            node.DebugID(),
+        })
+        trace.Input.NodeIDs = append(trace.Input.NodeIDs, strconv.FormatInt(node.ID, 10))
+        var box *pilotRawRectangle
+        if router.considerNodeLabels && node.Label != nil && node.Label.Text != "" {
+            label := node.Label
+            point := node.LabelTopLeft(label.Position, label.Width, label.Height)
+            if point != nil {
+                box = &pilotRawRectangle{point.X, point.Y, label.Width, label.Height}
+            }
+        }
+        trace.Input.Labels = append(trace.Input.Labels, box)
+    }
+    scalar := func(value *layoutgraph.StyleScalar) *string {
+        if value == nil {
+            return nil
+        }
+        return &value.Value
+    }
+    for i, edge := range graph.Edges {
+        from, hasFrom := nodeIndices[edge.From]
+        to, hasTo := nodeIndices[edge.To]
+        if !hasFrom || !hasTo || from == to || edge.HasTableColumn() ||
+            edge.SourceArrowheadLabel != nil || edge.TargetArrowheadLabel != nil {
+            return nil
+        }
+        trace.edgeIndices[edge] = i
+        trace.Input.Edges = append(trace.Input.Edges, pilotRawEdge{
+            Owners: [2]int{from, to},
+            Arrowheads: [2]string{string(edge.SourceArrowhead), string(edge.TargetArrowhead)},
+            Appearance: pilotRawAppearance{
+                scalar(edge.Style.Opacity), scalar(edge.Style.Stroke), scalar(edge.Style.StrokeWidth),
+                scalar(edge.Style.StrokeDash), scalar(edge.Style.Animated),
+            },
+            Invisible: edge.IsInvisible,
+        })
+    }
+    return trace
+}
+
+func (trace *pilotRawTrace) add(edge *layoutgraph.Edge, strategy string, cost float64, path []*OVGNode) {
+    if trace == nil {
+        return
+    }
+    points := make([][2]float64, len(path))
+    for i, node := range path {
+        points[i] = [2]float64{node.X, node.Y}
+    }
+    trace.Routes = append(trace.Routes, pilotRawPath{trace.edgeIndices[edge], strategy, cost, points})
+}
+
+func (trace *pilotRawTrace) finish(cost float64) {
+    if trace != nil {
+        trace.Cost = cost
+        writePilotRouteTrace("TALA_PILOT_RAW_ROUTES ", trace)
+    }
+}
+
+func tracePilotSelectedRoutes(graph *layoutgraph.Graph, flavor RouteGenerationFlavor, selected []selectedRouteUpdate) {
+    if os.Getenv("TALA_PILOT_TRACE_RAW_ROUTES") != "1" {
+        return
+    }
+    type route struct {
+        Edge int `json:"edge"`
+        Points [][2]float64 `json:"points"`
+    }
+    indices := make(map[*layoutgraph.Edge]int)
+    for i, edge := range graph.Edges {
+        indices[edge] = i
+    }
+    routes := make([]route, 0, len(selected))
+    for _, update := range selected {
+        points := make([][2]float64, len(update.points))
+        for i, point := range update.points {
+            points[i] = [2]float64{point.X, point.Y}
+        }
+        routes = append(routes, route{indices[update.edge], points})
+    }
+    writePilotRouteTrace("TALA_PILOT_SELECTED_ROUTES ", struct {
+        Flavor RouteGenerationFlavor `json:"flavor"`
+        Routes []route `json:"routes"`
+    }{flavor, routes})
+}
+
+func writePilotRouteTrace(prefix string, value any) {
+    data, err := json.Marshal(value)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Fprintln(os.Stderr, prefix + string(data))
+}

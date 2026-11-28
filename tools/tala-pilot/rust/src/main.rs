@@ -7,6 +7,8 @@ use ferrigura_tala::seed_selection::{Scored, SeedPlan};
 use ferrigura_tala::{Graph, Layout};
 use serde::{Deserialize, Serialize};
 
+mod raw_routes;
+
 #[derive(Deserialize)]
 struct PositionedEdges {
     nodes: Vec<ferrigura_tala::NodeGeometry>,
@@ -77,6 +79,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 command.as_deref() == Some("--prescale"),
             )?;
             serde_json::to_writer(output, &graph)?;
+        }
+        Some("--raw-routes") => {
+            let capture = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &raw_routes::trace_raw_routes(capture)?)?;
         }
         Some("--layout") => {
             let graph = serde_json::from_reader(input)?;
@@ -283,7 +289,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "--first-sized-compaction, --sized-phase, --sized-phase-snapshots, ",
                 "--direct-flat-component, --place-flat-component, --measured-flat-placement, --ovg-seed, ",
                 "--ovg-edge-points, --ovg-boundary-points, --ovg-tunnels, --ovg-links, ",
-                "--candidate-score, --route-output, --edge-label-placement, --simplify, --balance, or no argument"
+                "--candidate-score, --route-output, --raw-routes, --edge-label-placement, --simplify, --balance, or no argument"
             )
             .into());
         }

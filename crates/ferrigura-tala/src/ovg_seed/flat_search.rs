@@ -17,7 +17,9 @@ use super::search::{
 use super::slingshot::{Orientation, VisibilityAdjacency, step};
 use super::{LinkedVisibility, PortOwner, SLOTS_PER_RECTANGLE, Vertex, point_key};
 
+mod flavors;
 mod flight;
+pub use flavors::{Flavor, FlavorRoutes, RouteChoice, RouteStrategy, order_routes};
 mod history;
 pub use history::{Appearance, OrdinaryEdge, RouteHistory};
 use history::{Passage, UsedPorts};
