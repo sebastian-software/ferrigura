@@ -1,0 +1,186 @@
+// Source-equivalent projection of the already-completed candidate. This
+// wrapper only observes the pinned scorer, its data and work consumption.
+type pilotScoreBox struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+}
+
+type pilotScorePoint struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type pilotScoreNode struct {
+	Body               pilotScoreBox    `json:"body"`
+	Container          *int             `json:"container,omitempty"`
+	EffectiveContainer *int             `json:"effectiveContainer,omitempty"`
+	AncestryParent     *int             `json:"ancestryParent,omitempty"`
+	IsContainer        bool             `json:"isContainer,omitempty"`
+	Clustered          bool             `json:"clustered,omitempty"`
+	Label              *pilotScoreBox   `json:"label,omitempty"`
+	OutsideLabel       bool             `json:"outsideLabel,omitempty"`
+	Icon               *pilotScoreBox   `json:"icon,omitempty"`
+	OutsideIconReserve *pilotScoreBox   `json:"outsideIconReserve,omitempty"`
+	FixedTopLeft       *pilotScorePoint `json:"fixedTopLeft,omitempty"`
+	ModifierExtension  *pilotScorePoint `json:"modifierExtension,omitempty"`
+	LoopOffsets        [4]float64       `json:"loopOffsets"`
+}
+
+type pilotScoreEdge struct {
+	Source               int               `json:"source"`
+	Target               int               `json:"target"`
+	Points               []pilotScorePoint `json:"points"`
+	Label                *pilotScoreBox    `json:"label,omitempty"`
+	LabelIsPositioned    bool              `json:"labelIsPositioned,omitempty"`
+	SourceArrowheadLabel *pilotScoreBox    `json:"sourceArrowheadLabel,omitempty"`
+	TargetArrowheadLabel *pilotScoreBox    `json:"targetArrowheadLabel,omitempty"`
+}
+
+type pilotScoreGraph struct {
+	DetachedAncestry []*int `json:"detachedAncestry,omitempty"`
+	Nodes []pilotScoreNode `json:"nodes"`
+	Edges []pilotScoreEdge `json:"edges"`
+}
+
+type pilotScoreTrace struct {
+	Index   int               `json:"index"`
+	Seed    int64             `json:"seed"`
+	Graph   pilotScoreGraph   `json:"graph"`
+	Penalty float64           `json:"penalty"`
+	Area    float64           `json:"area"`
+	Work    int64             `json:"work"`
+}
+
+func pilotScoreBounds(topLeft *geo.Point, width, height float64) *pilotScoreBox {
+	return &pilotScoreBox{X: topLeft.X, Y: topLeft.Y, Width: width, Height: height}
+}
+
+func pilotScorePosition(point *geo.Point) *pilotScorePoint {
+	if point == nil {
+		return nil
+	}
+	return &pilotScorePoint{X: point.X, Y: point.Y}
+}
+
+func tracePilotSeedCandidate(ctx context.Context, index int, seed int64, result seedResult, err error) {
+	if os.Getenv("TALA_TRACE_CANDIDATE_SCORE") == "" || err != nil {
+		return
+	}
+	defer func() {
+		if failure := recover(); failure != nil {
+			fmt.Fprintf(os.Stderr, "tala-candidate-error %d %v\n", seed, failure)
+		}
+	}()
+	g := result.graph
+	indices := make(map[*layoutgraph.Node]int, len(g.Nodes))
+	for index, node := range g.Nodes {
+		indices[node] = index
+	}
+	position := func(node *layoutgraph.Node) *int {
+		if node == nil {
+			return nil
+		}
+		index, exists := indices[node]
+		if !exists {
+			panic(fmt.Sprintf("candidate score projection refers outside the completed graph: node %d", node.ID))
+		}
+		return &index
+	}
+	var detached []*layoutgraph.Node
+	ancestryPosition := func(node *layoutgraph.Node) *int {
+		if node == nil {
+			return nil
+		}
+		if index, exists := indices[node]; exists {
+			return &index
+		}
+		index := len(g.Nodes) + len(detached)
+		indices[node] = index
+		detached = append(detached, node)
+		return &index
+	}
+	graph := pilotScoreGraph{
+		Nodes: make([]pilotScoreNode, 0, len(g.Nodes)),
+		Edges: make([]pilotScoreEdge, 0, len(g.Edges)),
+	}
+	for _, node := range g.Nodes {
+		value := pilotScoreNode{
+			Body: *pilotScoreBounds(node.TopLeft, node.Width, node.Height),
+			Container: position(node.Container),
+			EffectiveContainer: position(node.EffectiveContainer()),
+			AncestryParent: ancestryPosition(node.AncestryParent()),
+			IsContainer: node.IsContainer(),
+			Clustered: node.Cluster != nil,
+			FixedTopLeft: pilotScorePosition(node.FixedTopLeft),
+			LoopOffsets: [4]float64{
+				node.LoopOffsets[geo.Left], node.LoopOffsets[geo.Top],
+				node.LoopOffsets[geo.Right], node.LoopOffsets[geo.Bottom],
+			},
+		}
+		if node.Is3D {
+			top := 15.0
+			if node.ShapeType() == "Hexagon" {
+				top = 7 // The pinned offset is an untyped integer constant.
+			}
+			value.ModifierExtension = &pilotScorePoint{X: 15, Y: top}
+		} else if node.IsMultiple {
+			value.ModifierExtension = &pilotScorePoint{X: 10, Y: 10}
+		}
+		if node.Label != nil {
+			caption := node.Label
+			value.Label = pilotScoreBounds(node.LabelTopLeft(caption.Position, caption.Width, caption.Height), caption.Width, caption.Height)
+			value.OutsideLabel = caption.Position.IsOutside()
+		}
+		if node.HasIconDecoration() {
+			size := node.IconSize(node.Icon.Position)
+			value.Icon = pilotScoreBounds(node.LabelTopLeft(node.Icon.Position, size, size), size, size)
+			if node.Icon.Position.IsOutside() {
+				size := node.OutsideIconReserve()
+				value.OutsideIconReserve = pilotScoreBounds(node.LabelTopLeft(node.Icon.Position, size, size), size, size)
+			}
+		}
+		graph.Nodes = append(graph.Nodes, value)
+	}
+	for _, edge := range g.Edges {
+		value := pilotScoreEdge{
+			Source: *position(edge.From),
+			Target: *position(edge.To),
+			Points: make([]pilotScorePoint, 0, len(edge.Points)),
+		}
+		for _, point := range edge.Points {
+			value.Points = append(value.Points, *pilotScorePosition(point))
+		}
+		if edge.Label != nil {
+			caption := edge.Label
+			value.Label = pilotScoreBounds(edge.LabelTopLeft(caption.Position, caption.Width, caption.Height), caption.Width, caption.Height)
+			value.LabelIsPositioned = caption.Position != label.Unset
+		}
+		if positioned := labeling.PositionArrowheadLabel(edge, false, edge.Points); positioned != nil {
+			value.SourceArrowheadLabel = pilotScoreBounds(positioned.TopLeft, positioned.Width, positioned.Height)
+		}
+		if positioned := labeling.PositionArrowheadLabel(edge, true, edge.Points); positioned != nil {
+			value.TargetArrowheadLabel = pilotScoreBounds(positioned.TopLeft, positioned.Width, positioned.Height)
+		}
+		graph.Edges = append(graph.Edges, value)
+	}
+	for i := 0; i < len(detached); i++ {
+		graph.DetachedAncestry = append(graph.DetachedAncestry, ancestryPosition(detached[i].AncestryParent()))
+	}
+	work, err := quality.PilotEvaluationWork(ctx, g)
+	if err != nil {
+		panic(err)
+	}
+	record, err := json.Marshal(pilotScoreTrace{index, seed, graph, result.score.penalty, result.score.area, work})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(os.Stderr, "tala-candidate %s\n", record)
+}
+
+func tracePilotSeedChoice(seed int64) {
+	if os.Getenv("TALA_TRACE_CANDIDATE_SCORE") != "" {
+		fmt.Fprintf(os.Stderr, "tala-selected %d\n", seed)
+	}
+}

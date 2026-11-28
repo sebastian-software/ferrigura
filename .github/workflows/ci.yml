@@ -80,7 +80,7 @@ jobs:
         run: |
           cargo package --locked -p ferrigura-tala
           contents=$(tar -tf target/package/ferrigura-tala-*.crate)
-          for file in LICENSE NOTICE.md src/lib.rs; do
+          for file in LICENSE LICENSE-GO NOTICE.md src/lib.rs; do
             printf '%s\n' "$contents" | sed 's|^[^/]*/||' | grep -Fx "$file"
           done
       # Exercise the acos interval test with x86 fused instructions as well as the baseline above.

@@ -1,0 +1,32 @@
+// This observer records the inputs to the successful D2 edge patch without changing them.
+func tracePilotRouteOutput(edge *d2graph.Edge, result *layoutgraph.Edge) {
+	if os.Getenv("TALA_PILOT_TRACE_ROUTE_OUTPUT") != "1" {
+		return
+	}
+	type point struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+	}
+	type label struct {
+		Anchor string `json:"anchor"`
+		Percentage float64 `json:"percentage"`
+		Width float64 `json:"width"`
+		Height float64 `json:"height"`
+	}
+	capture := struct {
+		Points []point `json:"points"`
+		Label *label `json:"label"`
+		Reversed bool `json:"reversedForLayout"`
+	}{Points: make([]point, 0, len(result.Points)), Reversed: edge.SrcArrow && !edge.DstArrow}
+	for _, p := range result.Points {
+		capture.Points = append(capture.Points, point{p.X, p.Y})
+	}
+	if result.Label != nil {
+		capture.Label = &label{result.Label.Position.String(), result.LabelPercentage, result.Label.Width, result.Label.Height}
+	}
+	data, err := json.Marshal(capture)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintln(os.Stderr, "TALA_PILOT_ROUTE_OUTPUT " + string(data))
+}

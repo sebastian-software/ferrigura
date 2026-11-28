@@ -1,0 +1,3017 @@
+[
+  {
+    "fixture": "library-architecture",
+    "selected": 2,
+    "candidates": [
+      {
+        "index": 0,
+        "seed": 1,
+        "graph": {
+          "nodes": [
+            {
+              "body": {
+                "x": 362,
+                "y": 463,
+                "width": 272,
+                "height": 409
+              },
+              "isContainer": true,
+              "label": {
+                "x": 473.5,
+                "y": 850,
+                "width": 49,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 422,
+                "y": 523,
+                "width": 152,
+                "height": 68
+              },
+              "container": 0,
+              "effectiveContainer": 0,
+              "ancestryParent": 0,
+              "label": {
+                "x": 498,
+                "y": 557,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 0,
+                "width": 1364,
+                "height": 343
+              },
+              "isContainer": true,
+              "label": {
+                "x": 637,
+                "y": 5,
+                "width": 90,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 727,
+                "y": 73,
+                "width": 577,
+                "height": 210
+              },
+              "container": 2,
+              "effectiveContainer": 2,
+              "ancestryParent": 2,
+              "isContainer": true,
+              "label": {
+                "x": 964,
+                "y": 78,
+                "width": 103,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 787,
+                "y": 133,
+                "width": 152,
+                "height": 41
+              },
+              "container": 3,
+              "effectiveContainer": 3,
+              "ancestryParent": 3,
+              "label": {
+                "x": 863,
+                "y": 153.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1092,
+                "y": 155,
+                "width": 152,
+                "height": 68
+              },
+              "container": 3,
+              "effectiveContainer": 3,
+              "ancestryParent": 3,
+              "label": {
+                "x": 1168,
+                "y": 189,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 60,
+                "y": 60,
+                "width": 574,
+                "height": 210
+              },
+              "container": 2,
+              "effectiveContainer": 2,
+              "ancestryParent": 2,
+              "isContainer": true,
+              "label": {
+                "x": 296.5,
+                "y": 65,
+                "width": 101,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 120,
+                "y": 169,
+                "width": 152,
+                "height": 41
+              },
+              "container": 6,
+              "effectiveContainer": 6,
+              "ancestryParent": 6,
+              "label": {
+                "x": 196,
+                "y": 189.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 422,
+                "y": 120,
+                "width": 152,
+                "height": 68
+              },
+              "container": 6,
+              "effectiveContainer": 6,
+              "ancestryParent": 6,
+              "label": {
+                "x": 498,
+                "y": 154,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 422,
+                "y": 771,
+                "width": 152,
+                "height": 41
+              },
+              "container": 0,
+              "effectiveContainer": 0,
+              "ancestryParent": 0,
+              "label": {
+                "x": 498,
+                "y": 791.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 7,
+              "target": 8,
+              "points": [
+                {
+                  "x": 220,
+                  "y": 169
+                },
+                {
+                  "x": 220,
+                  "y": 144
+                },
+                {
+                  "x": 422,
+                  "y": 144
+                }
+              ]
+            },
+            {
+              "source": 4,
+              "target": 5,
+              "points": [
+                {
+                  "x": 863,
+                  "y": 174
+                },
+                {
+                  "x": 863,
+                  "y": 198
+                },
+                {
+                  "x": 1092,
+                  "y": 198
+                }
+              ]
+            },
+            {
+              "source": 8,
+              "target": 4,
+              "points": [
+                {
+                  "x": 574,
+                  "y": 153
+                },
+                {
+                  "x": 787,
+                  "y": 153
+                }
+              ],
+              "label": {
+                "x": 624,
+                "y": 126,
+                "width": 103,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 5,
+              "target": 7,
+              "points": [
+                {
+                  "x": 1168,
+                  "y": 155
+                },
+                {
+                  "x": 1168,
+                  "y": 30
+                },
+                {
+                  "x": 170,
+                  "y": 30
+                },
+                {
+                  "x": 170,
+                  "y": 169
+                }
+              ],
+              "label": {
+                "x": 617,
+                "y": 37,
+                "width": 91,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 5,
+              "target": 1,
+              "points": [
+                {
+                  "x": 1168,
+                  "y": 223
+                },
+                {
+                  "x": 1168,
+                  "y": 557
+                },
+                {
+                  "x": 574,
+                  "y": 557
+                }
+              ],
+              "label": {
+                "x": 979,
+                "y": 564,
+                "width": 119,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 8,
+              "points": [
+                {
+                  "x": 498,
+                  "y": 523
+                },
+                {
+                  "x": 498,
+                  "y": 188
+                }
+              ],
+              "label": {
+                "x": 378,
+                "y": 345,
+                "width": 114,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 9,
+              "points": [
+                {
+                  "x": 498,
+                  "y": 591
+                },
+                {
+                  "x": 498,
+                  "y": 771
+                }
+              ]
+            }
+          ]
+        },
+        "penalty": 2.66260162601626,
+        "area": 1189408,
+        "work": 962
+      },
+      {
+        "index": 1,
+        "seed": 2,
+        "graph": {
+          "nodes": [
+            {
+              "body": {
+                "x": 308,
+                "y": 412,
+                "width": 272,
+                "height": 358
+              },
+              "isContainer": true,
+              "label": {
+                "x": 419.5,
+                "y": 748,
+                "width": 49,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 368,
+                "y": 472,
+                "width": 152,
+                "height": 68
+              },
+              "container": 0,
+              "effectiveContainer": 0,
+              "ancestryParent": 0,
+              "label": {
+                "x": 444,
+                "y": 506,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 0,
+                "width": 1310,
+                "height": 343
+              },
+              "isContainer": true,
+              "label": {
+                "x": 610,
+                "y": 5,
+                "width": 90,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 60,
+                "y": 60,
+                "width": 520,
+                "height": 188
+              },
+              "container": 2,
+              "effectiveContainer": 2,
+              "ancestryParent": 2,
+              "isContainer": true,
+              "label": {
+                "x": 268.5,
+                "y": 65,
+                "width": 103,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 120,
+                "y": 120,
+                "width": 152,
+                "height": 41
+              },
+              "container": 3,
+              "effectiveContainer": 3,
+              "ancestryParent": 3,
+              "label": {
+                "x": 196,
+                "y": 140.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 368,
+                "y": 120,
+                "width": 152,
+                "height": 68
+              },
+              "container": 3,
+              "effectiveContainer": 3,
+              "ancestryParent": 3,
+              "label": {
+                "x": 444,
+                "y": 154,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 673,
+                "y": 95,
+                "width": 577,
+                "height": 188
+              },
+              "container": 2,
+              "effectiveContainer": 2,
+              "ancestryParent": 2,
+              "isContainer": true,
+              "label": {
+                "x": 911,
+                "y": 100,
+                "width": 101,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 733,
+                "y": 169,
+                "width": 152,
+                "height": 41
+              },
+              "container": 6,
+              "effectiveContainer": 6,
+              "ancestryParent": 6,
+              "label": {
+                "x": 809,
+                "y": 189.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1038,
+                "y": 155,
+                "width": 152,
+                "height": 68
+              },
+              "container": 6,
+              "effectiveContainer": 6,
+              "ancestryParent": 6,
+              "label": {
+                "x": 1114,
+                "y": 189,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 368,
+                "y": 669,
+                "width": 152,
+                "height": 41
+              },
+              "container": 0,
+              "effectiveContainer": 0,
+              "ancestryParent": 0,
+              "label": {
+                "x": 444,
+                "y": 689.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 7,
+              "target": 8,
+              "points": [
+                {
+                  "x": 885,
+                  "y": 189
+                },
+                {
+                  "x": 1038,
+                  "y": 189
+                }
+              ]
+            },
+            {
+              "source": 4,
+              "target": 5,
+              "points": [
+                {
+                  "x": 272,
+                  "y": 140
+                },
+                {
+                  "x": 368,
+                  "y": 140
+                }
+              ]
+            },
+            {
+              "source": 8,
+              "target": 4,
+              "points": [
+                {
+                  "x": 1114,
+                  "y": 155
+                },
+                {
+                  "x": 1114,
+                  "y": 30
+                },
+                {
+                  "x": 196,
+                  "y": 30
+                },
+                {
+                  "x": 196,
+                  "y": 120
+                }
+              ],
+              "label": {
+                "x": 621,
+                "y": 37,
+                "width": 103,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 5,
+              "target": 7,
+              "points": [
+                {
+                  "x": 520,
+                  "y": 144
+                },
+                {
+                  "x": 809,
+                  "y": 144
+                },
+                {
+                  "x": 809,
+                  "y": 169
+                }
+              ],
+              "label": {
+                "x": 710,
+                "y": 117,
+                "width": 91,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 5,
+              "target": 1,
+              "points": [
+                {
+                  "x": 444,
+                  "y": 188
+                },
+                {
+                  "x": 444,
+                  "y": 472
+                }
+              ],
+              "label": {
+                "x": 451,
+                "y": 320,
+                "width": 119,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 8,
+              "points": [
+                {
+                  "x": 520,
+                  "y": 506
+                },
+                {
+                  "x": 1114,
+                  "y": 506
+                },
+                {
+                  "x": 1114,
+                  "y": 223
+                }
+              ],
+              "label": {
+                "x": 902,
+                "y": 479,
+                "width": 114,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 9,
+              "points": [
+                {
+                  "x": 444,
+                  "y": 540
+                },
+                {
+                  "x": 444,
+                  "y": 669
+                }
+              ]
+            }
+          ]
+        },
+        "penalty": 2,
+        "area": 1008700,
+        "work": 928
+      },
+      {
+        "index": 2,
+        "seed": 3,
+        "graph": {
+          "nodes": [
+            {
+              "body": {
+                "x": 362,
+                "y": 412,
+                "width": 272,
+                "height": 358
+              },
+              "isContainer": true,
+              "label": {
+                "x": 473.5,
+                "y": 748,
+                "width": 49,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 422,
+                "y": 472,
+                "width": 152,
+                "height": 68
+              },
+              "container": 0,
+              "effectiveContainer": 0,
+              "ancestryParent": 0,
+              "label": {
+                "x": 498,
+                "y": 506,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 0,
+                "width": 1364,
+                "height": 343
+              },
+              "isContainer": true,
+              "label": {
+                "x": 637,
+                "y": 5,
+                "width": 90,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 727,
+                "y": 73,
+                "width": 577,
+                "height": 210
+              },
+              "container": 2,
+              "effectiveContainer": 2,
+              "ancestryParent": 2,
+              "isContainer": true,
+              "label": {
+                "x": 964,
+                "y": 78,
+                "width": 103,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 787,
+                "y": 133,
+                "width": 152,
+                "height": 41
+              },
+              "container": 3,
+              "effectiveContainer": 3,
+              "ancestryParent": 3,
+              "label": {
+                "x": 863,
+                "y": 153.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1092,
+                "y": 155,
+                "width": 152,
+                "height": 68
+              },
+              "container": 3,
+              "effectiveContainer": 3,
+              "ancestryParent": 3,
+              "label": {
+                "x": 1168,
+                "y": 189,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 60,
+                "y": 60,
+                "width": 574,
+                "height": 210
+              },
+              "container": 2,
+              "effectiveContainer": 2,
+              "ancestryParent": 2,
+              "isContainer": true,
+              "label": {
+                "x": 296.5,
+                "y": 65,
+                "width": 101,
+                "height": 17
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 120,
+                "y": 169,
+                "width": 152,
+                "height": 41
+              },
+              "container": 6,
+              "effectiveContainer": 6,
+              "ancestryParent": 6,
+              "label": {
+                "x": 196,
+                "y": 189.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 422,
+                "y": 120,
+                "width": 152,
+                "height": 68
+              },
+              "container": 6,
+              "effectiveContainer": 6,
+              "ancestryParent": 6,
+              "label": {
+                "x": 498,
+                "y": 154,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 422,
+                "y": 669,
+                "width": 152,
+                "height": 41
+              },
+              "container": 0,
+              "effectiveContainer": 0,
+              "ancestryParent": 0,
+              "label": {
+                "x": 498,
+                "y": 689.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 7,
+              "target": 8,
+              "points": [
+                {
+                  "x": 220,
+                  "y": 169
+                },
+                {
+                  "x": 220,
+                  "y": 144
+                },
+                {
+                  "x": 422,
+                  "y": 144
+                }
+              ]
+            },
+            {
+              "source": 4,
+              "target": 5,
+              "points": [
+                {
+                  "x": 863,
+                  "y": 174
+                },
+                {
+                  "x": 863,
+                  "y": 198
+                },
+                {
+                  "x": 1092,
+                  "y": 198
+                }
+              ]
+            },
+            {
+              "source": 8,
+              "target": 4,
+              "points": [
+                {
+                  "x": 574,
+                  "y": 153
+                },
+                {
+                  "x": 787,
+                  "y": 153
+                }
+              ],
+              "label": {
+                "x": 624,
+                "y": 126,
+                "width": 103,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 5,
+              "target": 7,
+              "points": [
+                {
+                  "x": 1168,
+                  "y": 155
+                },
+                {
+                  "x": 1168,
+                  "y": 30
+                },
+                {
+                  "x": 170,
+                  "y": 30
+                },
+                {
+                  "x": 170,
+                  "y": 169
+                }
+              ],
+              "label": {
+                "x": 617,
+                "y": 37,
+                "width": 91,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 5,
+              "target": 1,
+              "points": [
+                {
+                  "x": 1168,
+                  "y": 223
+                },
+                {
+                  "x": 1168,
+                  "y": 506
+                },
+                {
+                  "x": 574,
+                  "y": 506
+                }
+              ],
+              "label": {
+                "x": 953,
+                "y": 513,
+                "width": 119,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 8,
+              "points": [
+                {
+                  "x": 498,
+                  "y": 472
+                },
+                {
+                  "x": 498,
+                  "y": 188
+                }
+              ],
+              "label": {
+                "x": 378,
+                "y": 320,
+                "width": 114,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 9,
+              "points": [
+                {
+                  "x": 498,
+                  "y": 540
+                },
+                {
+                  "x": 498,
+                  "y": 669
+                }
+              ]
+            }
+          ]
+        },
+        "penalty": 2.66260162601626,
+        "area": 1050280,
+        "work": 962
+      }
+    ]
+  },
+  {
+    "fixture": "observatory-services",
+    "selected": 2,
+    "candidates": [
+      {
+        "index": 0,
+        "seed": 1,
+        "graph": {
+          "nodes": [
+            {
+              "body": {
+                "x": 248,
+                "y": 142,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 324,
+                "y": 176,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 496,
+                "y": 186,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 572,
+                "y": 220,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 124,
+                "y": 248,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 200,
+                "y": 268.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 434,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 76,
+                "y": 468,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 248,
+                "y": 310,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 324,
+                "y": 344,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 248,
+                "y": 496,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 324,
+                "y": 530,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 372,
+                "y": 0,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 448,
+                "y": 20.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 0,
+              "target": 1,
+              "points": [
+                {
+                  "x": 400,
+                  "y": 164
+                },
+                {
+                  "x": 586,
+                  "y": 164
+                },
+                {
+                  "x": 586,
+                  "y": 186
+                }
+              ],
+              "label": {
+                "x": 467,
+                "y": 137,
+                "width": 75,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 2,
+              "points": [
+                {
+                  "x": 496,
+                  "y": 229
+                },
+                {
+                  "x": 186,
+                  "y": 229
+                },
+                {
+                  "x": 186,
+                  "y": 248
+                }
+              ],
+              "label": {
+                "x": 382,
+                "y": 236,
+                "width": 63,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 2,
+              "target": 3,
+              "points": [
+                {
+                  "x": 124,
+                  "y": 268
+                },
+                {
+                  "x": 62,
+                  "y": 268
+                },
+                {
+                  "x": 62,
+                  "y": 434
+                }
+              ],
+              "label": {
+                "x": 69,
+                "y": 310,
+                "width": 61,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 3,
+              "target": 4,
+              "points": [
+                {
+                  "x": 107,
+                  "y": 434
+                },
+                {
+                  "x": 107,
+                  "y": 344
+                },
+                {
+                  "x": 248,
+                  "y": 344
+                }
+              ],
+              "label": {
+                "x": 141,
+                "y": 317,
+                "width": 99,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 4,
+              "target": 0,
+              "points": [
+                {
+                  "x": 338,
+                  "y": 310
+                },
+                {
+                  "x": 338,
+                  "y": 210
+                }
+              ],
+              "label": {
+                "x": 345,
+                "y": 275,
+                "width": 83,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 3,
+              "target": 5,
+              "points": [
+                {
+                  "x": 76,
+                  "y": 502
+                },
+                {
+                  "x": 76,
+                  "y": 533
+                },
+                {
+                  "x": 248,
+                  "y": 533
+                }
+              ],
+              "label": {
+                "x": 111,
+                "y": 540,
+                "width": 72,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 4,
+              "target": 5,
+              "points": [
+                {
+                  "x": 324,
+                  "y": 378
+                },
+                {
+                  "x": 324,
+                  "y": 496
+                }
+              ],
+              "label": {
+                "x": 331,
+                "y": 427,
+                "width": 64,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 0,
+              "target": 6,
+              "points": [
+                {
+                  "x": 310,
+                  "y": 142
+                },
+                {
+                  "x": 310,
+                  "y": 20
+                },
+                {
+                  "x": 372,
+                  "y": 20
+                }
+              ],
+              "label": {
+                "x": 228,
+                "y": 40,
+                "width": 76,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 6,
+              "target": 1,
+              "points": [
+                {
+                  "x": 524,
+                  "y": 20
+                },
+                {
+                  "x": 586,
+                  "y": 20
+                },
+                {
+                  "x": 586,
+                  "y": 186
+                }
+              ],
+              "label": {
+                "x": 593,
+                "y": 62,
+                "width": 72,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            }
+          ]
+        },
+        "penalty": 5.5,
+        "area": 375060,
+        "work": 1319
+      },
+      {
+        "index": 1,
+        "seed": 2,
+        "graph": {
+          "nodes": [
+            {
+              "body": {
+                "x": 0,
+                "y": 7,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 76,
+                "y": 41,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 124,
+                "y": 138,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 200,
+                "y": 172,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 372,
+                "y": 200,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 448,
+                "y": 220.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 372,
+                "y": 324,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 448,
+                "y": 358,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 62,
+                "y": 324,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 138,
+                "y": 358,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 372,
+                "y": 516,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 448,
+                "y": 550,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 248,
+                "y": 14,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 324,
+                "y": 34.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 0,
+              "target": 1,
+              "points": [
+                {
+                  "x": 152,
+                  "y": 57
+                },
+                {
+                  "x": 200,
+                  "y": 57
+                },
+                {
+                  "x": 200,
+                  "y": 138
+                }
+              ],
+              "label": {
+                "x": 207,
+                "y": 63,
+                "width": 75,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 2,
+              "points": [
+                {
+                  "x": 276,
+                  "y": 169
+                },
+                {
+                  "x": 448,
+                  "y": 169
+                },
+                {
+                  "x": 448,
+                  "y": 200
+                }
+              ],
+              "label": {
+                "x": 346,
+                "y": 142,
+                "width": 63,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 2,
+              "target": 3,
+              "points": [
+                {
+                  "x": 448,
+                  "y": 241
+                },
+                {
+                  "x": 448,
+                  "y": 324
+                }
+              ],
+              "label": {
+                "x": 455,
+                "y": 272,
+                "width": 61,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 3,
+              "target": 4,
+              "points": [
+                {
+                  "x": 372,
+                  "y": 358
+                },
+                {
+                  "x": 214,
+                  "y": 358
+                }
+              ],
+              "label": {
+                "x": 244,
+                "y": 365,
+                "width": 99,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 4,
+              "target": 0,
+              "points": [
+                {
+                  "x": 93,
+                  "y": 324
+                },
+                {
+                  "x": 93,
+                  "y": 75
+                }
+              ],
+              "label": {
+                "x": 4,
+                "y": 189,
+                "width": 83,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 3,
+              "target": 5,
+              "points": [
+                {
+                  "x": 448,
+                  "y": 392
+                },
+                {
+                  "x": 448,
+                  "y": 516
+                }
+              ],
+              "label": {
+                "x": 455,
+                "y": 444,
+                "width": 72,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 4,
+              "target": 5,
+              "points": [
+                {
+                  "x": 138,
+                  "y": 392
+                },
+                {
+                  "x": 138,
+                  "y": 550
+                },
+                {
+                  "x": 372,
+                  "y": 550
+                }
+              ],
+              "label": {
+                "x": 144,
+                "y": 523,
+                "width": 64,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 0,
+              "target": 6,
+              "points": [
+                {
+                  "x": 152,
+                  "y": 27
+                },
+                {
+                  "x": 248,
+                  "y": 27
+                }
+              ],
+              "label": {
+                "x": 162,
+                "y": -1,
+                "width": 76,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 6,
+              "target": 1,
+              "points": [
+                {
+                  "x": 248,
+                  "y": 40
+                },
+                {
+                  "x": 200,
+                  "y": 40
+                },
+                {
+                  "x": 200,
+                  "y": 138
+                }
+              ],
+              "label": {
+                "x": 207,
+                "y": 91,
+                "width": 72,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            }
+          ]
+        },
+        "penalty": 3.666666666666667,
+        "area": 308295,
+        "work": 1208
+      },
+      {
+        "index": 2,
+        "seed": 3,
+        "graph": {
+          "nodes": [
+            {
+              "body": {
+                "x": 248,
+                "y": 434,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 324,
+                "y": 468,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 124,
+                "y": 620,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 200,
+                "y": 654,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 186,
+                "y": 372,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 262,
+                "y": 392.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 186,
+                "y": 186,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 262,
+                "y": 220,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 310,
+                "y": 0,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 386,
+                "y": 34,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 434,
+                "y": 186,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 510,
+                "y": 220,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 496,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 76,
+                "y": 516.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 0,
+              "target": 1,
+              "points": [
+                {
+                  "x": 338,
+                  "y": 502
+                },
+                {
+                  "x": 338,
+                  "y": 654
+                },
+                {
+                  "x": 276,
+                  "y": 654
+                }
+              ],
+              "label": {
+                "x": 345,
+                "y": 599,
+                "width": 75,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 1,
+              "target": 2,
+              "points": [
+                {
+                  "x": 217,
+                  "y": 620
+                },
+                {
+                  "x": 217,
+                  "y": 413
+                }
+              ],
+              "label": {
+                "x": 224,
+                "y": 558,
+                "width": 63,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 2,
+              "target": 3,
+              "points": [
+                {
+                  "x": 262,
+                  "y": 372
+                },
+                {
+                  "x": 262,
+                  "y": 254
+                }
+              ],
+              "label": {
+                "x": 195,
+                "y": 303,
+                "width": 61,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 3,
+              "target": 4,
+              "points": [
+                {
+                  "x": 248,
+                  "y": 186
+                },
+                {
+                  "x": 248,
+                  "y": 34
+                },
+                {
+                  "x": 310,
+                  "y": 34
+                }
+              ],
+              "label": {
+                "x": 143,
+                "y": 69,
+                "width": 99,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 4,
+              "target": 0,
+              "points": [
+                {
+                  "x": 369,
+                  "y": 68
+                },
+                {
+                  "x": 369,
+                  "y": 434
+                }
+              ],
+              "label": {
+                "x": 376,
+                "y": 149,
+                "width": 83,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 3,
+              "target": 5,
+              "points": [
+                {
+                  "x": 338,
+                  "y": 220
+                },
+                {
+                  "x": 434,
+                  "y": 220
+                }
+              ],
+              "label": {
+                "x": 350,
+                "y": 193,
+                "width": 72,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 4,
+              "target": 5,
+              "points": [
+                {
+                  "x": 462,
+                  "y": 34
+                },
+                {
+                  "x": 524,
+                  "y": 34
+                },
+                {
+                  "x": 524,
+                  "y": 186
+                }
+              ],
+              "label": {
+                "x": 531,
+                "y": 69,
+                "width": 64,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 0,
+              "target": 6,
+              "points": [
+                {
+                  "x": 248,
+                  "y": 465
+                },
+                {
+                  "x": 76,
+                  "y": 465
+                },
+                {
+                  "x": 76,
+                  "y": 496
+                }
+              ],
+              "label": {
+                "x": 109,
+                "y": 438,
+                "width": 76,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            },
+            {
+              "source": 6,
+              "target": 1,
+              "points": [
+                {
+                  "x": 152,
+                  "y": 516
+                },
+                {
+                  "x": 184,
+                  "y": 516
+                },
+                {
+                  "x": 184,
+                  "y": 620
+                }
+              ],
+              "label": {
+                "x": 106,
+                "y": 542,
+                "width": 72,
+                "height": 21
+              },
+              "labelIsPositioned": true
+            }
+          ]
+        },
+        "penalty": 5.166666666666667,
+        "area": 409360,
+        "work": 1224
+      }
+    ]
+  },
+  {
+    "fixture": "publishing-flow",
+    "selected": 3,
+    "candidates": [
+      {
+        "index": 0,
+        "seed": 1,
+        "graph": {
+          "detachedAncestry": [null],
+          "nodes": [
+            {
+              "body": {
+                "x": 496,
+                "y": 17,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 572,
+                "y": 51,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 992,
+                "y": 17,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 1068,
+                "y": 51,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 248,
+                "y": 31,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 324,
+                "y": 51.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 31,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 76,
+                "y": 51.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1496,
+                "y": 16,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 1572,
+                "y": 36.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1496,
+                "y": 107,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 1572,
+                "y": 127.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1244,
+                "y": 48,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 1320,
+                "y": 82,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 744,
+                "y": 0,
+                "width": 152,
+                "height": 41
+              },
+              "ancestryParent": 9,
+              "clustered": true,
+              "label": {
+                "x": 820,
+                "y": 20.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 744,
+                "y": 61,
+                "width": 152,
+                "height": 41
+              },
+              "ancestryParent": 9,
+              "clustered": true,
+              "label": {
+                "x": 820,
+                "y": 81.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 0,
+              "target": 7,
+              "points": [
+                {
+                  "x": 648,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 20
+                },
+                {
+                  "x": 744,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "source": 7,
+              "target": 1,
+              "points": [
+                {
+                  "x": 896,
+                  "y": 20
+                },
+                {
+                  "x": 944,
+                  "y": 20
+                },
+                {
+                  "x": 944,
+                  "y": 50
+                },
+                {
+                  "x": 992,
+                  "y": 50
+                }
+              ]
+            },
+            {
+              "source": 0,
+              "target": 8,
+              "points": [
+                {
+                  "x": 648,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 81
+                },
+                {
+                  "x": 744,
+                  "y": 81
+                }
+              ]
+            },
+            {
+              "source": 8,
+              "target": 1,
+              "points": [
+                {
+                  "x": 896,
+                  "y": 81
+                },
+                {
+                  "x": 944,
+                  "y": 81
+                },
+                {
+                  "x": 944,
+                  "y": 50
+                },
+                {
+                  "x": 992,
+                  "y": 50
+                }
+              ]
+            },
+            {
+              "source": 2,
+              "target": 0,
+              "points": [
+                {
+                  "x": 400,
+                  "y": 51
+                },
+                {
+                  "x": 496,
+                  "y": 51
+                }
+              ]
+            },
+            {
+              "source": 3,
+              "target": 2,
+              "points": [
+                {
+                  "x": 152,
+                  "y": 51
+                },
+                {
+                  "x": 248,
+                  "y": 51
+                }
+              ]
+            },
+            {
+              "source": 6,
+              "target": 4,
+              "points": [
+                {
+                  "x": 1396,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 37
+                },
+                {
+                  "x": 1496,
+                  "y": 37
+                }
+              ]
+            },
+            {
+              "source": 6,
+              "target": 5,
+              "points": [
+                {
+                  "x": 1396,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 128
+                },
+                {
+                  "x": 1496,
+                  "y": 128
+                }
+              ]
+            },
+            {
+              "source": 1,
+              "target": 6,
+              "points": [
+                {
+                  "x": 1144,
+                  "y": 51
+                },
+                {
+                  "x": 1194,
+                  "y": 51
+                },
+                {
+                  "x": 1194,
+                  "y": 82
+                },
+                {
+                  "x": 1244,
+                  "y": 82
+                }
+              ]
+            }
+          ]
+        },
+        "penalty": 3,
+        "area": 243904,
+        "work": 972
+      },
+      {
+        "index": 1,
+        "seed": 2,
+        "graph": {
+          "detachedAncestry": [null],
+          "nodes": [
+            {
+              "body": {
+                "x": 496,
+                "y": 17,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 572,
+                "y": 51,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 992,
+                "y": 17,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 1068,
+                "y": 51,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 248,
+                "y": 31,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 324,
+                "y": 51.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 31,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 76,
+                "y": 51.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1496,
+                "y": 16,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 1572,
+                "y": 36.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1496,
+                "y": 107,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 1572,
+                "y": 127.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1244,
+                "y": 48,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 1320,
+                "y": 82,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 744,
+                "y": 0,
+                "width": 152,
+                "height": 41
+              },
+              "ancestryParent": 9,
+              "clustered": true,
+              "label": {
+                "x": 820,
+                "y": 20.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 744,
+                "y": 61,
+                "width": 152,
+                "height": 41
+              },
+              "ancestryParent": 9,
+              "clustered": true,
+              "label": {
+                "x": 820,
+                "y": 81.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 0,
+              "target": 7,
+              "points": [
+                {
+                  "x": 648,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 20
+                },
+                {
+                  "x": 744,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "source": 7,
+              "target": 1,
+              "points": [
+                {
+                  "x": 896,
+                  "y": 20
+                },
+                {
+                  "x": 944,
+                  "y": 20
+                },
+                {
+                  "x": 944,
+                  "y": 50
+                },
+                {
+                  "x": 992,
+                  "y": 50
+                }
+              ]
+            },
+            {
+              "source": 0,
+              "target": 8,
+              "points": [
+                {
+                  "x": 648,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 81
+                },
+                {
+                  "x": 744,
+                  "y": 81
+                }
+              ]
+            },
+            {
+              "source": 8,
+              "target": 1,
+              "points": [
+                {
+                  "x": 896,
+                  "y": 81
+                },
+                {
+                  "x": 944,
+                  "y": 81
+                },
+                {
+                  "x": 944,
+                  "y": 50
+                },
+                {
+                  "x": 992,
+                  "y": 50
+                }
+              ]
+            },
+            {
+              "source": 2,
+              "target": 0,
+              "points": [
+                {
+                  "x": 400,
+                  "y": 51
+                },
+                {
+                  "x": 496,
+                  "y": 51
+                }
+              ]
+            },
+            {
+              "source": 3,
+              "target": 2,
+              "points": [
+                {
+                  "x": 152,
+                  "y": 51
+                },
+                {
+                  "x": 248,
+                  "y": 51
+                }
+              ]
+            },
+            {
+              "source": 6,
+              "target": 4,
+              "points": [
+                {
+                  "x": 1396,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 37
+                },
+                {
+                  "x": 1496,
+                  "y": 37
+                }
+              ]
+            },
+            {
+              "source": 6,
+              "target": 5,
+              "points": [
+                {
+                  "x": 1396,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 128
+                },
+                {
+                  "x": 1496,
+                  "y": 128
+                }
+              ]
+            },
+            {
+              "source": 1,
+              "target": 6,
+              "points": [
+                {
+                  "x": 1144,
+                  "y": 51
+                },
+                {
+                  "x": 1194,
+                  "y": 51
+                },
+                {
+                  "x": 1194,
+                  "y": 82
+                },
+                {
+                  "x": 1244,
+                  "y": 82
+                }
+              ]
+            }
+          ]
+        },
+        "penalty": 3,
+        "area": 243904,
+        "work": 972
+      },
+      {
+        "index": 2,
+        "seed": 3,
+        "graph": {
+          "detachedAncestry": [null],
+          "nodes": [
+            {
+              "body": {
+                "x": 496,
+                "y": 17,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 572,
+                "y": 51,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 992,
+                "y": 17,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 1068,
+                "y": 51,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 248,
+                "y": 31,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 324,
+                "y": 51.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 0,
+                "y": 31,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 76,
+                "y": 51.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1496,
+                "y": 16,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 1572,
+                "y": 36.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1496,
+                "y": 107,
+                "width": 152,
+                "height": 41
+              },
+              "label": {
+                "x": 1572,
+                "y": 127.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 1244,
+                "y": 48,
+                "width": 152,
+                "height": 68
+              },
+              "label": {
+                "x": 1320,
+                "y": 82,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 744,
+                "y": 0,
+                "width": 152,
+                "height": 41
+              },
+              "ancestryParent": 9,
+              "clustered": true,
+              "label": {
+                "x": 820,
+                "y": 20.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            },
+            {
+              "body": {
+                "x": 744,
+                "y": 61,
+                "width": 152,
+                "height": 41
+              },
+              "ancestryParent": 9,
+              "clustered": true,
+              "label": {
+                "x": 820,
+                "y": 81.5,
+                "width": 0,
+                "height": 0
+              },
+              "loopOffsets": [0, 0, 0, 0]
+            }
+          ],
+          "edges": [
+            {
+              "source": 0,
+              "target": 7,
+              "points": [
+                {
+                  "x": 648,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 20
+                },
+                {
+                  "x": 744,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "source": 7,
+              "target": 1,
+              "points": [
+                {
+                  "x": 896,
+                  "y": 20
+                },
+                {
+                  "x": 944,
+                  "y": 20
+                },
+                {
+                  "x": 944,
+                  "y": 50
+                },
+                {
+                  "x": 992,
+                  "y": 50
+                }
+              ]
+            },
+            {
+              "source": 0,
+              "target": 8,
+              "points": [
+                {
+                  "x": 648,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 50
+                },
+                {
+                  "x": 696,
+                  "y": 81
+                },
+                {
+                  "x": 744,
+                  "y": 81
+                }
+              ]
+            },
+            {
+              "source": 8,
+              "target": 1,
+              "points": [
+                {
+                  "x": 896,
+                  "y": 81
+                },
+                {
+                  "x": 944,
+                  "y": 81
+                },
+                {
+                  "x": 944,
+                  "y": 50
+                },
+                {
+                  "x": 992,
+                  "y": 50
+                }
+              ]
+            },
+            {
+              "source": 2,
+              "target": 0,
+              "points": [
+                {
+                  "x": 400,
+                  "y": 51
+                },
+                {
+                  "x": 496,
+                  "y": 51
+                }
+              ]
+            },
+            {
+              "source": 3,
+              "target": 2,
+              "points": [
+                {
+                  "x": 152,
+                  "y": 51
+                },
+                {
+                  "x": 248,
+                  "y": 51
+                }
+              ]
+            },
+            {
+              "source": 6,
+              "target": 4,
+              "points": [
+                {
+                  "x": 1396,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 37
+                },
+                {
+                  "x": 1496,
+                  "y": 37
+                }
+              ]
+            },
+            {
+              "source": 6,
+              "target": 5,
+              "points": [
+                {
+                  "x": 1396,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 82
+                },
+                {
+                  "x": 1446,
+                  "y": 128
+                },
+                {
+                  "x": 1496,
+                  "y": 128
+                }
+              ]
+            },
+            {
+              "source": 1,
+              "target": 6,
+              "points": [
+                {
+                  "x": 1144,
+                  "y": 51
+                },
+                {
+                  "x": 1194,
+                  "y": 51
+                },
+                {
+                  "x": 1194,
+                  "y": 82
+                },
+                {
+                  "x": 1244,
+                  "y": 82
+                }
+              ]
+            }
+          ]
+        },
+        "penalty": 3,
+        "area": 243904,
+        "work": 972
+      }
+    ]
+  }
+]

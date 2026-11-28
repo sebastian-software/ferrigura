@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 #[doc(hidden)]
 pub mod balance;
 mod connected;
+mod go_rand;
 mod hierarchy;
 #[doc(hidden)]
 pub mod initialize;
@@ -21,9 +22,17 @@ pub mod normalize;
 #[doc(hidden)]
 pub mod ovg_seed;
 mod placement;
+#[doc(hidden)]
+pub mod quality;
+#[doc(hidden)]
+pub mod route_output;
 mod routing;
 #[doc(hidden)]
+pub mod seed_selection;
+#[doc(hidden)]
 pub mod simplify;
+#[doc(hidden)]
+pub mod sizeless;
 #[doc(hidden)]
 pub mod stress_initialize;
 
@@ -188,9 +197,9 @@ pub fn layout(graph: &Graph) -> Result<Layout, Error> {
             height: node.height,
         };
         let edges = match graph.edges.as_slice() {
-            [edge] => vec![routing::isolated_rectangle_loop(&mut geometry, edge)],
+            [edge] => vec![routing::isolated_rectangle_loop(&mut geometry, edge)?],
             edges if edges.iter().all(|edge| edge.label.is_empty()) => {
-                routing::isolated_unlabeled_loops(&mut geometry, edges)
+                routing::isolated_unlabeled_loops(&mut geometry, edges)?
             }
             _ => return Err(Error::UnsupportedGraph),
         };

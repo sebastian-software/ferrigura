@@ -1,0 +1,35 @@
+{
+  "vertices": [
+    {
+      "point": {
+        "x": 1338,
+        "y": 1210
+      },
+      "owners": [
+        {
+          "node": 0,
+          "sides": 0,
+          "center": false
+        }
+      ]
+    },
+    {
+      "point": {
+        "x": 1338,
+        "y": 1310
+      },
+      "owners": [
+        {
+          "node": 2,
+          "sides": 0,
+          "center": false
+        }
+      ]
+    }
+  ],
+  "addedPorts": [[650], [], [651, 31], [], [], [], [73]],
+  "links": [
+    [650, 651],
+    [31, 73]
+  ]
+}

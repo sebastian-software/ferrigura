@@ -1,0 +1,96 @@
+[
+  {
+    "input": {
+      "id": "L_control_antenna_0",
+      "points": [
+        {
+          "x": 152,
+          "y": 57
+        },
+        {
+          "x": 200,
+          "y": 57
+        },
+        {
+          "x": 200,
+          "y": 138
+        }
+      ],
+      "label": {
+        "anchor": "OUTSIDE_TOP_CENTER",
+        "percentage": 0,
+        "width": 75,
+        "height": 21
+      },
+      "reversedForLayout": true
+    },
+    "expected": {
+      "id": "L_control_antenna_0",
+      "points": [
+        {
+          "x": 200,
+          "y": 138
+        },
+        {
+          "x": 200,
+          "y": 57
+        },
+        {
+          "x": 152,
+          "y": 57
+        }
+      ],
+      "label": {
+        "x": 243.5,
+        "y": 73.5
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "L_antenna_sampler_0",
+      "points": [
+        {
+          "x": 276,
+          "y": 169
+        },
+        {
+          "x": 448,
+          "y": 169
+        },
+        {
+          "x": 448,
+          "y": 200
+        }
+      ],
+      "label": {
+        "anchor": "OUTSIDE_TOP_CENTER",
+        "percentage": 0,
+        "width": 63,
+        "height": 21
+      },
+      "reversedForLayout": false
+    },
+    "expected": {
+      "id": "L_antenna_sampler_0",
+      "points": [
+        {
+          "x": 276,
+          "y": 169
+        },
+        {
+          "x": 448,
+          "y": 169
+        },
+        {
+          "x": 448,
+          "y": 200
+        }
+      ],
+      "label": {
+        "x": 377.5,
+        "y": 152.5
+      }
+    }
+  }
+]

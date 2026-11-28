@@ -29,4 +29,5 @@ unsupported-graph error. The Go reference and the stage replay instructions
 are in the [development harness](../../tools/tala-pilot/README.md).
 
 The source pin, attribution, and file map are in [NOTICE.md](./NOTICE.md).
-The license is [MPL-2.0](./LICENSE).
+The TALA port uses [MPL-2.0](./LICENSE). Its Go-compatible random source
+uses [BSD-3-Clause](./LICENSE-GO).

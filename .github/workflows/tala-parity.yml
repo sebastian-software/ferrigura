@@ -48,6 +48,44 @@ jobs:
             --reference "$RUNNER_TEMP/tala-reference" \
             --trace "$RUNNER_TEMP/tala-layout-graph-reference" \
             --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare seeded sizeless placement with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-sizeless" sizeless-placement
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-sizeless/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-sizeless-reference"
+          node tools/tala-pilot/check-sizeless-placement.mjs \
+            "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-sizeless-reference" \
+            tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare authored edge routes and label centers with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-route-output" route-output
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-route-output/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-route-output-reference"
+          node tools/tala-pilot/check-route-output.mjs \
+            --reference "$RUNNER_TEMP/tala-reference" \
+            --trace "$RUNNER_TEMP/tala-route-output-reference" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare the flat orthogonal visibility graph with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-ovg" ovg-seed
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-ovg/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-ovg-reference"
+          node tools/tala-pilot/check-ovg-seed.mjs \
+            "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-ovg-reference" \
+            tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare complete candidate scores and seed selection with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-score" candidate-score
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-score/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-score-reference"
+          node tools/tala-pilot/check-candidate-scores.mjs \
+            --reference "$RUNNER_TEMP/tala-reference" \
+            --traced "$RUNNER_TEMP/tala-score-reference" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Require a passing Rust counterpart for every upstream correctness test
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

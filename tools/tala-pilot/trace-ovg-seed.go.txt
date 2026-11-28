@@ -22,11 +22,15 @@ type pilotOVGRectangle struct {
     Height float64 `json:"height"`
 }
 
-func tracePilotOVGSeed(ovg *OVG, graph *layoutgraph.Graph, ordinary bool) {
+func tracePilotOVGSeed(ovg *OVG, graph *layoutgraph.Graph, ordinary bool, stage string) {
     if os.Getenv("TALA_PILOT_TRACE_OVG_SEED") != "1" {
         return
     }
     if !ordinary || len(ovg.NodesInsideBoundingBox) != len(graph.Nodes) {
+        return
+    }
+    linked := stage == "LINKS"
+    if (linked || stage == "TUNNELS") && (len(graph.NodeToTree) != 0 || len(graph.Clusters) != 0) {
         return
     }
     nodes := make([]pilotOVGRectangle, 0, len(graph.Nodes))
@@ -59,7 +63,7 @@ func tracePilotOVGSeed(ovg *OVG, graph *layoutgraph.Graph, ordinary bool) {
     for i, node := range graph.Nodes {
         ports := ovg.Ports[node]
         if node.Shape.GetType() != "Square" || node.IsContainer() || node.IsInvisible ||
-            node.Sequence != nil || node.FixedTopLeft != nil || len(ports) != 12 {
+            node.Cluster != nil || node.Sequence != nil || node.FixedTopLeft != nil || (!linked && stage != "TUNNELS" && len(ports) != 12) {
             return
         }
         slots[i] = make([]int, 0, len(ports))
@@ -74,16 +78,87 @@ func tracePilotOVGSeed(ovg *OVG, graph *layoutgraph.Graph, ordinary bool) {
     }
     result := struct {
         Nodes []pilotOVGRectangle `json:"nodes"`
+        Edges *[][2]int `json:"edges,omitempty"`
         Expected struct {
             Vertices []pilotOVGVertex `json:"vertices"`
             PortsByNode [][]int `json:"portsByNode"`
+            TunnelLinks *[][2]int `json:"tunnelLinks,omitempty"`
+            Links *[][2]int `json:"links,omitempty"`
+            CentersByNode *[]int `json:"centersByNode,omitempty"`
+            TunnelLinkCount *int `json:"tunnelLinkCount,omitempty"`
+            NearPortOwners *[][]int `json:"nearPortOwners,omitempty"`
         } `json:"expected"`
     }{Nodes: nodes}
     result.Expected.Vertices = vertices
     result.Expected.PortsByNode = slots
+    if stage == "TUNNELS" {
+        links := make([][2]int, 0, len(ovg.Edges))
+        for _, edge := range ovg.Edges {
+            from, hasFrom := indices[edge.From]
+            to, hasTo := indices[edge.To]
+            if !hasFrom || !hasTo || !edge.From.IsTunnel || !edge.To.IsTunnel {
+                return
+            }
+            links = append(links, [2]int{from, to})
+        }
+        result.Expected.TunnelLinks = &links
+    }
+    if linked {
+        links := make([][2]int, 0, len(ovg.Edges))
+        tunnelCount := 0
+        for _, edge := range ovg.Edges {
+            from, hasFrom := indices[edge.From]
+            to, hasTo := indices[edge.To]
+            if !hasFrom || !hasTo {
+                return
+            }
+            if edge.From.IsTunnel && edge.To.IsTunnel {
+                tunnelCount++
+            }
+            links = append(links, [2]int{from, to})
+        }
+        centers := make([]int, 0, len(graph.Nodes))
+        for _, node := range graph.Nodes {
+            index, ok := indices[ovg.Centers[node]]
+            if !ok {
+                return
+            }
+            centers = append(centers, index)
+        }
+        near := make([][]int, len(ovg.Nodes))
+        for i, vertex := range ovg.Nodes {
+            near[i] = make([]int, 0, len(vertex.IsNearPort))
+            for j, owner := range graph.Nodes {
+                if _, ok := vertex.IsNearPort[owner]; ok {
+                    near[i] = append(near[i], j)
+                }
+            }
+        }
+        result.Expected.Links = &links
+        result.Expected.CentersByNode = &centers
+        result.Expected.TunnelLinkCount = &tunnelCount
+        result.Expected.NearPortOwners = &near
+    }
+    prefix := "TALA_PILOT_OVG_" + stage
+    if stage != "SEED" {
+        graphIndices := make(map[*layoutgraph.Node]int, len(graph.Nodes))
+        for i, node := range graph.Nodes {
+            graphIndices[node] = i
+        }
+        edges := make([][2]int, 0, len(graph.Edges))
+        for _, edge := range graph.Edges {
+            from, hasFrom := graphIndices[edge.From]
+            to, hasTo := graphIndices[edge.To]
+            if !hasFrom || !hasTo {
+                return
+            }
+            edges = append(edges, [2]int{from, to})
+        }
+        result.Edges = &edges
+    }
     encoded, err := json.Marshal(result)
     if err != nil {
         panic(err)
     }
-    fmt.Fprintf(os.Stderr, "TALA_PILOT_OVG_SEED %s\n", encoded)
+    fmt.Fprintf(os.Stderr, "%s %s\n", prefix, encoded)
 }

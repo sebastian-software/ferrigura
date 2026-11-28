@@ -1,0 +1,697 @@
+{
+  "cases": [
+    {
+      "seed": -9223372036854775808,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "392209f14dea4c24"
+        },
+        {
+          "draws": 2,
+          "digest": "70c9b82103059f06"
+        },
+        {
+          "draws": 6,
+          "digest": "cefdd10081b02002"
+        },
+        {
+          "draws": 16,
+          "digest": "d18b889b55e19d95"
+        },
+        {
+          "draws": 30,
+          "digest": "2f10b5f912ce987a"
+        },
+        {
+          "draws": 72,
+          "digest": "47eba6c84bf3be8d"
+        },
+        {
+          "draws": 606,
+          "digest": "bf6345ef5fdb45d8"
+        },
+        {
+          "draws": 640,
+          "digest": "5f695eb78f976cb3"
+        }
+      ],
+      "floatBits": [
+        "3feaa67e8772df5f",
+        "3fe7835355300ef4",
+        "3fee59ca48d9f989",
+        "3fec2ea9c9afbb25",
+        "3fd8b0354bc5ef75",
+        "3fe2699abf281097",
+        "3fe968d09ef4315c",
+        "3fd85a7148bf94ec",
+        "3fc1ad73bd40a37a",
+        "3fddacebab247466",
+        "3fbadfecb64c0380",
+        "3fc63900635115a0",
+        "3fe25aeacc6c5fab",
+        "3fd0dfe99aacb347",
+        "3fe83a2ad4321552",
+        "3fe97ebbfd5aa5b4",
+        "3fbbc1c44a885826",
+        "3fc7c143d5cce5af",
+        "3fcf230212642e3c",
+        "3fd5d78faef43a18",
+        "3fca0f980caf67a6"
+      ],
+      "wideIndices": [1819374240, 399557756, 2663695658564888149]
+    },
+    {
+      "seed": 9223372036854775807,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "692558b056101a44"
+        },
+        {
+          "draws": 2,
+          "digest": "f926c22b68fc6926"
+        },
+        {
+          "draws": 6,
+          "digest": "76d2a273ba2c4042"
+        },
+        {
+          "draws": 16,
+          "digest": "c7ae6ca87ea18cd5"
+        },
+        {
+          "draws": 30,
+          "digest": "8ac90c6f4f7c90da"
+        },
+        {
+          "draws": 72,
+          "digest": "95a85f05d0a5dead"
+        },
+        {
+          "draws": 606,
+          "digest": "6e6604a8f34d9738"
+        },
+        {
+          "draws": 640,
+          "digest": "079aab80a29e3a2f"
+        }
+      ],
+      "floatBits": [
+        "3fe359608841ff3f",
+        "3fee18a683d7cfc6",
+        "3fe5441371d9a55d",
+        "3fdc03825dbda6be",
+        "3fdb2d42c0a4e371",
+        "3fb0cd9672f22c00",
+        "3fc408d2ac22c4d3",
+        "3fe07c9f31bce1d7",
+        "3fea0956abe57a52",
+        "3fe5bb0fc94958c8",
+        "3fcbf98be2a9d78d",
+        "3fe308ac0a4db540",
+        "3fae450fdfd297b9",
+        "3fef5363a7e97ab4",
+        "3fed82c348814051",
+        "3fdfe5b1361f8eba",
+        "3fb6ff7f795fb22b",
+        "3fe293378e11f8d4",
+        "3fe49d7ae3c3e44a",
+        "3fe7b8c3dd35d785",
+        "3fe8a9a29f6fa2a7"
+      ],
+      "wideIndices": [1158992129, 1645739844, 1871337116452409977]
+    },
+    {
+      "seed": -2147483647,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "392209f14dea4c24"
+        },
+        {
+          "draws": 2,
+          "digest": "992024ad58b0cce6"
+        },
+        {
+          "draws": 6,
+          "digest": "434960419c8bc042"
+        },
+        {
+          "draws": 16,
+          "digest": "8069a6256c847395"
+        },
+        {
+          "draws": 30,
+          "digest": "157fd3af74aef51a"
+        },
+        {
+          "draws": 72,
+          "digest": "2cf7d6a4e25af60d"
+        },
+        {
+          "draws": 606,
+          "digest": "ebed581703bd623c"
+        },
+        {
+          "draws": 640,
+          "digest": "4a9299e8f2534713"
+        }
+      ],
+      "floatBits": [
+        "3fee3f0bfeb0bf65",
+        "3fcf5b0412ffd342",
+        "3fe4fd97fe53dbb2",
+        "3fabd2f4aba3ba96",
+        "3fd7868c7dba8597",
+        "3fc8a1d40f855146",
+        "3fe4f87b21788ba2",
+        "3fd2782ff4265a7d",
+        "3fece2238efe2c72",
+        "3fe92fb5b8bb7cd5",
+        "3fe994a217aba8d4",
+        "3fe4ba428a2a1d34",
+        "3fd70465576b584f",
+        "3fd8592bbc8e001c",
+        "3fedb7e20c4ff386",
+        "3fe17086a67b2e7e",
+        "3fd2ddb27fa2de6d",
+        "3feaf6a82c3ec069",
+        "3fe4903df372a535",
+        "3feafa45f888171e",
+        "3feec780479f57cc"
+      ],
+      "wideIndices": [640734732, 2029786047, 2974330261066416128]
+    },
+    {
+      "seed": -17,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "392209f14dea4c24"
+        },
+        {
+          "draws": 2,
+          "digest": "f926c22b68fc6926"
+        },
+        {
+          "draws": 6,
+          "digest": "bbb8ab22cca4e0e2"
+        },
+        {
+          "draws": 16,
+          "digest": "c8048dc0e2b03915"
+        },
+        {
+          "draws": 30,
+          "digest": "eecb5012a229d3fa"
+        },
+        {
+          "draws": 72,
+          "digest": "43be63e8918851cd"
+        },
+        {
+          "draws": 606,
+          "digest": "524f744b7df647f8"
+        },
+        {
+          "draws": 640,
+          "digest": "1de068e9ca2db547"
+        }
+      ],
+      "floatBits": [
+        "3fde4cf9aaf13d1e",
+        "3fe7eadee245be24",
+        "3fe379af21318ccd",
+        "3fed940453aaa6bb",
+        "3fe9671d45c9ecbd",
+        "3febc6da14b27d07",
+        "3fed26fbf3cd373f",
+        "3fda78b6698bc040",
+        "3fc55e728a836ab5",
+        "3fe4840c7d25da0d",
+        "3fde88cbdfec2457",
+        "3fea5c2865db233b",
+        "3fd3fbd83a20907d",
+        "3fc44b3e17bc33fa",
+        "3fe5d8c93c943b37",
+        "3fe6bb880a612ffe",
+        "3fe7a00d1aa39010",
+        "3fc417f92b0bc0b7",
+        "3fe0a05888a748a2",
+        "3fe7552f8dfdad3b",
+        "3fdfe126f516602b"
+      ],
+      "wideIndices": [1160710921, 1281755034, 445458235921363581]
+    },
+    {
+      "seed": 0,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "392209f14dea4c24"
+        },
+        {
+          "draws": 2,
+          "digest": "992024ad58b0cce6"
+        },
+        {
+          "draws": 6,
+          "digest": "434960419c8bc042"
+        },
+        {
+          "draws": 16,
+          "digest": "8069a6256c847395"
+        },
+        {
+          "draws": 30,
+          "digest": "157fd3af74aef51a"
+        },
+        {
+          "draws": 72,
+          "digest": "2cf7d6a4e25af60d"
+        },
+        {
+          "draws": 606,
+          "digest": "ebed581703bd623c"
+        },
+        {
+          "draws": 640,
+          "digest": "4a9299e8f2534713"
+        }
+      ],
+      "floatBits": [
+        "3fee3f0bfeb0bf65",
+        "3fcf5b0412ffd342",
+        "3fe4fd97fe53dbb2",
+        "3fabd2f4aba3ba96",
+        "3fd7868c7dba8597",
+        "3fc8a1d40f855146",
+        "3fe4f87b21788ba2",
+        "3fd2782ff4265a7d",
+        "3fece2238efe2c72",
+        "3fe92fb5b8bb7cd5",
+        "3fe994a217aba8d4",
+        "3fe4ba428a2a1d34",
+        "3fd70465576b584f",
+        "3fd8592bbc8e001c",
+        "3fedb7e20c4ff386",
+        "3fe17086a67b2e7e",
+        "3fd2ddb27fa2de6d",
+        "3feaf6a82c3ec069",
+        "3fe4903df372a535",
+        "3feafa45f888171e",
+        "3feec780479f57cc"
+      ],
+      "wideIndices": [640734732, 2029786047, 2974330261066416128]
+    },
+    {
+      "seed": 1,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "692558b056101a44"
+        },
+        {
+          "draws": 2,
+          "digest": "f926c22b68fc6926"
+        },
+        {
+          "draws": 6,
+          "digest": "76d2a273ba2c4042"
+        },
+        {
+          "draws": 16,
+          "digest": "c7ae6ca87ea18cd5"
+        },
+        {
+          "draws": 30,
+          "digest": "8ac90c6f4f7c90da"
+        },
+        {
+          "draws": 72,
+          "digest": "95a85f05d0a5dead"
+        },
+        {
+          "draws": 606,
+          "digest": "6e6604a8f34d9738"
+        },
+        {
+          "draws": 640,
+          "digest": "079aab80a29e3a2f"
+        }
+      ],
+      "floatBits": [
+        "3fe359608841ff3f",
+        "3fee18a683d7cfc6",
+        "3fe5441371d9a55d",
+        "3fdc03825dbda6be",
+        "3fdb2d42c0a4e371",
+        "3fb0cd9672f22c00",
+        "3fc408d2ac22c4d3",
+        "3fe07c9f31bce1d7",
+        "3fea0956abe57a52",
+        "3fe5bb0fc94958c8",
+        "3fcbf98be2a9d78d",
+        "3fe308ac0a4db540",
+        "3fae450fdfd297b9",
+        "3fef5363a7e97ab4",
+        "3fed82c348814051",
+        "3fdfe5b1361f8eba",
+        "3fb6ff7f795fb22b",
+        "3fe293378e11f8d4",
+        "3fe49d7ae3c3e44a",
+        "3fe7b8c3dd35d785",
+        "3fe8a9a29f6fa2a7"
+      ],
+      "wideIndices": [1158992129, 1645739844, 1871337116452409977]
+    },
+    {
+      "seed": 2,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "692558b056101a44"
+        },
+        {
+          "draws": 2,
+          "digest": "f926c22b68fc6926"
+        },
+        {
+          "draws": 6,
+          "digest": "44bf5057ae6fa8e2"
+        },
+        {
+          "draws": 16,
+          "digest": "c6ac3276cc1fee55"
+        },
+        {
+          "draws": 30,
+          "digest": "f02e3eac9dfc4f5a"
+        },
+        {
+          "draws": 72,
+          "digest": "84ddf0c2980955ed"
+        },
+        {
+          "draws": 606,
+          "digest": "50ea3d76a8b35960"
+        },
+        {
+          "draws": 640,
+          "digest": "4dad17626d341ad3"
+        }
+      ],
+      "floatBits": [
+        "3fc569f9e2cb8282",
+        "3fd0f6a655602219",
+        "3faa5ca3719f676d",
+        "3fbe754db17de6d5",
+        "3fe3a81ada22f846",
+        "3fdb333581501ed1",
+        "3fca634384d0ba8f",
+        "3fe3d538db9fcd8a",
+        "3feb975c90d02722",
+        "3fe12675aa523dcd",
+        "3feca3fd69497f90",
+        "3fea724067544298",
+        "3fdb45d566d8c0aa",
+        "3fe78ff4b296565c",
+        "3fcf08aaaec84ab9",
+        "3fca0af00a6a8930",
+        "3fec883876d10cfb",
+        "3fea0e50cad33a94",
+        "3fe83ac03b390871",
+        "3fe517c6a8fa32f4",
+        "3fe6b5d73aaba756"
+      ],
+      "wideIndices": [1817087314, 571777128, 381873253201364281]
+    },
+    {
+      "seed": 3,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "392209f14dea4c24"
+        },
+        {
+          "draws": 2,
+          "digest": "f926c22b68fc6926"
+        },
+        {
+          "draws": 6,
+          "digest": "c00754797f31cc02"
+        },
+        {
+          "draws": 16,
+          "digest": "04b8e56401ddc295"
+        },
+        {
+          "draws": 30,
+          "digest": "40baab62c56b08da"
+        },
+        {
+          "draws": 72,
+          "digest": "eda93f1977c8fb8d"
+        },
+        {
+          "draws": 606,
+          "digest": "5c5a86e98a4652ac"
+        },
+        {
+          "draws": 640,
+          "digest": "a356bcb9faed99df"
+        }
+      ],
+      "floatBits": [
+        "3fe70a19180af9ff",
+        "3fe4e259fe4c6941",
+        "3fee248a78278c7d",
+        "3fe894943e885036",
+        "3fec97d2c87bbd93",
+        "3fdb5e58d60d910e",
+        "3fe03ef6d7527069",
+        "3fd66b72910e239b",
+        "3fe9761373bb98f1",
+        "3fd9a9e4b91e9cc1",
+        "3fd9f0a82b7c3ac1",
+        "3fe79c14c843b920",
+        "3fec14485b5fb2cb",
+        "3fdf952066938fd7",
+        "3fb1749c77535a4d",
+        "3fef124f09d1db4b",
+        "3fc07f0701942580",
+        "3fea23aa1564aeff",
+        "3fe7afcc46eb5caf",
+        "3fd3b0d492384d3f",
+        "3fe35cc731e45622"
+      ],
+      "wideIndices": [1006177407, 1505374137, 2424797085121522933]
+    },
+    {
+      "seed": 9,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "692558b056101a44"
+        },
+        {
+          "draws": 2,
+          "digest": "70c9b82103059f06"
+        },
+        {
+          "draws": 6,
+          "digest": "0890689a8765fd62"
+        },
+        {
+          "draws": 16,
+          "digest": "9667929584a5ce35"
+        },
+        {
+          "draws": 30,
+          "digest": "47cadee7c3919dda"
+        },
+        {
+          "draws": 72,
+          "digest": "cb1e32cb23cc7ccd"
+        },
+        {
+          "draws": 606,
+          "digest": "e8fc2eb821765324"
+        },
+        {
+          "draws": 640,
+          "digest": "2aa1a849ede9189f"
+        }
+      ],
+      "floatBits": [
+        "3f6de05765463faa",
+        "3fb9e852b03b925f",
+        "3fe0b8eac9bdbb94",
+        "3fe7ae9d497c93c3",
+        "3fb4cb304b07cb85",
+        "3fe0cb29e8ecc660",
+        "3fe63146c79dcda6",
+        "3fd6eb55ecfd5660",
+        "3fd83fd5383a2fa4",
+        "3fe29d16e738a7a2",
+        "3fd342ffc95b5f90",
+        "3fe9544c52f9fd32",
+        "3fea8aaab1437084",
+        "3fed609d65c1fbd3",
+        "3fcf61a2729c4f37",
+        "3fd8f3f1e91819fc",
+        "3fc178a22c9f358f",
+        "3fe6d4bb42344517",
+        "3fc9bcee222bf755",
+        "3fd5b5f566186b14",
+        "3fa85137ba8eb4c5"
+      ],
+      "wideIndices": [1960922902, 1141383572, 1703529202865130019]
+    },
+    {
+      "seed": 2147483647,
+      "shuffles": [
+        {
+          "draws": 0,
+          "digest": "cbf29ce484222325"
+        },
+        {
+          "draws": 0,
+          "digest": "a8c7f832281a39c5"
+        },
+        {
+          "draws": 1,
+          "digest": "392209f14dea4c24"
+        },
+        {
+          "draws": 2,
+          "digest": "992024ad58b0cce6"
+        },
+        {
+          "draws": 6,
+          "digest": "434960419c8bc042"
+        },
+        {
+          "draws": 16,
+          "digest": "8069a6256c847395"
+        },
+        {
+          "draws": 30,
+          "digest": "157fd3af74aef51a"
+        },
+        {
+          "draws": 72,
+          "digest": "2cf7d6a4e25af60d"
+        },
+        {
+          "draws": 606,
+          "digest": "ebed581703bd623c"
+        },
+        {
+          "draws": 640,
+          "digest": "4a9299e8f2534713"
+        }
+      ],
+      "floatBits": [
+        "3fee3f0bfeb0bf65",
+        "3fcf5b0412ffd342",
+        "3fe4fd97fe53dbb2",
+        "3fabd2f4aba3ba96",
+        "3fd7868c7dba8597",
+        "3fc8a1d40f855146",
+        "3fe4f87b21788ba2",
+        "3fd2782ff4265a7d",
+        "3fece2238efe2c72",
+        "3fe92fb5b8bb7cd5",
+        "3fe994a217aba8d4",
+        "3fe4ba428a2a1d34",
+        "3fd70465576b584f",
+        "3fd8592bbc8e001c",
+        "3fedb7e20c4ff386",
+        "3fe17086a67b2e7e",
+        "3fd2ddb27fa2de6d",
+        "3feaf6a82c3ec069",
+        "3fe4903df372a535",
+        "3feafa45f888171e",
+        "3feec780479f57cc"
+      ],
+      "wideIndices": [640734732, 2029786047, 2974330261066416128]
+    }
+  ],
+  "goVersion": "go1.27.4",
+  "lengths": [0, 1, 2, 3, 7, 17, 31, 73, 607, 641],
+  "wideBounds": [2147483648, 2147483659, 4611686018427387905]
+}

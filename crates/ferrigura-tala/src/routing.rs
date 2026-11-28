@@ -10,14 +10,13 @@
 // (buildEdgePatch). Label and route arithmetic come from D2's lib/label/label.go
 // (GetPointOnRoute, chopPrecision) and lib/geo/route.go (GetPointAtDistance).
 
-use crate::{Edge, EdgeGeometry, NodeGeometry, Point};
+use crate::route_output::{Anchor, RoutedEdge, RoutedLabel};
+use crate::{Edge, EdgeGeometry, Error, NodeGeometry, Point};
 
 const SHARED_PORT_LOOP_GAP: f64 = 30.0;
 pub(super) const SIDE_EDGE_SPACING: f64 = 40.0;
 const PLACEMENT_PADDING: f64 = 1000.0;
-const LABEL_PADDING: f64 = 5.0;
 const LAYOUT_STROKE_WIDTH: f64 = 3.0;
-const OUTPUT_STROKE_WIDTH: f64 = 2.0;
 
 /// Lays out one unpinned rectangle and its only edge, a self-loop.
 ///
@@ -25,14 +24,19 @@ const OUTPUT_STROKE_WIDTH: f64 = 2.0;
 /// nearest of the rectangle's three snap points on each side is its quarter
 /// port. The result uses the authored traversal and the D2 connection's
 /// final label center after normalization.
-pub(crate) fn isolated_rectangle_loop(node: &mut NodeGeometry, edge: &Edge) -> EdgeGeometry {
+pub(crate) fn isolated_rectangle_loop(
+    node: &mut NodeGeometry,
+    edge: &Edge,
+) -> Result<EdgeGeometry, Error> {
     prepare(node);
     let points = corner_route(node, Corner::TopLeft, SHARED_PORT_LOOP_GAP);
 
     // The reference adapter takes integer measured text dimensions.
-    let label_size = (!edge.label.is_empty()).then(|| Point {
-        x: edge.label_width.ceil(),
-        y: edge.label_height.ceil(),
+    let label = (!edge.label.is_empty()).then(|| RoutedLabel {
+        anchor: Anchor::OutsideTopCenter,
+        percentage: 0.5,
+        width: edge.label_width.ceil(),
+        height: edge.label_height.ceil(),
     });
     let mut origin = route_origin(
         Point {
@@ -41,14 +45,16 @@ pub(crate) fn isolated_rectangle_loop(node: &mut NodeGeometry, edge: &Edge) -> E
         },
         &points,
     );
-    if let Some(size) = label_size {
-        let top_left = label_top_left(&points, size, LAYOUT_STROKE_WIDTH, true);
+    if let Some(label) = label {
+        let top_left = label
+            .top_left(&points, LAYOUT_STROKE_WIDTH)
+            .ok_or(Error::InvalidGraph)?;
         origin.x = origin.x.min(top_left.x.floor());
         origin.y = origin.y.min(top_left.y.floor());
     }
     node.x -= origin.x;
     node.y -= origin.y;
-    finish_route(edge, points, origin, label_size)
+    finish_route(edge, points, origin, label)
 }
 
 /// Lays out the unpinned rectangle when all its edges are unlabeled self-loops.
@@ -61,7 +67,7 @@ pub(crate) fn isolated_rectangle_loop(node: &mut NodeGeometry, edge: &Edge) -> E
 pub(crate) fn isolated_unlabeled_loops(
     node: &mut NodeGeometry,
     edges: &[Edge],
-) -> Vec<EdgeGeometry> {
+) -> Result<Vec<EdgeGeometry>, Error> {
     prepare(node);
     let mut active = [false; 3];
     for edge in edges {
@@ -221,69 +227,19 @@ fn finish_route(
     edge: &Edge,
     mut points: [Point; 5],
     origin: Point,
-    label_size: Option<Point>,
-) -> EdgeGeometry {
+    label: Option<RoutedLabel>,
+) -> Result<EdgeGeometry, Error> {
     for point in &mut points {
         point.x -= origin.x;
         point.y -= origin.y;
     }
-
-    // The adapter normalizes source-only edges before layout; it restores
-    // the author's order and mirrors OutsideTopCenter to OutsideBottomCenter.
-    let reversed = edge.source_arrow && !edge.target_arrow;
-    if reversed {
-        points.reverse();
-    }
-    let label = label_size.map(|size| {
-        let top_left = label_top_left(&points, size, OUTPUT_STROKE_WIDTH, !reversed);
-        Point {
-            x: top_left.x + size.x / 2.0,
-            y: top_left.y + size.y / 2.0,
-        }
-    });
-
-    EdgeGeometry {
+    RoutedEdge {
         id: edge.id.clone(),
         points: points.to_vec(),
         label,
+        reversed_for_layout: edge.source_arrow && !edge.target_arrow,
     }
-}
-
-fn label_top_left(points: &[Point; 5], size: Point, stroke_width: f64, top: bool) -> Point {
-    let lengths: [f64; 4] = std::array::from_fn(|i| {
-        let dx = points[i + 1].x - points[i].x;
-        let dy = points[i + 1].y - points[i].y;
-        (dx * dx + dy * dy).sqrt()
-    });
-    let mut remaining = 0.5 * lengths.iter().sum::<f64>();
-    for (i, length) in lengths.into_iter().enumerate() {
-        if remaining <= length {
-            let from = points[i];
-            let to = points[i + 1];
-            let fraction = remaining / length;
-            let base_x = from.x * (1.0 - fraction) + to.x * fraction;
-            let base_y = from.y * (1.0 - fraction) + to.y * fraction;
-            let mut normal_x = (from.y - to.y) / length;
-            let mut normal_y = (to.x - from.x) / length;
-            if top {
-                normal_x *= -1.0;
-                normal_y *= -1.0;
-            }
-            let offset_x = stroke_width / 2.0 + LABEL_PADDING + size.x / 2.0;
-            let offset_y = stroke_width / 2.0 + LABEL_PADDING + size.y / 2.0;
-            return Point {
-                x: round_label_coordinate(base_x + normal_x * offset_x - size.x / 2.0),
-                y: round_label_coordinate(base_y + normal_y * offset_y - size.y / 2.0),
-            };
-        }
-        remaining -= length;
-    }
-    unreachable!("a finite positive loop has a midpoint")
-}
-
-fn round_label_coordinate(value: f64) -> f64 {
-    let rounded = (f64::from((value * 10_000.0) as f32) / 10_000.0).round();
-    if rounded == 0.0 { 0.0 } else { rounded }
+    .into_geometry()
 }
 
 #[cfg(test)]
@@ -307,7 +263,7 @@ mod tests {
             serde_json::from_str(include_str!("routing/rectangle-loops.json")).unwrap();
         assert_eq!(cases.len(), 9);
         for mut case in cases {
-            let edge = isolated_rectangle_loop(&mut case.node, &case.edge);
+            let edge = isolated_rectangle_loop(&mut case.node, &case.edge).unwrap();
             assert_eq!(case.node, case.expected_node, "{}", case.name);
             assert_eq!(edge, case.expected_edge, "{}", case.name);
         }
@@ -328,7 +284,7 @@ mod tests {
             serde_json::from_str(include_str!("routing/rectangle-loop-groups.json")).unwrap();
         assert_eq!(cases.len(), 5);
         for mut case in cases {
-            let edges = isolated_unlabeled_loops(&mut case.node, &case.edges);
+            let edges = isolated_unlabeled_loops(&mut case.node, &case.edges).unwrap();
             assert_eq!(case.node, case.expected_node, "{}", case.name);
             assert_eq!(edges, case.expected_edges, "{}", case.name);
         }

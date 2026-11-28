@@ -132,10 +132,56 @@ pub(crate) struct LayoutGraph {
     pub edges: Vec<LayoutEdge>,
 }
 
+pub(crate) struct Component {
+    pub nodes: Vec<usize>,
+    pub edges: Vec<usize>,
+}
+
 impl LayoutGraph {
     /// Reserves space for measured shapes and the port demand of incident edges.
-    fn prescale(&mut self) {
+    pub(crate) fn prescale(&mut self) {
         prescale::apply(self);
+    }
+
+    /// Splits ordinary flat topology using Go's breadth-first incident order
+    /// for nodes and the original graph order for edges.
+    pub(crate) fn flat_components(&self) -> Vec<Component> {
+        let mut membership = vec![None; self.nodes.len()];
+        let mut components = Vec::new();
+        for start in 0..self.nodes.len() {
+            if membership[start].is_some() {
+                continue;
+            }
+            let index = components.len();
+            let mut component = Component {
+                nodes: vec![start],
+                edges: Vec::new(),
+            };
+            membership[start] = Some(index);
+            let mut head = 0;
+            while let Some(&node) = component.nodes.get(head) {
+                for &edge in &self.nodes[node].incident_edges {
+                    let edge = &self.edges[edge];
+                    let other = if node == edge.from {
+                        edge.to
+                    } else {
+                        edge.from
+                    };
+                    if membership[other].is_none() {
+                        membership[other] = Some(index);
+                        component.nodes.push(other);
+                    }
+                }
+                head += 1;
+            }
+            components.push(component);
+        }
+        for (index, edge) in self.edges.iter().enumerate() {
+            let component =
+                membership[edge.from].expect("translated endpoints belong to a component");
+            components[component].edges.push(index);
+        }
+        components
     }
 
     /// Translates the measured graph into the state supplied to each seed.

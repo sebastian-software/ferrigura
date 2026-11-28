@@ -166,14 +166,62 @@ node tools/tala-pilot/check-layout-graph.mjs \
 Pass `--write` to refresh the two checked-in Rust checkpoints from the
 live trace after the comparison passes.
 
-### Initial orthogonal visibility graph
+### Seeded sizeless placement
 
-The replay includes ordered initial visibility vertices, the twelve port slots
-per rectangle, and the owner, side and center flags of shared port vertices.
-`--ovg-seed` reads an array of already positioned ordinary rectangles.
-In the live differential for Observatory services, Go still places the nodes
-and completes the final layout. The traced runner's final output must match
-the independent Go runner byte for byte.
+The Rust stage initializes a flat rectangular component, then optimizes
+its positions using Go-compatible shuffles and jitter and alternating
+compactions. The Observatory check compares every ordered grid location
+with Go after the first pass and the complete sizeless phase for all
+three default seeds. The check also compares the node boxes before
+sized optimization, after compaction accounts for node sizes and
+measured edge captions. It repeats the sized transition from Ferrigura's
+measured input, including native translation, prescale, and the component's
+breadth-first placement order. The trace preserves the final Go layout.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs \
+  /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-sizeless sizeless-placement
+GOFLAGS=-overlay=/tmp/ferrigura-tala-sizeless/overlay.json \
+  tools/tala-pilot/reference/build.sh \
+  /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-sizeless-reference
+node tools/tala-pilot/check-sizeless-placement.mjs \
+  /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-sizeless-reference \
+  tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+### Authored routes and edge labels
+
+The native rectangle-loop paths use the same projection as the general
+adapter for completed polylines. It restores source-only edge traversal,
+mirrors the label anchor and unlocked fraction, and drops redundant route
+points before calculating the label center used by Ferrigura.
+
+This check feeds the pinned Go winner's routes to that Rust projection
+for all measured flowcharts and repeats each with a source-only arrow.
+The observer leaves the Go layout output unchanged.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-route-output route-output
+GOFLAGS=-overlay=/tmp/ferrigura-tala-route-output/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-output
+node tools/tala-pilot/check-route-output.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --trace /tmp/ferrigura-tala-traced-output \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Pass `--write` to refresh the checked-in route projection fixtures after
+the comparison passes.
+
+### Flat orthogonal visibility graph
+
+The Observatory replay compares all stages of the flat visibility graph
+from ordered rectangle ports to perimeter and halfway points, boundary
+layers, tunnel links, joined row and column links, and center links. Vertex
+storage order is compared within stages where Go fixes it. The final
+comparison matches variable-order vertices by coordinates and center-owner
+identity and compares the ordered links and port metadata exactly.
+The traced runner's final output must match independent Go byte for byte.
 
 ```sh
 node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-ovg ovg-seed
@@ -183,6 +231,28 @@ node tools/tala-pilot/check-ovg-seed.mjs \
   /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-traced-ovg \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
+
+### Completed candidate scoring and seed selection
+
+The candidate-score trace observes each completed ordinary Go attempt before
+the public engine considers optional placement and route refinements. The
+Rust scorer receives positioned geometry and resolved decoration boxes.
+The check compares exact penalty, unrounded area, work consumed and the
+winning seed. It checks that the traced runner produces the same complete
+layout as an independent uninstrumented Go runner.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-score candidate-score
+GOFLAGS=-overlay=/tmp/ferrigura-tala-score/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-score
+node tools/tala-pilot/check-candidate-scores.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --traced /tmp/ferrigura-tala-traced-score \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Pass `--write-fixtures crates/ferrigura-tala/src/quality/go-candidates.json`
+to regenerate the cases shared with the Rust test suite.
 
 ## Findings
 

@@ -130,7 +130,7 @@ fn layout_content(graph: &Graph, leaves: &[usize], inner_group: &Node) -> Option
             let edges = if graph.edges.is_empty() {
                 Vec::new()
             } else {
-                routing::isolated_unlabeled_loops(&mut node, &graph.edges)
+                routing::isolated_unlabeled_loops(&mut node, &graph.edges).ok()?
             };
             Some(Layout {
                 nodes: vec![node],
