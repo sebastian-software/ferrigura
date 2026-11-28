@@ -130,17 +130,19 @@ async function verifyExample(page, origin) {
 async function verifyLayouts(page, origin) {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
-  await page.locator('#layout-engines').getByRole('link', { name: 'Compare ELK and TALA' }).click();
+  const homeComparison = page.locator('#layout-engines');
+  assert.equal(await homeComparison.getByRole('link', { name: 'Open the TALA SVG' }).count(), 1);
+  await homeComparison.getByRole('link', { name: 'Compare ELK and TALA' }).click();
   await page.waitForURL('**/comparisons/elk-and-tala/');
   const drawings = page.locator('.fgr-layout-drawing');
   await drawings.first().waitFor();
-  assert.equal(await drawings.count(), 12, 'Six examples must each have two SVGs');
+  assert.equal(await drawings.count(), 16, 'Eight examples must each have two SVGs');
   for (const drawing of await drawings.all()) {
     await drawing.scrollIntoViewIfNeeded();
     await drawing.evaluate((image) => image.decode());
     assert((await drawing.evaluate((image) => image.naturalWidth)) > 0, 'An SVG is missing');
   }
-  assert.equal(await page.getByRole('img', { name: /TALA in Rust/ }).count(), 1);
+  assert.equal(await page.getByRole('img', { name: /TALA in Rust/ }).count(), 3);
   await verifyLayoutSource(page, origin);
 }
 

@@ -1,0 +1,59 @@
+{
+  "seed": 1,
+  "nodes": [
+    {
+      "id": "Sensor",
+      "x": 0,
+      "y": 0,
+      "width": 152,
+      "height": 120
+    },
+    {
+      "id": "Panel",
+      "x": 302,
+      "y": 0,
+      "width": 152,
+      "height": 120
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_Sensor_Panel_0",
+      "points": [
+        {
+          "x": 152,
+          "y": 40
+        },
+        {
+          "x": 302,
+          "y": 40
+        }
+      ],
+      "label": {
+        "x": 227.5,
+        "y": 23.5
+      },
+      "labelWidth": 73,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_Sensor_Panel_2",
+      "points": [
+        {
+          "x": 152,
+          "y": 80
+        },
+        {
+          "x": 302,
+          "y": 80
+        }
+      ],
+      "label": {
+        "x": 227,
+        "y": 63.5
+      },
+      "labelWidth": 50,
+      "labelHeight": 21
+    }
+  ]
+}

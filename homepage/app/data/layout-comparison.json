@@ -167,6 +167,72 @@
       }
     },
     {
+      "id": "native-boundary",
+      "title": "Job service",
+      "source": "flowchart LR\n  subgraph Service[Job service]\n    Worker[Worker]\n  end\n  Worker --> Queue[Queue]\n",
+      "native": true,
+      "nodes": 2,
+      "groups": 1,
+      "edges": 1,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 0,
+        "bends": 0,
+        "length": 90,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 442,
+        "height": 153
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 0,
+        "bends": 0,
+        "length": 160,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 540,
+        "height": 177
+      }
+    },
+    {
+      "id": "native-parallel",
+      "title": "Sensor to panel",
+      "source": "flowchart LR\n  Sensor -->|reading| Panel\n  Sensor -->|rate| Panel\n",
+      "native": true,
+      "nodes": 2,
+      "groups": 0,
+      "edges": 2,
+      "elk": {
+        "engine": "elk",
+        "name": "ELK Layered",
+        "crossings": 0,
+        "bends": 0,
+        "length": 386,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 0,
+        "width": 513,
+        "height": 84
+      },
+      "tala": {
+        "engine": "go",
+        "name": "TALA (Go reference)",
+        "crossings": 0,
+        "bends": 0,
+        "length": 300,
+        "nodeOverlaps": 0,
+        "labelOverlaps": 0,
+        "resizedNodes": 2,
+        "width": 470,
+        "height": 136
+      }
+    },
+    {
       "id": "service-mesh",
       "title": "Service mesh",
       "source": "flowchart LR\n  subgraph Intake\n    A1[Intake gateway]\n    A2[Intake queue]\n    A3[Intake worker]\n    A4[Intake archive]\n    A5[Intake monitor]\n    A1 --> A2\n    A2 --> A3\n    A3 --> A4\n    A4 --> A5\n    A5 --> A1\n  end\n  subgraph Catalog\n    B1[Catalog gateway]\n    B2[Catalog queue]\n    B3[Catalog worker]\n    B4[Catalog archive]\n    B5[Catalog monitor]\n    B1 --> B2\n    B2 --> B3\n    B3 --> B4\n    B4 --> B5\n    B5 --> B1\n  end\n  subgraph Dispatch\n    C1[Dispatch gateway]\n    C2[Dispatch queue]\n    C3[Dispatch worker]\n    C4[Dispatch archive]\n    C5[Dispatch monitor]\n    C1 --> C2\n    C2 --> C3\n    C3 --> C4\n    C4 --> C5\n    C5 --> C1\n  end\n  subgraph Fulfillment\n    D1[Fulfillment gateway]\n    D2[Fulfillment queue]\n    D3[Fulfillment worker]\n    D4[Fulfillment archive]\n    D5[Fulfillment monitor]\n    D1 --> D2\n    D2 --> D3\n    D3 --> D4\n    D4 --> D5\n    D5 --> D1\n  end\n  A2 -->|lookup| B1\n  A3 -->|schedule| C1\n  B3 -->|enrich| C2\n  B4 -->|store copy| D2\n  C3 -->|dispatch| D1\n  C4 -->|update cache| B4\n  D2 -->|status| B5\n  D4 -->|audit| A5\n  A5 -->|probe| C5\n  D3 -->|heartbeat| C5\n  B1 -->|outbound| D5\n  C1 -->|receipt| A4\n",

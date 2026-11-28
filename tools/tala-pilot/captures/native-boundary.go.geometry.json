@@ -1,0 +1,41 @@
+{
+  "seed": 1,
+  "nodes": [
+    {
+      "id": "Service",
+      "x": 0,
+      "y": 0,
+      "width": 272,
+      "height": 161
+    },
+    {
+      "id": "Worker",
+      "x": 60,
+      "y": 60,
+      "width": 152,
+      "height": 41
+    },
+    {
+      "id": "Queue",
+      "x": 372,
+      "y": 60,
+      "width": 152,
+      "height": 41
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_Worker_Queue_0",
+      "points": [
+        {
+          "x": 212,
+          "y": 80
+        },
+        {
+          "x": 372,
+          "y": 80
+        }
+      ]
+    }
+  ]
+}

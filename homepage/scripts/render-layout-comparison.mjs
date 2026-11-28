@@ -13,7 +13,7 @@ const data = new URL('../app/data/layout-comparison.json', import.meta.url);
 const assets = new URL('../public/layout-comparison/', import.meta.url);
 const captures = fileURLToPath(new URL('tools/tala-pilot/captures/', repository));
 const check = process.argv.includes('--check');
-const nativeCases = new Set(['native-loop']);
+const nativeCases = new Set(['native-loop', 'native-boundary', 'native-parallel']);
 const temporary = await mkdtemp(join(tmpdir(), 'ferrigura-layouts-'));
 
 function run(command, args) {

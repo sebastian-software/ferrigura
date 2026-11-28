@@ -1,0 +1,51 @@
+{
+  "direction": "LR",
+  "edges": [
+    {
+      "id": "L_Sensor_Panel_0",
+      "label": "reading",
+      "labelHeight": 21.0,
+      "labelWidth": 72.75,
+      "source": "Sensor",
+      "sourceArrow": false,
+      "target": "Panel",
+      "targetArrow": true
+    },
+    {
+      "id": "L_Sensor_Panel_2",
+      "label": "rate",
+      "labelHeight": 21.0,
+      "labelWidth": 50.0,
+      "source": "Sensor",
+      "sourceArrow": false,
+      "target": "Panel",
+      "targetArrow": true
+    }
+  ],
+  "nodes": [
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "Sensor",
+      "isGroup": false,
+      "label": "Sensor",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "Panel",
+      "isGroup": false,
+      "label": "Panel",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    }
+  ]
+}

@@ -6,7 +6,13 @@ Start with ELK for directed workflows, graphs outside the experimental subset, a
 
 ## Experimental TALA
 
-A custom build with the `experimental-tala` Cargo feature can draw up to twelve disconnected rectangular nodes, one rectangular node with a single labeled self-loop, or one rectangular node with up to thirty-two unlabeled self-loops. The standard npm distribution and default source builds omit that feature. The larger diagrams on the comparison page are labeled as Go-reference evidence where the Rust path does not draw them.
+Enable the `experimental-tala` Cargo feature in a custom build. The standard npm distribution and default source builds omit it. The Rust port accepts a subset of rectangular flowcharts:
+
+- Up to twelve disconnected rectangles, or an isolated rectangle with one labeled or up to thirty-two unlabeled self-loops.
+- Short straight paths and bounded parallel edges. For example, a pair of horizontal edges can carry captions with the same measured height.
+- Simple nested containers, and an unlabeled, one-way connection across a single container boundary.
+
+The [TALA crate README](../crates/ferrigura-tala/README.md) lists the exact shape, size, direction, and topology limits. The comparison identifies which examples use the Rust engine and which use the pinned Go reference.
 
 Engine selection belongs to the render call and takes precedence over the Mermaid layout setting in the document. Ferrigura’s default look is available with TALA. Mermaid compatibility mode and unsupported graph shapes or connections return an error when TALA is selected. Ferrigura leaves the engine choice to the caller when a render fails.
 

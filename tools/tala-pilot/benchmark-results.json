@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-11-28T09:35:53.928Z",
+  "capturedAt": "2026-11-28T09:54:20.889Z",
   "platform": "darwin",
   "architecture": "arm64",
   "system": "27.2.0",
@@ -9,7 +9,7 @@
   "warmup": 10,
   "samples": 50,
   "ferrigura": {
-    "baseline": "22e651ae2ce42992139d607ac1a575cd357600b4",
+    "baseline": "e743e1c99daa7d6ad8dcfbc34e432b5c06f13abe",
     "version": "0.10.0",
     "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
     "profile": "release",
@@ -26,14 +26,14 @@
     {
       "fixture": "library-architecture.mmd",
       "elkLayout": {
-        "medianNs": 498437.5,
-        "p95Ns": 557417,
-        "residentBytes": 8306688
+        "medianNs": 509208.5,
+        "p95Ns": 575667,
+        "residentBytes": 8388608
       },
       "elkRender": {
-        "medianNs": 698854,
-        "p95Ns": 724917,
-        "residentBytes": 9404416
+        "medianNs": 699187.5,
+        "p95Ns": 720000,
+        "residentBytes": 9240576
       },
       "talaLayout": {
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
@@ -42,50 +42,106 @@
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
       },
       "goLayout": {
-        "medianNs": 9321437.5,
-        "p95Ns": 9778333,
-        "residentBytes": 27787264
+        "medianNs": 8657833,
+        "p95Ns": 9076459,
+        "residentBytes": 27590656
+      }
+    },
+    {
+      "fixture": "native-boundary.mmd",
+      "elkLayout": {
+        "medianNs": 62958,
+        "p95Ns": 64458,
+        "residentBytes": 7864320
+      },
+      "elkRender": {
+        "medianNs": 122187.5,
+        "p95Ns": 127000,
+        "residentBytes": 8929280
+      },
+      "talaLayout": {
+        "medianNs": 1083.5,
+        "p95Ns": 1208,
+        "residentBytes": 6225920
+      },
+      "talaRender": {
+        "medianNs": 53104.5,
+        "p95Ns": 54708,
+        "residentBytes": 7553024
+      },
+      "goLayout": {
+        "medianNs": 1955125,
+        "p95Ns": 2475084,
+        "residentBytes": 25591808
       }
     },
     {
       "fixture": "native-loop.mmd",
       "elkLayout": {
-        "medianNs": 24167,
-        "p95Ns": 28083,
-        "residentBytes": 7618560
+        "medianNs": 23292,
+        "p95Ns": 27333,
+        "residentBytes": 7684096
       },
       "elkRender": {
-        "medianNs": 79417,
-        "p95Ns": 97500,
-        "residentBytes": 8732672
+        "medianNs": 79416.5,
+        "p95Ns": 81708,
+        "residentBytes": 8830976
       },
       "talaLayout": {
-        "medianNs": 792,
-        "p95Ns": 875,
-        "residentBytes": 6078464
+        "medianNs": 750,
+        "p95Ns": 958,
+        "residentBytes": 6144000
       },
       "talaRender": {
-        "medianNs": 50562.5,
-        "p95Ns": 53417,
-        "residentBytes": 7634944
+        "medianNs": 46312.5,
+        "p95Ns": 49917,
+        "residentBytes": 7651328
       },
       "goLayout": {
-        "medianNs": 236833.5,
-        "p95Ns": 761833,
-        "residentBytes": 23920640
+        "medianNs": 209354.5,
+        "p95Ns": 624500,
+        "residentBytes": 23281664
+      }
+    },
+    {
+      "fixture": "native-parallel.mmd",
+      "elkLayout": {
+        "medianNs": 49500,
+        "p95Ns": 53167,
+        "residentBytes": 7700480
+      },
+      "elkRender": {
+        "medianNs": 118604.5,
+        "p95Ns": 120959,
+        "residentBytes": 8781824
+      },
+      "talaLayout": {
+        "medianNs": 2750,
+        "p95Ns": 2959,
+        "residentBytes": 6193152
+      },
+      "talaRender": {
+        "medianNs": 65583.5,
+        "p95Ns": 66458,
+        "residentBytes": 7618560
+      },
+      "goLayout": {
+        "medianNs": 1590292,
+        "p95Ns": 2042084,
+        "residentBytes": 25821184
       }
     },
     {
       "fixture": "observatory-services.mmd",
       "elkLayout": {
-        "medianNs": 332333,
-        "p95Ns": 364833,
-        "residentBytes": 8306688
+        "medianNs": 329729.5,
+        "p95Ns": 352250,
+        "residentBytes": 8290304
       },
       "elkRender": {
-        "medianNs": 663083.5,
-        "p95Ns": 841416,
-        "residentBytes": 9502720
+        "medianNs": 623146,
+        "p95Ns": 667541,
+        "residentBytes": 9371648
       },
       "talaLayout": {
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
@@ -94,22 +150,22 @@
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
       },
       "goLayout": {
-        "medianNs": 18188542,
-        "p95Ns": 18744375,
-        "residentBytes": 27869184
+        "medianNs": 18127166.5,
+        "p95Ns": 19121875,
+        "residentBytes": 28753920
       }
     },
     {
       "fixture": "publishing-flow.mmd",
       "elkLayout": {
-        "medianNs": 133458,
-        "p95Ns": 165791,
-        "residentBytes": 8110080
+        "medianNs": 132271,
+        "p95Ns": 136083,
+        "residentBytes": 7979008
       },
       "elkRender": {
-        "medianNs": 386812,
-        "p95Ns": 431000,
-        "residentBytes": 9388032
+        "medianNs": 391917,
+        "p95Ns": 445459,
+        "residentBytes": 9338880
       },
       "talaLayout": {
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
@@ -118,22 +174,22 @@
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
       },
       "goLayout": {
-        "medianNs": 11723645.5,
-        "p95Ns": 12433875,
-        "residentBytes": 27885568
+        "medianNs": 11873021,
+        "p95Ns": 12734041,
+        "residentBytes": 27557888
       }
     },
     {
       "fixture": "service-mesh.mmd",
       "elkLayout": {
-        "medianNs": 2040333,
-        "p95Ns": 2284375,
-        "residentBytes": 9224192
+        "medianNs": 2053479.5,
+        "p95Ns": 2244709,
+        "residentBytes": 9191424
       },
       "elkRender": {
-        "medianNs": 3181229,
-        "p95Ns": 3349416,
-        "residentBytes": 10387456
+        "medianNs": 3246333.5,
+        "p95Ns": 3449708,
+        "residentBytes": 10010624
       },
       "talaLayout": {
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
@@ -142,21 +198,21 @@
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
       },
       "goLayout": {
-        "medianNs": 73746312.5,
-        "p95Ns": 74925875,
-        "residentBytes": 32505856
+        "medianNs": 73753646,
+        "p95Ns": 75560791,
+        "residentBytes": 32243712
       }
     },
     {
       "fixture": "workshop-edges.mmd",
       "elkLayout": {
-        "medianNs": 85875,
-        "p95Ns": 106042,
-        "residentBytes": 7913472
+        "medianNs": 83125,
+        "p95Ns": 91792,
+        "residentBytes": 8044544
       },
       "elkRender": {
-        "medianNs": 253208,
-        "p95Ns": 264708,
+        "medianNs": 249083.5,
+        "p95Ns": 386750,
         "residentBytes": 9142272
       },
       "talaLayout": {
@@ -166,9 +222,9 @@
         "error": "Error: Layout(\"this graph is outside the experimental TALA port; select ELK for this diagram\")"
       },
       "goLayout": {
-        "medianNs": 4408604,
-        "p95Ns": 4919375,
-        "residentBytes": 26624000
+        "medianNs": 4203229,
+        "p95Ns": 4742042,
+        "residentBytes": 26214400
       }
     }
   ]
