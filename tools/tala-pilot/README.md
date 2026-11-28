@@ -2,17 +2,18 @@
 
 The pilot measures original Mermaid flowcharts with Ferrigura, lays them out
 with ELK Layered and pinned Go TALA, and paints the results with the same SVG
-renderer. The checked-in captures use the default look and measures from
-Ferrigura base `393b2f5`. The pilot substitutes the Rust port of TALA's terminal
+renderer. The checked-in captures use Ferrigura’s default look and SVG text
+measurements. The pilot substitutes the Rust port of TALA’s terminal
 coordinate normalization into the Go engine and verifies the final geometry
-and SVG against the unmodified Go path. The Rust port covers unpinned graphs.
+and SVG against the unmodified Go path. This normalization port covers
+unpinned graphs.
 [Decision 0025](../../docs/decisions/0025-tala-pilot.md) ·
 [Source and license provenance](./PROVENANCE.md)
 
 ## Replay offline
 
 Run from the repository root. The saved measurements and Go outputs in
-`captures/` cover four original Mermaid flowcharts. When replaying SVGs,
+`captures/` cover six original Mermaid flowcharts. When replaying SVGs,
 the comparison checks that the current Ferrigura measurements still match
 the captures. The Rust check compares ordered IDs and every node position and
 route point with the Go result at the normalization boundary.
@@ -83,10 +84,28 @@ and Go are development tools.
 
 The stage and SVG comparisons support continuing the port for grouped
 Mermaid flowcharts. The next scope is placement, packing, and orthogonal
-routing at the same measured boundary. The four small inputs establish
-correctness and a layout benefit in this scope. A native release budget
-still needs a representative CPU, memory, and artifact-size comparison.
-The fixed-seed Go runner took 15–29 ms median per small fixture on macOS
-arm64 over ten runs after two warm-up calls, including process startup and
-JSON. This is a smoke budget for the pilot corpus; it does not predict
-Rust runtime or scaling.
+routing at the same measured boundary. The grouped and cyclic samples
+describe the behavior of the pinned Go engine.
+The labeled self-loop is the native Rust control and is verified against Go
+by the homepage generator.
+
+## Benchmark a release build
+
+```sh
+cargo build --release --locked -p ferrigura --features experimental-tala --example tala_pilot
+node tools/tala-pilot/benchmark.mjs --reference /tmp/ferrigura-tala-reference > /tmp/tala-benchmark.json
+```
+
+Pass `--reference` with the Go runner built above to time the pinned upstream
+layout call. The Rust layout timing includes each engine’s adapter and the
+application of its geometry. Parsing, text measurement, SVG painting,
+subprocess startup and JSON are outside the timed layout intervals. The Rust
+render timing covers the public Rust render method on a reused renderer,
+including parse, measurement, layout and SVG painting. Each interval runs
+in its own process and the script records that process’s peak RSS where
+`/usr/bin/time` supports it. The default run uses ten warmups and fifty samples.
+TALA support failures are recorded with their diagnostics in the JSON.
+
+The [recorded result](./benchmark-results.json) identifies the versions,
+hardware, seed and build profile, plus median, p95 and memory for each case.
+It uses the instrumented source based on the named Ferrigura revision.

@@ -15,12 +15,14 @@
     "sample:check": "node scripts/render-diagram-samples.mjs --check",
     "comparison:write": "node scripts/render-comparison.mjs",
     "comparison:check": "node scripts/render-comparison.mjs --check",
+    "layouts:write": "node scripts/render-layout-comparison.mjs",
+    "layouts:check": "node scripts/render-layout-comparison.mjs --check",
     "docs-diagrams:write": "node scripts/render-doc-diagrams.mjs",
     "docs-diagrams:check": "node scripts/render-doc-diagrams.mjs --check",
     "size:write": "node scripts/render-size.mjs",
     "size:check": "node scripts/render-size.mjs --check",
     "browser:check": "node scripts/check-browser.mjs",
-    "verify": "pnpm sample:check && pnpm comparison:check && pnpm docs-diagrams:check && pnpm size:check && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build && pnpm browser:check"
+    "verify": "pnpm sample:check && pnpm comparison:check && pnpm layouts:check && pnpm docs-diagrams:check && pnpm size:check && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build && pnpm browser:check"
   },
   "dependencies": {
     "ardo": "^6.9.0",

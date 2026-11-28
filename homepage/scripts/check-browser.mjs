@@ -67,6 +67,7 @@ try {
   }
 
   await verifyExample(page, origin);
+  await verifyLayouts(page, origin);
   await verifyCompareSlider(page, origin);
   await verifySliderTouch(browser, origin);
   await verifyNavigation(page, origin);
@@ -86,7 +87,7 @@ try {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await capture(page, origin);
   console.log(
-    'Verified all pages at eight widths, the diagram choices and their files, both menus, search, focus return, reduced motion and runtime errors.'
+    'Verified all pages at eight widths, diagram choices and files, ELK/TALA comparisons, both menus, search, focus return, reduced motion and runtime errors.'
   );
 } finally {
   await browser?.close();
@@ -126,6 +127,35 @@ async function verifyExample(page, origin) {
     );
   }
 }
+async function verifyLayouts(page, origin) {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
+  await page.locator('#layout-engines').getByRole('link', { name: 'Compare ELK and TALA' }).click();
+  await page.waitForURL('**/comparisons/elk-and-tala/');
+  const drawings = page.locator('.fgr-layout-drawing');
+  await drawings.first().waitFor();
+  assert.equal(await drawings.count(), 12, 'Six examples must each have two SVGs');
+  for (const drawing of await drawings.all()) {
+    await drawing.scrollIntoViewIfNeeded();
+    await drawing.evaluate((image) => image.decode());
+    assert((await drawing.evaluate((image) => image.naturalWidth)) > 0, 'An SVG is missing');
+  }
+  assert.equal(await page.getByRole('img', { name: /TALA in Rust/ }).count(), 1);
+  await verifyLayoutSource(page, origin);
+}
+
+async function verifyLayoutSource(page, origin) {
+  const first = page.locator('.fgr-layout-pair').first();
+  await first.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  const source = first.getByRole('link', { name: 'Open the Mermaid source file' });
+  await source.waitFor();
+  const response = await page.request.get(new URL(await source.getAttribute('href'), origin).href);
+  assert(response.ok(), 'Mermaid input is not available');
+  const text = await response.text();
+  assert(text.startsWith('flowchart'), 'The file must contain the original Mermaid input');
+}
+
 /**
  * The side-by-side page: both drawings line up under the divider, and the
  * keyboard and a click move it.

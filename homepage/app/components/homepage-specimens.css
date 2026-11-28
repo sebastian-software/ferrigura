@@ -296,3 +296,17 @@
   border-radius: 0;
   box-shadow: none;
 }
+
+/* The layout comparison uses standalone SVG files, sized independently. */
+.fgr-layout-pair .fgr-layout-drawing {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.fgr-layout-metrics .mono-table {
+  min-width: 0;
+}

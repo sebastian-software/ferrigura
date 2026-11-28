@@ -18,6 +18,12 @@ const cases = [
     'Workshop controls',
     'TALA grows the parallel edges’ endpoint nodes. The fixture also has a self-loop and disconnected components.',
   ],
+  ['native-loop', 'Retry queue', 'An isolated rectangle with a labeled self-loop'],
+  [
+    'service-mesh',
+    'Service mesh',
+    'A denser graph with cycles and labeled edges across four groups',
+  ],
 ];
 
 const metrics = [

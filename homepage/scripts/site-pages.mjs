@@ -5,6 +5,7 @@ const featured = new Map([
   ['homepage/content/getting-started.md', 'guide/getting-started'],
   ['docs/animation.md', 'guide/animation'],
   ['docs/fonts.md', 'guide/fonts'],
+  ['docs/layout-engines.md', 'guide/layout-engines'],
   ['crates/ferrigura/README.md', 'reference/rust'],
   ['crates/ferrigura-cli/README.md', 'reference/cli'],
   ['crates/ferrigura-node/README.md', 'reference/node'],
@@ -46,6 +47,12 @@ export const documents = [...new Set([...featured.keys(), ...docs])].map((source
 });
 /** Pages written in homepage/app/routes, each placed after a generated page. */
 const authored = [
+  {
+    path: 'comparisons/elk-and-tala',
+    title: 'ELK and TALA',
+    section: 'comparisons',
+    after: 'comparisons/overview',
+  },
   {
     path: 'architecture/size',
     title: 'Binary size',

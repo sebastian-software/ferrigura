@@ -1,0 +1,29 @@
+{
+  "direction": "TB",
+  "edges": [
+    {
+      "id": "L_Queue_Queue_0",
+      "label": "retry job",
+      "labelHeight": 21.0,
+      "labelWidth": 77.125,
+      "source": "Queue",
+      "sourceArrow": false,
+      "target": "Queue",
+      "targetArrow": true
+    }
+  ],
+  "nodes": [
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "Queue",
+      "isGroup": false,
+      "label": "Retry queue",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    }
+  ]
+}

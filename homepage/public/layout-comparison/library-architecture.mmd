@@ -1,0 +1,22 @@
+flowchart LR
+  subgraph product["Library service"]
+    subgraph intake["Reader requests"]
+      portal["Reader portal"]
+      reserve["Reservation API"]
+      portal --> reserve
+    end
+    subgraph stock["Branch inventory"]
+      queue["Transfer queue"]
+      shelf["Shelf inventory"]
+      queue --> shelf
+    end
+    reserve -->|hold request| queue
+    shelf -->|availability| portal
+  end
+  subgraph delivery["Delivery"]
+    schedule["Delivery scheduler"]
+    alert["Reader notification"]
+    schedule --> alert
+  end
+  shelf -->|branch transfer| schedule
+  schedule -->|confirmed slot| reserve

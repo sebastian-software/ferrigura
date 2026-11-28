@@ -1,0 +1,6 @@
+flowchart LR
+  sensor["Temperature sensor"] -->|reading| panel["Control panel"]
+  sensor -->|low battery| panel
+  panel -->|retry| panel
+  checklist["Opening checklist"] --> lights["Shop lights"]
+  clock["Wall clock"]
