@@ -32,6 +32,24 @@
   "adapter_test.go#TestNormalizeSeeds": [
     "seed_selection::tests::normalize_seeds_in_first_seen_order"
   ],
+  "internal/placement/sized_optimizer_test.go#TestBestSwapCandidate": [
+    "sizeless::sized_candidates::tests::best_swap_candidate_respects_adjacent_spacing"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestFindClosestUnoccupiedDistanceNoConnections": [
+    "sizeless::sized_candidates::tests::finds_the_closest_unoccupied_distance_without_connections"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestIterPlacementsAroundPoint": [
+    "sizeless::sized_candidates::tests::visits_placements_touching_the_offset_point"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestMedianPoint": [
+    "sizeless::sized_candidates::tests::median_point_uses_the_neighbors_measured_centers"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestSizedFindClosestUnoccupiedDistance": [
+    "sizeless::sized_candidates::tests::finds_the_closest_unoccupied_distance_with_connected_spacing"
+  ],
+  "internal/placement/sized_optimizer_test.go#TestSizedOptimizerGetPlacementPoints": [
+    "sizeless::sized_candidates::tests::sized_placement_candidates_land_on_the_grid"
+  ],
   "internal/placement/sizeless_optimizer_test.go#TestFindClosestUnoccupiedDistance": [
     "sizeless::tests::finds_closest_unoccupied_distance"
   ],
@@ -40,6 +58,21 @@
   ],
   "internal/placement/sizeless_optimizer_test.go#TestSwapCandidates": [
     "sizeless::tests::finds_optimizable_swaps_in_go_order"
+  ],
+  "internal/placement/transpose_test.go#TestTransposeRejectsDiagonalSecondNeighbor": [
+    "sizeless::sized_candidates::tests::transpose_rejects_the_second_neighbor_when_diagonal"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowBranchesRewardAngularRoomForFanInAndFanOut": [
+    "sizeless::sized_cost::tests::flow_branches_reward_angular_room_for_fan_in_and_fan_out"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowContinuityNeverPairsANeighborWithItself": [
+    "sizeless::sized_cost::tests::flow_never_pairs_a_neighbor_with_itself"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowContinuityParallelEdgesDoNotReweightBranches": [
+    "sizeless::sized_cost::tests::flow_parallel_edges_do_not_reweight_branches"
+  ],
+  "internal/placementcost/flow_continuity_test.go#TestFlowContinuityReciprocalPairHasBothRoles": [
+    "sizeless::sized_cost::tests::flow_reciprocal_pair_has_both_roles"
   ],
   "internal/quality/scoring_test.go#TestEvaluateCanceledBeforeWork": [
     "quality::tests::evaluate_canceled_before_work"

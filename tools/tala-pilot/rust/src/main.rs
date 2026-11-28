@@ -104,6 +104,32 @@ fn main() -> Result<(), Box<dyn Error>> {
             let result = ferrigura_tala::sizeless::transition_to_sized(&graph, seed)?;
             serde_json::to_writer(output, &result)?;
         }
+        Some("--first-sized-candidates") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_candidates(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
+        Some("--first-sized-edge-costs") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_edge_costs(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
+        Some("--first-sized-move") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_move(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
+        Some("--first-sized-pass") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_sized_pass(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
+        Some("--measured-first-sized-pass") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result =
+                ferrigura_tala::sizeless::first_sized_pass_from_measurements(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
         Some("--measured-sized-transition") => {
             let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
             let result =
@@ -162,7 +188,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         _ => {
             return Err(concat!(
                 "expected --layout, --translate, --prescale, --initialize, --initialize-by-distance, ",
-                "--sizeless-first-pass, --sizeless-phase, --sized-transition, --measured-sized-transition, --ovg-seed, ",
+                "--sizeless-first-pass, --sizeless-phase, --sized-transition, --measured-sized-transition, ",
+                "--first-sized-candidates, --first-sized-edge-costs, --first-sized-move, --first-sized-pass, ",
+                "--measured-first-sized-pass, --ovg-seed, ",
                 "--ovg-edge-points, --ovg-boundary-points, --ovg-tunnels, --ovg-links, ",
                 "--candidate-score, --route-output, --simplify, --balance, or no argument"
             )

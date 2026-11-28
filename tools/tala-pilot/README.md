@@ -173,11 +173,13 @@ The Rust stage initializes a flat rectangular component, then optimizes
 its positions using Go-compatible shuffles and jitter and alternating
 compactions. The Observatory check compares every ordered grid location
 with Go after the first pass and the complete sizeless phase for all
-three default seeds. The check also compares the node boxes before
-sized optimization, after compaction accounts for node sizes and
-measured edge captions. It repeats the sized transition from Ferrigura's
-measured input, including native translation, prescale, and the component's
-breadth-first placement order. The trace preserves the final Go layout.
+three default seeds. The check also compares the size-aware transition,
+the first move search and the complete first sized pass. It repeats both
+the transition and the complete first pass from Ferrigura's measured
+input, including native translation, prescale, and the component's
+breadth-first placement order. Node coordinates and candidate order match
+exactly. Internal edge costs allow floating-point rounding far below Go's
+score comparison threshold. The trace preserves the final Go layout.
 
 ```sh
 node tools/tala-pilot/trace-overlay.mjs \

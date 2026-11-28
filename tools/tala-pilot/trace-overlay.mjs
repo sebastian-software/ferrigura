@@ -40,7 +40,15 @@ const instrumented = instrument(original);
 await mkdir(dest, { recursive: true });
 await writeFile(target, instrumented + '\n' + helper);
 execFileSync('gofmt', ['-w', target]);
-await writeFile(join(dest, 'overlay.json'), JSON.stringify({ Replace: { [source]: target } }));
+const replace = { [source]: target };
+if (mode === 'sizeless-placement') {
+  const optimizer = join(root, 'd2layouts/d2talalayout/internal/placement/sized_optimizer.go');
+  const tracedOptimizer = join(dest, 'sized-optimizer-overlay.go');
+  await writeFile(tracedOptimizer, traceSizedOptimizer(await readFile(optimizer, 'utf8')));
+  execFileSync('gofmt', ['-w', tracedOptimizer]);
+  replace[optimizer] = tracedOptimizer;
+}
+await writeFile(join(dest, 'overlay.json'), JSON.stringify({ Replace: replace }));
 
 function replaceOnce(source, match, replacement) {
   assert.equal(source.split(match).length, 2, `Go trace anchor changed: ${match.trim()}`);
@@ -118,24 +126,66 @@ function traceSizelessPlacement(source) {
   const withImports = replaceOnce(
     source,
     imports,
-    imports + '\t"encoding/hex"\n\t"encoding/json"\n\t"os"\n'
+    imports +
+      '\t"encoding/hex"\n\t"encoding/json"\n\t"os"\n' +
+      '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/limits"\n' +
+      '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/placementcost"\n'
   );
   const withFirstPass = replaceOnce(
     withImports,
     optimize,
-    optimize + '\t\tif i == 0 { tracePilotSizelessPlacement("firstPass", seed, subgraph) }\n'
+    optimize + '\t\tif i == 0 { tracePilotSizelessPlacement("firstPass", seed, subgraph, nil) }\n'
   );
   const withFullPhase = replaceOnce(
     withFirstPass,
     transition,
-    '\ttracePilotSizelessPlacement("fullPhase", seed, subgraph)\n' + transition
+    '\ttracePilotSizelessPlacement("fullPhase", seed, subgraph, nil)\n' + transition
   );
   const aligned =
     '\tif err := validateGridAlignment(subgraph); err != nil {\n' + '\t\treturn err\n\t}\n';
-  return replaceOnce(
+  const withTransition = replaceOnce(
     withFullPhase,
     aligned,
-    aligned + '\ttracePilotSizelessPlacement("sizedTransition", seed, subgraph)\n'
+    aligned + '\ttracePilotSizelessPlacement("sizedTransition", seed, subgraph, nil)\n'
+  );
+  const withSeed = replaceOnce(
+    withTransition,
+    '\tdefer sized.release()\n',
+    '\tsized.pilotSeed = seed\n\tdefer sized.release()\n'
+  );
+  const sizedCompaction =
+    '\t\tif (i % compactionIteration) == 0 {\n' +
+    '\t\t\t// These stages only move nodes and set herd fences:';
+  return replaceOnce(
+    withSeed,
+    sizedCompaction,
+    '\t\tif i == firstSized { tracePilotSizelessPlacement("firstSizedPass", seed, subgraph, nil) }\n' +
+      sizedCompaction
+  );
+}
+
+function traceSizedOptimizer(source) {
+  const fields = 'type sizedOptimizer struct {\n';
+  const shuffled =
+    '\t\tif err := limits.Shuffle(points, optim.randGenerator, guard); err != nil {\n' +
+    '\t\t\treturn false, err\n\t\t}\n';
+  const tracedCandidates = replaceOnce(
+    replaceOnce(source, fields, fields + '\tpilotSeed []int64\n'),
+    shuffled,
+    shuffled +
+      '\t\tif optim.pilotSeed != nil {\n' +
+      '\t\t\ttracePilotFirstSizedCandidates(ctx, optim, node, medianPoint, d, points)\n' +
+      '\t\t}\n'
+  );
+  const moved = '\t\toptim.recordMove(node, moved)\n';
+  return replaceOnce(
+    tracedCandidates,
+    moved,
+    moved +
+      '\t\tif optim.pilotSeed != nil && err == nil {\n' +
+      '\t\t\ttracePilotSizelessPlacement("firstSizedMove", optim.pilotSeed, optim.g, map[string]float64{"x": node.TopLeft.X, "y": node.TopLeft.Y})\n' +
+      '\t\t\toptim.pilotSeed = nil\n' +
+      '\t\t}\n'
   );
 }
 

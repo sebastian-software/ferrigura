@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use super::{compaction::Axis, optimize_phase};
+use super::{PhaseState, compaction::Axis, run};
 use crate::layout_graph::{Direction, LayoutGraph, Shape};
 use crate::{Edge, Error, Graph, Node, NodeGeometry, valid_dimension};
 
@@ -27,6 +27,21 @@ pub fn sized_transition_from_measurements(
     input: &Graph,
     seed: i64,
 ) -> Result<Vec<NodeGeometry>, Error> {
+    transition_to_sized(&measured_component(input)?, seed)
+}
+
+/// Runs the first complete sized-search pass from Ferrigura's measured input.
+///
+/// # Errors
+/// Returns an error for invalid measurements, unsupported topology, or placement work limits.
+pub fn first_sized_pass_from_measurements(
+    input: &Graph,
+    seed: i64,
+) -> Result<Vec<NodeGeometry>, Error> {
+    super::first_sized_pass(&measured_component(input)?, seed)
+}
+
+fn measured_component(input: &Graph) -> Result<Graph, Error> {
     let mut graph = LayoutGraph::translate(input)?;
     if graph.roots.len() != graph.nodes.len()
         || graph.nodes.iter().any(|node| node.shape != Shape::Square)
@@ -88,14 +103,11 @@ pub fn sized_transition_from_measurements(
             }
         })
         .collect();
-    transition_to_sized(
-        &Graph {
-            direction,
-            nodes,
-            edges,
-        },
-        seed,
-    )
+    Ok(Graph {
+        direction,
+        nodes,
+        edges,
+    })
 }
 
 /// Initializes the sized optimizer's rectangular bodies on the grid.
@@ -104,17 +116,29 @@ pub fn sized_transition_from_measurements(
 /// # Errors
 /// Returns an error for unsupported component topology or invalid measurements.
 pub fn transition_to_sized(graph: &Graph, seed: i64) -> Result<Vec<NodeGeometry>, Error> {
+    let state = prepared_transition(graph, seed)?;
+    Ok(state.nodes)
+}
+
+pub(super) struct Transition {
+    pub(super) nodes: Vec<NodeGeometry>,
+    pub(super) gaps: Vec<Vec<Spacing>>,
+    pub(super) phase: PhaseState,
+}
+
+pub(super) fn prepared_transition(graph: &Graph, seed: i64) -> Result<Transition, Error> {
     if graph.edges.iter().any(|edge| edge.source == edge.target) {
         return Err(Error::UnsupportedGraph);
     }
-    let grid = optimize_phase(graph, seed)?;
+    let phase = run(graph, seed, false)?;
+    let grid = &phase.grid;
     let gaps = edge_gaps(graph)?;
     let mut nodes = graph
         .nodes
         .iter()
-        .zip(grid.nodes)
+        .zip(&grid.nodes)
         .map(|(node, location)| NodeGeometry {
-            id: location.id,
+            id: node.id.clone(),
             x: f64::from(location.x),
             y: f64::from(location.y),
             width: node.width,
@@ -131,10 +155,25 @@ pub fn transition_to_sized(graph: &Graph, seed: i64) -> Result<Vec<NodeGeometry>
             }
         }
     }
-    Ok(nodes)
+    Ok(Transition { nodes, gaps, phase })
 }
 
-fn edge_gaps(graph: &Graph) -> Result<Vec<Vec<[f64; 2]>>, Error> {
+#[derive(Clone, Copy, Default)]
+pub(super) struct Spacing {
+    pub(super) edge_count: usize,
+    pub(super) minimum: [f64; 2],
+}
+
+impl Spacing {
+    pub(super) fn gap(self) -> [f64; 2] {
+        if self.edge_count == 0 {
+            return [NODE_GAP; 2];
+        }
+        self.minimum.map(|size| size.max(CONNECTED_NODE_GAP))
+    }
+}
+
+pub(super) fn edge_gaps(graph: &Graph) -> Result<Vec<Vec<Spacing>>, Error> {
     let indices: HashMap<_, _> = graph
         .nodes
         .iter()
@@ -142,7 +181,7 @@ fn edge_gaps(graph: &Graph) -> Result<Vec<Vec<[f64; 2]>>, Error> {
         .map(|(index, node)| (node.id.as_str(), index))
         .collect();
     let size = graph.nodes.len();
-    let mut gaps = vec![vec![[NODE_GAP; 2]; size]; size];
+    let mut gaps = vec![vec![Spacing::default(); size]; size];
     for edge in &graph.edges {
         if !valid_dimension(edge.label_width) || !valid_dimension(edge.label_height) {
             return Err(Error::InvalidGraph);
@@ -153,19 +192,20 @@ fn edge_gaps(graph: &Graph) -> Result<Vec<Vec<[f64; 2]>>, Error> {
         let target = *indices
             .get(edge.target.as_str())
             .ok_or(Error::InvalidGraph)?;
+        let mut spacing = gaps[source][target];
+        spacing.edge_count += 1;
         let label = [edge.label_width, edge.label_height];
         for (axis, dimension) in label.into_iter().enumerate() {
-            let gap = gaps[source][target][axis]
-                .max(CONNECTED_NODE_GAP)
-                .max(dimension.ceil() + EDGE_LABEL_PADDING);
-            gaps[source][target][axis] = gap;
-            gaps[target][source][axis] = gap;
+            spacing.minimum[axis] =
+                spacing.minimum[axis].max(dimension.ceil() + EDGE_LABEL_PADDING);
         }
+        gaps[source][target] = spacing;
+        gaps[target][source] = spacing;
     }
     Ok(gaps)
 }
 
-fn transition_axis(nodes: &mut [NodeGeometry], gaps: &[Vec<[f64; 2]>], axis: Axis, cell: f64) {
+fn transition_axis(nodes: &mut [NodeGeometry], gaps: &[Vec<Spacing>], axis: Axis, cell: f64) {
     let predecessors = visibility_predecessors(nodes, gaps, axis);
     let mut order: Vec<_> = (0..nodes.len()).collect();
     order.sort_unstable_by(|&a, &b| {
@@ -201,7 +241,7 @@ fn transition_axis(nodes: &mut [NodeGeometry], gaps: &[Vec<[f64; 2]>], axis: Axi
 
 fn visibility_predecessors(
     nodes: &[NodeGeometry],
-    gaps: &[Vec<[f64; 2]>],
+    gaps: &[Vec<Spacing>],
     axis: Axis,
 ) -> Vec<Vec<usize>> {
     let across = axis.opposite();
@@ -211,7 +251,14 @@ fn visibility_predecessors(
             if start(axis, first) >= start(axis, second) {
                 continue;
             }
-            let gap = oriented_gap(first, second, gaps[first_index][second_index]);
+            let gap = oriented_gap(
+                first.x,
+                first.y,
+                first.width,
+                first.height,
+                second,
+                gaps[first_index][second_index].gap(),
+            );
             if start(across, first) > end(across, second) + gap
                 || end(across, first) + gap < start(across, second)
             {
@@ -233,14 +280,17 @@ fn visibility_predecessors(
     predecessors
 }
 
-fn oriented_gap(
-    first: &NodeGeometry,
-    second: &NodeGeometry,
+pub(super) fn oriented_gap(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    other: &NodeGeometry,
     [horizontal, vertical]: [f64; 2],
 ) -> f64 {
-    let across =
-        |axis| end(axis, first) < start(axis, second) || end(axis, second) < start(axis, first);
-    match (across(Axis::Horizontal), across(Axis::Vertical)) {
+    let horizontal_gap = x + width < other.x || other.x + other.width < x;
+    let vertical_gap = y + height < other.y || other.y + other.height < y;
+    match (horizontal_gap, vertical_gap) {
         (true, false) => horizontal,
         (false, true) => vertical,
         _ => horizontal.min(vertical),

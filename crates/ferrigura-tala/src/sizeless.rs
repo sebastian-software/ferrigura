@@ -18,9 +18,18 @@ use crate::stress_initialize::initialize_by_graph_distance;
 use crate::{Error, Graph};
 
 mod compaction;
+mod sized_candidates;
+mod sized_cost;
 mod transition;
 
-pub use transition::{sized_transition_from_measurements, transition_to_sized};
+pub use self::{
+    sized_candidates::{
+        first_sized_candidates, first_sized_edge_costs, first_sized_move, first_sized_pass,
+    },
+    transition::{
+        first_sized_pass_from_measurements, sized_transition_from_measurements, transition_to_sized,
+    },
+};
 
 const ITERATIONS_PER_SQRT_NODE: f64 = 90.0;
 const COMPACTION_ITERATION: usize = 9;
@@ -44,7 +53,7 @@ impl Work {
 /// Returns an error for unsupported component topology or invalid measurements,
 /// exhausted work, or a placement grid that lacks a candidate.
 pub fn first_pass(graph: &Graph, seed: i64) -> Result<Grid, Error> {
-    run(graph, seed, true)
+    Ok(run(graph, seed, true)?.grid)
 }
 
 /// Executes the entire sizeless phase including alternating-axis compaction.
@@ -53,10 +62,16 @@ pub fn first_pass(graph: &Graph, seed: i64) -> Result<Grid, Error> {
 /// Returns an error for unsupported component topology or invalid measurements,
 /// exhausted work, or a placement grid that lacks a candidate.
 pub fn optimize_phase(graph: &Graph, seed: i64) -> Result<Grid, Error> {
-    run(graph, seed, false)
+    Ok(run(graph, seed, false)?.grid)
 }
 
-fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<Grid, Error> {
+struct PhaseState {
+    grid: Grid,
+    rng: GoRand,
+    temperature: f64,
+}
+
+fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<PhaseState, Error> {
     let mut grid = initialize(graph)?;
     if seed % 2 == 0
         && let Some(points) = initialize_by_graph_distance(graph)?
@@ -95,7 +110,11 @@ fn run(graph: &Graph, seed: i64, first_pass_only: bool) -> Result<Grid, Error> {
     for (node, position) in grid.nodes.iter_mut().zip(positions) {
         (node.x, node.y) = position;
     }
-    Ok(grid)
+    Ok(PhaseState {
+        grid,
+        rng,
+        temperature,
+    })
 }
 
 fn optimize_pass(
