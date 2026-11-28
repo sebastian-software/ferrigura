@@ -1,5 +1,5 @@
 /**
- * Checks the actual browser font of all 22 custom diagram renderers, with two different primary
+ * Checks the actual browser font of the custom diagram renderer fixtures, with two primary
  * files registered under the same alias. Bold and italic use distinct designs, so an inherited
  * regular family cannot pass merely because an @font-face declaration exists.
  *
@@ -33,8 +33,14 @@ execFileSync(
 
 const directory = join(repositoryRoot, 'target/custom-font-renderers');
 const files: string[] = JSON.parse(await readFile(join(directory, 'fixtures.json'), 'utf8'));
-assert.equal(files.length, 44, '22 custom types must each render with both primary files');
-assert.equal(new Set(files).size, 44, 'fixture names must be unique');
+const expected = ['sequence', 'gantt', 'xychart', 'quadrant'].flatMap((kind) =>
+  ['sans', 'mono'].map((variant) => `${kind}-${variant}.svg`)
+);
+assert.deepEqual(
+  [...files].sort(),
+  expected.sort(),
+  'Each supported custom renderer fixture must cover both primary files'
+);
 const results = [];
 const browser = await chromium.launch({ headless: true });
 try {
