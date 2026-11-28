@@ -352,6 +352,17 @@ func run(ctx context.Context, reader io.Reader, writer io.Writer, args []string)
 			return err
 		}
 		return encoder.Encode(output)
+	case len(args) == 2 && args[0] == "--seed":
+		seed, err := strconv.ParseInt(args[1], 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid seed: %w", err)
+		}
+		options := &d2talalayout.Options{Seeds: []int64{seed}, MaxConcurrency: 1}
+		output, err := capture(ctx, input, options)
+		if err != nil {
+			return err
+		}
+		return encoder.Encode(output)
 	case len(args) == 2:
 		warmup, warmupErr := strconv.Atoi(args[0])
 		samples, samplesErr := strconv.Atoi(args[1])
@@ -364,7 +375,7 @@ func run(ctx context.Context, reader io.Reader, writer io.Writer, args []string)
 		}
 		return encoder.Encode(times)
 	default:
-		return errors.New("usage: tala-reference [--default | warmup samples]")
+		return errors.New("usage: tala-reference [--default | --seed number | warmup samples]")
 	}
 }
 

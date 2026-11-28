@@ -10,6 +10,7 @@
 use crate::{EdgeGeometry, Error, Graph, Layout, NodeGeometry, Point};
 
 mod crossings;
+pub(crate) use crossings::non_shared_crossing;
 
 const SEGMENT_SPACING_BUFFER: f64 = 40.0;
 const UNBOUNDED_SEGMENT_MOVE: f64 = 100.0;

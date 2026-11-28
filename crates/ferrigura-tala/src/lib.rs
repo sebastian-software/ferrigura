@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 #[doc(hidden)]
 pub mod balance;
 mod connected;
+#[doc(hidden)]
+pub mod flat;
 mod go_rand;
 mod hierarchy;
 #[doc(hidden)]

@@ -21,8 +21,10 @@ mod flavors;
 mod flight;
 pub use flavors::{Flavor, FlavorRoutes, RouteChoice, RouteStrategy, order_routes};
 mod history;
+mod line;
 pub use history::{Appearance, OrdinaryEdge, RouteHistory};
 use history::{Passage, UsedPorts};
+pub use line::{ExistingLine, StraightRoute};
 
 const CONNECTED_NODE_GAP: f64 = 60.0;
 const TURN_MULTIPLIER: f64 = 0.125;

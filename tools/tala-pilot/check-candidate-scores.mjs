@@ -1,8 +1,10 @@
 // Compare candidate scoring and seed selection with a pinned Go capture.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 const { values } = parseArgs({
@@ -10,6 +12,7 @@ const { values } = parseArgs({
     reference: { type: 'string' },
     traced: { type: 'string' },
     rust: { type: 'string' },
+    ferrigura: { type: 'string' },
     'write-fixtures': { type: 'string' },
   },
 });
@@ -17,6 +20,7 @@ assert(values.reference && values.traced && values.rust, 'Pass --reference, --tr
 const reference = resolve(values.reference);
 const traced = resolve(values.traced);
 const rust = resolve(values.rust);
+const ferrigura = values.ferrigura && resolve(values.ferrigura);
 const measured = new URL('captures/', import.meta.url);
 const fixtures = (await readdir(measured)).filter((name) => name.endsWith('.measured.json')).sort();
 assert(fixtures.length > 0);
@@ -49,6 +53,9 @@ for (const filename of fixtures) {
   }));
   assert.deepEqual(evaluated.evaluations, expectedEvaluations, `${fixture}: exact scoring or work`);
   assert.equal(evaluated.selected_seed, selectedSeed, `${fixture}: winning seed`);
+  if (ferrigura && fixture === 'observatory-services') {
+    await checkNativeObservatory(input, expected.stdout, candidates, selectedSeed);
+  }
   if (checkedIn.has(fixture)) snapshots.push({ fixture, selected: selectedSeed, candidates });
   console.log(
     `${fixture}: ${candidates.length} candidate scores, work counts and seed ${selectedSeed} verified`
@@ -57,6 +64,54 @@ for (const filename of fixtures) {
 if (values['write-fixtures']) {
   assert.equal(snapshots.length, checkedIn.size, 'Missing fixtures for the Rust stage test');
   await writeFile(values['write-fixtures'], `${JSON.stringify(snapshots, null, 2)}\n`);
+}
+
+async function checkNativeObservatory(input, defaultCapture, candidates, selectedSeed) {
+  const source = fileURLToPath(new URL('fixtures/observatory-services.mmd', import.meta.url));
+  const measured = run(ferrigura, ['measure', source]).stdout;
+  const graph = JSON.parse(measured);
+  assert.deepEqual(graph, JSON.parse(input), 'Observatory measured fixture has changed');
+
+  const scratch = await mkdtemp(join(tmpdir(), 'ferrigura-tala-seeds-'));
+  try {
+    for (const { seed, penalty, area, work } of candidates) {
+      const expected = run(reference, ['--seed', String(seed)], measured).stdout;
+      const candidate = JSON.parse(
+        run(rust, ['--flat-layout'], JSON.stringify({ graph, seed })).stdout
+      );
+      assert.equal(candidate.seed, seed, 'native seed');
+      assert.deepEqual(candidate.score, { penalty, area }, `seed ${seed}: exact score`);
+      assert.equal(candidate.work, work, `seed ${seed}: exact scoring work`);
+      await checkLayout(expected, candidate.layout, `seed ${seed}`);
+    }
+
+    const winner = JSON.parse(run(rust, ['--flat-layout-default'], measured).stdout);
+    assert.equal(winner.seed, selectedSeed, 'native winning seed');
+    await checkLayout(defaultCapture, winner.layout, 'default layout');
+    console.log(
+      'Observatory: all three native seeds and the default winner match Go geometry and SVG.'
+    );
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+
+  async function checkLayout(expected, actual, label) {
+    assert.deepEqual(geometry(actual), geometry(JSON.parse(expected)), `${label}: exact geometry`);
+    const referencePath = join(scratch, 'reference.json');
+    const nativePath = join(scratch, 'native.json');
+    await writeFile(referencePath, expected);
+    await writeFile(nativePath, JSON.stringify(actual));
+    const expectedSvg = run(ferrigura, ['paint', source, referencePath]).stdout;
+    const actualSvg = run(ferrigura, ['paint', source, nativePath]).stdout;
+    assert.equal(actualSvg, expectedSvg, `${label}: byte-identical SVG`);
+  }
+}
+
+function geometry(layout) {
+  return {
+    nodes: layout.nodes,
+    edges: layout.edges.map(({ id, points, label }) => ({ id, points, label: label ?? null })),
+  };
 }
 
 function run(binary, args, input, env) {

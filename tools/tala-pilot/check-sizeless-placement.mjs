@@ -133,7 +133,7 @@ function traceEntries(output, prefix) {
 }
 
 if (bodyReference) {
-  console.log(`Matched ${seeds.length * 5} post-placement body refinements with pinned Go.`);
+  console.log(`Matched ${seeds.length * 9} post-placement body refinements with pinned Go.`);
 }
 
 function collectBodyStages() {
@@ -153,7 +153,7 @@ function checkBodyStages(seed, request, placed, routingBodies) {
   );
   const byAuthoredOrder = (nodes) => obstacleOrder.map((index) => nodes[index]);
   assert.deepEqual(history.get(7), byAuthoredOrder(placed), `NodePlacement, seed ${seed}`);
-  for (const index of [8, 9, 11, 12, 13, 14, 18, 19, 21, 22, 23, 24]) {
+  for (const index of [13, 14, 18, 19, 21, 22, 23, 24]) {
     assert(history.has(index), `Missing Go stage ${index}, seed ${seed}`);
     assert.deepEqual(
       history.get(index),
@@ -162,7 +162,11 @@ function checkBodyStages(seed, request, placed, routingBodies) {
     );
   }
   const stages = new Map([
+    [8, 'swapStuff'],
+    [9, 'transpose'],
     [10, 'alignAxes'],
+    [11, 'gapNormalization'],
+    [12, 'postGapAlignAxes'],
     [15, 'balanceSymmetry'],
     [16, 'equidistance'],
     [17, 'finalAlignAxes'],

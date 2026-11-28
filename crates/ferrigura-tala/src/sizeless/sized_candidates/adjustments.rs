@@ -5,9 +5,9 @@
 //
 // Ported from pinned D2 TALA: internal/placement/{sized_optimizer,transpose}.go.
 
-use super::super::precision_compare;
 use super::super::sized_cost::Bounds;
 use super::super::transition::oriented_gap;
+use super::super::{precision_compare, rotate_box_around};
 use super::{CandidateSearch, SizedOptimizer, Work};
 use crate::{Error, NodeGeometry, Point};
 
@@ -98,11 +98,11 @@ impl SizedOptimizer {
         let mut best_score = self.transpose_score(node, work)?;
         for turns in 1..=3 {
             for &other in &rotating {
-                let to = rotate(
+                let to = rotate_box_around(
                     &self.state.nodes[other],
                     &self.state.nodes[pivot],
                     turns,
-                    self.cell,
+                    Some(self.cell),
                 );
                 self.move_to(other, to);
             }
@@ -229,31 +229,5 @@ impl SizedOptimizer {
             }
         }
         Ok(false)
-    }
-}
-
-fn rotate(node: &NodeGeometry, pivot: &NodeGeometry, turns: usize, cell: f64) -> Point {
-    let mut point = Point {
-        x: node.x,
-        y: node.y,
-    };
-    for _ in 0..turns {
-        let x = point.x + node.width / 2.0 - pivot.x - pivot.width / 2.0;
-        let y = point.y + node.height / 2.0 - pivot.y - pivot.height / 2.0;
-        let next_x = (-y + pivot.x + pivot.width / 2.0 - node.width / 2.0).round();
-        let next_y = (x + pivot.y + pivot.height / 2.0 - node.height / 2.0).round();
-        point = Point {
-            x: snap(next_x, cell),
-            y: snap(next_y, cell),
-        };
-    }
-    point
-}
-
-fn snap(value: f64, cell: f64) -> f64 {
-    if value % cell == 0.0 {
-        value
-    } else {
-        (value / cell).round() * cell
     }
 }

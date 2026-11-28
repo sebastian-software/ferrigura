@@ -19,7 +19,7 @@ use crate::{Error, Graph};
 
 mod compaction;
 mod direct;
-mod measured;
+pub(crate) mod measured;
 mod refinement;
 mod sized_candidates;
 mod sized_cost;
@@ -340,6 +340,37 @@ fn node_score(
         .iter()
         .map(|&edge| edge_cost(edge, positions[node], positions[edge.node], direction))
         .sum())
+}
+
+fn rotate_box_around(
+    node: &crate::NodeGeometry,
+    pivot: &crate::NodeGeometry,
+    turns: usize,
+    cell: Option<f64>,
+) -> crate::Point {
+    let mut point = crate::Point {
+        x: node.x,
+        y: node.y,
+    };
+    let snap = |value: f64| {
+        if let Some(cell) = cell
+            && value % cell != 0.0
+        {
+            return (value / cell).round() * cell;
+        }
+        value
+    };
+    for _ in 0..turns {
+        let x = point.x + node.width / 2.0 - pivot.x - pivot.width / 2.0;
+        let y = point.y + node.height / 2.0 - pivot.y - pivot.height / 2.0;
+        let next_x = (-y + pivot.x + pivot.width / 2.0 - node.width / 2.0).round();
+        let next_y = (x + pivot.y + pivot.height / 2.0 - node.height / 2.0).round();
+        point = crate::Point {
+            x: snap(next_x),
+            y: snap(next_y),
+        };
+    }
+    point
 }
 
 fn precision_compare(first: f64, second: f64) -> Ordering {

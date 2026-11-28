@@ -127,6 +127,16 @@ impl EdgeCost {
         nodes: &[NodeGeometry],
         work: &mut Work,
     ) -> Result<f64, Error> {
+        self.score_with_direction(node, nodes, work, true)
+    }
+
+    pub(super) fn score_with_direction(
+        &self,
+        node: usize,
+        nodes: &[NodeGeometry],
+        work: &mut Work,
+        penalize_direction: bool,
+    ) -> Result<f64, Error> {
         let incident = &self.adjacency[node];
         work.add(incident.len().saturating_mul(nodes.len() + incident.len()))?;
         let bounds = Bounds::from(&nodes[node]);
@@ -211,7 +221,7 @@ impl EdgeCost {
                 distance += x.min(y) / 20.0;
                 distance += self.turn_cost * f64::from(blocked_turns);
             }
-            if edge.directed || self.direction.is_some() {
+            if penalize_direction && (edge.directed || self.direction.is_some()) {
                 let compass = if edge.outgoing {
                     opposite(relative)
                 } else {
@@ -224,7 +234,10 @@ impl EdgeCost {
                 }
                 distance += direction_factor * delta * self.cell_size * DIRECTION_DELTA_FACTOR;
             }
-            if edge.labeled && desired.rem_euclid(4) != 0 && relative.abs() != 2 {
+            if edge.labeled
+                && (!penalize_direction || desired.rem_euclid(4) != 0)
+                && relative.abs() != 2
+            {
                 let (count, _) = labeled_counts[&edge.neighbor];
                 if count > 2 {
                     distance += f64::from(count) * self.turn_cost;

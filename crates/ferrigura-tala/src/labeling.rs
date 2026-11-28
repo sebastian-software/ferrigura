@@ -10,6 +10,9 @@ use crate::quality::routes::box_crosses_line;
 use crate::route_output::{Anchor, RoutedLabel};
 use crate::{Error, Point};
 
+mod ordinary;
+pub(crate) use ordinary::place_ordinary;
+
 const PADDING: f64 = 5.0;
 const STROKE_WIDTH: f64 = 3.0;
 const SEARCH_INTERVAL: f64 = 0.025;
@@ -50,6 +53,39 @@ pub struct LabelScenario {
     pub repair_conflicts: Option<u32>,
 }
 
+#[derive(Clone, Copy)]
+struct Scenario<'a> {
+    route: usize,
+    routes: &'a [Vec<Point>],
+    hint: Option<Anchor>,
+    percentage: f64,
+    width: f64,
+    height: f64,
+    ancestors: &'a [NodeObstacle],
+    others: &'a [NodeObstacle],
+    labels: &'a [Box],
+    shared: &'a [Box],
+    repair_conflicts: Option<u32>,
+}
+
+impl<'a> From<&'a LabelScenario> for Scenario<'a> {
+    fn from(scenario: &'a LabelScenario) -> Self {
+        Self {
+            route: scenario.route,
+            routes: &scenario.routes,
+            hint: scenario.hint,
+            percentage: scenario.percentage,
+            width: scenario.width,
+            height: scenario.height,
+            ancestors: &scenario.ancestors,
+            others: &scenario.others,
+            labels: &scenario.labels,
+            shared: &scenario.shared,
+            repair_conflicts: scenario.repair_conflicts,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct LabelCandidate {
     pub anchor: Anchor,
@@ -73,6 +109,7 @@ pub struct LabelSelection {
 /// # Errors
 /// Rejects invalid geometry or a search that exceeds the label work limit.
 pub fn select(scenario: &LabelScenario) -> Result<LabelSelection, Error> {
+    let scenario = Scenario::from(scenario);
     let route = scenario
         .routes
         .get(scenario.route)
@@ -91,20 +128,28 @@ pub fn select(scenario: &LabelScenario) -> Result<LabelSelection, Error> {
         || scenario
             .ancestors
             .iter()
-            .chain(&scenario.others)
+            .chain(scenario.others)
             .any(|node| !node.body.valid())
         || scenario
             .labels
             .iter()
-            .chain(&scenario.shared)
+            .chain(scenario.shared)
             .any(|rect| !rect.valid())
     {
         return Err(Error::InvalidGraph);
     }
 
+    let mut remaining = MAX_WORK;
+    select_with_budget(scenario, &mut remaining)
+}
+
+fn select_with_budget(
+    scenario: Scenario<'_>,
+    remaining: &mut u32,
+) -> Result<LabelSelection, Error> {
     let mut search = Search {
         scenario,
-        remaining: MAX_WORK,
+        remaining,
         best: None,
         choices: Vec::new(),
     };
@@ -184,18 +229,22 @@ fn on_route(anchor: Anchor) -> bool {
     )
 }
 
-struct Search<'a> {
-    scenario: &'a LabelScenario,
-    remaining: u32,
+fn spend(remaining: &mut u32, count: usize) -> Result<(), Error> {
+    let count = u32::try_from(count).map_err(|_| Error::WorkLimit)?;
+    *remaining = remaining.checked_sub(count).ok_or(Error::WorkLimit)?;
+    Ok(())
+}
+
+struct Search<'scene, 'budget> {
+    scenario: Scenario<'scene>,
+    remaining: &'budget mut u32,
     best: Option<LabelCandidate>,
     choices: Vec<LabelCandidate>,
 }
 
-impl Search<'_> {
+impl Search<'_, '_> {
     fn spend(&mut self, count: usize) -> Result<(), Error> {
-        let count = u32::try_from(count).map_err(|_| Error::WorkLimit)?;
-        self.remaining = self.remaining.checked_sub(count).ok_or(Error::WorkLimit)?;
-        Ok(())
+        spend(self.remaining, count)
     }
 
     fn found_clear_position(&self) -> bool {
@@ -227,8 +276,8 @@ impl Search<'_> {
         let area = label.width * label.height;
 
         self.spend(scenario.ancestors.len() + scenario.others.len())?;
-        let ancestors = shape_overlaps(body, &scenario.ancestors, true);
-        let others = shape_overlaps(body, &scenario.others, false);
+        let ancestors = shape_overlaps(body, scenario.ancestors, true);
+        let others = shape_overlaps(body, scenario.others, false);
         let edge_overlaps = self.edge_overlaps(body, anchor)?;
         let (padded_labels, exact_labels, blocker) = self.label_overlaps(body)?;
         self.spend(scenario.shared.len())?;
@@ -288,7 +337,7 @@ impl Search<'_> {
     }
 
     fn label_overlaps(&mut self, body: Box) -> Result<(u32, u32, Option<usize>), Error> {
-        let labels = &self.scenario.labels;
+        let labels = self.scenario.labels;
         self.spend(labels.len())?;
         let (mut padded, mut exact, mut blocker) = (0, 0, None);
         for (index, &rect) in labels.iter().enumerate() {

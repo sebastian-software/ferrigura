@@ -125,3 +125,20 @@ fn axis_score_matches_the_go_alignment_cases() {
     stage.nodes[2].x = 30.0;
     assert_eq!(stage.axis_score(&[0, 1, 2]), (0.66 + 0.66) / 2.0);
 }
+
+#[test]
+fn normalization_commits_a_smaller_gap_without_replacing_the_position() {
+    let (graph, bodies, order) = graph_with_bodies(
+        &[(0.0, 0.0, 10.0, 10.0), (1000.0, 0.0, 10.0, 10.0)],
+        &[(0, 1)],
+    );
+    let mut stage = Refinement::new(&graph, &bodies, &order).unwrap();
+    let position = std::ptr::addr_of!(stage.nodes[1].x);
+    assert_eq!(
+        stage.normalize_gaps(&mut Work(MAX_OPTIMIZATION_WORK)),
+        Ok(true)
+    );
+    assert_eq!(std::ptr::addr_of!(stage.nodes[1].x), position);
+    assert_eq!(stage.nodes[1].x, 160.0);
+    assert_eq!(cell_size(&stage.nodes), 10.0);
+}

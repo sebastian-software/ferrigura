@@ -97,6 +97,7 @@ pub struct RouteHistory<'a> {
     segments: HashSet<[usize; 2]>,
     lines: [Vec<RouteLine>; 2],
     tunnel_vertices: HashSet<usize>,
+    detached: Vec<Point>,
 }
 
 impl<'a> RouteHistory<'a> {
@@ -121,11 +122,26 @@ impl<'a> RouteHistory<'a> {
             segments: HashSet::new(),
             lines: [Vec::new(), Vec::new()],
             tunnel_vertices: tunnels.iter().flatten().copied().collect(),
+            detached: Vec::new(),
         })
     }
 
     pub(super) fn graph(&self) -> &LinkedVisibility {
         self.graph
+    }
+
+    pub(super) fn detached(&self) -> &[Point] {
+        &self.detached
+    }
+
+    pub(super) fn into_detached(self) -> Vec<Point> {
+        self.detached
+    }
+
+    pub(super) fn add_detached(&mut self, points: [Point; 2]) -> [usize; 2] {
+        let first = self.graph.vertices.len() + self.detached.len();
+        self.detached.extend(points);
+        [first, first + 1]
     }
 
     /// Registers a raw route and marks the grid for subsequent searches.
@@ -153,7 +169,7 @@ impl<'a> RouteHistory<'a> {
         }
         for &index in &vertices {
             step(work)?;
-            if index >= self.graph.vertices.len() || !visited.insert(index) {
+            if index >= self.graph.vertices.len() + self.detached.len() || !visited.insert(index) {
                 return Err(Error::InvalidGraph);
             }
         }
@@ -273,7 +289,10 @@ impl<'a> RouteHistory<'a> {
         }
         let segments = &mut lines[position].segments;
         let position = segments.partition_point(|entry| {
-            segment_for_entry(self.graph, *entry).ordered(direction).1 < start
+            segment_for_entry(self.graph, &self.detached, *entry)
+                .ordered(direction)
+                .1
+                < start
         });
         segments.insert(position, pair);
     }
@@ -361,7 +380,10 @@ impl<'a> RouteHistory<'a> {
         for &index in &routes {
             step(work)?;
             let route = &mut self.routes[index];
-            if edge.directed() && route.edge.directed() && route.opposes(self.graph, probe, work)? {
+            if edge.directed()
+                && route.edge.directed()
+                && route.opposes(self.graph, &self.detached, probe, work)?
+            {
                 return Ok(true);
             }
         }
@@ -394,11 +416,11 @@ impl<'a> RouteHistory<'a> {
     }
 
     fn segment(&self, indices: [usize; 2]) -> Segment {
-        segment_for_entry(self.graph, indices)
+        segment_for_entry(self.graph, &self.detached, indices)
     }
 
     fn key(&self, vertex: usize) -> PointKey {
-        point_key(self.graph.vertices[vertex].point)
+        point_key(route_point(self.graph, &self.detached, vertex))
     }
 
     fn routes_at(&self, vertex: usize) -> &[usize] {
@@ -504,48 +526,8 @@ impl<'a> RouteHistory<'a> {
         routes: &[usize],
         work: &mut usize,
     ) -> Result<bool, Error> {
-        if routes.is_empty() {
-            return Ok(true);
-        }
-        let passes = if edge.directed() { 1 } else { 10 };
-        for _ in 0..passes {
-            charge(work, routes.len())?;
-        }
-        let other_edges = routes.iter().map(|&route| &self.routes[route].edge);
-        if edge.directed() {
-            return Ok(other_edges.clone().all(|other| {
-                other.directed()
-                    && (edge.owners[0] == other.owners[0] || edge.owners[1] == other.owners[1])
-                    && edge.arrowheads == other.arrowheads
-                    && edge.appearance == other.appearance
-            }));
-        }
-        let bidirectional = edge.arrows() == [true, true];
-        let undirected = edge.arrows() == [false, false];
-        if bidirectional && edge.arrowheads[0] != edge.arrowheads[1]
-            || !bidirectional && !undirected
-        {
-            return Ok(false);
-        }
-        if !other_edges.clone().all(|other| {
-            other.appearance == edge.appearance
-                && if bidirectional {
-                    other.arrowheads == edge.arrowheads
-                } else {
-                    other.arrows() == [false, false]
-                }
-        }) {
-            return Ok(false);
-        }
-        // The reference counts point occurrences in this multiset of routes.
-        // Coincident OVG vertices can record one route more than once.
-        let mut counts = HashMap::new();
-        for edge in std::iter::once(edge).chain(other_edges) {
-            for owner in edge.owners {
-                *counts.entry(owner).or_insert(0) += 1;
-            }
-        }
-        Ok(counts.into_values().any(|count| count == routes.len() + 1))
+        let others = routes.iter().map(|&route| &self.routes[route].edge);
+        can_share(edge, others, work)
     }
 
     fn traversal_blocked(
@@ -563,18 +545,68 @@ impl<'a> RouteHistory<'a> {
         for &index in routes {
             step(work)?;
             let route = &mut self.routes[index];
-            if directed && route.edge.directed() && route.opposes(self.graph, candidate, work)? {
+            if directed
+                && route.edge.directed()
+                && route.opposes(self.graph, &self.detached, candidate, work)?
+            {
                 return Ok(true);
             }
             if is_tunnel {
                 charge(work, route.vertices.len())?;
-                if route.contained_by(self.graph, candidate) {
+                if route.contained_by(self.graph, &self.detached, candidate) {
                     return Ok(true);
                 }
             }
         }
         Ok(false)
     }
+}
+
+pub(super) fn can_share<'a>(
+    edge: &'a OrdinaryEdge,
+    others: impl ExactSizeIterator<Item = &'a OrdinaryEdge> + Clone,
+    work: &mut usize,
+) -> Result<bool, Error> {
+    let count = others.len();
+    if count == 0 {
+        return Ok(true);
+    }
+    let passes = if edge.directed() { 1 } else { 10 };
+    for _ in 0..passes {
+        charge(work, count)?;
+    }
+    if edge.directed() {
+        return Ok(others.clone().all(|other| {
+            other.directed()
+                && (edge.owners[0] == other.owners[0] || edge.owners[1] == other.owners[1])
+                && edge.arrowheads == other.arrowheads
+                && edge.appearance == other.appearance
+        }));
+    }
+    let bidirectional = edge.arrows() == [true, true];
+    let undirected = edge.arrows() == [false, false];
+    if bidirectional && edge.arrowheads[0] != edge.arrowheads[1] || !bidirectional && !undirected {
+        return Ok(false);
+    }
+    if !others.clone().all(|other| {
+        other.appearance == edge.appearance
+            && if bidirectional {
+                other.arrowheads == edge.arrowheads
+            } else {
+                other.arrows() == [false, false]
+            }
+    }) {
+        return Ok(false);
+    }
+    // The reference counts point occurrences in this multiset of routes.
+    // Coincident OVG vertices can record one route more than once.
+    let mut counts = HashMap::new();
+    for edge in std::iter::once(edge).chain(others) {
+        for owner in edge.owners {
+            *counts.entry(owner).or_insert(0) += 1;
+        }
+    }
+    Ok(counts.into_values().any(|per_node| per_node == count + 1))
 }
 
 fn line_key(direction: Direction, coordinate: f64) -> LineKey {
@@ -588,10 +620,22 @@ fn line_key(direction: Direction, coordinate: f64) -> LineKey {
     )
 }
 
-fn segment_for_entry(graph: &LinkedVisibility, [from, to]: [usize; 2]) -> Segment {
+pub(super) fn route_point(graph: &LinkedVisibility, detached: &[Point], index: usize) -> Point {
+    if let Some(vertex) = graph.vertices.get(index) {
+        vertex.point
+    } else {
+        detached[index - graph.vertices.len()]
+    }
+}
+
+fn segment_for_entry(
+    graph: &LinkedVisibility,
+    detached: &[Point],
+    [from, to]: [usize; 2],
+) -> Segment {
     Segment {
-        from: graph.vertices[from].point,
-        to: graph.vertices[to].point,
+        from: route_point(graph, detached, from),
+        to: route_point(graph, detached, to),
     }
 }
 
@@ -624,6 +668,7 @@ impl AcceptedRoute {
     fn opposes(
         &mut self,
         graph: &LinkedVisibility,
+        detached: &[Point],
         candidate: Segment,
         work: &mut usize,
     ) -> Result<bool, Error> {
@@ -631,7 +676,7 @@ impl AcceptedRoute {
             let mut directions: HashMap<_, Vec<_>> = HashMap::new();
             for pair in self.vertices[..self.vertices.len() - 1].windows(2) {
                 step(work)?;
-                let segment = segment_for_entry(graph, [pair[0], pair[1]]);
+                let segment = segment_for_entry(graph, detached, [pair[0], pair[1]]);
                 if segment.from == segment.to {
                     continue;
                 }
@@ -662,7 +707,12 @@ impl AcceptedRoute {
         Ok(false)
     }
 
-    fn contained_by(&self, graph: &LinkedVisibility, candidate: Segment) -> bool {
+    fn contained_by(
+        &self,
+        graph: &LinkedVisibility,
+        detached: &[Point],
+        candidate: Segment,
+    ) -> bool {
         let direction = if candidate.from.y == candidate.to.y {
             Direction::Horizontal
         } else if candidate.from.x == candidate.to.x {
@@ -674,7 +724,7 @@ impl AcceptedRoute {
         self.vertices[1..self.vertices.len() - 1]
             .windows(2)
             .all(|pair| {
-                let segment = segment_for_entry(graph, [pair[0], pair[1]]);
+                let segment = segment_for_entry(graph, detached, [pair[0], pair[1]]);
                 let aligned = match direction {
                     Direction::Horizontal => segment.from.y == line && segment.to.y == line,
                     Direction::Vertical => segment.from.x == line && segment.to.x == line,

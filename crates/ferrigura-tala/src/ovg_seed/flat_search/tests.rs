@@ -171,6 +171,8 @@ fn matches_every_pinned_go_raw_observatory_route() {
                     slingshot += 1;
                     "slingshot"
                 }
+                RouteStrategy::Quick => "quick",
+                RouteStrategy::Fallback => "line",
                 RouteStrategy::Weighted => {
                     weighted += 1;
                     "search"
@@ -240,6 +242,15 @@ fn matches_every_pinned_go_raw_observatory_route() {
             &[[1400.0, 1159.0], [1572.0, 1159.0], [1572.0, 1186.0]],
         ),
     ];
+    let before = search.route_points_in_input_order(&selected).unwrap();
+    let mut after = before.clone();
+    search
+        .straight_edges_fallback(&edges, &mut after, &mut work)
+        .unwrap();
+    assert_eq!(
+        after, before,
+        "Go leaves all Observatory routes unchanged at straight fallback"
+    );
     assert_eq!(selected.routes.len(), expected.len());
     for (route, (owners, vertices)) in selected.routes.into_iter().zip(expected) {
         assert_eq!(&edges[route.edge].owners, owners);

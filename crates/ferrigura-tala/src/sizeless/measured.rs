@@ -59,91 +59,116 @@ pub fn refined_flat_from_measurements(
     input: &Graph,
     seed: i64,
 ) -> Result<Vec<NodeGeometry>, Error> {
-    let component = measured_component(input)?;
-    let bodies = super::place_flat_component(&component.graph, seed, &component.obstacle_order)?;
-    super::refine_flat_component(&component.graph, &bodies, &component.obstacle_order)
+    measured_component(input)?.place(seed)
 }
 
-struct MeasuredComponent {
-    graph: Graph,
-    obstacle_order: Vec<usize>,
+pub(crate) struct MeasuredComponent {
+    pub graph: Graph,
+    pub obstacle_order: Vec<usize>,
+    pub node_ids: Vec<i64>,
+    pub edge_owners: Vec<[usize; 2]>,
 }
 
 fn measured_component(input: &Graph) -> Result<MeasuredComponent, Error> {
-    let mut graph = LayoutGraph::translate(input)?;
-    if graph.roots.len() != graph.nodes.len()
-        || graph.nodes.iter().any(|node| node.shape != Shape::Square)
-    {
-        return Err(Error::UnsupportedGraph);
+    MeasuredComponent::new(input, LayoutGraph::translate(input)?)
+}
+
+impl MeasuredComponent {
+    pub(crate) fn place(&self, seed: i64) -> Result<Vec<NodeGeometry>, Error> {
+        let bodies = super::place_flat_component(&self.graph, seed, &self.obstacle_order)?;
+        super::refine_flat_component(&self.graph, &bodies, &self.obstacle_order)
     }
-    graph.prescale();
-    let components = graph.flat_components();
-    let [component] = components.as_slice() else {
-        return Err(Error::UnsupportedGraph);
-    };
-    let direction = graph.direction.map(|direction| {
-        match direction {
-            Direction::Top => "BT",
-            Direction::Right => "LR",
-            Direction::Bottom => "TB",
-            Direction::Left => "RL",
+
+    pub(crate) fn new(input: &Graph, mut graph: LayoutGraph) -> Result<Self, Error> {
+        if graph.roots.len() != graph.nodes.len()
+            || graph.nodes.iter().any(|node| node.shape != Shape::Square)
+        {
+            return Err(Error::UnsupportedGraph);
         }
-        .to_owned()
-    });
-    let ids = |index: usize| &input.nodes[graph.nodes[index].input_index].id;
-    let nodes = component
-        .nodes
-        .iter()
-        .map(|&index| {
-            let node = &graph.nodes[index];
-            Node {
-                id: ids(index).clone(),
-                parent_id: None,
-                direction: None,
-                is_group: false,
-                shape: "rect".into(),
-                width: node.width,
-                height: node.height,
-                label: String::new(),
-                label_width: 0.0,
-                label_height: 0.0,
+        graph.prescale();
+        let components = graph.flat_components();
+        let [component] = components.as_slice() else {
+            return Err(Error::UnsupportedGraph);
+        };
+        let direction = graph.direction.map(|direction| {
+            match direction {
+                Direction::Top => "BT",
+                Direction::Right => "LR",
+                Direction::Bottom => "TB",
+                Direction::Left => "RL",
             }
+            .to_owned()
+        });
+        let ids = |index: usize| &input.nodes[graph.nodes[index].input_index].id;
+        let nodes = component
+            .nodes
+            .iter()
+            .map(|&index| {
+                let node = &graph.nodes[index];
+                Node {
+                    id: ids(index).clone(),
+                    parent_id: None,
+                    direction: None,
+                    is_group: false,
+                    shape: "rect".into(),
+                    width: node.width,
+                    height: node.height,
+                    label: String::new(),
+                    label_width: 0.0,
+                    label_height: 0.0,
+                }
+            })
+            .collect();
+        let edges = component
+            .edges
+            .iter()
+            .map(|&index| {
+                let edge = &graph.edges[index];
+                let (label, label_width, label_height) =
+                    edge.label.as_ref().map_or_else(Default::default, |label| {
+                        (label.text.clone(), label.width, label.height)
+                    });
+                Edge {
+                    id: input.edges[index].id.clone(),
+                    source: ids(edge.from).clone(),
+                    target: ids(edge.to).clone(),
+                    source_arrow: edge.source_arrow,
+                    target_arrow: edge.target_arrow,
+                    label,
+                    label_width,
+                    label_height,
+                }
+            })
+            .collect();
+        // The split orders optimizer nodes by breadth-first reachability. Go's
+        // obstruction scan still runs in original container sibling order.
+        let mut bfs_index = vec![0; graph.nodes.len()];
+        for (index, &slot) in component.nodes.iter().enumerate() {
+            bfs_index[slot] = index;
+        }
+        let obstacle_order = graph.roots.iter().map(|&slot| bfs_index[slot]).collect();
+        let node_ids = component
+            .nodes
+            .iter()
+            .map(|&slot| graph.nodes[slot].id)
+            .collect();
+        let edge_owners = component
+            .edges
+            .iter()
+            .map(|&slot| {
+                let edge = &graph.edges[slot];
+                [bfs_index[edge.from], bfs_index[edge.to]]
+            })
+            .collect();
+        Ok(Self {
+            graph: Graph {
+                direction,
+                nodes,
+                edges,
+            },
+            obstacle_order,
+            node_ids,
+            edge_owners,
         })
-        .collect();
-    let edges = component
-        .edges
-        .iter()
-        .map(|&index| {
-            let edge = &graph.edges[index];
-            let (label, label_width, label_height) =
-                edge.label.as_ref().map_or_else(Default::default, |label| {
-                    (label.text.clone(), label.width, label.height)
-                });
-            Edge {
-                id: input.edges[index].id.clone(),
-                source: ids(edge.from).clone(),
-                target: ids(edge.to).clone(),
-                source_arrow: edge.source_arrow,
-                target_arrow: edge.target_arrow,
-                label,
-                label_width,
-                label_height,
-            }
-        })
-        .collect();
-    // The split orders optimizer nodes by breadth-first reachability. Go's
-    // obstruction scan still runs in original container sibling order.
-    let mut bfs_index = vec![0; graph.nodes.len()];
-    for (index, &slot) in component.nodes.iter().enumerate() {
-        bfs_index[slot] = index;
     }
-    let obstacle_order = graph.roots.iter().map(|&slot| bfs_index[slot]).collect();
-    Ok(MeasuredComponent {
-        graph: Graph {
-            direction,
-            nodes,
-            edges,
-        },
-        obstacle_order,
-    })
 }

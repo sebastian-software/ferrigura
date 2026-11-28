@@ -18,6 +18,8 @@ use crate::{Error, Graph, MAX_EDGES, MAX_NODES, NodeGeometry, Point, valid_dimen
 
 mod axis;
 mod equidistance;
+mod gap;
+mod swap;
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +38,11 @@ pub struct RefinementSnapshot {
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 enum Stage {
+    SwapStuff,
+    Transpose,
     AlignAxes,
+    GapNormalization,
+    PostGapAlignAxes,
     BalanceSymmetry,
     Equidistance,
     FinalAlignAxes,
@@ -44,9 +50,8 @@ enum Stage {
 }
 
 /// Runs rectangular alignment, symmetry, and equidistance, then adds routing
-/// padding. Feed it the body placement for one component that has finished
-/// swap, transpose, and gap normalization. The order indexes authored siblings
-/// into the prepared node order.
+/// padding after global swap, transpose, and gap reduction. The order
+/// indexes authored siblings into the prepared node order.
 ///
 /// # Errors
 /// Returns an error for invalid bodies or exhausted refinement work.
@@ -85,8 +90,20 @@ fn refine(
 ) -> Result<Vec<NodeGeometry>, Error> {
     let mut pass = Refinement::new(graph, bodies, obstacle_order)?;
     let mut work = Work(MAX_OPTIMIZATION_WORK);
+    pass.swap_stuff(graph, &mut work)?;
+    observe(Stage::SwapStuff, &pass.nodes);
+    pass.transpose_all(&mut work)?;
+    observe(Stage::Transpose, &pass.nodes);
     pass.align(&mut work)?;
     observe(Stage::AlignAxes, &pass.nodes);
+    let normalize_gaps_accepted = pass.normalize_gaps(&mut work)?;
+    observe(Stage::GapNormalization, &pass.nodes);
+    pass.refresh_turn_cost(graph)?;
+    if normalize_gaps_accepted {
+        pass.align(&mut work)?;
+    }
+    observe(Stage::PostGapAlignAxes, &pass.nodes);
+
     pass.balance_symmetry(&mut work)?;
     observe(Stage::BalanceSymmetry, &pass.nodes);
     let moved = pass.equidistance(&mut work)?;
@@ -180,10 +197,28 @@ impl<'a> Refinement<'a> {
         })
     }
 
+    fn refresh_turn_cost(&mut self, graph: &Graph) -> Result<(), Error> {
+        self.scorer = EdgeCost::new(graph, &self.nodes, cell_size(&self.nodes), self.order)?;
+        self.scorer.restore_full_turn_cost();
+        Ok(())
+    }
+
     fn score(&self, work: &mut Work) -> Result<f64, Error> {
+        self.score_with_direction(work, true)
+    }
+
+    fn score_with_direction(
+        &self,
+        work: &mut Work,
+        penalize_direction: bool,
+    ) -> Result<f64, Error> {
         let mut total = 0.0;
         for &node in self.order {
-            total += self.scorer.score(node, &self.nodes, work)?;
+            let edge =
+                self.scorer
+                    .score_with_direction(node, &self.nodes, work, penalize_direction)?;
+            let symmetry = self.scorer.symmetry(node, &self.nodes, work)?;
+            total += edge - self.scorer.global_symmetry_credit(node, symmetry);
         }
         let crossings = self.crossings(work)?;
         Ok(total + self.crossing_cost * f64::from(crossings))
@@ -258,7 +293,7 @@ impl<'a> Refinement<'a> {
         for &a in moving {
             for b in 0..self.nodes.len() {
                 work.add(1)?;
-                if a == b || moving.contains(&b) {
+                if a == b {
                     continue;
                 }
                 let previous = &before[a];

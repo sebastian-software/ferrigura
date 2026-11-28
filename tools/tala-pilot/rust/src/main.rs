@@ -207,6 +207,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ferrigura_tala::sizeless::place_flat_component(&graph, seed, &obstacle_order)?;
             serde_json::to_writer(output, &result)?;
         }
+        Some("--flat-layout") => {
+            let PlacementCapture { graph, seed, .. } = serde_json::from_reader(input)?;
+            serde_json::to_writer(
+                output,
+                &ferrigura_tala::flat::layout_for_seed(&graph, seed)?,
+            )?;
+        }
+        Some("--flat-layout-default") => {
+            let graph = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &ferrigura_tala::flat::default_layout(&graph)?)?;
+        }
+        Some("--flat-routes") => {
+            let PlacementCapture { graph, seed, .. } = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &ferrigura_tala::flat::route_for_seed(&graph, seed)?)?;
+        }
         Some("--direct-flat-component") => {
             let PlacementCapture {
                 graph,
@@ -333,7 +348,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "--direct-flat-component, --place-flat-component, --measured-flat-placement, ",
                 "--flat-refinement-snapshots, --measured-flat-refinement, --ovg-seed, ",
                 "--ovg-edge-points, --ovg-boundary-points, --ovg-tunnels, --ovg-links, ",
-                "--candidate-score, --route-output, --raw-routes, --edge-label-placement, ",
+                "--candidate-score, --route-output, --raw-routes, --flat-routes, --flat-layout, --flat-layout-default, --edge-label-placement, ",
                 "--shared-label-obstacles, --finalize-routes, --simplify, --balance, or no argument"
             )
             .into());

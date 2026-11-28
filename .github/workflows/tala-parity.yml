@@ -88,7 +88,8 @@ jobs:
           node tools/tala-pilot/check-candidate-scores.mjs \
             --reference "$RUNNER_TEMP/tala-reference" \
             --traced "$RUNNER_TEMP/tala-score-reference" \
-            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala \
+            --ferrigura target/debug/examples/tala_pilot
       - name: Compare final normalization and its SVG with Go
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |
