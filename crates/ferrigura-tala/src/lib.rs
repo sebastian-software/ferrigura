@@ -23,8 +23,12 @@ pub mod normalize;
 pub mod ovg_seed;
 mod placement;
 #[doc(hidden)]
+pub mod quality;
+#[doc(hidden)]
 pub mod route_output;
 mod routing;
+#[doc(hidden)]
+pub mod seed_selection;
 #[doc(hidden)]
 pub mod simplify;
 #[doc(hidden)]

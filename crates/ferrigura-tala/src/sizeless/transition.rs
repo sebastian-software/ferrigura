@@ -9,12 +9,94 @@
 use std::collections::HashMap;
 
 use super::{compaction::Axis, optimize_phase};
-use crate::{Error, Graph, NodeGeometry, valid_dimension};
+use crate::layout_graph::{Direction, LayoutGraph, Shape};
+use crate::{Edge, Error, Graph, Node, NodeGeometry, valid_dimension};
 
 const NODE_GAP: f64 = 20.0;
 const CONNECTED_NODE_GAP: f64 = 60.0;
 const EDGE_LABEL_PADDING: f64 = 10.0;
 const TRANSITION_FACTOR: f64 = 3.0;
+
+/// Runs translation, prescale and seeded placement on the measured input of a
+/// flat rectangular component whose topology is unchanged by preprocessing.
+///
+/// # Errors
+/// Rejects invalid measurements, nested or nonrectangular input, or topology
+/// outside the flat placement stages.
+pub fn sized_transition_from_measurements(
+    input: &Graph,
+    seed: i64,
+) -> Result<Vec<NodeGeometry>, Error> {
+    let mut graph = LayoutGraph::translate(input)?;
+    if graph.roots.len() != graph.nodes.len()
+        || graph.nodes.iter().any(|node| node.shape != Shape::Square)
+    {
+        return Err(Error::UnsupportedGraph);
+    }
+    graph.prescale();
+    let components = graph.flat_components();
+    let [component] = components.as_slice() else {
+        return Err(Error::UnsupportedGraph);
+    };
+    let direction = graph.direction.map(|direction| {
+        match direction {
+            Direction::Top => "BT",
+            Direction::Right => "LR",
+            Direction::Bottom => "TB",
+            Direction::Left => "RL",
+        }
+        .to_owned()
+    });
+    let ids = |index: usize| &input.nodes[graph.nodes[index].input_index].id;
+    let nodes = component
+        .nodes
+        .iter()
+        .map(|&index| {
+            let node = &graph.nodes[index];
+            Node {
+                id: ids(index).clone(),
+                parent_id: None,
+                direction: None,
+                is_group: false,
+                shape: "rect".into(),
+                width: node.width,
+                height: node.height,
+                label: String::new(),
+                label_width: 0.0,
+                label_height: 0.0,
+            }
+        })
+        .collect();
+    let edges = component
+        .edges
+        .iter()
+        .map(|&index| {
+            let edge = &graph.edges[index];
+            let (label, label_width, label_height) =
+                edge.label.as_ref().map_or_else(Default::default, |label| {
+                    (label.text.clone(), label.width, label.height)
+                });
+            Edge {
+                id: input.edges[index].id.clone(),
+                source: ids(edge.from).clone(),
+                target: ids(edge.to).clone(),
+                source_arrow: edge.source_arrow,
+                target_arrow: edge.target_arrow,
+                label,
+                label_width,
+                label_height,
+            }
+        })
+        .collect();
+    transition_to_sized(
+        &Graph {
+            direction,
+            nodes,
+            edges,
+        },
+        seed,
+    )
+}
 
 /// Initializes the sized optimizer's rectangular bodies on the grid.
 /// The transition inflates each axis of the preceding sizeless solution.

@@ -15,6 +15,7 @@ const input = await readFile(
   'utf8'
 );
 const { edgeLabels, seeds } = await readFixture('sizeless/observatory.json');
+const measuredGraph = JSON.parse(input);
 const initialization = await readFixture('initialize/fixtures.json');
 const { graph } = initialization.find(({ name }) => name === 'Cyclic observatory services');
 assert.equal(edgeLabels.length, graph.edges.length);
@@ -60,8 +61,19 @@ for (const { seed, firstPass, fullPhase, sizedTransition } of seeds) {
     });
     assert.deepEqual(JSON.parse(run), expected, `${stage}, seed ${seed}: native geometry differs`);
   }
+  const run = execFileSync(rust, ['--measured-sized-transition'], {
+    ...options,
+    input: JSON.stringify({ graph: measuredGraph, seed }),
+  });
+  assert.deepEqual(
+    JSON.parse(run),
+    sizedTransition,
+    `Measured Ferrigura input differs at the sized transition for seed ${seed}`
+  );
 }
-console.log(`Matched ${captures.length} seeded placement stages with pinned Go.`);
+console.log(
+  `Matched ${captures.length} seeded placement stages and ${seeds.length} measured-input transitions with pinned Go.`
+);
 
 async function readFixture(path) {
   const source = new URL('../../crates/ferrigura-tala/src/', import.meta.url);

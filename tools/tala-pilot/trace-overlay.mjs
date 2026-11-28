@@ -17,14 +17,19 @@ const modes = {
   'route-output': ['patch.go', 'patch-overlay.go', traceRouteOutput],
 };
 assert(
-  sourceRoot && output && Object.hasOwn(modes, mode),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output]'
+  sourceRoot && output && (Object.hasOwn(modes, mode) || mode === 'candidate-score'),
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|candidate-score]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
 const dest = resolve(output);
 const actual = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 assert.equal(actual, pin, 'D2 checkout must be at the pilot pin');
+
+if (mode === 'candidate-score') {
+  await traceCandidateScores(join(root, 'd2layouts/d2talalayout'));
+  process.exit(0);
+}
 
 const [relativeSource, child, instrument] = modes[mode];
 const source = join(root, 'd2layouts/d2talalayout', relativeSource);
@@ -56,14 +61,22 @@ function traceNormalization(source) {
 
 function traceOvgSeed(source) {
   const imports = '\t"math"\n';
-  const intersections =
-    '\tif err := ovg.addNodesIntersections(g, guard); err != nil {\n' +
-    '\t\treturn nil, err\n\t}\n';
-  return replaceOnce(
-    replaceOnce(source, imports, imports + '\t"os"\n'),
-    intersections,
-    intersections + '\ttracePilotOVGSeed(ovg, g, len(hierarchyOVGs) == 0)\n'
-  );
+  let instrumented = replaceOnce(source, imports, imports + '\t"os"\n');
+  for (const [call, stage] of [
+    ['addNodesIntersections(g, guard)', 'SEED'],
+    ['addEdgesNodes(g, hierarchies, guard)', 'EDGE_POINTS'],
+    ['addCornerNodes(g, tl, br, guard)', 'BOUNDARY_POINTS'],
+    ['addTunnels(g, guard)', 'TUNNELS'],
+    ['flagNodesNearPorts(guard)', 'LINKS'],
+  ]) {
+    const boundary = `\tif err := ovg.${call}; err != nil {\n\t\treturn nil, err\n\t}\n`;
+    instrumented = replaceOnce(
+      instrumented,
+      boundary,
+      boundary + `\ttracePilotOVGSeed(ovg, g, len(hierarchyOVGs) == 0, "${stage}")\n`
+    );
+  }
+  return instrumented;
 }
 
 function traceLayoutGraph(source) {
@@ -123,5 +136,48 @@ function traceSizelessPlacement(source) {
     withFullPhase,
     aligned,
     aligned + '\ttracePilotSizelessPlacement("sizedTransition", seed, subgraph)\n'
+  );
+}
+
+async function traceCandidateScores(tala) {
+  const source = join(tala, 'layout.go');
+  const target = join(dest, 'candidate-score-overlay.go');
+  const qualitySource = join(tala, 'internal/quality/scoring.go');
+  const qualityTarget = join(dest, 'quality-overlay.go');
+  const original = await readFile(source, 'utf8');
+  const quality = await readFile(qualitySource, 'utf8');
+  const helper = await readFile(new URL('trace-candidate-score.go.txt', import.meta.url), 'utf8');
+  const instrumentation = replaceOnce(
+    replaceOnce(
+      replaceOnce(
+        original,
+        '\t"errors"\n',
+        '\t"errors"\n\t"encoding/json"\n\t"os"\n' +
+          '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/labeling"\n' +
+          '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/layoutgraph"\n' +
+          '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/quality"\n' +
+          '\t"github.com/d2lang/d2/lib/geo"\n' +
+          '\t"github.com/d2lang/d2/lib/label"\n'
+      ),
+      '\tattempt.result, attempt.err = evaluateSeedResult(ctx, input, laidOut)\n',
+      '\tattempt.result, attempt.err = evaluateSeedResult(ctx, input, laidOut)\n' +
+        '\ttracePilotSeedCandidate(ctx, index, seed, attempt.result, attempt.err)\n'
+    ),
+    '\n\treturn best, nil\n}\n',
+    '\n\ttracePilotSeedChoice(best.seed)\n\treturn best, nil\n}\n'
+  );
+  await mkdir(dest, { recursive: true });
+  await writeFile(target, instrumentation + '\n' + helper);
+  await writeFile(
+    qualityTarget,
+    quality +
+      '\nfunc PilotEvaluationWork(ctx context.Context, graph *layoutgraph.Graph) (int64, error) {\n' +
+      '\t_, _, work, err := evaluateWithAreaLimit(ctx, graph, maxEvaluationWorkUnits)\n' +
+      '\treturn work, err\n}\n'
+  );
+  execFileSync('gofmt', ['-w', target, qualityTarget]);
+  await writeFile(
+    join(dest, 'overlay.json'),
+    JSON.stringify({ Replace: { [source]: target, [qualitySource]: qualityTarget } })
   );
 }

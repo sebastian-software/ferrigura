@@ -14,6 +14,24 @@
   "adapter_test.go#TestCollectD2ObjectVisitsPreservesDFSOrder": [
     "layout_graph::tests::preserves_d2_object_visit_order"
   ],
+  "adapter_test.go#TestCoordinateLocalSeedsCancellationIsStrictAndJoinsWorkers": [
+    "seed_selection::tests::cancellation_joins_workers_before_rejecting_completed_candidate"
+  ],
+  "adapter_test.go#TestCoordinateLocalSeedsReportsAllFailures": [
+    "seed_selection::tests::orders_all_failures_by_configured_seed"
+  ],
+  "adapter_test.go#TestCoordinateLocalSeedsRunsAllWithBoundedConcurrency": [
+    "seed_selection::tests::all_attempts_run_with_bounded_concurrency"
+  ],
+  "adapter_test.go#TestCoordinateLocalSeedsSelectionIsIndependentOfCompletionOrder": [
+    "seed_selection::tests::parallel_completion_does_not_change_selected_candidate"
+  ],
+  "adapter_test.go#TestCoordinateLocalSeedsToleratesPartialFailure": [
+    "seed_selection::tests::tolerates_partial_failure"
+  ],
+  "adapter_test.go#TestNormalizeSeeds": [
+    "seed_selection::tests::normalize_seeds_in_first_seen_order"
+  ],
   "internal/placement/sizeless_optimizer_test.go#TestFindClosestUnoccupiedDistance": [
     "sizeless::tests::finds_closest_unoccupied_distance"
   ],
@@ -22,6 +40,30 @@
   ],
   "internal/placement/sizeless_optimizer_test.go#TestSwapCandidates": [
     "sizeless::tests::finds_optimizable_swaps_in_go_order"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluateCanceledBeforeWork": [
+    "quality::tests::evaluate_canceled_before_work"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluateKeepsAreaAsSeparateTieBreaker": [
+    "quality::tests::evaluate_keeps_area_as_separate_tie_breaker"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluatePreflightsEngineResources": [
+    "quality::tests::evaluate_preflights_engine_resources"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluateWithAreaPreservesLargeFractionalArea": [
+    "quality::tests::evaluate_preserves_large_fractional_area"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluateWorkLimitChargesEdgesWithoutCompleteRoutes": [
+    "quality::tests::evaluate_work_limit_charges_edges_without_complete_routes"
+  ],
+  "internal/quality/scoring_test.go#TestEvaluateWorkLimitIsExact": [
+    "quality::tests::evaluate_work_limit_is_exact"
+  ],
+  "internal/quality/scoring_test.go#TestNonSharedCrossingCountUsesFixedWidthAccumulator": [
+    "quality::tests::non_shared_crossing_count_uses_fixed_width_accumulator"
+  ],
+  "internal/quality/scoring_test.go#TestScoreExistingLabelPlacementsCanceledBeforeWork": [
+    "quality::tests::score_existing_label_placements_canceled_before_work"
   ],
   "internal/routing/balance_order_test.go#TestBalanceEdgeSegmentsStillUncrossesDifferentRanges": [
     "balance::tests::balance_edge_segments_still_uncrosses_different_ranges"
@@ -61,5 +103,19 @@
   ],
   "internal/routing/edge_simplify_safety_test.go#TestSimplifyChecksObstacleContainingNewBend": [
     "simplify::tests::rejects_an_obstacle_that_contains_the_new_bend"
+  ],
+  "internal/routing/ovg_test.go#TestTunnelKeepsExistingPortDirections": [
+    "ovg_seed::tunnels::tests::tunnel_keeps_existing_port_directions"
+  ],
+  "internal/routing/tunnel_test.go#TestTunnelMultiple": [
+    "ovg_seed::tunnels::tests::tunnel_multiple"
+  ],
+  "internal/routing/tunnel_test.go#TestTunnelObscured": [
+    "ovg_seed::tunnels::tests::tunnel_obscured"
+  ],
+  "internal/routing/tunnel_test.go#TestTunnelSimple": ["ovg_seed::tunnels::tests::tunnel_simple"],
+  "result_test.go#TestScoreCompare": ["seed_selection::tests::score_compare"],
+  "seed_selection_test.go#TestSeedSelectionAcrossCompletionOrders": [
+    "seed_selection::tests::seed_selection_across_completion_orders"
   ]
 }
