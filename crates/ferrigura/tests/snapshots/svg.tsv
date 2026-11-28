@@ -1,5 +1,5 @@
-e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram-2.mmd	0b1070509e2c9a33	a23405650abb8d4f
-e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram.mmd	5093c7ca041d932f	b85e3efebc750911
+e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram-2.mmd	0b1070509e2c9a33	d7f33073f9f9da75
+e2e/diagrams/class-diagram/nightly-check/0-should-render-a-simple-class-diagram.mmd	5093c7ca041d932f	23d6c8bcd6a5782b
 e2e/diagrams/class-diagram/nightly-check/1-1-should-render-a-simple-class-diagram-without-htmllabels.mmd	42cb0ac06ed75ab7	2f14d45f70f5c425
 e2e/diagrams/class-diagram/nightly-check/1-should-render-a-simple-class-diagram-2.mmd	0508682fd414d237	7385f6d0b0615b1d
 e2e/diagrams/class-diagram/nightly-check/1-should-render-a-simple-class-diagram-3.mmd	923822789d30fc97	f0b26063e02aee6d
@@ -66,7 +66,7 @@ e2e/diagrams/class-diagram/nightly-check/8-should-render-a-simple-class-diagram-
 e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link-2.mmd	2abf16369b199069	18fb5bf6a4a109ab
 e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link-3.mmd	5a2bd7a21db65a31	a487daf49eeebc67
 e2e/diagrams/class-diagram/nightly-check/9-should-render-a-simple-class-diagram-with-clickable-link.mmd	959c0704000d4c91	513360a456de870b
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-0-should-render-a-simple-class-diagram.mmd	b44cdbed71a30077	c61ea8711a00291b
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-0-should-render-a-simple-class-diagram.mmd	b44cdbed71a30077	45eb3d7c5e89999d
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1-1-should-render-a-simple-class-diagram-without-htmllabels.mmd	61b638a15701f1f4	61b638a15701f1f4
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-1-should-render-a-simple-class-diagram.mmd	100e1a0eb96a2262	100e1a0eb96a2262
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-10-should-render-a-simple-class-diagram-with-clickable-callback.mmd	3757d4899b98fdef	52248f63d1ea8429
@@ -461,7 +461,7 @@ e2e/diagrams/flowchart/nightly-check/05-should-include-classes-on-the-edges.mmd	
 e2e/diagrams/flowchart/nightly-check/06-should-render-a-flowchart-with-title.mmd	cd2cd0f434b28ba7	cd2cd0f434b28ba7	8b9dd651375273af
 e2e/diagrams/flowchart/nightly-check/07-render-with-stylized-arrows.mmd	3650cbace172ee9d	3650cbace172ee9d	635ff8f0bbbde795
 e2e/diagrams/flowchart/nightly-check/3-a-link-with-correct-arrowhead-to-a-subgraph.mmd	57c145f73a643aca	57c145f73a643aca	c2a205cfd03b4f63
-e2e/diagrams/flowchart/nightly-check/4-length-of-edges.mmd	b4718113a5f98f67	3048b660c9960a67	cfba4b94910cb493
+e2e/diagrams/flowchart/nightly-check/4-length-of-edges.mmd	b4718113a5f98f67	3048b660c9960a67	0711cb76a5a3cc7b
 e2e/diagrams/flowchart/nightly-check/6080-should-handle-diamond-shape-intersections.mmd	ee684e1d5e0cad12	7da3525e499fc364	eaf6bdc2e9914041
 e2e/diagrams/flowchart/nightly-check/6088-1-should-handle-diamond-shape-intersections.mmd	f3ee7d62873a11c8	383a1c4aaf51ed24	49f5a7a1db7609f5
 e2e/diagrams/flowchart/nightly-check/6088-2-should-handle-diamond-shape-intersections.mmd	1d386bb5141a67c3	1d386bb5141a67c3	31a3b07ff26b63ab
@@ -507,7 +507,7 @@ e2e/diagrams/flowchart/nightly-check/handdrawn/render-subroutine-shape.mmd	a1171
 e2e/diagrams/flowchart/nightly-check/handdrawn/set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-disabled.mmd	1daaceb28193cae7	1daaceb28193cae7	ff0f9a150f618651
 e2e/diagrams/flowchart/nightly-check/handdrawn/set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-enabled.mmd	e23d2212f4a7a2ef	e23d2212f4a7a2ef	9b60bd278ffeffe5
 e2e/diagrams/flowchart/nightly-check/handdrawn/should-be-able-to-style-default-node-independently.mmd	9b8e97a2b97636a3	9b8e97a2b97636a3	5b989a526f84d1a9
-e2e/diagrams/flowchart/nightly-check/handdrawn/should-honor-minimum-edge-length-as-specified-by-the-user.mmd	e8f615daa9ccedbb	5849c0aebf72558b	13ff9135c94a9399
+e2e/diagrams/flowchart/nightly-check/handdrawn/should-honor-minimum-edge-length-as-specified-by-the-user.mmd	e8f615daa9ccedbb	5849c0aebf72558b	d0edb04c4dcfdc7f
 e2e/diagrams/flowchart/nightly-check/handdrawn/should-not-slice-off-edges-that-are-to-the-left-of-the-left-most-vertex.mmd	5b0de857de9cd889	5b0de857de9cd889	a58cbc8d85432d99
 e2e/diagrams/flowchart/nightly-check/handdrawn/should-redirect-a-collapsed-subgraph-using-the-handdrawn-look.mmd	3e6991d8df4933a7	3e6991d8df4933a7	a8207c0f43e9ad3b
 e2e/diagrams/flowchart/nightly-check/handdrawn/should-render-a-flowchart-full-of-circles.mmd	d5ca97e9a9706bcb	d5ca97e9a9706bcb	064220fb94a2571b
@@ -712,10 +712,10 @@ e2e/diagrams/flowchart/visual-check/3258-should-render-subgraphs-with-large-node
 e2e/diagrams/flowchart/visual-check/3258-should-render-subgraphs-with-main-graph-nodespacing-and-rankspacing.mmd	cbfd13bbc7d28a5e	cbfd13bbc7d28a5e	5d18f55dde51c7d5
 e2e/diagrams/flowchart/visual-check/33-should-render-a-simple-flowchart-with-diagrampadding-set-to-0.mmd	0eb069bce5e5de0f	98cad2e3fc523665	722b098012ec477f
 e2e/diagrams/flowchart/visual-check/34-testing-the-label-width-in-percy.mmd	1ba18316b92bce43	1ba18316b92bce43	19dec89b5efde057
-e2e/diagrams/flowchart/visual-check/35-should-honor-minimum-edge-length-as-specified-by-the-user.mmd	a9813a84ba0797eb	f38416bc6944d893	9e228958d290a66d
+e2e/diagrams/flowchart/visual-check/35-should-honor-minimum-edge-length-as-specified-by-the-user.mmd	a9813a84ba0797eb	f38416bc6944d893	3d9812a76dca74ed
 e2e/diagrams/flowchart/visual-check/36-should-render-escaped-without-html-labels.mmd	204a45734182ac2d	204a45734182ac2d	65a91b530e1b9edd
 e2e/diagrams/flowchart/visual-check/37-should-render-non-escaped-with-html-labels.mmd	8bd3f8e3200ddfb1	8bd3f8e3200ddfb1	9b0a9f26f0eb25d1
-e2e/diagrams/flowchart/visual-check/4-length-of-edges.mmd	73ab4b7a1ab8b51f	9fec6654a7f5b443	95eec7d0b75a111b
+e2e/diagrams/flowchart/visual-check/4-length-of-edges.mmd	73ab4b7a1ab8b51f	9fec6654a7f5b443	2656c591678ec707
 e2e/diagrams/flowchart/visual-check/4-should-render-a-simple-flowchart-with-trapezoid-and-inverse-trapezoid-vertex-options.mmd	46dddf71b36137cd	9106350623e0fdb5	adb4c5284e7bd1d9
 e2e/diagrams/flowchart/visual-check/4023-should-render-html-labels-with-images-and-or-text-correctly.mmd	6f3b7cdc0b7bdf0b	6f3b7cdc0b7bdf0b	b39394c070ba3389
 e2e/diagrams/flowchart/visual-check/4439-should-render-the-graph-even-if-some-images-are-missing.mmd	df14feeab97ef4d3	df14feeab97ef4d3	730bba0e83e67bf5
@@ -728,14 +728,14 @@ e2e/diagrams/flowchart/visual-check/5064-should-render-when-subgraph-child-has-l
 e2e/diagrams/flowchart/visual-check/53-handle-nested-subgraphs-with-edges-in-and-out.mmd	1d37df88468ca531	1d37df88468ca531	c82fd257339873d7
 e2e/diagrams/flowchart/visual-check/54-handle-nested-subgraphs-with-outgoing-links.mmd	21a667d97bea3206	21a667d97bea3206	5dd1d90306a1f835
 e2e/diagrams/flowchart/visual-check/55-handle-nested-subgraphs-with-outgoing-links-2.mmd	316d29a1a7f40c67	316d29a1a7f40c67	1911427adc9c7211
-e2e/diagrams/flowchart/visual-check/56-handle-nested-subgraphs-with-outgoing-links-3.mmd	dde2697387210c0c	7d06e26f17f04b2e	563c7bd4cd4b0613
+e2e/diagrams/flowchart/visual-check/56-handle-nested-subgraphs-with-outgoing-links-3.mmd	dde2697387210c0c	7d06e26f17f04b2e	6460a4b70db67de1
 e2e/diagrams/flowchart/visual-check/57-handle-nested-subgraphs-with-outgoing-links-2.mmd	300ef164090a8653	300ef164090a8653	c0e901e396084e5d
 e2e/diagrams/flowchart/visual-check/57-handle-nested-subgraphs-with-outgoing-links-4.mmd	ecb332e63ef991da	ecb332e63ef991da	de351383e2024623
-e2e/diagrams/flowchart/visual-check/57-x-handle-nested-subgraphs-with-outgoing-links-5.mmd	254b91ff4cfb2508	f24d6e8e32a8b91c	385d2f1b05a2c1db
+e2e/diagrams/flowchart/visual-check/57-x-handle-nested-subgraphs-with-outgoing-links-5.mmd	254b91ff4cfb2508	f24d6e8e32a8b91c	22ec4edd4043ee8d
 e2e/diagrams/flowchart/visual-check/58-handle-styling-with-style-expressions-2.mmd	dd5ab7487bff72a9	dd5ab7487bff72a9	0817e6f4328daba3
 e2e/diagrams/flowchart/visual-check/58-handle-styling-with-style-expressions.mmd	96c6788d513cf751	96c6788d513cf751	99b0782d78e3f829
 e2e/diagrams/flowchart/visual-check/5824-should-be-able-to-render-string-and-markdown-labels.mmd	511d1d70bd1c7c82	3f746abe9cc56ece	229c2d3dbc944067
-e2e/diagrams/flowchart/visual-check/59-handle-styling-of-subgraphs-and-links.mmd	f17491dd6c4746e6	8fe9ff58e3706f58	9dd68e0e7f7998ff
+e2e/diagrams/flowchart/visual-check/59-handle-styling-of-subgraphs-and-links.mmd	f17491dd6c4746e6	8fe9ff58e3706f58	eefaa27f90859615
 e2e/diagrams/flowchart/visual-check/5a-should-render-flowchart-with-edge-labels-centered-when-htmllabels-is-false.mmd	7e875eea0c4dcd6f	7e875eea0c4dcd6f	253149854c7b4c45
 e2e/diagrams/flowchart/visual-check/5b-angle-brackets-should-be-work-without-html-labels.mmd	bb446e17603379ff	bb446e17603379ff	18c997c58b84785d
 e2e/diagrams/flowchart/visual-check/6-should-render-a-flowchart-full-of-circles.mmd	7a4a8a44610bfbb9	7a4a8a44610bfbb9	a972e9efca8f3ab3
@@ -1216,7 +1216,7 @@ e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-compact-self-loop
 e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-long-descriptions-with-additional-descriptions.mmd	faa020d88c3488fa	948b9052807491a6
 e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-note-with-multiple-lines-in-it.mmd	0097e350821f44aa	4943b06b053720bb
 e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams-2.mmd	e22f8f7f76d19fd4	cdb3f012f9b1d09d
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams-with-labels.mmd	c8c13b9d36aecd14	3981b01521c2efab
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams-with-labels.mmd	c8c13b9d36aecd14	0f351c27c25bce47
 e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams.mmd	c1bed689a2353ad4	62d2cbf5c769952d
 e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-single-state-with-short-descriptions.mmd	3a5b3d8dcd07f5e4	9c1bd81f34195bd4
 e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-diagram-and-set-the-correct-length-of-the-labels.mmd	0340822cc49183b2	87818e7962432cef
@@ -1270,13 +1270,13 @@ e2e/diagrams/state-diagram/nightly-check/should-render-a-state-with-a-note.mmd	2
 e2e/diagrams/state-diagram/nightly-check/should-render-a-state-with-on-the-left-side-when-so-specified.mmd	9111e62614c02aa2	d5f8ef09ad817887
 e2e/diagrams/state-diagram/nightly-check/should-render-a-transition-descriptions-with-new-lines.mmd	69f3cf880062a57e	5a6c5813958ead6e
 e2e/diagrams/state-diagram/nightly-check/simplest-composite-state.mmd	8612ec2b565e7e7c	ab2eabe54305084e
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-dark-theme.mmd	0b79b3b271995235	67a1240106a959a3
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-theme.mmd	72f3c75baed52365	fa08ffeee4872ec7
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-dark-theme.mmd	a7a8655132d65b55	da1599d3bd525a2d
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-theme.mmd	e8b8b506bdff2383	e3dc3dfa92a726cb
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-dark-theme.mmd	0b79b3b271995235	f75b632132f07827
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-theme.mmd	72f3c75baed52365	752dc55d9593c41f
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-dark-theme.mmd	a7a8655132d65b55	9ffb9e38a4009889
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-theme.mmd	e8b8b506bdff2383	e360833a70144f93
 e2e/diagrams/state-diagram/nightly-check/usemaxwidth-false.mmd	9d2d51321dad40fa	f8cc21daceecd77b
 e2e/diagrams/state-diagram/nightly-check/usemaxwidth-true.mmd	1d391ce9fa213854	235324a36f0d2ca1
-e2e/diagrams/state-diagram/pr-check/should-render-a-simple-state-diagrams-with-labels.mmd	fac7626eebd72e76	e13833c940856e57
+e2e/diagrams/state-diagram/pr-check/should-render-a-simple-state-diagrams-with-labels.mmd	fac7626eebd72e76	20648b2dec7b70b3
 e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-a-note-together-with-another-state.mmd	fa21d4cd08bbec5e	d4579c95f648fb2c
 e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-states-in-it.mmd	37dbd3998ab99bae	0c7bc82d5f47edc8
 e2e/diagrams/state-diagram/pr-check/should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd	230ed6face97bfcc	80bb709df771a077
@@ -1342,7 +1342,7 @@ e2e/platform/dev-diagrams/diagrams/sequence-fixes/06-loops-and-labels.mmd	295d9f
 e2e/platform/dev-diagrams/diagrams/sequence-fixes/07-multiline-labels.mmd	0f9d680a834abdba	961a3583de2de168
 e2e/platform/dev-diagrams/diagrams/state-diagram/1-simple-state-diagram.mmd	d86baaf132bc4676	b6c1a8f7e22b3bb9
 e2e/platform/dev-diagrams/diagrams/state-diagram/10-state-with-a-note.mmd	6b7fa02912c15b20	032739d0216984c1
-e2e/platform/dev-diagrams/diagrams/state-diagram/11-transitions-with-labels.mmd	f41bfaac218a4e8e	d18a72055f36a923
+e2e/platform/dev-diagrams/diagrams/state-diagram/11-transitions-with-labels.mmd	f41bfaac218a4e8e	43920670879fc09f
 e2e/platform/dev-diagrams/diagrams/state-diagram/2-simple-state-diagram-v2.mmd	2936770dee2018a6	16765b54cfed9f4b
 e2e/platform/dev-diagrams/diagrams/state-diagram/3-clickable-state-with-tooltip.mmd	ee189b5142aa18c2	524410a4ef0a6a14
 e2e/platform/dev-diagrams/diagrams/state-diagram/4-simple-two-state-chain.mmd	9cf8020064081fe4	16b3c7e7b068470b
@@ -1366,7 +1366,7 @@ e2e/platform/dev-diagrams/layout-tests/domus1.mmd	371947b1156738ff	371947b115673
 e2e/platform/dev-diagrams/layout-tests/edge-from-subgraph.mmd	81ea0aff5732dc78	81ea0aff5732dc78	3b971d0f20a1e6e9
 e2e/platform/dev-diagrams/layout-tests/edge-to-node-in-subgraph.mmd	efba2fbc6d2e6638	efba2fbc6d2e6638	d1aff1d6ff15cbe5
 e2e/platform/dev-diagrams/layout-tests/edge-to-subgraph.mmd	bb4bc1058f080d46	bb4bc1058f080d46	6094493ff2dbabbf
-e2e/platform/dev-diagrams/layout-tests/edge-types.mmd	96df88e98d0252b3	dc3dacb505e37bbb	838d71219da1ddbd
+e2e/platform/dev-diagrams/layout-tests/edge-types.mmd	96df88e98d0252b3	dc3dacb505e37bbb	f2e009e4b1c00fd5
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/4813-title-and-arrow-styling.mmd	20df9e6248ea6495	20df9e6248ea6495	06336aadf179243f
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/Render-stadium-shape.mmd	522ab5aab9ca3b87	fc61950feff2c599	9cb8e6f2c42e8e07
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/class-generic-no-html-labels.mmd	8d45af379a2b42a1	7d175100607d660f
@@ -1376,7 +1376,7 @@ e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/full-class-diagram.mmd	ae6
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/nested-subgraphs-reverse-order.mmd	5109737cd28e008c	5109737cd28e008c	c6536f4bb8c7dc55
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/non-rect-intersections.mmd	f39f880314466f39	eeac4e458cf16691	8279bcae1494723b
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/right-angles-not-curves.mmd	83f573080f833da2	83f573080f833da2	5f1ae1bb1aa8ff7b
-e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/styled-edge-labels.mmd	249b900127887056	f60ea5a87da3ced8	6805fce7c3be8c49
+e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/styled-edge-labels.mmd	249b900127887056	f60ea5a87da3ced8	608b492fdf39f963
 e2e/platform/dev-diagrams/layout-tests/identical-edges-in-subgraph.mmd	48c74c5715518172	48c74c5715518172	5e2fca6603f880bf
 e2e/platform/dev-diagrams/layout-tests/identical-edges.mmd	2ac32314446ee15b	2ac32314446ee15b	e3ce90dc157e3417
 e2e/platform/dev-diagrams/layout-tests/labels-long.mmd	05ab281c5df6d2f9	05ab281c5df6d2f9	96bac361da2ff22b
@@ -1386,9 +1386,9 @@ e2e/platform/dev-diagrams/layout-tests/nested-incoming.mmd	ba020ba36ad0f481	ba02
 e2e/platform/dev-diagrams/layout-tests/nested-outgoing-edges.mmd	384795901b9d66e6	384795901b9d66e6	2ccd85f5c57e22b7
 e2e/platform/dev-diagrams/layout-tests/nested-sb-edges-in-out.mmd	511daa4078da884b	511daa4078da884b	95693e00761be083
 e2e/platform/dev-diagrams/layout-tests/nested-sg-outgoing-2.mmd	c6e2eab21d0247e3	c6e2eab21d0247e3	dd20fad3556b2c5f
-e2e/platform/dev-diagrams/layout-tests/nested-sg-outgoing-3.mmd	cf2d7be093974858	d238e222d9e2f770	ad67db584ce3be11
+e2e/platform/dev-diagrams/layout-tests/nested-sg-outgoing-3.mmd	cf2d7be093974858	d238e222d9e2f770	cfe812a7701bd519
 e2e/platform/dev-diagrams/layout-tests/nested-sg-outgoing-4.mmd	627475ddd5efd8cc	627475ddd5efd8cc	1e627c3802efcd09
-e2e/platform/dev-diagrams/layout-tests/nested-sg-outgoing-5.mmd	d64f9dccc867a7b0	0139977336d38562	2f619e4343ba4789
+e2e/platform/dev-diagrams/layout-tests/nested-sg-outgoing-5.mmd	d64f9dccc867a7b0	0139977336d38562	218bd3d36c282889
 e2e/platform/dev-diagrams/layout-tests/nested-subgraphs-2.mmd	f5f66ee36a748bd5	f5f66ee36a748bd5	05237e816cc21e55
 e2e/platform/dev-diagrams/layout-tests/nested-subgraphs-3.mmd	b6a5758ae3b0a85f	b6a5758ae3b0a85f	72584358da4e3089
 e2e/platform/dev-diagrams/layout-tests/nested-subgraphs.mmd	f0a16151bfe52f3e	f0a16151bfe52f3e	e27fcb40cb37d133
@@ -1403,8 +1403,8 @@ e2e/platform/dev-diagrams/layout-tests/shapes-and-styling.mmd	9ca617c8bbfdc2bf	3
 e2e/platform/dev-diagrams/layout-tests/shapes.mmd	6e35c4ee5d0a6c33	6e35c4ee5d0a6c33	951f2df20270ff45
 e2e/platform/dev-diagrams/layout-tests/simple-graph.mmd	fd96f987a34469c5	fd96f987a34469c5	4c1a9e249381351d
 e2e/platform/dev-diagrams/layout-tests/state-diagram.mmd	2067e7fffc4b3b76	d5f82bffe71fa388
-e2e/platform/dev-diagrams/layout-tests/subgraph-labels-2.mmd	722e0dac95480ebe	7b574aedcd7a5e68	82d8c1ef2717b421
-e2e/platform/dev-diagrams/layout-tests/subgraph-labels-3.mmd	5ffb763852f7101a	eb524c4b5ade5f8e	47b4486444d431ab
+e2e/platform/dev-diagrams/layout-tests/subgraph-labels-2.mmd	722e0dac95480ebe	7b574aedcd7a5e68	cc9a350f27b10031
+e2e/platform/dev-diagrams/layout-tests/subgraph-labels-3.mmd	5ffb763852f7101a	eb524c4b5ade5f8e	bfd3e966b03118ab
 e2e/platform/dev-diagrams/layout-tests/subgraph-labels.mmd	7427bbbb622cf25c	6a51472a20c7c1e2	beb36cc5cbb134c5
 e2e/platform/dev-diagrams/layout-tests/subgraph-variation-2.mmd	ea1d20a1b107460c	ea1d20a1b107460c	dfb5cf13a3d71215
 e2e/platform/dev-diagrams/layout-tests/subgraph-variation.mmd	ad9a9320595901c8	ad9a9320595901c8	04b676d44565fa43
@@ -1412,17 +1412,17 @@ e2e/platform/dev-diagrams/performance/flowcharts/huge1.mmd	a2a3a1f8c995c82b	c11f
 e2e/platform/dev-diagrams/performance/flowcharts/huge2.mmd	34816452cf8b8656	34816452cf8b8656	34816452cf8b8656
 e2e/platform/dev-diagrams/performance/flowcharts/huge3.mmd	a3b1417bf9e43b92	a3b1417bf9e43b92	a3b1417bf9e43b92
 e2e/platform/dev-diagrams/performance/flowcharts/huge4.mmd	34816452cf8b8656	34816452cf8b8656	34816452cf8b8656
-e2e/platform/dev-diagrams/performance/flowcharts/huge5.mmd	068a89035003c12b	7f3b48fe9372f71f	393862e076040355
-e2e/platform/dev-diagrams/performance/flowcharts/large1.mmd	e2d993e922912005	9bef754c1742847b	cf0ed37dfa9cb9f7
+e2e/platform/dev-diagrams/performance/flowcharts/huge5.mmd	068a89035003c12b	7f3b48fe9372f71f	fa29e92c29839277
+e2e/platform/dev-diagrams/performance/flowcharts/large1.mmd	e2d993e922912005	9bef754c1742847b	ed1eb30a8f261bf5
 e2e/platform/dev-diagrams/performance/flowcharts/large2.mmd	395d5213191ee0fd	ad4e1ef70dc899f3	f7659675f1185b01
-e2e/platform/dev-diagrams/performance/flowcharts/large3.mmd	e2d993e922912005	9bef754c1742847b	cf0ed37dfa9cb9f7
+e2e/platform/dev-diagrams/performance/flowcharts/large3.mmd	e2d993e922912005	9bef754c1742847b	ed1eb30a8f261bf5
 e2e/platform/dev-diagrams/performance/flowcharts/large4.mmd	34e6d37b2beacb31	34e6d37b2beacb31	e50db0c80f1d4007
-e2e/platform/dev-diagrams/performance/flowcharts/large5.mmd	38b2cfec9922d38d	bc79c282080e2be3	ba073fb0524264b7
+e2e/platform/dev-diagrams/performance/flowcharts/large5.mmd	38b2cfec9922d38d	bc79c282080e2be3	0e22fe6e19366831
 e2e/platform/dev-diagrams/performance/flowcharts/medium1.mmd	99c198b39decde67	63bac50909e6dc4b	10a2f30bfe3228ab
 e2e/platform/dev-diagrams/performance/flowcharts/medium2.mmd	7fd398b66f3aa3d0	7fd398b66f3aa3d0	7fd398b66f3aa3d0
-e2e/platform/dev-diagrams/performance/flowcharts/medium3.mmd	6a5c537ba54822d7	1d470d39b52c8713	7dd2f069ee2687af
+e2e/platform/dev-diagrams/performance/flowcharts/medium3.mmd	6a5c537ba54822d7	1d470d39b52c8713	021e1fce47d36fa7
 e2e/platform/dev-diagrams/performance/flowcharts/medium4.mmd	9c00ebad148f7469	9c00ebad148f7469	99372dbcb00546b1
-e2e/platform/dev-diagrams/performance/flowcharts/medium5.mmd	79622f4736c800b5	e0ff15a29c913671	e93cbe9a8a586381
+e2e/platform/dev-diagrams/performance/flowcharts/medium5.mmd	79622f4736c800b5	e0ff15a29c913671	ebda8dbdd6bef761
 tools/port/geometry/probes/mindmap/p01-rounded-tree.mmd	ebbb6958ed01e118
 tools/port/geometry/probes/mindmap/p02-rect-tree.mmd	818adec44f0de97e
 tools/port/geometry/probes/mindmap/p03-circle-tree.mmd	44df0dd659153be4

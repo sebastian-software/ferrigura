@@ -141,6 +141,8 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         let mut kept = Vec::new();
         paddings_of(&graph, &shapes, &mut kept);
         crate::flowchart::policy::relax(&mut graph, place);
+        // Siblings stand in one layer whether or not their edges carry labels.
+        crate::flowchart::policy::hold_label_layers(&mut graph);
         pad_untitled_groups(&mut graph, &shapes, &kept);
         state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }

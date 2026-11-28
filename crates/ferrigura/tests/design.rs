@@ -1455,10 +1455,11 @@ fn the_children_of_a_class_share_one_triangle() {
     let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
     let square = route(&svg, "id_Polygon_Square_2");
     let triangle = route(&svg, "id_Polygon_Triangle_3");
-    // Both start at one point of the parent's side, the triangle's tip, near its middle.
+    // Both start at one point of the parent's side, the triangle's tip, near its middle: the
+    // composition meets the middle, so the tip stands in the middle of its children's ends.
     assert_eq!(square[0], triangle[0]);
     let (x, _) = class_middle(&svg, "Polygon");
-    assert!((square[0].0 - x).abs() <= 10.0, "{square:?} {x}");
+    assert!((square[0].0 - x).abs() <= 20.5, "{square:?} {x}");
     let plain = renderer.render_with(CLASSES, &default(None)).unwrap();
     assert_ne!(
         route(&plain, "id_Polygon_Square_2")[0],
@@ -1782,4 +1783,40 @@ fn two_labeled_relations_between_two_classes_are_one_unit_beside_another_edge() 
     assert!((x("Team") - x("User")).abs() <= 20.0);
     assert!((x("Profile") - x("User")).abs() > 40.0);
     assert!(!runs_straight_down(&svg, "id_User_Profile_3"));
+}
+
+#[test]
+fn siblings_stand_in_one_layer_whether_or_not_their_edges_carry_labels() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // ELK gives a label a layer of its own: the part whose relation carries a label stood a layer
+    // below the other.
+    let cars = "classDiagram\n  Car \"1\" *-- \"4\" Wheel\n  Car \"1\" *-- \"1\" Engine : has\n";
+    let designed = renderer.render_with(cars, &design(None)).unwrap();
+    let (wheel, engine) = (
+        class_middle(&designed, "Wheel"),
+        class_middle(&designed, "Engine"),
+    );
+    assert!((wheel.1 - engine.1).abs() < 1e-6, "{wheel:?} {engine:?}");
+    assert!(class_middle(&designed, "Car").1 < wheel.1);
+    let plain = renderer.render_with(cars, &default(None)).unwrap();
+    assert!(class_middle(&plain, "Wheel").1 < class_middle(&plain, "Engine").1);
+
+    // The children of a node, and the parents of a node alike.
+    let children = "flowchart TD\n  A[Order] --> B[Pack]\n  A -->|paid| C[Ship]\n";
+    let parents = "flowchart TD\n  A[Order] --> C[Ship]\n  B[Refund] -->|approved| C\n";
+    for (text, one, other) in [(children, "B", "C"), (parents, "A", "B")] {
+        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let (one, other) = (node_middle(&designed, one), node_middle(&designed, other));
+        assert!((one.1 - other.1).abs() < 1e-6, "{text}: {one:?} {other:?}");
+    }
+
+    // A child that leads to the other is no sibling: it stays in the layer after its parent.
+    let chain = "flowchart TD\n  A[Order] -->|paid| B[Ship]\n  A --> C[Pack]\n  C --> B\n";
+    let designed = renderer.render_with(chain, &design(None)).unwrap();
+    let unlabeled = renderer
+        .render_with(&chain.replace("|paid| ", ""), &design(None))
+        .unwrap();
+    let gap = |svg: &str| node_middle(svg, "C").1 - node_middle(svg, "A").1;
+    assert!((gap(&designed) - gap(&unlabeled)).abs() < 1e-6);
+    assert!(node_middle(&designed, "C").1 < node_middle(&designed, "B").1);
 }
