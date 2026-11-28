@@ -56,10 +56,11 @@ pub struct RenderOptions {
     /// Draw in the design mode: ferrigura's own look, with hairline outlines, color by the role of
     /// a node, rounded corners and soft shadows, and with its own measures: a node grows to give its
     /// edges room, and spacings and group paddings are wider. Flowcharts, state diagrams, class
-    /// diagrams and ER diagrams support it; mindmaps and the pie, XY, quadrant and gantt charts take its look (its
-    /// colors, with one calm palette for a series, its outlines and its type) and keep their layout.
-    /// Other diagram types return an option error, and so does the combination with `compat`. The
-    /// user's `themeVariables` and `classDef` styles still apply on top.
+    /// diagrams, ER diagrams, sequence diagrams and mindmaps support it with its look and its
+    /// measures; the pie, XY, quadrant and gantt charts take its look (its colors, with one calm
+    /// palette for a series, its outlines and its type) and keep their layout. The combination with
+    /// `compat` returns an option error. The user's `themeVariables` and `classDef` styles still
+    /// apply on top.
     pub design: bool,
     /// Optional one-time SVG draw animation for flowcharts, Gantt, mind maps, pie charts, and XY
     /// charts. `None` leaves the SVG unchanged.
@@ -246,6 +247,7 @@ impl Renderer {
                     | DiagramType::QuadrantChart
                     | DiagramType::Gantt
                     | DiagramType::Mindmap
+                    | DiagramType::Sequence
             ) {
                 return Err(RenderError::Options(
                     "the design mode is not supported for this diagram type".to_owned(),

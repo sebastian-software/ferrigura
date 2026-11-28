@@ -119,6 +119,35 @@ pub fn marker_start(line_type: LineType) -> Option<&'static str> {
     })
 }
 
+/// The box of a message's label, as `drawText` places it, for the design mode's gap in the
+/// lifelines: anchored in the span from `left`, `width` wide, by the alignment and the padding, and
+/// its first line centered 15 below the message's top and one em down.
+#[allow(clippy::too_many_arguments)]
+fn message_gap(
+    anchor: &str,
+    left: f64,
+    width: f64,
+    top: f64,
+    padding: f64,
+    text_width: f64,
+    text_height: f64,
+    font: &super::conf::Font,
+) -> Result<super::design::Gap, RenderError> {
+    let x = match anchor {
+        "left" | "start" => left + padding,
+        "right" | "end" => left + width - padding - text_width,
+        _ => left + width / 2.0 - text_width / 2.0,
+    };
+    let line = super::text::line_height(font)?;
+    let first_middle = top + 15.0 + font.size;
+    Ok(super::design::Gap::around(
+        x,
+        first_middle - line / 2.0,
+        text_width,
+        text_height,
+    ))
+}
+
 impl Renderer<'_> {
     /// `boundMessage` (`:407-451`): reserves the message's row and returns the y of its line.
     pub(super) fn bound_message(&mut self, model: &mut MessageModel) -> Result<f64, RenderError> {
@@ -343,6 +372,18 @@ impl Renderer<'_> {
         };
         for element in draw_text(&label)? {
             self.append(element);
+        }
+        if self.design.is_some() && !model.message.is_empty() {
+            self.gaps.push(message_gap(
+                &anchor,
+                startx.min(stopx),
+                (stopx - startx).abs(),
+                starty,
+                self.conf.wrap_padding,
+                text_dims.width,
+                text_dims.height,
+                &font,
+            )?);
         }
 
         let line_type = msg.line_type;
@@ -603,6 +644,9 @@ impl Renderer<'_> {
                 .with("height", "10")
         };
         let mut group = Element::new("g");
+        if self.design.is_some() {
+            group.set("class", "centralConnection");
+        }
         match msg.central {
             Some(CentralConnection::Central) => group.push_child(circle(to_center)),
             Some(CentralConnection::Reverse) => group.push_child(circle(from_center)),

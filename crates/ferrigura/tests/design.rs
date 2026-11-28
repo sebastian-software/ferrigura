@@ -871,7 +871,7 @@ fn the_draw_animation_works_in_the_design_mode() {
 }
 
 #[test]
-fn the_mode_excludes_compat_and_other_diagram_types() {
+fn the_mode_excludes_compat() {
     let renderer = Renderer::new(&Value::empty_object());
     let both = RenderOptions {
         compat: true,
@@ -892,12 +892,6 @@ fn the_mode_excludes_compat_and_other_diagram_types() {
     match renderer.render_with(ENTITIES, &both) {
         Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
-    }
-    for other in ["sequenceDiagram\n  A->>B: hi\n"] {
-        match renderer.render_with(other, &design(None)) {
-            Err(Error::Options(message)) => assert!(message.contains("design mode"), "{message}"),
-            result => panic!("expected an option error, got {result:?}"),
-        }
     }
 }
 
@@ -2584,4 +2578,156 @@ fn siblings_stand_in_one_layer_whether_or_not_their_edges_carry_labels() {
     let gap = |svg: &str| node_middle(svg, "C").1 - node_middle(svg, "A").1;
     assert!((gap(&designed) - gap(&unlabeled)).abs() < 1e-6);
     assert!(node_middle(&designed, "C").1 < node_middle(&designed, "B").1);
+}
+
+/// A sequence diagram with an actor, a database, a participant, an activation, a note and the
+/// frames `alt` and `loop`.
+const SEQUENCE: &str = "sequenceDiagram\n  actor User\n  participant Web\n  participant Store@{ \"type\": \"database\" }\n  User->>+Web: Sign in\n  Web->>Store: Find user\n  Store-->>Web: User\n  Note right of Store: Hashed\n  alt Valid password\n    Web-->>User: Welcome\n  else Wrong password\n    Web--xUser: Denied\n  end\n  loop Every minute\n    Web->>Web: Refresh\n  end\n  deactivate Web\n";
+
+#[test]
+fn a_sequence_diagram_draws_in_the_design_mode() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(SEQUENCE, &design(None)).unwrap();
+    for role in ["actor", "data", "decision"] {
+        assert!(svg.contains(&format!("data-role=\"{role}\"")), "{role}");
+    }
+    // The frame of `loop` stays neutral.
+    let drawing = &svg[svg.find("</style>").unwrap()..];
+    assert_eq!(drawing.matches("data-role=\"decision\"").count(), 1);
+    // The mode's own arrowhead, round participant boxes and one rounded outline per frame.
+    assert!(svg.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
+    assert!(svg.contains("class=\"actor actor-top\""));
+    assert!(svg.contains(" rx=\"8\""));
+    assert!(svg.contains("<rect x=") && svg.contains("class=\"loopLine\""));
+    // No palette: the colors are the style sheet's, not inline per participant.
+    assert!(!svg.contains("style=\"stroke: "));
+    assert!(!svg.contains("style=\"fill: #"));
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--activationBkgColor:#E8EDFC;"));
+    assert!(sheet.contains("--decisionBorder:#B7791F;"));
+    assert!(sheet.contains("stroke-width:1.25px"));
+
+    let plain = renderer.render_with(SEQUENCE, &default(None)).unwrap();
+    assert!(!plain.contains("data-role"));
+    assert!(!plain.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
+}
+
+#[test]
+fn the_sequence_diagrams_dark_set_and_user_variables_apply() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer
+        .render_with(SEQUENCE, &design(Some(ColorScheme::Dark)))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--actorBkg:#1D212A;"));
+    assert!(sheet.contains("--terminalBorder:#4263EB;"));
+    let both = renderer
+        .render_with(SEQUENCE, &design(Some(ColorScheme::Auto)))
+        .unwrap();
+    assert!(style_sheet(&both).contains("light-dark("));
+
+    let config = Value::from(serde_json::json!({
+        "themeVariables": { "actorBkg": "#ffeedd", "signalColor": "#ff0000" }
+    }));
+    let svg = Renderer::new(&config)
+        .render_with(SEQUENCE, &design(None))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--actorBkg:#ffeedd;"));
+    assert!(sheet.contains("--signalColor:#ff0000;"));
+
+    let both = RenderOptions {
+        compat: true,
+        ..design(None)
+    };
+    match renderer.render_with(SEQUENCE, &both) {
+        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
+        other => panic!("expected an option error, got {other:?}"),
+    }
+}
+
+/// The x of every lifeline of a sequence diagram, from the left.
+fn lifelines(svg: &str) -> Vec<f64> {
+    let mut xs: Vec<f64> = svg
+        .split("<line ")
+        .skip(1)
+        .filter(|line| line.contains("data-et=\"life-line\""))
+        .map(|line| {
+            attribute_values(&format!(" {line}"), "x1")[0]
+                .parse()
+                .unwrap()
+        })
+        .collect();
+    xs.sort_by(f64::total_cmp);
+    xs
+}
+
+/// The width and the height of the header box of the participant `name`.
+fn participant_box(svg: &str, name: &str) -> (f64, f64) {
+    let rect = svg
+        .split("<rect ")
+        .map(|rect| &rect[..rect.find('>').unwrap_or(rect.len())])
+        .find(|rect| {
+            rect.contains(&format!("name=\"{name}\"")) && rect.contains("class=\"actor actor-top\"")
+        })
+        .expect("the participant's box");
+    let rect = format!(" {rect}");
+    (
+        attribute_values(&rect, "width")[0].parse().unwrap(),
+        attribute_values(&rect, "height")[0].parse().unwrap(),
+    )
+}
+
+#[test]
+fn a_sequences_columns_share_one_pitch_unless_a_label_needs_more() {
+    let text = "sequenceDiagram\n  participant A\n  participant B\n  participant C\n  participant D\n  A->>B: hi\n  B->>C: a much longer message between B and C\n  C->>D: ok\n";
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let xs = lifelines(&svg);
+    let pitches: Vec<f64> = xs.windows(2).map(|pair| pair[1] - pair[0]).collect();
+    assert_eq!(pitches[0], 150.0, "{pitches:?}");
+    assert_eq!(pitches[2], 150.0, "{pitches:?}");
+    assert!(pitches[1] > 300.0, "{pitches:?}");
+    // The default spaces short names by the reference's 150 wide columns and 50 between them.
+    let plain = lifelines(&renderer.render_with(text, &default(None)).unwrap());
+    assert_eq!(plain[1] - plain[0], 200.0);
+}
+
+#[test]
+fn a_participant_box_fits_its_name_and_the_row_fits_the_boxes() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "sequenceDiagram\n  participant A\n  participant Authentication\n  A->>Authentication: hi\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let (width, height) = participant_box(&svg, "A");
+    assert_eq!(width, 96.0);
+    assert_eq!(height, 44.0);
+    let (wide, _) = participant_box(&svg, "Authentication");
+    assert!(wide > 96.0 && wide < 150.0, "{wide}");
+    // Without a glyph, the lifelines start below the boxes, at the height of the row.
+    assert!(svg.contains(" y1=\"44\""));
+    // With an actor, the row is the glyph's, and the boxes stand on its bottom.
+    let svg = renderer.render_with(SEQUENCE, &design(None)).unwrap();
+    let (_, height) = participant_box(&svg, "Web");
+    assert_eq!(height, 44.0);
+}
+
+#[test]
+fn a_frames_title_stands_beside_its_tag_and_labels_interrupt_the_lifelines() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(SEQUENCE, &design(None)).unwrap();
+    // The titles have no brackets.
+    assert!(!svg.contains(">[") && !svg.contains("]<"));
+    assert!(svg.contains("class=\"loopText\""));
+    let title = svg
+        .split("<text ")
+        .find(|text| text.contains("class=\"loopText\""))
+        .expect("a title");
+    assert!(title.contains("text-anchor=\"start\""));
+    // Every lifeline is masked, and the mask has a black box for each label.
+    let masked = svg.matches("mask=\"url(#d-label-gaps)\"").count();
+    assert_eq!(masked, 3);
+    assert!(svg.matches("fill=\"black\"").count() >= 7);
+    let plain = renderer.render_with(SEQUENCE, &default(None)).unwrap();
+    assert!(plain.contains("[Valid password]"));
+    assert!(!plain.contains("label-gaps"));
 }
