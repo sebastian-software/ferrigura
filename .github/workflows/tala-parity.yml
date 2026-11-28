@@ -116,6 +116,23 @@ jobs:
           node tools/tala-pilot/check-edge-label-placement.mjs \
             "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-edge-label-reference" \
             tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare tree preprocessing and hierarchy scope with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-hierarchy" hierarchy-preprocess
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-hierarchy/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-hierarchy-reference"
+          node tools/tala-pilot/check-hierarchy-preprocess.mjs \
+            --reference "$RUNNER_TEMP/tala-reference" \
+            --trace "$RUNNER_TEMP/tala-hierarchy-reference" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare scores on the upstream completed-layout corpus
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-upstream-score" candidate-score
+          node tools/tala-pilot/check-upstream-quality.mjs \
+            --d2 .tala-reference --overlay "$RUNNER_TEMP/tala-upstream-score/overlay.json" \
+            --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Require a passing Rust counterpart for every upstream correctness test
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

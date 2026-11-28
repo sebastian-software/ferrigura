@@ -1,0 +1,56 @@
+// Test hooks for the pinned Go completed quality corpus.
+func TestPilotCompletedQualityCorpus(t *testing.T) {
+	inputFiles, err := filepath.Glob(filepath.Join("internal", "testdata", "layout", "*", "graph.exp.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inputFiles) == 0 {
+		t.Fatal("missing completed quality fixtures")
+	}
+	for index, path := range inputFiles {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		graph := layoutgraph.NewGraph()
+		if err := graphjson.Unmarshal(t.Context(), data, graph); err != nil {
+			t.Fatal(err)
+		}
+		penalty, area, err := quality.EvaluateWithArea(t.Context(), graph)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Fprintf(os.Stderr, "tala-golden %s\n", filepath.Base(filepath.Dir(path)))
+		tracePilotSeedCandidate(t.Context(), index, int64(index+1), seedResult{graph: graph, score: layoutScore{penalty: penalty, area: area}}, nil)
+	}
+}
+
+func TestPilotWorkScoringKernels(t *testing.T) {
+	graph := layoutgraph.NewGraph()
+	container := layoutgraph.NewNode(1, 240, 180)
+	container.TopLeft = geo.NewPoint(-40, -40)
+	graph.AddNewNodeToContainer(nil, container)
+	a := layoutgraph.NewNode(2, 40, 40)
+	a.TopLeft = geo.NewPoint(0, 0)
+	a.Label = &layoutgraph.Label{Text: "A", Width: 20, Height: 12, Position: label.OutsideTopCenter}
+	b := layoutgraph.NewNode(3, 40, 40)
+	b.TopLeft = geo.NewPoint(120, 80)
+	b.Label = &layoutgraph.Label{Text: "B", Width: 20, Height: 12, Position: label.InsideMiddleCenter}
+	graph.AddNewNodeToContainer(container, a)
+	graph.AddNewNodeToContainer(container, b)
+	first := graph.Connect(a, b)
+	first.Points = []*geo.Point{geo.NewPoint(20, 20), geo.NewPoint(70, 20), geo.NewPoint(140, 100)}
+	first.Label = &layoutgraph.Label{Text: "first", Width: 28, Height: 12, Position: label.InsideMiddleCenter}
+	first.LabelPercentage = 0.5
+	first.SourceArrowheadLabel = &layoutgraph.Label{Text: "source", Width: 32, Height: 12}
+	second := graph.Connect(a, b)
+	second.Points = []*geo.Point{geo.NewPoint(20, 20), geo.NewPoint(70, 20), geo.NewPoint(140, 60)}
+	second.Label = &layoutgraph.Label{Text: "second", Width: 36, Height: 12, Position: label.InsideMiddleCenter}
+	second.LabelPercentage = 0.5
+	penalty, area, err := quality.EvaluateWithArea(t.Context(), graph)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintln(os.Stderr, "tala-golden work-cover-scoring-kernels")
+	tracePilotSeedCandidate(t.Context(), 0, 1, seedResult{graph: graph, score: layoutScore{penalty: penalty, area: area}}, nil)
+}

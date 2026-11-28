@@ -1,0 +1,210 @@
+// Observe ordered graph records and membership without changing the layout.
+func tracePilotHierarchyPreprocess(stage string, p *pipeline) {
+	if os.Getenv("TALA_TRACE_HIERARCHY_PREPROCESS") == "" {
+		return
+	}
+	switch stage {
+	case "Prescale", "PreprocessSequences", "Preprocess", "PreprocessTrees", "PreprocessHierarchies":
+	default:
+		return
+	}
+	type nodeRecord struct {
+		ID layoutgraph.EntityID `json:"id"`
+		Shape string `json:"shape"`
+		Parent *layoutgraph.EntityID `json:"parent"`
+		Clustered bool `json:"clustered"`
+		ClusterVessel bool `json:"clusterVessel"`
+		InTree bool `json:"inTree"`
+		TreeSentinel bool `json:"treeSentinel"`
+		InSequence bool `json:"inSequence"`
+		SequenceVessel bool `json:"sequenceVessel"`
+		Fixed bool `json:"fixed"`
+		LabelPosition *label.Position `json:"labelPosition"`
+		HierarchyLevel *int `json:"hierarchyLevel"`
+	}
+	type edgeRecord struct {
+		ID layoutgraph.EntityID `json:"id"`
+		From layoutgraph.EntityID `json:"from"`
+		To layoutgraph.EntityID `json:"to"`
+	}
+	type record struct {
+		Stage string `json:"stage"`
+		Seed int64 `json:"seed"`
+		Nodes []nodeRecord `json:"nodes"`
+		Edges []edgeRecord `json:"edges"`
+		Candidates []layoutgraph.EntityID `json:"candidates"`
+		Scopes []pilotHierarchyScope `json:"scopes,omitempty"`
+		TreeState *pilotTrees `json:"treeState,omitempty"`
+	}
+	g := p.graph
+	value := record{Stage: stage, Seed: p.seed, Nodes: []nodeRecord{}, Edges: []edgeRecord{}, Candidates: []layoutgraph.EntityID{}}
+	candidates := hierarchy.Candidates(g)
+	for _, node := range g.Nodes {
+		_, inTree := g.NodeToTree[node]
+		out := nodeRecord{
+			ID: node.ID, Shape: node.ShapeType(), Fixed: node.FixedTopLeft != nil,
+			Clustered: node.Cluster != nil, ClusterVessel: node.IsClusterVessel(),
+			InTree: inTree, TreeSentinel: g.IsTreeSentinel(node),
+			InSequence: node.Sequence != nil, SequenceVessel: g.IsSequenceVessel(node),
+		}
+		if node.Container != nil {
+			out.Parent = &node.Container.ID
+		}
+		if node.Label != nil {
+			out.LabelPosition = &node.Label.Position
+		}
+		if node.Hierarchy != nil {
+			level := node.Hierarchy.Levels()[node]
+			out.HierarchyLevel = &level
+		}
+		value.Nodes = append(value.Nodes, out)
+		if _, eligible := candidates[node]; eligible {
+			value.Candidates = append(value.Candidates, node.ID)
+		}
+	}
+	for _, edge := range g.Edges {
+		value.Edges = append(value.Edges, edgeRecord{edge.ID, edge.From.ID, edge.To.ID})
+	}
+	slices.Sort(value.Candidates)
+	if stage == "Prescale" || stage == "PreprocessTrees" {
+		cloned, err := layoutgraph.Clone(context.Background(), g)
+		if err != nil {
+			panic(err)
+		}
+		tracePilotHierarchyScopes(cloned, hierarchy.Candidates(cloned), nil, &value.Scopes)
+	}
+	if stage == "PreprocessTrees" {
+		value.TreeState = tracePilotTreeState(g)
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(os.Stderr, "tala-hierarchy-preprocess %s\n", data)
+}
+
+type pilotOrderedTreeContainer struct {
+	Container *layoutgraph.EntityID `json:"container"`
+	Nodes []layoutgraph.EntityID `json:"nodes"`
+}
+
+type pilotTreeMember struct {
+	ID layoutgraph.EntityID `json:"id"`
+	Edge *layoutgraph.EntityID `json:"edge"`
+	Children []layoutgraph.EntityID `json:"children"`
+}
+
+type pilotDetachedTree struct {
+	Sentinel layoutgraph.EntityID `json:"sentinel"`
+	Roots []layoutgraph.EntityID `json:"roots"`
+	Members []pilotTreeMember `json:"members"`
+}
+
+type pilotTrees struct {
+	Nodes []layoutgraph.EntityID `json:"nodes"`
+	Edges []layoutgraph.EntityID `json:"edges"`
+	Containers []pilotOrderedTreeContainer `json:"containers"`
+	Trees []pilotDetachedTree `json:"trees"`
+}
+
+func tracePilotTreeState(g *layoutgraph.Graph) *pilotTrees {
+	value := &pilotTrees{[]layoutgraph.EntityID{}, []layoutgraph.EntityID{}, []pilotOrderedTreeContainer{}, []pilotDetachedTree{}}
+	addContainer := func(container *layoutgraph.Node) {
+		out := pilotOrderedTreeContainer{Nodes: []layoutgraph.EntityID{}}
+		if container != nil {
+			out.Container = &container.ID
+		}
+		for _, child := range g.Containers[container] {
+			out.Nodes = append(out.Nodes, child.ID)
+		}
+		value.Containers = append(value.Containers, out)
+	}
+	addContainer(nil)
+	for _, node := range g.Nodes {
+		value.Nodes = append(value.Nodes, node.ID)
+		if node.IsContainer() {
+			addContainer(node)
+		}
+		roots := g.Trees[node]
+		if len(roots) == 0 {
+			continue
+		}
+		tree := pilotDetachedTree{node.ID, []layoutgraph.EntityID{}, []pilotTreeMember{}}
+		stack := slices.Clone(roots)
+		slices.Reverse(stack)
+		for _, root := range roots {
+			tree.Roots = append(tree.Roots, root.Node.ID)
+		}
+		for len(stack) > 0 {
+			member := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			out := pilotTreeMember{ID: member.Node.ID, Children: []layoutgraph.EntityID{}}
+			if member.SentinelEdge != nil {
+				out.Edge = &member.SentinelEdge.ID
+			}
+			for _, child := range member.Children {
+				out.Children = append(out.Children, child.Node.ID)
+			}
+			for i := len(member.Children)-1; i >= 0; i-- {
+				stack = append(stack, member.Children[i])
+			}
+			tree.Members = append(tree.Members, out)
+		}
+		value.Trees = append(value.Trees, tree)
+	}
+	for _, edge := range g.Edges {
+		value.Edges = append(value.Edges, edge.ID)
+	}
+	return value
+}
+
+type pilotHierarchyAbduction struct {
+	ID layoutgraph.EntityID `json:"id"`
+	OriginalFrom *layoutgraph.EntityID `json:"originalFrom"`
+	OriginalTo *layoutgraph.EntityID `json:"originalTo"`
+	CurrentFrom *layoutgraph.EntityID `json:"currentFrom"`
+	CurrentTo *layoutgraph.EntityID `json:"currentTo"`
+}
+
+type pilotHierarchyScopeEdge struct {
+	ID layoutgraph.EntityID `json:"id"`
+	From layoutgraph.EntityID `json:"from"`
+	To layoutgraph.EntityID `json:"to"`
+}
+
+type pilotHierarchyScope struct {
+	Container *layoutgraph.EntityID `json:"container"`
+	Nodes []layoutgraph.EntityID `json:"nodes"`
+	Edges []pilotHierarchyScopeEdge `json:"edges"`
+	Abductions []pilotHierarchyAbduction `json:"abductions"`
+}
+
+func tracePilotHierarchyScopes(g *layoutgraph.Graph, candidates map[*layoutgraph.Node]struct{}, root *layoutgraph.Node, records *[]pilotHierarchyScope) {
+	id := func(node *layoutgraph.Node) *layoutgraph.EntityID {
+		if node == nil {
+			return nil
+		}
+		return &node.ID
+	}
+	value := pilotHierarchyScope{id(root), []layoutgraph.EntityID{}, []pilotHierarchyScopeEdge{}, []pilotHierarchyAbduction{}}
+	projected := layoutgraph.NewGraph()
+	projected.CopyEntitiesFrom(g)
+	for _, node := range g.Containers[root] {
+		projected.AddNodeUnchecked(node)
+		value.Nodes = append(value.Nodes, node.ID)
+	}
+	abductions := g.AbductEdges(root, projected)
+	defer g.RestoreEdgeAbductions(abductions)
+	for _, edge := range projected.Edges {
+		value.Edges = append(value.Edges, pilotHierarchyScopeEdge{edge.ID, edge.From.ID, edge.To.ID})
+	}
+	for _, abducted := range abductions {
+		value.Abductions = append(value.Abductions, pilotHierarchyAbduction{abducted.Edge.ID, id(abducted.OriginallyFrom), id(abducted.OriginallyTo), id(abducted.CurrentFrom), id(abducted.CurrentTo)})
+	}
+	*records = append(*records, value)
+	for _, node := range g.Containers[root] {
+		if _, eligible := candidates[node]; !eligible && node.IsContainer() {
+			tracePilotHierarchyScopes(g, candidates, node, records)
+		}
+	}
+}

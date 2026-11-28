@@ -1,0 +1,781 @@
+[
+  {
+    "name": "library-architecture",
+    "input": {
+      "direction": "LR",
+      "edges": [
+        {
+          "id": "L_portal_reserve_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "portal",
+          "sourceArrow": false,
+          "target": "reserve",
+          "targetArrow": true
+        },
+        {
+          "id": "L_queue_shelf_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "queue",
+          "sourceArrow": false,
+          "target": "shelf",
+          "targetArrow": true
+        },
+        {
+          "id": "L_reserve_queue_0",
+          "label": "hold request",
+          "labelHeight": 21,
+          "labelWidth": 102.953125,
+          "source": "reserve",
+          "sourceArrow": false,
+          "target": "queue",
+          "targetArrow": true
+        },
+        {
+          "id": "L_shelf_portal_0",
+          "label": "availability",
+          "labelHeight": 21,
+          "labelWidth": 90.578125,
+          "source": "shelf",
+          "sourceArrow": false,
+          "target": "portal",
+          "targetArrow": true
+        },
+        {
+          "id": "L_schedule_alert_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "schedule",
+          "sourceArrow": false,
+          "target": "alert",
+          "targetArrow": true
+        },
+        {
+          "id": "L_shelf_schedule_0",
+          "label": "branch transfer",
+          "labelHeight": 21,
+          "labelWidth": 118.96875,
+          "source": "shelf",
+          "sourceArrow": false,
+          "target": "schedule",
+          "targetArrow": true
+        },
+        {
+          "id": "L_schedule_reserve_0",
+          "label": "confirmed slot",
+          "labelHeight": 21,
+          "labelWidth": 113.703125,
+          "source": "schedule",
+          "sourceArrow": false,
+          "target": "reserve",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "direction": null,
+          "height": 0,
+          "id": "delivery",
+          "isGroup": true,
+          "label": "Delivery",
+          "labelHeight": 17,
+          "labelWidth": 48.796875,
+          "parentId": null,
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 0,
+          "id": "product",
+          "isGroup": true,
+          "label": "Library service",
+          "labelHeight": 17,
+          "labelWidth": 89.9375,
+          "parentId": null,
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 0,
+          "id": "stock",
+          "isGroup": true,
+          "label": "Branch inventory",
+          "labelHeight": 17,
+          "labelWidth": 102.765625,
+          "parentId": "product",
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 0,
+          "id": "intake",
+          "isGroup": true,
+          "label": "Reader requests",
+          "labelHeight": 17,
+          "labelWidth": 100.84375,
+          "parentId": "product",
+          "shape": "rect",
+          "width": 0
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "portal",
+          "isGroup": false,
+          "label": "Reader portal",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "intake",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "reserve",
+          "isGroup": false,
+          "label": "Reservation API",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "intake",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "queue",
+          "isGroup": false,
+          "label": "Transfer queue",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "stock",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "shelf",
+          "isGroup": false,
+          "label": "Shelf inventory",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "stock",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "schedule",
+          "isGroup": false,
+          "label": "Delivery scheduler",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "delivery",
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "alert",
+          "isGroup": false,
+          "label": "Reader notification",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": "delivery",
+          "shape": "squareRect",
+          "width": 152
+        }
+      ]
+    },
+    "expected": {
+      "tree": {
+        "nodes": [
+          978690777, 2187326727, 2681950517, 3643962079, 1003761083, 1043738909, 4112966650,
+          1397417381, 1129762748, 787511036
+        ],
+        "edges": [
+          3756555815, 3603226058, 992662632, 3163498756, 3111688284, 3158127466, 2596137720
+        ],
+        "containers": [
+          {
+            "container": null,
+            "nodes": [978690777, 2681950517]
+          },
+          {
+            "container": 978690777,
+            "nodes": [2187326727, 787511036]
+          },
+          {
+            "container": 2681950517,
+            "nodes": [3643962079, 4112966650]
+          },
+          {
+            "container": 3643962079,
+            "nodes": [1003761083, 1043738909]
+          },
+          {
+            "container": 4112966650,
+            "nodes": [1397417381, 1129762748]
+          }
+        ],
+        "trees": []
+      },
+      "hierarchy": {
+        "candidates": [787511036, 1003761083, 1043738909, 1129762748, 1397417381, 2187326727],
+        "scopes": [
+          {
+            "container": null,
+            "nodes": [978690777, 2681950517],
+            "edges": [
+              {
+                "id": 3111688284,
+                "from": 2681950517,
+                "to": 978690777
+              },
+              {
+                "id": 3158127466,
+                "from": 978690777,
+                "to": 2681950517
+              }
+            ],
+            "abductions": [
+              {
+                "id": 3111688284,
+                "originalFrom": 1043738909,
+                "originalTo": 2187326727,
+                "currentFrom": 2681950517,
+                "currentTo": 978690777
+              },
+              {
+                "id": 3158127466,
+                "originalFrom": 2187326727,
+                "originalTo": 1129762748,
+                "currentFrom": 978690777,
+                "currentTo": 2681950517
+              }
+            ]
+          },
+          {
+            "container": 978690777,
+            "nodes": [2187326727, 787511036],
+            "edges": [
+              {
+                "id": 2596137720,
+                "from": 2187326727,
+                "to": 787511036
+              }
+            ],
+            "abductions": []
+          },
+          {
+            "container": 2681950517,
+            "nodes": [3643962079, 4112966650],
+            "edges": [
+              {
+                "id": 992662632,
+                "from": 4112966650,
+                "to": 3643962079
+              },
+              {
+                "id": 3163498756,
+                "from": 3643962079,
+                "to": 4112966650
+              }
+            ],
+            "abductions": [
+              {
+                "id": 992662632,
+                "originalFrom": 1129762748,
+                "originalTo": 1003761083,
+                "currentFrom": 4112966650,
+                "currentTo": 3643962079
+              },
+              {
+                "id": 3163498756,
+                "originalFrom": 1043738909,
+                "originalTo": 1397417381,
+                "currentFrom": 3643962079,
+                "currentTo": 4112966650
+              }
+            ]
+          },
+          {
+            "container": 3643962079,
+            "nodes": [1003761083, 1043738909],
+            "edges": [
+              {
+                "id": 3603226058,
+                "from": 1003761083,
+                "to": 1043738909
+              }
+            ],
+            "abductions": []
+          },
+          {
+            "container": 4112966650,
+            "nodes": [1397417381, 1129762748],
+            "edges": [
+              {
+                "id": 3756555815,
+                "from": 1397417381,
+                "to": 1129762748
+              }
+            ],
+            "abductions": []
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "publishing-flow",
+    "input": {
+      "direction": "LR",
+      "edges": [
+        {
+          "id": "L_draft_read_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "draft",
+          "sourceArrow": false,
+          "target": "read",
+          "targetArrow": true
+        },
+        {
+          "id": "L_read_fact_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "read",
+          "sourceArrow": false,
+          "target": "fact",
+          "targetArrow": true
+        },
+        {
+          "id": "L_fact_typeset_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "fact",
+          "sourceArrow": false,
+          "target": "typeset",
+          "targetArrow": true
+        },
+        {
+          "id": "L_typeset_proofs_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "typeset",
+          "sourceArrow": false,
+          "target": "proofs",
+          "targetArrow": true
+        },
+        {
+          "id": "L_proofs_build_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "proofs",
+          "sourceArrow": false,
+          "target": "build",
+          "targetArrow": true
+        },
+        {
+          "id": "L_build_publish_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "build",
+          "sourceArrow": false,
+          "target": "publish",
+          "targetArrow": true
+        },
+        {
+          "id": "L_fact_permissions_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "fact",
+          "sourceArrow": false,
+          "target": "permissions",
+          "targetArrow": true
+        },
+        {
+          "id": "L_permissions_proofs_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "permissions",
+          "sourceArrow": false,
+          "target": "proofs",
+          "targetArrow": true
+        },
+        {
+          "id": "L_build_archive_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "build",
+          "sourceArrow": false,
+          "target": "archive",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "direction": null,
+          "height": 41,
+          "id": "draft",
+          "isGroup": false,
+          "label": "Draft",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "read",
+          "isGroup": false,
+          "label": "Editorial review",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "fact",
+          "isGroup": false,
+          "label": "Fact check",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "typeset",
+          "isGroup": false,
+          "label": "Typesetting",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "proofs",
+          "isGroup": false,
+          "label": "Proof approval",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "build",
+          "isGroup": false,
+          "label": "Build edition",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "publish",
+          "isGroup": false,
+          "label": "Publish",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "permissions",
+          "isGroup": false,
+          "label": "Check image rights",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "archive",
+          "isGroup": false,
+          "label": "Archive originals",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        }
+      ]
+    },
+    "expected": {
+      "tree": {
+        "nodes": [3195223476, 1787533460, 1834051269, 596663671, 1673994394, 1838113516],
+        "edges": [3170741675, 1748380383, 978026452, 614185942, 532718626, 1747333303],
+        "containers": [
+          {
+            "container": null,
+            "nodes": [3195223476, 1787533460, 1834051269, 596663671, 1673994394, 1838113516]
+          }
+        ],
+        "trees": [
+          {
+            "sentinel": 1834051269,
+            "roots": [1507877909],
+            "members": [
+              {
+                "id": 1507877909,
+                "edge": 1265949895,
+                "children": [2568417244, 1421265581]
+              },
+              {
+                "id": 2568417244,
+                "edge": 719417919,
+                "children": []
+              },
+              {
+                "id": 1421265581,
+                "edge": 1742922627,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "hierarchy": {
+        "candidates": [596663671, 1673994394, 1787533460, 1838113516, 3195223476],
+        "scopes": [
+          {
+            "container": null,
+            "nodes": [3195223476, 1787533460, 1834051269, 596663671, 1673994394, 1838113516],
+            "edges": [
+              {
+                "id": 3170741675,
+                "from": 3195223476,
+                "to": 1787533460
+              },
+              {
+                "id": 1748380383,
+                "from": 1787533460,
+                "to": 1834051269
+              },
+              {
+                "id": 978026452,
+                "from": 3195223476,
+                "to": 596663671
+              },
+              {
+                "id": 614185942,
+                "from": 596663671,
+                "to": 1834051269
+              },
+              {
+                "id": 532718626,
+                "from": 1673994394,
+                "to": 3195223476
+              },
+              {
+                "id": 1747333303,
+                "from": 1838113516,
+                "to": 1673994394
+              }
+            ],
+            "abductions": []
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "workshop-edges",
+    "input": {
+      "direction": "LR",
+      "edges": [
+        {
+          "id": "L_sensor_panel_0",
+          "label": "reading",
+          "labelHeight": 21,
+          "labelWidth": 72.75,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "L_sensor_panel_2",
+          "label": "low battery",
+          "labelHeight": 21,
+          "labelWidth": 93.203125,
+          "source": "sensor",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "L_panel_panel_0",
+          "label": "retry",
+          "labelHeight": 21,
+          "labelWidth": 53.984375,
+          "source": "panel",
+          "sourceArrow": false,
+          "target": "panel",
+          "targetArrow": true
+        },
+        {
+          "id": "L_checklist_lights_0",
+          "label": "",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "source": "checklist",
+          "sourceArrow": false,
+          "target": "lights",
+          "targetArrow": true
+        }
+      ],
+      "nodes": [
+        {
+          "direction": null,
+          "height": 68,
+          "id": "sensor",
+          "isGroup": false,
+          "label": "Temperature sensor",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 68,
+          "id": "panel",
+          "isGroup": false,
+          "label": "Control panel",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "checklist",
+          "isGroup": false,
+          "label": "Opening checklist",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "lights",
+          "isGroup": false,
+          "label": "Shop lights",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        },
+        {
+          "direction": null,
+          "height": 41,
+          "id": "clock",
+          "isGroup": false,
+          "label": "Wall clock",
+          "labelHeight": 0,
+          "labelWidth": 0,
+          "parentId": null,
+          "shape": "squareRect",
+          "width": 152
+        }
+      ]
+    },
+    "expected": {
+      "tree": {
+        "nodes": [866278032, 3507090496, 429363857, 299861918, 4203394475],
+        "edges": [626400829, 3780637128, 628605419, 24942614],
+        "containers": [
+          {
+            "container": null,
+            "nodes": [866278032, 3507090496, 429363857, 299861918, 4203394475]
+          }
+        ],
+        "trees": []
+      },
+      "hierarchy": {
+        "candidates": [299861918, 429363857, 866278032, 3507090496, 4203394475],
+        "scopes": [
+          {
+            "container": null,
+            "nodes": [866278032, 3507090496, 429363857, 299861918, 4203394475],
+            "edges": [
+              {
+                "id": 626400829,
+                "from": 866278032,
+                "to": 3507090496
+              },
+              {
+                "id": 3780637128,
+                "from": 866278032,
+                "to": 3507090496
+              },
+              {
+                "id": 628605419,
+                "from": 3507090496,
+                "to": 3507090496
+              },
+              {
+                "id": 24942614,
+                "from": 429363857,
+                "to": 4203394475
+              }
+            ],
+            "abductions": []
+          }
+        ]
+      }
+    }
+  }
+]

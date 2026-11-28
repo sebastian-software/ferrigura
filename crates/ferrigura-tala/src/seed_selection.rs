@@ -11,6 +11,9 @@ use std::thread;
 
 use serde::{Deserialize, Serialize};
 
+pub mod completed;
+pub mod refinement;
+
 const DEFAULT_SEEDS: [i64; 3] = [1, 2, 3];
 const MAX_SEEDS: usize = 16;
 const MAX_SEED_ENTRIES: usize = MAX_SEEDS * 4;

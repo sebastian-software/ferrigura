@@ -88,6 +88,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             let graph = serde_json::from_reader(input)?;
             serde_json::to_writer(output, &ferrigura_tala::layout(&graph)?)?;
         }
+        Some("--hierarchy-preprocess") => {
+            let graph = serde_json::from_reader(input)?;
+            let stages = ferrigura_tala::layout_graph::hierarchy_preprocess_checkpoint(&graph)?;
+            serde_json::to_writer(output, &stages)?;
+        }
+        Some("--tree-preprocess") => {
+            let graph = serde_json::from_reader(input)?;
+            let stage = ferrigura_tala::layout_graph::tree_preprocess_checkpoint(&graph)?;
+            serde_json::to_writer(output, &stage)?;
+        }
         Some("--initialize") => {
             let graph = serde_json::from_reader(input)?;
             serde_json::to_writer(output, &ferrigura_tala::initialize::initialize(&graph)?)?;
@@ -282,7 +292,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {
             return Err(concat!(
-                "expected --layout, --translate, --prescale, --initialize, --initialize-by-distance, ",
+                "expected --layout, --translate, --prescale, --hierarchy-preprocess, --tree-preprocess, --initialize, --initialize-by-distance, ",
                 "--sizeless-first-pass, --sizeless-phase, --sized-transition, --measured-sized-transition, ",
                 "--first-sized-candidates, --first-sized-edge-costs, --first-sized-move, --first-sized-pass, ",
                 "--measured-first-sized-pass, --measured-sized-phase, ",

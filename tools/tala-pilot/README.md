@@ -167,6 +167,30 @@ node tools/tala-pilot/check-layout-graph.mjs \
 Pass `--write` to refresh the two checked-in Rust checkpoints from the
 live trace after the comparison passes.
 
+### Tree preprocessing and hierarchy scope projection
+
+The hierarchy projection reads the canonical measured graph. It checks
+container eligibility, identifies the ordered scopes visited during hierarchy
+discovery and temporarily binds edges to the nearest child of each scope.
+The original endpoints remain available for restoring the routed graph.
+Library Architecture exercises five nested scopes and cross-frame endpoints.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-hierarchy hierarchy-preprocess
+GOFLAGS=-overlay=/tmp/ferrigura-tala-hierarchy/overlay.json \
+  tools/tala-pilot/reference/build.sh /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-traced-hierarchy
+node tools/tala-pilot/check-hierarchy-preprocess.mjs \
+  --reference /tmp/ferrigura-tala-reference \
+  --trace /tmp/ferrigura-tala-traced-hierarchy \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+The comparison checks the measured projection, tree preprocessing and the
+actual hierarchy input for every seed. The tree checkpoint preserves the
+detached branch and its connectors in Publishing Flow, and the order in
+which Workshop Edges restores a non-branching tree. Pass `--write` to update
+the stored checkpoints after the live comparison passes.
+
 ### Seeded sizeless placement
 
 The Rust stage initializes a flat rectangular component, then optimizes
@@ -290,7 +314,19 @@ node tools/tala-pilot/check-candidate-scores.mjs \
 ```
 
 Pass `--write-fixtures crates/ferrigura-tala/src/quality/go-candidates.json`
-to regenerate the cases shared with the Rust test suite.
+to regenerate the Ferrigura cases shared with the Rust test suite. Then
+check the independently pinned D2 completed layouts and their calibrated
+work bound through the same scorer:
+
+```sh
+node tools/tala-pilot/check-upstream-quality.mjs \
+  --d2 /tmp/ferrigura-tala-d2 \
+  --overlay /tmp/ferrigura-tala-score/overlay.json \
+  --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
+Use `--write-fixtures` on that command to regenerate the upstream score
+records after verifying them against Rust.
 
 ## Findings
 

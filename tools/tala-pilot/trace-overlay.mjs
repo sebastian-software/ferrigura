@@ -15,6 +15,11 @@ const modes = {
   ],
   'layout-graph': ['seedgraph.go', 'seedgraph-overlay.go', traceLayoutGraph],
   'route-output': ['patch.go', 'patch-overlay.go', traceRouteOutput],
+  'hierarchy-preprocess': [
+    'internal/engine/pipeline.go',
+    'hierarchy-preprocess-overlay.go',
+    traceHierarchyPreprocess,
+  ],
   'placement-bodies': [
     'internal/engine/pipeline.go',
     'placement-bodies-overlay.go',
@@ -28,7 +33,7 @@ const modes = {
 };
 assert(
   sourceRoot && output && (Object.hasOwn(modes, mode) || mode === 'candidate-score'),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|edge-label-placement|placement-bodies|candidate-score]'
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement|route-output|edge-label-placement|placement-bodies|hierarchy-preprocess|candidate-score]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
@@ -259,14 +264,31 @@ function traceSizedOptimizer(source) {
   );
 }
 
+function traceHierarchyPreprocess(source) {
+  const imports = '\t"math/rand"\n';
+  const run = '\t\tif err := stage.run(p, ctx); err != nil {\n\t\t\treturn err\n\t\t}\n';
+  return replaceOnce(
+    replaceOnce(source, imports, imports + '\t"os"\n\t"slices"\n'),
+    run,
+    run + '\t\ttracePilotHierarchyPreprocess(stage.name, p)\n'
+  );
+}
+
 async function traceCandidateScores(tala) {
   const source = join(tala, 'layout.go');
   const target = join(dest, 'candidate-score-overlay.go');
   const qualitySource = join(tala, 'internal/quality/scoring.go');
   const qualityTarget = join(dest, 'quality-overlay.go');
+  const testsSource = join(tala, 'result_test.go');
+  const testsTarget = join(dest, 'quality-tests-overlay.go');
   const original = await readFile(source, 'utf8');
   const quality = await readFile(qualitySource, 'utf8');
   const helper = await readFile(new URL('trace-candidate-score.go.txt', import.meta.url), 'utf8');
+  const tests = await readFile(testsSource, 'utf8');
+  const testsHelper = await readFile(
+    new URL('trace-candidate-quality-tests.go.txt', import.meta.url),
+    'utf8'
+  );
   const instrumentation = replaceOnce(
     replaceOnce(
       replaceOnce(
@@ -295,9 +317,26 @@ async function traceCandidateScores(tala) {
       '\t_, _, work, err := evaluateWithAreaLimit(ctx, graph, maxEvaluationWorkUnits)\n' +
       '\treturn work, err\n}\n'
   );
-  execFileSync('gofmt', ['-w', target, qualityTarget]);
+  await writeFile(
+    testsTarget,
+    replaceOnce(
+      tests,
+      '\t"errors"\n',
+      '\t"errors"\n\t"fmt"\n\t"os"\n\t"path/filepath"\n' +
+        '\t"github.com/d2lang/d2/d2layouts/d2talalayout/internal/quality"\n'
+    ) +
+      '\n' +
+      testsHelper
+  );
+  execFileSync('gofmt', ['-w', target, qualityTarget, testsTarget]);
   await writeFile(
     join(dest, 'overlay.json'),
-    JSON.stringify({ Replace: { [source]: target, [qualitySource]: qualityTarget } })
+    JSON.stringify({
+      Replace: {
+        [source]: target,
+        [qualitySource]: qualityTarget,
+        [testsSource]: testsTarget,
+      },
+    })
   );
 }
