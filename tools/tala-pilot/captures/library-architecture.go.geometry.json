@@ -1,0 +1,212 @@
+{
+  "seed": 1,
+  "nodes": [
+    {
+      "id": "delivery",
+      "x": 362,
+      "y": 463,
+      "width": 272,
+      "height": 409
+    },
+    {
+      "id": "product",
+      "x": 0,
+      "y": 0,
+      "width": 1364,
+      "height": 343
+    },
+    {
+      "id": "stock",
+      "x": 727,
+      "y": 73,
+      "width": 577,
+      "height": 210
+    },
+    {
+      "id": "intake",
+      "x": 60,
+      "y": 60,
+      "width": 574,
+      "height": 210
+    },
+    {
+      "id": "portal",
+      "x": 120,
+      "y": 169,
+      "width": 152,
+      "height": 41
+    },
+    {
+      "id": "reserve",
+      "x": 422,
+      "y": 120,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "queue",
+      "x": 787,
+      "y": 133,
+      "width": 152,
+      "height": 41
+    },
+    {
+      "id": "shelf",
+      "x": 1092,
+      "y": 155,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "schedule",
+      "x": 422,
+      "y": 523,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "alert",
+      "x": 422,
+      "y": 771,
+      "width": 152,
+      "height": 41
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_portal_reserve_0",
+      "points": [
+        {
+          "x": 220,
+          "y": 169
+        },
+        {
+          "x": 220,
+          "y": 144
+        },
+        {
+          "x": 422,
+          "y": 144
+        }
+      ]
+    },
+    {
+      "id": "L_queue_shelf_0",
+      "points": [
+        {
+          "x": 863,
+          "y": 174
+        },
+        {
+          "x": 863,
+          "y": 198
+        },
+        {
+          "x": 1092,
+          "y": 198
+        }
+      ]
+    },
+    {
+      "id": "L_reserve_queue_0",
+      "points": [
+        {
+          "x": 574,
+          "y": 153
+        },
+        {
+          "x": 787,
+          "y": 153
+        }
+      ],
+      "label": {
+        "x": 675.5,
+        "y": 136.5
+      },
+      "labelWidth": 103,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_shelf_portal_0",
+      "points": [
+        {
+          "x": 1168,
+          "y": 155
+        },
+        {
+          "x": 1168,
+          "y": 30
+        },
+        {
+          "x": 170,
+          "y": 30
+        },
+        {
+          "x": 170,
+          "y": 169
+        }
+      ],
+      "label": {
+        "x": 662.5,
+        "y": 46.5
+      },
+      "labelWidth": 91,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_schedule_alert_0",
+      "points": [
+        {
+          "x": 498,
+          "y": 591
+        },
+        {
+          "x": 498,
+          "y": 771
+        }
+      ]
+    },
+    {
+      "id": "L_shelf_schedule_0",
+      "points": [
+        {
+          "x": 1168,
+          "y": 223
+        },
+        {
+          "x": 1168,
+          "y": 557
+        },
+        {
+          "x": 574,
+          "y": 557
+        }
+      ],
+      "label": {
+        "x": 1038.5,
+        "y": 573.5
+      },
+      "labelWidth": 119,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_schedule_reserve_0",
+      "points": [
+        {
+          "x": 498,
+          "y": 523
+        },
+        {
+          "x": 498,
+          "y": 188
+        }
+      ],
+      "label": {
+        "x": 435,
+        "y": 355.5
+      },
+      "labelWidth": 114,
+      "labelHeight": 21
+    }
+  ]
+}

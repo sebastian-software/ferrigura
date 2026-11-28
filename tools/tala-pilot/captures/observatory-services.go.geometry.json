@@ -1,0 +1,255 @@
+{
+  "seed": 1,
+  "nodes": [
+    {
+      "id": "control",
+      "x": 248,
+      "y": 142,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "antenna",
+      "x": 496,
+      "y": 186,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "sampler",
+      "x": 124,
+      "y": 248,
+      "width": 152,
+      "height": 41
+    },
+    {
+      "id": "store",
+      "x": 0,
+      "y": 434,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "quality",
+      "x": 248,
+      "y": 310,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "archive",
+      "x": 248,
+      "y": 496,
+      "width": 152,
+      "height": 68
+    },
+    {
+      "id": "calendar",
+      "x": 372,
+      "y": 0,
+      "width": 152,
+      "height": 41
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_control_antenna_0",
+      "points": [
+        {
+          "x": 400,
+          "y": 164
+        },
+        {
+          "x": 586,
+          "y": 164
+        },
+        {
+          "x": 586,
+          "y": 186
+        }
+      ],
+      "label": {
+        "x": 504.5,
+        "y": 147.5
+      },
+      "labelWidth": 75,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_antenna_sampler_0",
+      "points": [
+        {
+          "x": 496,
+          "y": 229
+        },
+        {
+          "x": 186,
+          "y": 229
+        },
+        {
+          "x": 186,
+          "y": 248
+        }
+      ],
+      "label": {
+        "x": 413.5,
+        "y": 245.5
+      },
+      "labelWidth": 63,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_sampler_store_0",
+      "points": [
+        {
+          "x": 124,
+          "y": 268
+        },
+        {
+          "x": 62,
+          "y": 268
+        },
+        {
+          "x": 62,
+          "y": 434
+        }
+      ],
+      "label": {
+        "x": 98.5,
+        "y": 320.5
+      },
+      "labelWidth": 61,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_store_quality_0",
+      "points": [
+        {
+          "x": 107,
+          "y": 434
+        },
+        {
+          "x": 107,
+          "y": 344
+        },
+        {
+          "x": 248,
+          "y": 344
+        }
+      ],
+      "label": {
+        "x": 190.5,
+        "y": 327.5
+      },
+      "labelWidth": 99,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_quality_control_0",
+      "points": [
+        {
+          "x": 338,
+          "y": 310
+        },
+        {
+          "x": 338,
+          "y": 210
+        }
+      ],
+      "label": {
+        "x": 385.5,
+        "y": 285.5
+      },
+      "labelWidth": 83,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_store_archive_0",
+      "points": [
+        {
+          "x": 76,
+          "y": 502
+        },
+        {
+          "x": 76,
+          "y": 533
+        },
+        {
+          "x": 248,
+          "y": 533
+        }
+      ],
+      "label": {
+        "x": 147,
+        "y": 549.5
+      },
+      "labelWidth": 72,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_quality_archive_0",
+      "points": [
+        {
+          "x": 324,
+          "y": 378
+        },
+        {
+          "x": 324,
+          "y": 496
+        }
+      ],
+      "label": {
+        "x": 362,
+        "y": 437.5
+      },
+      "labelWidth": 64,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_control_calendar_0",
+      "points": [
+        {
+          "x": 310,
+          "y": 142
+        },
+        {
+          "x": 310,
+          "y": 20
+        },
+        {
+          "x": 372,
+          "y": 20
+        }
+      ],
+      "label": {
+        "x": 266,
+        "y": 50.5
+      },
+      "labelWidth": 76,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_calendar_antenna_0",
+      "points": [
+        {
+          "x": 524,
+          "y": 20
+        },
+        {
+          "x": 586,
+          "y": 20
+        },
+        {
+          "x": 586,
+          "y": 186
+        }
+      ],
+      "label": {
+        "x": 628,
+        "y": 72.5
+      },
+      "labelWidth": 72,
+      "labelHeight": 21
+    }
+  ]
+}

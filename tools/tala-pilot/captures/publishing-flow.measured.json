@@ -1,0 +1,205 @@
+{
+  "direction": "LR",
+  "edges": [
+    {
+      "id": "L_draft_read_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "draft",
+      "sourceArrow": false,
+      "target": "read",
+      "targetArrow": true
+    },
+    {
+      "id": "L_read_fact_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "read",
+      "sourceArrow": false,
+      "target": "fact",
+      "targetArrow": true
+    },
+    {
+      "id": "L_fact_typeset_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "fact",
+      "sourceArrow": false,
+      "target": "typeset",
+      "targetArrow": true
+    },
+    {
+      "id": "L_typeset_proofs_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "typeset",
+      "sourceArrow": false,
+      "target": "proofs",
+      "targetArrow": true
+    },
+    {
+      "id": "L_proofs_build_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "proofs",
+      "sourceArrow": false,
+      "target": "build",
+      "targetArrow": true
+    },
+    {
+      "id": "L_build_publish_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "build",
+      "sourceArrow": false,
+      "target": "publish",
+      "targetArrow": true
+    },
+    {
+      "id": "L_fact_permissions_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "fact",
+      "sourceArrow": false,
+      "target": "permissions",
+      "targetArrow": true
+    },
+    {
+      "id": "L_permissions_proofs_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "permissions",
+      "sourceArrow": false,
+      "target": "proofs",
+      "targetArrow": true
+    },
+    {
+      "id": "L_build_archive_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "build",
+      "sourceArrow": false,
+      "target": "archive",
+      "targetArrow": true
+    }
+  ],
+  "nodes": [
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "draft",
+      "isGroup": false,
+      "label": "Draft",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "read",
+      "isGroup": false,
+      "label": "Editorial review",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "fact",
+      "isGroup": false,
+      "label": "Fact check",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "typeset",
+      "isGroup": false,
+      "label": "Typesetting",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "proofs",
+      "isGroup": false,
+      "label": "Proof approval",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "build",
+      "isGroup": false,
+      "label": "Build edition",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "publish",
+      "isGroup": false,
+      "label": "Publish",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "permissions",
+      "isGroup": false,
+      "label": "Check image rights",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "archive",
+      "isGroup": false,
+      "label": "Archive originals",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "seed": 1,
+  "nodes": [
+    {
+      "id": "sensor",
+      "x": 0,
+      "y": 57,
+      "width": 152,
+      "height": 120
+    },
+    {
+      "id": "panel",
+      "x": 302,
+      "y": 57,
+      "width": 152,
+      "height": 120
+    },
+    {
+      "id": "checklist",
+      "x": 0,
+      "y": 197,
+      "width": 152,
+      "height": 41
+    },
+    {
+      "id": "lights",
+      "x": 248,
+      "y": 197,
+      "width": 152,
+      "height": 41
+    },
+    {
+      "id": "clock",
+      "x": 0,
+      "y": 258,
+      "width": 152,
+      "height": 41
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_sensor_panel_0",
+      "points": [
+        {
+          "x": 152,
+          "y": 117
+        },
+        {
+          "x": 302,
+          "y": 117
+        }
+      ],
+      "label": {
+        "x": 227.5,
+        "y": 100.5
+      },
+      "labelWidth": 73,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_sensor_panel_2",
+      "points": [
+        {
+          "x": 152,
+          "y": 147
+        },
+        {
+          "x": 302,
+          "y": 147
+        }
+      ],
+      "label": {
+        "x": 227,
+        "y": 163.5
+      },
+      "labelWidth": 94,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_panel_panel_0",
+      "points": [
+        {
+          "x": 302,
+          "y": 87
+        },
+        {
+          "x": 272,
+          "y": 87
+        },
+        {
+          "x": 272,
+          "y": 27
+        },
+        {
+          "x": 340,
+          "y": 27
+        },
+        {
+          "x": 340,
+          "y": 57
+        }
+      ],
+      "label": {
+        "x": 276,
+        "y": 10.5
+      },
+      "labelWidth": 54,
+      "labelHeight": 21
+    },
+    {
+      "id": "L_checklist_lights_0",
+      "points": [
+        {
+          "x": 152,
+          "y": 217
+        },
+        {
+          "x": 248,
+          "y": 217
+        }
+      ]
+    }
+  ]
+}

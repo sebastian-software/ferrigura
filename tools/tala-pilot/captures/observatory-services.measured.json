@@ -1,0 +1,181 @@
+{
+  "direction": "LR",
+  "edges": [
+    {
+      "id": "L_control_antenna_0",
+      "label": "observe",
+      "labelHeight": 21.0,
+      "labelWidth": 74.640625,
+      "source": "control",
+      "sourceArrow": false,
+      "target": "antenna",
+      "targetArrow": true
+    },
+    {
+      "id": "L_antenna_sampler_0",
+      "label": "signal",
+      "labelHeight": 21.0,
+      "labelWidth": 62.6875,
+      "source": "antenna",
+      "sourceArrow": false,
+      "target": "sampler",
+      "targetArrow": true
+    },
+    {
+      "id": "L_sampler_store_0",
+      "label": "batch",
+      "labelHeight": 21.0,
+      "labelWidth": 60.46875,
+      "source": "sampler",
+      "sourceArrow": false,
+      "target": "store",
+      "targetArrow": true
+    },
+    {
+      "id": "L_store_quality_0",
+      "label": "latest batch",
+      "labelHeight": 21.0,
+      "labelWidth": 98.328125,
+      "source": "store",
+      "sourceArrow": false,
+      "target": "quality",
+      "targetArrow": true
+    },
+    {
+      "id": "L_quality_control_0",
+      "label": "resample",
+      "labelHeight": 21.0,
+      "labelWidth": 82.859375,
+      "source": "quality",
+      "sourceArrow": false,
+      "target": "control",
+      "targetArrow": true
+    },
+    {
+      "id": "L_store_archive_0",
+      "label": "catalog",
+      "labelHeight": 21.0,
+      "labelWidth": 71.1875,
+      "source": "store",
+      "sourceArrow": false,
+      "target": "archive",
+      "targetArrow": true
+    },
+    {
+      "id": "L_quality_archive_0",
+      "label": "status",
+      "labelHeight": 21.0,
+      "labelWidth": 63.140625,
+      "source": "quality",
+      "sourceArrow": false,
+      "target": "archive",
+      "targetArrow": true
+    },
+    {
+      "id": "L_control_calendar_0",
+      "label": "forecast",
+      "labelHeight": 21.0,
+      "labelWidth": 75.59375,
+      "source": "control",
+      "sourceArrow": false,
+      "target": "calendar",
+      "targetArrow": true
+    },
+    {
+      "id": "L_calendar_antenna_0",
+      "label": "window",
+      "labelHeight": 21.0,
+      "labelWidth": 71.328125,
+      "source": "calendar",
+      "sourceArrow": false,
+      "target": "antenna",
+      "targetArrow": true
+    }
+  ],
+  "nodes": [
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "control",
+      "isGroup": false,
+      "label": "Control room",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "antenna",
+      "isGroup": false,
+      "label": "Antenna",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "sampler",
+      "isGroup": false,
+      "label": "Signal sampler",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "store",
+      "isGroup": false,
+      "label": "Data store",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "quality",
+      "isGroup": false,
+      "label": "Quality monitor",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "archive",
+      "isGroup": false,
+      "label": "Archive",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "calendar",
+      "isGroup": false,
+      "label": "Night schedule",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": null,
+      "shape": "squareRect",
+      "width": 152.0
+    }
+  ]
+}

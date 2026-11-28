@@ -1,0 +1,197 @@
+{
+  "direction": "LR",
+  "edges": [
+    {
+      "id": "L_portal_reserve_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "portal",
+      "sourceArrow": false,
+      "target": "reserve",
+      "targetArrow": true
+    },
+    {
+      "id": "L_queue_shelf_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "queue",
+      "sourceArrow": false,
+      "target": "shelf",
+      "targetArrow": true
+    },
+    {
+      "id": "L_reserve_queue_0",
+      "label": "hold request",
+      "labelHeight": 21.0,
+      "labelWidth": 102.953125,
+      "source": "reserve",
+      "sourceArrow": false,
+      "target": "queue",
+      "targetArrow": true
+    },
+    {
+      "id": "L_shelf_portal_0",
+      "label": "availability",
+      "labelHeight": 21.0,
+      "labelWidth": 90.578125,
+      "source": "shelf",
+      "sourceArrow": false,
+      "target": "portal",
+      "targetArrow": true
+    },
+    {
+      "id": "L_schedule_alert_0",
+      "label": "",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "source": "schedule",
+      "sourceArrow": false,
+      "target": "alert",
+      "targetArrow": true
+    },
+    {
+      "id": "L_shelf_schedule_0",
+      "label": "branch transfer",
+      "labelHeight": 21.0,
+      "labelWidth": 118.96875,
+      "source": "shelf",
+      "sourceArrow": false,
+      "target": "schedule",
+      "targetArrow": true
+    },
+    {
+      "id": "L_schedule_reserve_0",
+      "label": "confirmed slot",
+      "labelHeight": 21.0,
+      "labelWidth": 113.703125,
+      "source": "schedule",
+      "sourceArrow": false,
+      "target": "reserve",
+      "targetArrow": true
+    }
+  ],
+  "nodes": [
+    {
+      "direction": null,
+      "height": 0.0,
+      "id": "delivery",
+      "isGroup": true,
+      "label": "Delivery",
+      "labelHeight": 17.0,
+      "labelWidth": 48.796875,
+      "parentId": null,
+      "shape": "rect",
+      "width": 0.0
+    },
+    {
+      "direction": null,
+      "height": 0.0,
+      "id": "product",
+      "isGroup": true,
+      "label": "Library service",
+      "labelHeight": 17.0,
+      "labelWidth": 89.9375,
+      "parentId": null,
+      "shape": "rect",
+      "width": 0.0
+    },
+    {
+      "direction": null,
+      "height": 0.0,
+      "id": "stock",
+      "isGroup": true,
+      "label": "Branch inventory",
+      "labelHeight": 17.0,
+      "labelWidth": 102.765625,
+      "parentId": "product",
+      "shape": "rect",
+      "width": 0.0
+    },
+    {
+      "direction": null,
+      "height": 0.0,
+      "id": "intake",
+      "isGroup": true,
+      "label": "Reader requests",
+      "labelHeight": 17.0,
+      "labelWidth": 100.84375,
+      "parentId": "product",
+      "shape": "rect",
+      "width": 0.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "portal",
+      "isGroup": false,
+      "label": "Reader portal",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": "intake",
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "reserve",
+      "isGroup": false,
+      "label": "Reservation API",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": "intake",
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "queue",
+      "isGroup": false,
+      "label": "Transfer queue",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": "stock",
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "shelf",
+      "isGroup": false,
+      "label": "Shelf inventory",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": "stock",
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 68.0,
+      "id": "schedule",
+      "isGroup": false,
+      "label": "Delivery scheduler",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": "delivery",
+      "shape": "squareRect",
+      "width": 152.0
+    },
+    {
+      "direction": null,
+      "height": 41.0,
+      "id": "alert",
+      "isGroup": false,
+      "label": "Reader notification",
+      "labelHeight": 0.0,
+      "labelWidth": 0.0,
+      "parentId": "delivery",
+      "shape": "squareRect",
+      "width": 152.0
+    }
+  ]
+}
