@@ -91,3 +91,31 @@ fn rejects_unported_cross_boundary_geometry() {
     graph.nodes[1].width += 1.0;
     assert_eq!(crate::layout(&graph), Err(Error::UnsupportedGraph));
 }
+
+fn sibling_fixtures() -> Vec<Fixture> {
+    serde_json::from_str(include_str!("sibling-fixtures.json")).expect("pinned Go sibling fixtures")
+}
+
+#[test]
+fn packs_two_unary_group_branches_at_the_root_or_under_one_frame() {
+    for Fixture {
+        name,
+        graph,
+        expected,
+    } in sibling_fixtures()
+    {
+        assert_eq!(crate::layout(&graph), Ok(expected), "{name}");
+    }
+}
+
+#[test]
+fn rejects_a_third_root_and_a_fork_inside_a_group_branch() {
+    let mut fixtures = sibling_fixtures();
+    let mut roots = fixtures.remove(0).graph;
+    roots.nodes[0].parent_id = None;
+    assert_eq!(crate::layout(&roots), Err(Error::UnsupportedGraph));
+
+    let mut nested = fixtures.remove(0).graph;
+    nested.nodes[4].parent_id = Some(String::from("right"));
+    assert_eq!(crate::layout(&nested), Err(Error::UnsupportedGraph));
+}

@@ -64,29 +64,7 @@ pub(crate) fn place(graph: &Graph) -> Option<Vec<NodeGeometry>> {
             height: node.height,
         })
         .collect();
-    if tiles.len() > 1 {
-        combine_components(&mut tiles);
-        repack(&mut tiles);
-        for tile in &mut tiles {
-            tile.top_left.x += PLACEMENT_PADDING;
-            tile.top_left.y += PLACEMENT_PADDING;
-        }
-        repack(&mut tiles);
-        let (top_left, _) = bounds(&tiles);
-        for tile in &mut tiles {
-            tile.top_left.x -= top_left.x;
-            tile.top_left.y -= top_left.y;
-        }
-    }
-
-    // Rounded component bounds can eliminate every initial candidate in the
-    // upstream algorithm. Its final pass may then keep coincident bodies
-    // because that result has the lowest footprint. Decline that geometry.
-    if tiles.iter().enumerate().any(|(index, &tile)| {
-        tiles[..index]
-            .iter()
-            .any(|&other| tile.overlaps(other, 0.0))
-    }) {
+    if !pack_tiles(&mut tiles) {
         return None;
     }
 
@@ -104,6 +82,42 @@ pub(crate) fn place(graph: &Graph) -> Option<Vec<NodeGeometry>> {
             })
             .collect(),
     )
+}
+
+/// Computes the origins of two fitted frames in source order.
+pub(crate) fn pack_frame_pair(first: &NodeGeometry, second: &NodeGeometry) -> Option<[Point; 2]> {
+    let mut tiles = [first, second].map(|node| Tile {
+        top_left: ORIGIN,
+        width: node.width,
+        height: node.height,
+    });
+    pack_tiles(&mut tiles).then(|| tiles.map(|tile| tile.top_left))
+}
+
+fn pack_tiles(tiles: &mut [Tile]) -> bool {
+    if tiles.len() > 1 {
+        combine_components(tiles);
+        repack(tiles);
+        for tile in &mut *tiles {
+            tile.top_left.x += PLACEMENT_PADDING;
+            tile.top_left.y += PLACEMENT_PADDING;
+        }
+        repack(tiles);
+        let (top_left, _) = bounds(tiles);
+        for tile in &mut *tiles {
+            tile.top_left.x -= top_left.x;
+            tile.top_left.y -= top_left.y;
+        }
+    }
+
+    // Rounded component bounds can eliminate every initial candidate in the
+    // upstream algorithm. Its final pass may then keep coincident bodies
+    // because that result has the lowest footprint. Decline that geometry.
+    !tiles.iter().enumerate().any(|(index, &tile)| {
+        tiles[..index]
+            .iter()
+            .any(|&other| tile.overlaps(other, 0.0))
+    })
 }
 
 fn is_plain_tile(node: &Node) -> bool {

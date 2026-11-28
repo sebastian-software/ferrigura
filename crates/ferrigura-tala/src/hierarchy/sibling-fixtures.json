@@ -1,0 +1,228 @@
+[
+  {
+    "name": "two top-level unary groups pack independently",
+    "graph": {
+      "direction": "TB",
+      "nodes": [
+        {
+          "id": "first-leaf",
+          "parentId": "inner",
+          "shape": "rect",
+          "width": 185.5,
+          "height": 56.4,
+          "isGroup": false,
+          "label": "First",
+          "labelWidth": 56.1,
+          "labelHeight": 13
+        },
+        {
+          "id": "first",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 124,
+          "labelHeight": 15
+        },
+        {
+          "id": "second-leaf",
+          "parentId": "second",
+          "shape": "rect",
+          "width": 130.5,
+          "height": 71.8,
+          "isGroup": false,
+          "label": "Second",
+          "labelWidth": 69,
+          "labelHeight": 16
+        },
+        {
+          "id": "second",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 407.2,
+          "labelHeight": 19.2
+        },
+        {
+          "id": "inner",
+          "parentId": "first",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 180.4,
+          "labelHeight": 25.2
+        }
+      ],
+      "edges": []
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "first-leaf",
+          "x": 120,
+          "y": 120,
+          "width": 185.5,
+          "height": 56.4
+        },
+        {
+          "id": "first",
+          "x": 0,
+          "y": 0,
+          "width": 426,
+          "height": 296
+        },
+        {
+          "id": "second-leaf",
+          "x": 60,
+          "y": 376,
+          "width": 130.5,
+          "height": 71.8
+        },
+        {
+          "id": "second",
+          "x": 0,
+          "y": 316,
+          "width": 428,
+          "height": 192
+        },
+        {
+          "id": "inner",
+          "x": 60,
+          "y": 60,
+          "width": 306,
+          "height": 176
+        }
+      ],
+      "edges": []
+    }
+  },
+  {
+    "name": "sole outer group fits two disconnected nested branches",
+    "graph": {
+      "direction": "RL",
+      "nodes": [
+        {
+          "id": "left",
+          "parentId": "main",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 86,
+          "labelHeight": 18
+        },
+        {
+          "id": "right-leaf",
+          "parentId": "right-internal",
+          "shape": "rect",
+          "width": 218,
+          "height": 56.4,
+          "isGroup": false,
+          "label": "Second",
+          "labelWidth": 71,
+          "labelHeight": 15
+        },
+        {
+          "id": "main",
+          "parentId": null,
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 85,
+          "labelHeight": 50
+        },
+        {
+          "id": "right-internal",
+          "parentId": "right",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 400,
+          "labelHeight": 23
+        },
+        {
+          "id": "left-leaf",
+          "parentId": "left",
+          "shape": "rect",
+          "width": 185.5,
+          "height": 87.2,
+          "isGroup": false,
+          "label": "First",
+          "labelWidth": 51.2,
+          "labelHeight": 14
+        },
+        {
+          "id": "right",
+          "parentId": "main",
+          "shape": "rect",
+          "width": 0,
+          "height": 0,
+          "isGroup": true,
+          "label": "Group",
+          "labelWidth": 112,
+          "labelHeight": 24
+        }
+      ],
+      "edges": []
+    },
+    "expected": {
+      "nodes": [
+        {
+          "id": "left",
+          "x": 60,
+          "y": 60,
+          "width": 306,
+          "height": 207
+        },
+        {
+          "id": "right-leaf",
+          "x": 180,
+          "y": 407,
+          "width": 218,
+          "height": 56.4
+        },
+        {
+          "id": "main",
+          "x": 0,
+          "y": 0,
+          "width": 660,
+          "height": 643
+        },
+        {
+          "id": "right-internal",
+          "x": 120,
+          "y": 347,
+          "width": 420,
+          "height": 176
+        },
+        {
+          "id": "left-leaf",
+          "x": 120,
+          "y": 120,
+          "width": 185.5,
+          "height": 87.2
+        },
+        {
+          "id": "right",
+          "x": 60,
+          "y": 287,
+          "width": 540,
+          "height": 296
+        }
+      ],
+      "edges": []
+    }
+  }
+]
