@@ -48,6 +48,15 @@ jobs:
             --reference "$RUNNER_TEMP/tala-reference" \
             --trace "$RUNNER_TEMP/tala-layout-graph-reference" \
             --rust tools/tala-pilot/rust/target/debug/ferrigura-tala
+      - name: Compare seeded sizeless placement with Go
+        if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
+        run: |
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-sizeless" sizeless-placement
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-sizeless/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-sizeless-reference"
+          node tools/tala-pilot/check-sizeless-placement.mjs \
+            "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-sizeless-reference" \
+            tools/tala-pilot/rust/target/debug/ferrigura-tala
       - name: Require a passing Rust counterpart for every upstream correctness test
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

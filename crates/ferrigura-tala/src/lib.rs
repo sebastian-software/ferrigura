@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 #[doc(hidden)]
 pub mod balance;
 mod connected;
+mod go_rand;
 mod hierarchy;
 #[doc(hidden)]
 pub mod initialize;
@@ -24,6 +25,8 @@ mod placement;
 mod routing;
 #[doc(hidden)]
 pub mod simplify;
+#[doc(hidden)]
+pub mod sizeless;
 #[doc(hidden)]
 pub mod stress_initialize;
 

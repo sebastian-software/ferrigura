@@ -11,6 +11,12 @@ struct RoutedCapture {
     layout: Layout,
 }
 
+#[derive(Deserialize)]
+struct PlacementCapture {
+    graph: Graph,
+    seed: i64,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let input = io::stdin().lock();
     let output = io::stdout().lock();
@@ -38,6 +44,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ferrigura_tala::stress_initialize::initialize_by_graph_distance(&graph)?;
             serde_json::to_writer(output, &positions)?;
         }
+        Some("--sizeless-first-pass") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::first_pass(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
+        Some("--sizeless-phase") => {
+            let PlacementCapture { graph, seed } = serde_json::from_reader(input)?;
+            let result = ferrigura_tala::sizeless::optimize_phase(&graph, seed)?;
+            serde_json::to_writer(output, &result)?;
+        }
         Some("--ovg-seed") => {
             let nodes: Vec<_> = serde_json::from_reader(input)?;
             let seed = ferrigura_tala::ovg_seed::rectangular_visibility_seed(&nodes)?;
@@ -61,7 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         _ => {
             return Err(concat!(
                 "expected --layout, --translate, --prescale, --initialize, --initialize-by-distance, ",
-                "--ovg-seed, --simplify, --balance, or no argument"
+                "--sizeless-first-pass, --sizeless-phase, --ovg-seed, --simplify, --balance, or no argument"
             )
             .into());
         }

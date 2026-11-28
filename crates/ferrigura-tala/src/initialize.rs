@@ -12,11 +12,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Error, Graph, MAX_EDGES, MAX_NODES, valid_dimension};
 
-type Cell = (i32, i32);
+pub(crate) type Cell = (i32, i32);
 
 #[derive(Clone, Copy)]
-struct Neighbor {
-    node: usize,
+pub(crate) struct Neighbor {
+    pub(crate) node: usize,
     authored_from_here: bool,
     directed: bool,
     incoming: bool,
@@ -69,45 +69,8 @@ pub fn initialize(graph: &Graph) -> Result<Grid, Error> {
     }) {
         return Err(Error::InvalidGraph);
     }
-    let direction = match graph.direction.as_deref() {
-        Some("TB" | "TD") => Some(4),
-        Some("BT") => Some(0),
-        Some("LR") => Some(2),
-        Some("RL") => Some(-2),
-        None | Some("") => None,
-        _ => return Err(Error::InvalidGraph),
-    };
-
-    let ids: HashMap<_, _> = graph
-        .nodes
-        .iter()
-        .enumerate()
-        .map(|(index, node)| (node.id.as_str(), index))
-        .collect();
-    if ids.len() != graph.nodes.len() {
-        return Err(Error::InvalidGraph);
-    }
-
-    let mut adjacency = vec![Vec::new(); graph.nodes.len()];
-    for edge in &graph.edges {
-        let from = *ids.get(edge.source.as_str()).ok_or(Error::InvalidGraph)?;
-        let to = *ids.get(edge.target.as_str()).ok_or(Error::InvalidGraph)?;
-        let directed = edge.source_arrow != edge.target_arrow;
-        adjacency[from].push(Neighbor {
-            node: to,
-            authored_from_here: true,
-            directed,
-            incoming: directed && (edge.source_arrow || from == to),
-        });
-        if from != to {
-            adjacency[to].push(Neighbor {
-                node: from,
-                authored_from_here: false,
-                directed,
-                incoming: directed && edge.target_arrow,
-            });
-        }
-    }
+    let direction = preferred_direction(graph)?;
+    let adjacency = placement_adjacency(graph)?;
 
     let mut positions = vec![None; graph.nodes.len()];
     let start = i32::try_from(graph.nodes.len()).map_err(|_| Error::WorkLimit)?;
@@ -161,6 +124,52 @@ pub fn initialize(graph: &Graph) -> Result<Grid, Error> {
         cell_size: lattice.ceil().max(10.0),
         nodes,
     })
+}
+
+pub(crate) fn preferred_direction(graph: &Graph) -> Result<Option<i32>, Error> {
+    let direction = match graph.direction.as_deref() {
+        Some("TB" | "TD") => Some(4),
+        Some("BT") => Some(0),
+        Some("LR") => Some(2),
+        Some("RL") => Some(-2),
+        None | Some("") => None,
+        _ => return Err(Error::InvalidGraph),
+    };
+    Ok(direction)
+}
+
+pub(crate) fn placement_adjacency(graph: &Graph) -> Result<Vec<Vec<Neighbor>>, Error> {
+    let ids: HashMap<_, _> = graph
+        .nodes
+        .iter()
+        .enumerate()
+        .map(|(index, node)| (node.id.as_str(), index))
+        .collect();
+    if ids.len() != graph.nodes.len() {
+        return Err(Error::InvalidGraph);
+    }
+
+    let mut adjacency = vec![Vec::new(); graph.nodes.len()];
+    for edge in &graph.edges {
+        let from = *ids.get(edge.source.as_str()).ok_or(Error::InvalidGraph)?;
+        let to = *ids.get(edge.target.as_str()).ok_or(Error::InvalidGraph)?;
+        let directed = edge.source_arrow != edge.target_arrow;
+        adjacency[from].push(Neighbor {
+            node: to,
+            authored_from_here: true,
+            directed,
+            incoming: directed && (edge.source_arrow || from == to),
+        });
+        if from != to {
+            adjacency[to].push(Neighbor {
+                node: from,
+                authored_from_here: false,
+                directed,
+                incoming: directed && edge.target_arrow,
+            });
+        }
+    }
+    Ok(adjacency)
 }
 
 fn place_node(
@@ -246,7 +255,12 @@ fn coordinate_median(coordinates: &mut [i32]) -> Option<i32> {
     }
 }
 
-fn edge_cost(neighbor: Neighbor, here: Cell, there: Cell, preferred: Option<i32>) -> f64 {
+pub(crate) fn edge_cost(
+    neighbor: Neighbor,
+    here: Cell,
+    there: Cell,
+    preferred: Option<i32>,
+) -> f64 {
     let goes_from_here = if neighbor.directed {
         !neighbor.incoming
     } else {

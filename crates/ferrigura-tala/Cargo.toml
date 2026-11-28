@@ -3,10 +3,10 @@ name = "ferrigura-tala"
 version = "0.10.0"
 description = "Experimental Rust port of the D2 TALA layout engine"
 readme = "README.md"
-include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/NOTICE.md"]
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/LICENSE-GO", "/NOTICE.md"]
 edition.workspace = true
 rust-version.workspace = true
-license = "MPL-2.0"
+license = "MPL-2.0 AND BSD-3-Clause"
 repository.workspace = true
 homepage.workspace = true
 

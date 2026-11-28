@@ -14,6 +14,15 @@
   "adapter_test.go#TestCollectD2ObjectVisitsPreservesDFSOrder": [
     "layout_graph::tests::preserves_d2_object_visit_order"
   ],
+  "internal/placement/sizeless_optimizer_test.go#TestFindClosestUnoccupiedDistance": [
+    "sizeless::tests::finds_closest_unoccupied_distance"
+  ],
+  "internal/placement/sizeless_optimizer_test.go#TestPlacementPoints": [
+    "sizeless::tests::generates_unoccupied_placement_points"
+  ],
+  "internal/placement/sizeless_optimizer_test.go#TestSwapCandidates": [
+    "sizeless::tests::finds_optimizable_swaps_in_go_order"
+  ],
   "internal/routing/balance_order_test.go#TestBalanceEdgeSegmentsStillUncrossesDifferentRanges": [
     "balance::tests::balance_edge_segments_still_uncrosses_different_ranges"
   ],

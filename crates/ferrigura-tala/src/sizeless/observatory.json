@@ -1,0 +1,251 @@
+[
+  {
+    "seed": 1,
+    "firstPass": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "control",
+          "x": 4,
+          "y": 4
+        },
+        {
+          "id": "antenna",
+          "x": 6,
+          "y": 4
+        },
+        {
+          "id": "quality",
+          "x": 5,
+          "y": 7
+        },
+        {
+          "id": "calendar",
+          "x": 6,
+          "y": 5
+        },
+        {
+          "id": "sampler",
+          "x": 6,
+          "y": 6
+        },
+        {
+          "id": "store",
+          "x": 4,
+          "y": 8
+        },
+        {
+          "id": "archive",
+          "x": 8,
+          "y": 6
+        }
+      ]
+    },
+    "fullPhase": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "control",
+          "x": 71,
+          "y": 60
+        },
+        {
+          "id": "antenna",
+          "x": 72,
+          "y": 60
+        },
+        {
+          "id": "quality",
+          "x": 73,
+          "y": 59
+        },
+        {
+          "id": "calendar",
+          "x": 72,
+          "y": 61
+        },
+        {
+          "id": "sampler",
+          "x": 72,
+          "y": 59
+        },
+        {
+          "id": "store",
+          "x": 73,
+          "y": 58
+        },
+        {
+          "id": "archive",
+          "x": 74,
+          "y": 59
+        }
+      ]
+    }
+  },
+  {
+    "seed": 2,
+    "firstPass": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "control",
+          "x": 8,
+          "y": 5
+        },
+        {
+          "id": "antenna",
+          "x": 7,
+          "y": 4
+        },
+        {
+          "id": "quality",
+          "x": 11,
+          "y": 4
+        },
+        {
+          "id": "calendar",
+          "x": 6,
+          "y": 6
+        },
+        {
+          "id": "sampler",
+          "x": 5,
+          "y": 6
+        },
+        {
+          "id": "store",
+          "x": 5,
+          "y": 5
+        },
+        {
+          "id": "archive",
+          "x": 11,
+          "y": 7
+        }
+      ]
+    },
+    "fullPhase": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "control",
+          "x": 41,
+          "y": 84
+        },
+        {
+          "id": "antenna",
+          "x": 41,
+          "y": 83
+        },
+        {
+          "id": "quality",
+          "x": 42,
+          "y": 83
+        },
+        {
+          "id": "calendar",
+          "x": 40,
+          "y": 83
+        },
+        {
+          "id": "sampler",
+          "x": 43,
+          "y": 83
+        },
+        {
+          "id": "store",
+          "x": 42,
+          "y": 82
+        },
+        {
+          "id": "archive",
+          "x": 42,
+          "y": 84
+        }
+      ]
+    }
+  },
+  {
+    "seed": 3,
+    "firstPass": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "control",
+          "x": 9,
+          "y": 6
+        },
+        {
+          "id": "antenna",
+          "x": 8,
+          "y": 7
+        },
+        {
+          "id": "quality",
+          "x": 12,
+          "y": 11
+        },
+        {
+          "id": "calendar",
+          "x": 6,
+          "y": 9
+        },
+        {
+          "id": "sampler",
+          "x": 11,
+          "y": 10
+        },
+        {
+          "id": "store",
+          "x": 7,
+          "y": 14
+        },
+        {
+          "id": "archive",
+          "x": 11,
+          "y": 8
+        }
+      ]
+    },
+    "fullPhase": {
+      "cellSize": 62,
+      "nodes": [
+        {
+          "id": "control",
+          "x": 85,
+          "y": 51
+        },
+        {
+          "id": "antenna",
+          "x": 84,
+          "y": 50
+        },
+        {
+          "id": "quality",
+          "x": 85,
+          "y": 52
+        },
+        {
+          "id": "calendar",
+          "x": 83,
+          "y": 50
+        },
+        {
+          "id": "sampler",
+          "x": 84,
+          "y": 51
+        },
+        {
+          "id": "store",
+          "x": 84,
+          "y": 53
+        },
+        {
+          "id": "archive",
+          "x": 85,
+          "y": 53
+        }
+      ]
+    }
+  }
+]

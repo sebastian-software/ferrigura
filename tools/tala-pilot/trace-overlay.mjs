@@ -8,11 +8,16 @@ const [sourceRoot, output, mode = 'normalization'] = process.argv.slice(2);
 const modes = {
   normalization: ['internal/engine/pipeline.go', 'pipeline-overlay.go', traceNormalization],
   'ovg-seed': ['internal/routing/ovg.go', 'ovg-overlay.go', traceOvgSeed],
+  'sizeless-placement': [
+    'internal/placement/node_placement.go',
+    'sizeless-placement-overlay.go',
+    traceSizelessPlacement,
+  ],
   'layout-graph': ['seedgraph.go', 'seedgraph-overlay.go', traceLayoutGraph],
 };
 assert(
   sourceRoot && output && Object.hasOwn(modes, mode),
-  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph]'
+  'usage: node trace-overlay.mjs <D2 checkout> <output directory> [normalization|ovg-seed|layout-graph|sizeless-placement]'
 );
 const pin = 'b463ea5d47272f4da6e1e08012dbb15a6a4dbcde';
 const root = resolve(sourceRoot);
@@ -73,5 +78,31 @@ function traceLayoutGraph(source) {
     ),
     graphReady,
     graphReady + '\ttracePilotLayoutGraph(ctx, graph, internal)\n'
+  );
+}
+
+function traceSizelessPlacement(source) {
+  const imports = '\t"math/rand"\n';
+  const optimize =
+    '\t\tif !idle {\n' +
+    '\t\t\tif err := sizeless.optimize(ctx, temp); err != nil {\n' +
+    '\t\t\t\treturn err\n\t\t\t}\n\t\t}\n';
+  const transition =
+    '\tif err := compaction(ctx, subgraph, compactionOptions{\n' +
+    '\t\tedgeAbductions: edgeAbductions,\n\t\taxis:           horizontalAxis,';
+  const withImports = replaceOnce(
+    source,
+    imports,
+    imports + '\t"encoding/hex"\n\t"encoding/json"\n\t"os"\n'
+  );
+  const withFirstPass = replaceOnce(
+    withImports,
+    optimize,
+    optimize + '\t\tif i == 0 { tracePilotSizelessPlacement("firstPass", seed, subgraph) }\n'
+  );
+  return replaceOnce(
+    withFirstPass,
+    transition,
+    '\ttracePilotSizelessPlacement("fullPhase", seed, subgraph)\n' + transition
   );
 }

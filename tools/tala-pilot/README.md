@@ -166,6 +166,26 @@ node tools/tala-pilot/check-layout-graph.mjs \
 Pass `--write` to refresh the two checked-in Rust checkpoints from the
 live trace after the comparison passes.
 
+### Seeded sizeless placement
+
+The Rust stage initializes a flat rectangular component, then optimizes
+its positions using Go-compatible shuffles and jitter and alternating
+compactions. The Observatory check compares every ordered grid location
+with Go after the first pass and after the complete sizeless phase for
+all three default seeds. The observable layout remains unchanged by the
+trace.
+
+```sh
+node tools/tala-pilot/trace-overlay.mjs \
+  /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-sizeless sizeless-placement
+GOFLAGS=-overlay=/tmp/ferrigura-tala-sizeless/overlay.json \
+  tools/tala-pilot/reference/build.sh \
+  /tmp/ferrigura-tala-d2 /tmp/ferrigura-tala-sizeless-reference
+node tools/tala-pilot/check-sizeless-placement.mjs \
+  /tmp/ferrigura-tala-reference /tmp/ferrigura-tala-sizeless-reference \
+  tools/tala-pilot/rust/target/debug/ferrigura-tala
+```
+
 ### Initial orthogonal visibility graph
 
 The replay includes ordered initial visibility vertices, the twelve port slots

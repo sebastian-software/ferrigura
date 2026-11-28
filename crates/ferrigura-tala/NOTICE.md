@@ -24,9 +24,19 @@ engine, copyright 2022 Terrastruct Inc., under the Mozilla Public License
 | `src/placement.rs`             | `d2layouts/d2talalayout/internal/packing/{combine,binpack,bounds,score}.go`, `internal/layoutgraph/node.go`, `internal/placement/{node_placement,stages,tuning}.go`                                                                                                                                    |
 | `src/routing.rs`               | `d2layouts/d2talalayout/internal/loops/loops.go`, `internal/nodeshape/snappoints.go`, `internal/layoutgraph/node.go`, `internal/placement/stages.go`, `d2layouts/d2talalayout/patch.go`, `lib/label/label.go`, `lib/geo/route.go`                                                                      |
 | `src/simplify.rs`              | `d2layouts/d2talalayout/internal/routing/{edge_simplify,geometry,edge_simplify_safety_test}.go`, `internal/layoutgraph/node.go`                                                                                                                                                                        |
+| `src/sizeless.rs`              | `d2layouts/d2talalayout/internal/placement/{compaction,moves,node_placement,optimization_guard,sizeless_optimizer,sizeless_optimizer_test}.go`, `internal/placementcost/{edge_length,geometry}.go`                                                                                                     |
 | `src/stress_initialize.rs`     | `d2layouts/d2talalayout/internal/placement/stress_initialize.go`                                                                                                                                                                                                                                       |
 
 The crate archive contains the covered Rust source. Distributors of native
 binaries that enable TALA must tell recipients how to obtain that source at
 the exact release revision, including modifications, as required by
 [MPL-2.0 §3.2](https://www.mozilla.org/en-US/MPL/2.0/).
+
+## Go random-number generator
+
+`src/go_rand.rs` and `src/go_rand/seed_mix.rs` adapt Go 1.27.4's
+`math/rand` implementation and seed mixing table, copyright 2009 The Go
+Authors, under BSD-3-Clause. The complete license accompanies the source
+in [LICENSE-GO](LICENSE-GO).
+[Go random source](https://go.googlesource.com/go/+/refs/tags/go1.27.4/src/math/rand/rng.go) ·
+[Go random operations](https://go.googlesource.com/go/+/refs/tags/go1.27.4/src/math/rand/rand.go).
