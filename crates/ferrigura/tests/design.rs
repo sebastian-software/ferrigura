@@ -352,6 +352,65 @@ fn the_mode_sets_a_diagram_with_more_room() {
     assert!((roomy_height - (height + (44.0 - 24.0) + (32.0 - 24.0))).abs() < 1e-6);
 }
 
+/// How far each rounded corner of the drawn edges of an SVG starts before its bend: the distance
+/// from the end of the straight part to the control point of the quadratic, in document order.
+fn corner_cuts(svg: &str) -> Vec<f64> {
+    let mut cuts = Vec::new();
+    for (at, _) in svg.match_indices("<path d=\"M") {
+        let rest = &svg[at + "<path d=\"".len()..];
+        let tag = &rest[..rest.find('>').expect("the tag's end")];
+        if !tag.contains("data-edge=\"true\"") {
+            continue;
+        }
+        let d = &rest[..rest.find('"').expect("the path's end")];
+        let mut last = (0.0, 0.0);
+        let mut commands = d
+            .char_indices()
+            .filter(|(_, c)| c.is_ascii_alphabetic())
+            .peekable();
+        while let Some((start, command)) = commands.next() {
+            let end = commands.peek().map_or(d.len(), |(next, _)| *next);
+            let values: Vec<f64> = d[start + 1..end]
+                .split([',', ' '])
+                .filter(|part| !part.is_empty())
+                .map(|part| part.parse().expect("a number"))
+                .collect();
+            match command {
+                'M' | 'L' => last = (values[0], values[1]),
+                'Q' => {
+                    cuts.push((values[0] - last.0).hypot(values[1] - last.1));
+                    last = (values[2], values[3]);
+                }
+                _ => {}
+            }
+        }
+    }
+    cuts
+}
+
+#[test]
+fn every_corner_with_room_for_it_turns_on_the_full_radius() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // A right angle on the radius 10 starts 10 √2 before its bend and takes at most half of each
+    // part. The layers stand 30 from the turns of the edges between them, and a part next to a
+    // node counts from the node, before its arrowhead, so every corner of a fan has its radius,
+    // at the root and in a group, from top to bottom and from left to right.
+    let full = 10.0 * std::f64::consts::SQRT_2;
+    for text in [
+        "flowchart TD\n  A[Order] --> B[Pack] & C[Ship] & D[Bill]\n",
+        "flowchart LR\n  A[Order] --> B[Pack] & C[Ship] & D[Bill]\n  B --> E[Done]\n  C --> E\n",
+        "flowchart TD\n  subgraph Work\n    A[Order] --> B[Pack] & C[Ship]\n  end\n",
+        "stateDiagram-v2\n  Idle --> Running\n  Idle --> Paused\n  Idle --> Stopped\n",
+    ] {
+        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let cuts = corner_cuts(&designed);
+        assert!(!cuts.is_empty(), "{text}");
+        for cut in cuts {
+            assert!((cut - full).abs() < 1e-6, "{text}: a corner of {cut}");
+        }
+    }
+}
+
 #[test]
 fn the_arrowheads_are_the_modes_own() {
     let renderer = Renderer::new(&Value::empty_object());

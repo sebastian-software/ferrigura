@@ -170,6 +170,7 @@ fn the_line_hops_match_the_reference() {
                 arrow_type_end: edge["arrowTypeEnd"].as_str().expect("end").to_owned(),
                 style: String::new(),
                 corner_radius: ferrigura_render::unified::path::ROUNDED_RADIUS,
+                from_ends: false,
             })
             .collect();
         let expected = group["expected"].as_object().expect("expected");

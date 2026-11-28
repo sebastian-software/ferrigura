@@ -175,13 +175,18 @@ pub(crate) fn relax(graph: &mut JsonNode, place: bool) {
 }
 
 /// Sets what every graph of the design mode has, the root and the groups: the distance between
-/// the ports of a side, which replaces the label-aware one of [`center_ports`], and the node
-/// placement when `place` is set.
+/// the ports of a side, which replaces the label-aware one of [`center_ports`], the distance
+/// between a layer and the turns of the edges beside it, and the node placement when `place` is
+/// set.
 fn relax_graph(graph: &mut JsonNode, place: bool) {
     let options = graph.layout_options.get_or_insert_default();
     options.insert(
         "elk.spacing.portPort".to_owned(),
         crate::design::PORT_PITCH.into(),
+    );
+    options.insert(
+        "elk.layered.spacing.edgeNodeBetweenLayers".to_owned(),
+        crate::design::LAYER_TURN_SPACING.into(),
     );
     if place {
         options.insert(
@@ -260,6 +265,13 @@ mod tests {
             Some(20.0.into())
         );
         assert_eq!(option(&graph.children[0], pitch), None);
+        // Every graph keeps its layers 30 from the turns of the edges between them.
+        let turns = "elk.layered.spacing.edgeNodeBetweenLayers";
+        assert_eq!(option(&graph, turns), Some(30.0.into()));
+        assert_eq!(
+            option(&graph.children[1].children[1], turns),
+            Some(30.0.into())
+        );
         assert_eq!(option(&graph.children[0], alignment), Some("CENTER".into()));
         assert_eq!(
             option(&graph.children[1].children[1].children[0], alignment),

@@ -343,6 +343,13 @@ fn path_data(edge: &Edge, curve_name: &str, radius: f64, design: bool) -> Option
             line_data
         };
         let offset = apply_marker_offsets(&line_data, start, end);
+        // The design mode counts the parts at the ends from the node, before the arrowheads.
+        if design {
+            let pulled = super::path::pulled_back(&line_data, &offset);
+            return Some(super::path::generate_rounded_path_from_ends(
+                &offset, radius, pulled,
+            ));
+        }
         return Some(generate_rounded_path(&offset, radius));
     }
     let fixed = fix_corners(&line_data);
@@ -534,6 +541,7 @@ pub(crate) fn prepare_paths(
                 arrow_type_end: edges[index].arrow_type_end.clone(),
                 style: painted[index].style.clone(),
                 corner_radius: radius,
+                from_ends: design,
             })
             .collect();
         let config = LineJumpConfig {
