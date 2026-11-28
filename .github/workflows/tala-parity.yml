@@ -101,15 +101,19 @@ jobs:
             --ferrigura target/debug/examples/tala_pilot \
             --measured tools/tala-pilot/captures \
             --captures "$RUNNER_TEMP/tala-normalization.json"
-      - name: Compare complete raw routing and port geometry with Go
+      - name: Compare Observatory paths, labels, and SVG for seed 1
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |
           node tools/tala-pilot/trace-raw-routes.mjs .tala-reference "$RUNNER_TEMP/tala-raw-routes"
           GOFLAGS="-overlay=$RUNNER_TEMP/tala-raw-routes/overlay.json" \
             tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-raw-routes-reference"
+          node tools/tala-pilot/trace-overlay.mjs .tala-reference "$RUNNER_TEMP/tala-observatory-label" edge-label-placement
+          GOFLAGS="-overlay=$RUNNER_TEMP/tala-observatory-label/overlay.json" \
+            tools/tala-pilot/reference/build.sh .tala-reference "$RUNNER_TEMP/tala-observatory-label-reference"
           node tools/tala-pilot/check-raw-routes.mjs \
             "$RUNNER_TEMP/tala-reference" "$RUNNER_TEMP/tala-raw-routes-reference" \
-            tools/tala-pilot/rust/target/debug/ferrigura-tala
+            tools/tala-pilot/rust/target/debug/ferrigura-tala "$RUNNER_TEMP/tala-observatory-label-reference" \
+            target/debug/examples/tala_pilot
       - name: Compare ordinary edge label placement with Go
         if: ${{ !cancelled() && steps.binaries.outcome == 'success' }}
         run: |

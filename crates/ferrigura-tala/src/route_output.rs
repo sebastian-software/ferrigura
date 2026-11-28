@@ -9,7 +9,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{EdgeGeometry, Error, Point};
+use crate::{EdgeGeometry, Error, Layout, NodeGeometry, Point};
 
 const MAX_RESULT_COORDINATE: f64 = 1_000_000_000.0;
 const LABEL_PADDING: f64 = 5.0;
@@ -217,6 +217,17 @@ impl RoutedEdge {
 /// Returns an error when a route or its caption is invalid or degenerate.
 pub fn project(edges: Vec<RoutedEdge>) -> Result<Vec<EdgeGeometry>, Error> {
     edges.into_iter().map(RoutedEdge::into_geometry).collect()
+}
+
+/// Normalizes finished boxes and routes, then applies their authored traversal and label anchors.
+/// # Errors
+/// Returns an error if a route or its caption cannot be projected into Ferrigura geometry.
+pub fn finalize(mut nodes: Vec<NodeGeometry>, mut edges: Vec<RoutedEdge>) -> Result<Layout, Error> {
+    crate::normalize::normalize_routed(&mut nodes, &mut edges)?;
+    Ok(Layout {
+        nodes,
+        edges: project(edges)?,
+    })
 }
 
 #[cfg(test)]

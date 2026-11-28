@@ -4,10 +4,19 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const [reference, tracedReference, rust] = process.argv.slice(2).map((path) => resolve(path));
+import { checkFinish } from './check-observatory-finish.mjs';
+
+const [reference, tracedReference, rust, labelReference, ferrigura] = process.argv
+  .slice(2)
+  .map((path) => resolve(path));
 assert(
   reference && tracedReference && rust,
-  'usage: node check-raw-routes.mjs <Go> <traced Go> <Rust>'
+  'usage: node check-raw-routes.mjs <Go> <traced Go> <Rust> [label-traced Go and Ferrigura]'
+);
+assert.equal(
+  Boolean(labelReference),
+  Boolean(ferrigura),
+  'The full seed check requires both binaries.'
 );
 
 const input = await readFile(
@@ -92,6 +101,20 @@ assert.equal(moved.length, 8, 'Unexpected number of balanced Go routes');
 console.log(
   'Matched native measured placement, all 27 raw routes and costs, the chosen Go flavor, and all 9 materialized and balanced paths.'
 );
+
+if (labelReference) {
+  await checkFinish({
+    baseline,
+    ferrigura,
+    graph,
+    labelReference,
+    native,
+    options,
+    placed,
+    runRust,
+    translated,
+  });
+}
 
 function runRust(command, input) {
   return JSON.parse(execFileSync(rust, [command], { ...options, input: JSON.stringify(input) }));

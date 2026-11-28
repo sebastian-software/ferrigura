@@ -22,6 +22,12 @@ struct RoutedCapture {
 }
 
 #[derive(Deserialize)]
+struct FinishedRoutes {
+    nodes: Vec<ferrigura_tala::NodeGeometry>,
+    edges: Vec<ferrigura_tala::route_output::RoutedEdge>,
+}
+
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PlacementCapture {
     graph: Graph,
@@ -291,6 +297,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .collect::<Result<Vec<_>, _>>()?;
             serde_json::to_writer(output, &selections)?;
         }
+        Some("--shared-label-obstacles") => {
+            let paths: Vec<Vec<_>> = serde_json::from_reader(input)?;
+            serde_json::to_writer(output, &ferrigura_tala::labeling::shared_obstacles(&paths)?)?;
+        }
+        Some("--finalize-routes") => {
+            let FinishedRoutes { nodes, edges } = serde_json::from_reader(input)?;
+            serde_json::to_writer(
+                output,
+                &ferrigura_tala::route_output::finalize(nodes, edges)?,
+            )?;
+        }
         Some("--simplify") => {
             let RoutedCapture { graph, mut layout } = serde_json::from_reader(input)?;
             ferrigura_tala::simplify::simplify_routes(&graph, &mut layout)?;
@@ -316,7 +333,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "--direct-flat-component, --place-flat-component, --measured-flat-placement, ",
                 "--flat-refinement-snapshots, --measured-flat-refinement, --ovg-seed, ",
                 "--ovg-edge-points, --ovg-boundary-points, --ovg-tunnels, --ovg-links, ",
-                "--candidate-score, --route-output, --raw-routes, --edge-label-placement, --simplify, --balance, or no argument"
+                "--candidate-score, --route-output, --raw-routes, --edge-label-placement, ",
+                "--shared-label-obstacles, --finalize-routes, --simplify, --balance, or no argument"
             )
             .into());
         }

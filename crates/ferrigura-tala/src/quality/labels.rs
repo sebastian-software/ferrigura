@@ -83,7 +83,7 @@ pub(super) fn score(graph: &PositionedGraph, work: &mut Work<'_>) -> Result<f64,
         }
     }
 
-    let shared = shared_segment_boxes(&graph.edges, work)?;
+    let shared = shared_segment_boxes(graph.edges.iter().map(|edge| edge.points.as_slice()), work)?;
     for (index, edge) in graph.edges.iter().enumerate() {
         work.step()?;
         if let Some(label) = edge.label

@@ -282,6 +282,14 @@ node tools/tala-pilot/check-raw-routes.mjs \
   tools/tala-pilot/rust/target/debug/ferrigura-tala
 ```
 
+Pass the label-traced Go binary from the next section and
+`target/debug/examples/tala_pilot` as the fourth and fifth arguments to
+verify the complete fixed-seed result. The checker places labels on the
+native balanced paths, normalizes the layout, and checks the final node
+boxes, routes, label centers, and the SVG painted by Ferrigura. This run
+uses seed 1 and checks the assembled stages through the test runner. The
+public default multi-seed renderer has its own comparison.
+
 ### Ordinary edge label placement
 
 The trace passes already routed geometry, node obstacles, and previously

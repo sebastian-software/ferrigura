@@ -133,6 +133,13 @@ pub fn select(scenario: &LabelScenario) -> Result<LabelSelection, Error> {
     })
 }
 
+/// Computes the obstacles where a caption could be ambiguous because routes share a leg.
+/// # Errors
+/// Returns an error if the shared-segment search exceeds the work limit.
+pub fn shared_obstacles(paths: &[Vec<Point>]) -> Result<Vec<Box>, Error> {
+    crate::quality::routes::shared_obstacles(paths)
+}
+
 fn positions(hint: Option<Anchor>) -> Vec<Anchor> {
     let mut positions = Vec::with_capacity(12);
     match hint {
